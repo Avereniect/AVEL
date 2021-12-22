@@ -55,17 +55,17 @@ namespace avel {
 
 
     #if defined(AVEL_AVX512BW)
-        #include "Sizes_AVX512BW.hpp"
+        #include "Sizes_AVX512BW.ipp"
     #elif defined(AVEL_AVX512F)
-        #include "Sizes_AVX512F.hpp"
+        #include "Sizes_AVX512F.ipp"
     #elif defined(AVEL_AVX2)
-        #include "Sizes_AVX2.hpp"
+        #include "Sizes_AVX2.ipp"
     #elif defined(AVEL_AVX)
-        #include "Sizes_AVX.hpp"
+        #include "Sizes_AVX.ipp"
     #elif defined (AVEL_SSE2)
-        #include "Sizes_SSE2.hpp"
+        #include "Sizes_SSE2.ipp"
     #else
-        #include "Sizes_default.hpp"
+        #include "Sizes_default.ipp"
     #endif
 
 }

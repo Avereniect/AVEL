@@ -1,8 +1,6 @@
 #ifndef AVEL_VECTOR_PRIMITIVES_HPP
 #define AVEL_VECTOR_PRIMITIVES_HPP
 
-#include "../Capabilities.hpp"
-
 #include <type_traits>
 #include <cstdint>
 
@@ -27,21 +25,21 @@ namespace avel {
 
 
     #if defined(AVEL_AVX512BW)
-        #include "Vector_primitive_AVX512BW.hpp"
+        #include "Vector_primitives_AVX512BW.ipp"
     #endif
 
     #if defined(AVEL_AVX512F)
-        #include "Vector_primitives_AVX512F.hpp"
+        #include "Vector_primitives_AVX512F.ipp"
     #endif
 
     #if defined(AVEL_AVX)
-        #include "Vector_primitives_AVX.hpp"
+        #include "Vector_primitives_AVX.ipp"
     #endif
 
     #if defined(AVEL_SSE2)
-        #include "Vector_primitives_SSE2.hpp"
+        #include "Vector_primitives_SSE2.ipp"
     #else
-        #include "Vector_primitves_default.hpp"
+        #include "Vector_primitves_default.ipp"
     #endif
 
 }

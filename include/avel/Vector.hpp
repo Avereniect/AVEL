@@ -2,6 +2,8 @@
 #define AVEL_VECTOR_HPP
 
 #include <cstdint>
+
+#include <avel/impl/Capabilities.hpp>
 #include <avel/impl/sizes/Sizes.hpp>
 #include <avel/impl/vector_primitives/Vector_primitives.hpp>
 

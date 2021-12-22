@@ -1,6 +1,3 @@
-#ifndef AVEL_VECTOR_PRIMITIVES_AVX_HPP
-#define AVEL_VECTOR_PRIMITIVES_AVX_HPP
-
 //=========================================================
 // Vector primitives
 //=========================================================
@@ -116,5 +113,3 @@ template<>
 struct mask_primitive<double, 16> {
     using type = __m256d;
 };
-
-#endif //AVEL_VECTOR_PRIMITIVES_AVX_HPP

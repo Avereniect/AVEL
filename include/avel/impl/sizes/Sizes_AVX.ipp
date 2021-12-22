@@ -1,6 +1,3 @@
-#ifndef AVEL_SIZES_AVX_HPP
-#define AVEL_SIZES_AVX_HPP
-
 //=====================================================
 // Optimal vector widths
 //=====================================================
@@ -76,5 +73,3 @@ struct max_vector_width<float> : public std::integral_constant<int, 8>{};
 
 template<>
 struct max_vector_width<double> : public std::integral_constant<int, 4>{};
-
-#endif //AVEL_SIZES_AVX_HPP

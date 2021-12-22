@@ -1,6 +1,3 @@
-#ifndef AVEL_VECTOR_PRIMITVES_DEFAULT_HPP
-#define AVEL_VECTOR_PRIMITVES_DEFAULT_HPP
-
 template<>
 struct vector_primitive<std::uint64_t, 1> {
     using type = std::uint64_t;
@@ -54,5 +51,3 @@ template<>
 struct vector_primitive<double, 1> {
     using type = double;
 };
-
-#endif //AVEL_VECTOR_PRIMITVES_DEFAULT_HPP

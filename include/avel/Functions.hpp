@@ -29,6 +29,6 @@ namespace avel {
 
 }
 
-#include "impl/functions/Functions.hpp"
+//#include "impl/functions/Functions.hpp"
 
 #endif //AVEL_FUNCTIONS_HPP

@@ -1,6 +1,3 @@
-#ifndef AVEL_VECTOR_PRIMITIVES_AVX512F_HPP
-#define AVEL_VECTOR_PRIMITIVES_AVX512F_HPP
-
 //=========================================================
 // Vector primitives
 //=========================================================
@@ -120,5 +117,3 @@ template<>
 struct mask_primitive<double, 32> {
     using type = __mmask32;
 };
-
-#endif //AVEL_VECTOR_PRIMITIVES_AVX512F_HPP

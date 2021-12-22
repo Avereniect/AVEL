@@ -1,6 +1,3 @@
-#ifndef AVEL_VECTOR_PRIMITIVES_SSE2_HPP
-#define AVEL_VECTOR_PRIMITIVES_SSE2_HPP
-
 //=========================================================
 // Vector primitives
 //=========================================================
@@ -116,5 +113,3 @@ template<>
 struct mask_primitive<double, 8> {
     using type = __m128d;
 };
-
-#endif //AVEL_VECTOR_PRIMITIVES_SSE2_HPP

@@ -16,10 +16,10 @@ namespace avel {
         // Constructor
         //=================================================
 
-        explicit Vector_mask(const primitive content):
+        AVEL_FINL explicit Vector_mask(const primitive content):
             content(content) {}
 
-        explicit Vector_mask(bool x):
+        AVEL_FINL explicit Vector_mask(bool x):
             content(from_bool(x)) {}
 
         Vector_mask() = default;
@@ -31,7 +31,7 @@ namespace avel {
         // Assignment operators
         //=================================================
 
-        Vector_mask& operator=(bool x) {
+        AVEL_FINL Vector_mask& operator=(bool x) {
             content = from_bool(x);
             return *this;
         }
@@ -43,17 +43,17 @@ namespace avel {
         // Bitwise assignment operators
         //=================================================
 
-        Vector_mask& operator&=(Vector_mask rhs) {
+        AVEL_FINL Vector_mask& operator&=(Vector_mask rhs) {
             content = _mm_and_ps(content, rhs.content);
             return *this;
         }
 
-        Vector_mask& operator|=(Vector_mask rhs) {
+        AVEL_FINL Vector_mask& operator|=(Vector_mask rhs) {
             content = _mm_or_ps(content, rhs.content);
             return *this;
         }
 
-        Vector_mask& operator^=(Vector_mask rhs) {
+        AVEL_FINL Vector_mask& operator^=(Vector_mask rhs) {
             content = _mm_xor_ps(content, rhs.content);
             return *this;
         }
@@ -62,19 +62,19 @@ namespace avel {
         // Bitwise operators
         //=================================================
 
-        Vector_mask operator~() const {
+        AVEL_FINL Vector_mask operator~() const {
             return Vector_mask{_mm_sub_ps(_mm_setzero_ps(), content)};
         }
 
-        Vector_mask operator&(Vector_mask rhs) const {
+        AVEL_FINL Vector_mask operator&(Vector_mask rhs) const {
             return Vector_mask{_mm_and_ps(content, rhs.content)};
         }
 
-        Vector_mask operator|(Vector_mask rhs) const {
+        AVEL_FINL Vector_mask operator|(Vector_mask rhs) const {
             return Vector_mask{_mm_or_ps(content, rhs.content)};
         }
 
-        Vector_mask operator^(Vector_mask rhs) const {
+        AVEL_FINL Vector_mask operator^(Vector_mask rhs) const {
             return Vector_mask{_mm_xor_ps(content, rhs.content)};
         }
 
@@ -82,7 +82,7 @@ namespace avel {
         // Accessor
         //=================================================
 
-        bool operator[](int i) {
+        AVEL_FINL bool operator[](int i) {
             int mask = _mm_movemask_ps(content);
             return mask & (1 << i);
         }
@@ -99,7 +99,7 @@ namespace avel {
         // Helper functions
         //=================================================
 
-        static primitive from_bool(bool x) {
+        AVEL_FINL static primitive from_bool(bool x) {
             static const primitive full_masks[2] {
                 {0,  0},
                 {-1, -1}
@@ -137,14 +137,17 @@ namespace avel {
         // Constructors
         //=================================================
 
-        explicit Vector(const primitive content):
+        AVEL_FINL explicit Vector(primitive content):
             content(content) {}
 
-        explicit Vector(const scalar_type x):
+        AVEL_FINL explicit Vector(scalar_type x):
             content(_mm_set1_ps(x)) {}
 
-        explicit Vector(const scalar_type* x):
+        AVEL_FINL explicit Vector(const scalar_type* x):
             content(_mm_loadu_ps(x)) {}
+
+        AVEL_FINL explicit Vector(const std::array<scalar_type, width>& a):
+            content(_mm_loadu_ps(a.data())) {}
 
         Vector() = default;
         Vector(const Vector&) = default;
@@ -155,11 +158,11 @@ namespace avel {
         // Static creation functions
         //=================================================
 
-        static Vector zeros() {
+        AVEL_FINL static Vector zeros() {
             return Vector{_mm_setzero_ps()};
         }
 
-        static Vector ones() {
+        AVEL_FINL static Vector ones() {
             const primitive zeroes = _mm_setzero_ps();
             return Vector{_mm_cmpeq_ps(zeroes, zeroes)};
         }
@@ -171,12 +174,12 @@ namespace avel {
         Vector& operator=(const Vector&) = default;
         Vector& operator=(Vector&&) = default;
 
-        Vector& operator=(primitive p) {
+        AVEL_FINL Vector& operator=(primitive p) {
             this->content = p;
             return *this;
         }
 
-        Vector& operator=(scalar_type x) {
+        AVEL_FINL Vector& operator=(scalar_type x) {
             content = _mm_set1_ps(x);
             return *this;
         }
@@ -185,27 +188,27 @@ namespace avel {
         // Comparison operators
         //=================================================
 
-        mask operator==(const Vector vec) const {
+        AVEL_FINL mask operator==(const Vector vec) const {
             return mask{_mm_cmpeq_ps(content, vec.content)};
         }
 
-        mask operator!=(const Vector vec) const {
+        AVEL_FINL mask operator!=(const Vector vec) const {
             return mask{_mm_cmpneq_ps(content, vec.content)};
         }
 
-        mask operator<(const Vector vec) const {
+        AVEL_FINL mask operator<(const Vector vec) const {
             return mask{_mm_cmplt_ps(content, vec.content)};
         }
 
-        mask operator<=(const Vector vec) const {
+        AVEL_FINL mask operator<=(const Vector vec) const {
             return mask{_mm_cmple_ps(content, vec.content)};
         }
 
-        mask operator>(const Vector vec) const {
+        AVEL_FINL mask operator>(const Vector vec) const {
             return mask{_mm_cmpgt_ps(content, vec.content)};
         }
 
-        mask operator>=(const Vector vec) const {
+        AVEL_FINL mask operator>=(const Vector vec) const {
             return mask{_mm_cmpge_ps(content, vec.content)};
         }
 
@@ -213,11 +216,11 @@ namespace avel {
         // Unary arithmetic operators
         //=================================================
 
-        Vector operator+() {
+        AVEL_FINL Vector operator+() {
             return *this;
         }
 
-        Vector operator-() const {
+        AVEL_FINL Vector operator-() const {
             return zeros() - *this;
         }
 
@@ -225,71 +228,71 @@ namespace avel {
         // Arithmetic assignment operators
         //=================================================
 
-        Vector& operator+=(Vector vec) {
+        AVEL_FINL Vector& operator+=(Vector vec) {
             content = _mm_add_ps(content, vec.content);
             return *this;
         }
 
-        Vector& operator-=(Vector vec) {
+        AVEL_FINL Vector& operator-=(Vector vec) {
             content = _mm_sub_ps(content, vec.content);
             return *this;
         }
 
-        Vector& operator*=(Vector vec) {
+        AVEL_FINL Vector& operator*=(Vector vec) {
             content = _mm_mul_ps(content, vec.content);
             return *this;
         }
 
-        Vector& operator/=(Vector vec) {
+        AVEL_FINL Vector& operator/=(Vector vec) {
             content = _mm_div_ps(content, vec.content);
             return *this;
         }
 
-        Vector& operator%=(const Vector vec);
+        AVEL_FINL Vector& operator%=(const Vector vec);
 
         //=================================================
         // Arithmetic operators
         //=================================================
 
-        Vector operator+(const Vector vec) const {
+        AVEL_FINL Vector operator+(const Vector vec) const {
             return Vector{_mm_add_ps(content, vec.content)};
         }
 
-        Vector operator-(const Vector vec) const {
+        AVEL_FINL Vector operator-(const Vector vec) const {
             return Vector{_mm_sub_ps(content, vec.content)};
         }
 
-        Vector operator*(const Vector vec) const {
+        AVEL_FINL Vector operator*(const Vector vec) const {
             return Vector{_mm_mul_ps(content, vec.content)};
         }
 
-        Vector operator/(const Vector vec) const {
+        AVEL_FINL Vector operator/(const Vector vec) const {
             return Vector{_mm_div_ps(content, vec.content)};
         }
 
-        Vector operator%(const Vector vec) const;
+        AVEL_FINL Vector operator%(const Vector vec) const;
 
         //=================================================
         // Increment/Decrement operators
         //=================================================
 
-        Vector& operator++() {
+        AVEL_FINL Vector& operator++() {
             *this += Vector{1.0f};
             return *this;
         }
 
-        Vector operator++(int) {
+        AVEL_FINL Vector operator++(int) {
             auto temp = *this;
             *this += Vector{1.0f};
             return temp;
         }
 
-        Vector& operator--() {
+        AVEL_FINL Vector& operator--() {
             *this -= Vector{1.0f};
             return *this;
         }
 
-        Vector operator--(int) {
+        AVEL_FINL Vector operator--(int) {
             auto temp = *this;
             *this -= Vector{1.0f};
             return temp;
@@ -299,17 +302,17 @@ namespace avel {
         // Bitwise assignment operators
         //=================================================
 
-        Vector& operator&=(Vector vec) {
+        AVEL_FINL Vector& operator&=(Vector vec) {
             content = _mm_and_ps(content, vec.content);
             return *this;
         }
 
-        Vector& operator|=(Vector vec) {
+        AVEL_FINL Vector& operator|=(Vector vec) {
             content = _mm_or_ps(content, vec.content);
             return *this;
         }
 
-        Vector& operator^=(Vector vec) {
+        AVEL_FINL Vector& operator^=(Vector vec) {
             content = _mm_xor_ps(content, vec.content);
             return *this;
         }
@@ -318,19 +321,19 @@ namespace avel {
         // Bitwise operators
         //=================================================
 
-        Vector operator~() const {
+        AVEL_FINL Vector operator~() const {
             return Vector{_mm_andnot_ps(content, ones().content)};
         }
 
-        Vector operator&(Vector vec) const {
+        AVEL_FINL Vector operator&(Vector vec) const {
             return Vector{_mm_and_ps(content, vec.content)};
         }
 
-        Vector operator|(Vector vec) const {
+        AVEL_FINL Vector operator|(Vector vec) const {
             return Vector{_mm_or_ps(content, vec.content)};
         }
 
-        Vector operator^(Vector vec) const {
+        AVEL_FINL Vector operator^(Vector vec) const {
             return Vector{_mm_xor_ps(content, vec.content)};
         }
 
@@ -338,7 +341,7 @@ namespace avel {
         // Conversions
         //=================================================
 
-        std::array<scalar_type, width> as_array() const {
+        AVEL_FINL std::array<scalar_type, width> as_array() const {
             alignas(16) std::array<scalar_type, width> array{};
 
             _mm_store_ps(array.data(), content);
@@ -346,11 +349,11 @@ namespace avel {
             return array;
         }
 
-        operator primitive() const {
+        AVEL_FINL operator primitive() const {
             return content;
         }
 
-        explicit operator mask() const {
+        AVEL_FINL explicit operator mask() const {
             return *this == zeros();
         }
 
@@ -511,7 +514,7 @@ namespace avel {
     }
     */
 
-    vec4x32f sqrt(vec4x32f v) {
+    AVEL_FINL vec4x32f sqrt(vec4x32f v) {
         return vec4x32f{_mm_sqrt_ps(v)};
     }
 

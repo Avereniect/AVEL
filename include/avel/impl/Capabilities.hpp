@@ -1,15 +1,22 @@
 #ifndef AVEL_CAPABILITIES_HPP
 #define AVEL_CAPABILITIES_HPP
 
+#include <climits>
+#include <limits>
+
+static_assert(CHAR_BIT == 8, "x86 bytes are 8 bits. Compiling for non x86 architecture");
+static_assert(std::numeric_limits<float>::is_iec559, "IEEE 754 floats required");
+static_assert(sizeof(float) == 4, "Size of floats should be 32 bits");
+static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
 
 #ifdef __clang__
     #define AVEL_CLANG
-    #define AVML_FINL __attribute__((__always_inline__)) inline
+    #define AVEL_FINL __attribute__((__always_inline__)) inline
     #include <immintrin.h>
 
 #elif defined(__GNUC__)
     #define AVEL_GCC
-    #define AVML_FINL __forceinline
+    #define AVEL_FINL __attribute__((__always_inline__)) inline
     #include <immintrin.h>
 
 #elif defined(_MSC_VER)

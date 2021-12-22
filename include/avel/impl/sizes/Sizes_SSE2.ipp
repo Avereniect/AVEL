@@ -1,6 +1,3 @@
-#ifndef AVEL_SIZES_SSE2_HPP
-#define AVEL_SIZES_SSE2_HPP
-
 //=====================================================
 // Optimal vector widths
 //=====================================================
@@ -93,5 +90,3 @@ struct optimal_saturated_vector_width<std::uint16_t> : public std::integral_cons
 
 template<>
 struct optimal_saturated_vector_width<std::int16_t> : public std::integral_constant<int, 8>{};
-
-#endif //AVEL_SIZES_SSE2_HPP
