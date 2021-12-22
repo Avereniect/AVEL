@@ -1,11 +1,15 @@
 #ifndef AVEL_VECTOR_HPP
 #define AVEL_VECTOR_HPP
 
+#include <cstdint>
 #include <avel/impl/sizes/Sizes.hpp>
 #include <avel/impl/vector_primitives/Vector_primitives.hpp>
 
 namespace avel {
 
+    ///
+    /// \tparam T Integral or floating-point type
+    /// \tparam N Vector width
     template<class T, int N = avel::optimal_vector_width<T>::value>
     class alignas(alignof(typename avel::mask_primitive<T, N>::type)) Vector_mask{};
 

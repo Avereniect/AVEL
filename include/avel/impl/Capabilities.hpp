@@ -4,15 +4,17 @@
 
 #ifdef __clang__
     #define AVEL_CLANG
+    #define AVML_FINL __attribute__((__always_inline__)) inline
     #include <immintrin.h>
 
 #elif defined(__GNUC__)
     #define AVEL_GCC
+    #define AVML_FINL __forceinline
     #include <immintrin.h>
 
 #elif defined(_MSC_VER)
     #define AVEL_MSC
-
+    #define AVEL_FINL __forceinline
     #include "intrin.h"
 #elif
     static_assert(false, "Compiler not supported");
