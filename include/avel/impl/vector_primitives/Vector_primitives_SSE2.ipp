@@ -60,6 +60,8 @@ struct vector_primitive<double, 2> {
 // Mask primitives
 //=========================================================
 
+#if !defined(AVEL_AVX512VL)
+
 template<>
 struct mask_primitive<std::uint8_t, 16> {
     using type = __m128i;
@@ -110,6 +112,8 @@ struct mask_primitive<float, 4> {
 };
 
 template<>
-struct mask_primitive<double, 8> {
+struct mask_primitive<double, 2> {
     using type = __m128d;
 };
+
+#endif

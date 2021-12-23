@@ -23,6 +23,9 @@ namespace avel {
     template<class T, int N>
     struct mask_primitive;
 
+    #if defined(AVEL_AVX512VL)
+        #include "Vector_primitives_AVX512VL.ipp"
+    #endif
 
     #if defined(AVEL_AVX512BW)
         #include "Vector_primitives_AVX512BW.ipp"
