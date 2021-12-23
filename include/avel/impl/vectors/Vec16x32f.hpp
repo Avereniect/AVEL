@@ -115,7 +115,7 @@ namespace avel {
 
 
     template<>
-    class Vector<float, 16> {
+    class alignas(64) Vector<float, 16> {
     public:
 
         using scalar_type = float;

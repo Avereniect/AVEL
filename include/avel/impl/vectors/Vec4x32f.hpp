@@ -112,7 +112,7 @@ namespace avel {
 
 
     template<>
-    class Vector<float, 4> {
+    class alignas(16) Vector<float, 4> {
     public:
 
         //=================================================
