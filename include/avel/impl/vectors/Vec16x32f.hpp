@@ -341,7 +341,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL std::array<scalar_type, width> as_array() const {
-            alignas(16) std::array<scalar_type, width> array{};
+            alignas(alignof(Vector)) std::array<scalar_type, width> array{};
 
             _mm512_store_ps(array.data(), content);
 

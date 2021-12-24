@@ -44,17 +44,29 @@ namespace avel {
         //=================================================
 
         Vector_mask& operator&=(const Vector_mask& rhs) {
+            #if defined(AVEL_AVX512VL)
+            content = _kand_mask8(content, rhs.content);
+            #else
             content = _mm256_and_ps(content, rhs.content);
+            #endif
             return *this;
         }
 
         Vector_mask& operator|=(const Vector_mask& rhs) {
+            #if defined(AVEL_AVX512VL)
+            content = _kor_mask8(content, rhs.content);
+            #else
             content = _mm256_or_ps(content, rhs.content);
+            #endif
             return *this;
         }
 
         Vector_mask& operator^=(const Vector_mask& rhs) {
+            #if defined(AVEL_AVX512VL)
+            content = _kxor_mask8(content, rhs.content);
+            #else
             content = _mm256_xor_ps(content, rhs.content);
+            #endif
             return *this;
         }
 
@@ -63,28 +75,49 @@ namespace avel {
         //=================================================
 
         Vector_mask operator~() const {
+            #if defined(AVEL_AVX512VL)
+            return Vector_mask{_knot_mask8(content)};
+            #else
             return Vector_mask{_mm256_sub_ps(_mm256_setzero_ps(), content)};
+            #endif
         }
 
         Vector_mask operator&(Vector_mask rhs) const {
+            #if defined(AVEL_AVX512VL)
+            return Vector_mask{_kand_mask8(content, rhs.content)};
+            #else
             return Vector_mask{_mm256_and_ps(content, rhs.content)};
+            #endif
         }
 
         Vector_mask operator|(Vector_mask rhs) const {
+            #if defined(AVEL_AVX512VL)
+            return Vector_mask{_kor_mask8(content, rhs.content)};
+            #else
             return Vector_mask{_mm256_or_ps(content, rhs.content)};
+            #endif
         }
 
         Vector_mask operator^(Vector_mask rhs) const {
+            #if defined(AVEL_AVX512VL)
+            return Vector_mask{_kxor_mask8(content, rhs.content)};
+            #else
             return Vector_mask{_mm256_xor_ps(content, rhs.content)};
+            #endif
         }
 
         //=================================================
         // Accessor
         //=================================================
 
-        bool operator[](int i) {
+        bool operator[](int i) const {
+            #if defined(AVEL_AVX512VL)
+            unsigned mask = _cvtmask16_u32(__mmask16(content));
+            return mask & (1 << i);
+            #else
             int mask = _mm256_movemask_ps(content);
             return mask & (1 << i);
+            #endif
         }
 
     private:
@@ -100,12 +133,21 @@ namespace avel {
         //=================================================
 
         static primitive from_bool(bool x) {
+            #if defined(AVEL_AVX512VL)
+            static const primitive full_masks[2] {
+                0x00,
+                0xFF
+            };
+
+            return full_masks[x];
+            #else
             static const primitive full_masks[2] {
                 {0, 0},
                 {-1, -1}
             };
 
             return full_masks[x];
+            #endif
         }
 
     };
@@ -185,28 +227,52 @@ namespace avel {
         // Comparison operators
         //=================================================
 
-        AVEL_FINL mask operator==(Vector vec) const {
-            return mask{_mm256_cmp_ps(content, vec.content, _CMP_EQ_OQ)};
+        AVEL_FINL mask operator==(Vector rhs) const {
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmp_ps_mask(content, rhs.content, _CMP_EQ_OQ)};
+            #else
+            return mask{_mm256_cmp_ps(content, rhs.content, _CMP_EQ_OQ)};
+            #endif
         }
 
-        AVEL_FINL mask operator!=(Vector vec) const {
-            return mask{_mm256_cmp_ps(content, vec.content, _CMP_NEQ_OQ)};
+        AVEL_FINL mask operator!=(Vector rhs) const {
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmp_ps_mask(content, rhs.content, _CMP_NEQ_OQ)};
+            #else
+            return mask{_mm256_cmp_ps(content, rhs.content, _CMP_NEQ_OQ)};
+            #endif
         }
 
-        AVEL_FINL mask operator<(Vector vec) const {
-            return mask{_mm256_cmp_ps(content, vec.content, _CMP_LT_OQ)};
+        AVEL_FINL mask operator<(Vector rhs) const {
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmp_ps_mask(content, rhs.content, _CMP_LT_OQ)};
+            #else
+            return mask{_mm256_cmp_ps(content, rhs.content, _CMP_LT_OQ)};
+            #endif
         }
 
-        AVEL_FINL mask operator<=(Vector vec) const {
-            return mask{_mm256_cmp_ps(content, vec.content, _CMP_LE_OQ)};
+        AVEL_FINL mask operator<=(Vector rhs) const {
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmp_ps_mask(content, rhs.content, _CMP_LE_OQ)};
+            #else
+            return mask{_mm256_cmp_ps(content, rhs.content, _CMP_LE_OQ)};
+            #endif
         }
 
-        AVEL_FINL mask operator>(Vector vec) const {
-            return mask{_mm256_cmp_ps(content, vec.content, _CMP_GT_OQ)};
+        AVEL_FINL mask operator>(Vector rhs) const {
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmp_ps_mask(content, rhs.content, _CMP_GT_OQ)};
+            #else
+            return mask{_mm256_cmp_ps(content, rhs.content, _CMP_GT_OQ)};
+            #endif
         }
 
-        AVEL_FINL mask operator>=(Vector vec) const {
-            return mask{_mm256_cmp_ps(content, vec.content, _CMP_GE_OQ)};
+        AVEL_FINL mask operator>=(Vector rhs) const {
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmp_ps_mask(content, rhs.content, _CMP_GE_OQ)};
+            #else
+            return mask{_mm256_cmp_ps(content, rhs.content, _CMP_GE_OQ)};
+            #endif
         }
 
         //=================================================
@@ -225,49 +291,49 @@ namespace avel {
         // Arithmetic assignment operators
         //=================================================
 
-        AVEL_FINL Vector& operator+=(Vector vec) {
-            content = _mm256_add_ps(content, vec.content);
+        AVEL_FINL Vector& operator+=(Vector rhs) {
+            content = _mm256_add_ps(content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator-=(Vector vec) {
-            content = _mm256_sub_ps (content, vec.content);
+        AVEL_FINL Vector& operator-=(Vector rhs) {
+            content = _mm256_sub_ps (content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator*=(Vector vec) {
-            content = _mm256_mul_ps (content, vec.content);
+        AVEL_FINL Vector& operator*=(Vector rhs) {
+            content = _mm256_mul_ps (content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator/=(Vector vec) {
-            content = _mm256_div_ps (content, vec.content);
+        AVEL_FINL Vector& operator/=(Vector rhs) {
+            content = _mm256_div_ps (content, rhs.content);
             return *this;
         }
 
-        Vector& operator%=(Vector vec);
+        Vector& operator%=(Vector rhs);
 
         //=================================================
         // Arithmetic operators
         //=================================================
 
-        AVEL_FINL Vector operator+(Vector vec) {
-            return Vector{_mm256_add_ps(content, vec.content)};
+        AVEL_FINL Vector operator+(Vector rhs) {
+            return Vector{_mm256_add_ps(content, rhs.content)};
         }
 
-        AVEL_FINL Vector operator-(Vector vec) {
-            return Vector{_mm256_sub_ps(content, vec.content)};
+        AVEL_FINL Vector operator-(Vector rhs) {
+            return Vector{_mm256_sub_ps(content, rhs.content)};
         }
 
-        AVEL_FINL Vector operator*(Vector vec) {
-            return Vector{_mm256_mul_ps(content, vec.content)};
+        AVEL_FINL Vector operator*(Vector rhs) {
+            return Vector{_mm256_mul_ps(content, rhs.content)};
         }
 
-        AVEL_FINL Vector operator/(Vector vec) {
-            return Vector{_mm256_div_ps(content, vec.content)};
+        AVEL_FINL Vector operator/(Vector rhs) {
+            return Vector{_mm256_div_ps(content, rhs.content)};
         }
 
-        AVEL_FINL Vector operator%(Vector vec);
+        AVEL_FINL Vector operator%(Vector rhs);
 
         //=================================================
         // Increment/Decrement operators
@@ -299,18 +365,18 @@ namespace avel {
         // Bitwise assignment operators
         //=================================================
 
-        AVEL_FINL Vector operator&=(const Vector vec) {
-            content = _mm256_and_ps(content, vec.content);
+        AVEL_FINL Vector operator&=(const Vector rhs) {
+            content = _mm256_and_ps(content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector operator|=(const Vector vec) {
-            content = _mm256_or_ps(content, vec.content);
+        AVEL_FINL Vector operator|=(const Vector rhs) {
+            content = _mm256_or_ps(content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector operator^=(const Vector vec) {
-            content = _mm256_xor_ps(content, vec.content);
+        AVEL_FINL Vector operator^=(const Vector rhs) {
+            content = _mm256_xor_ps(content, rhs.content);
             return *this;
         }
 
@@ -322,16 +388,16 @@ namespace avel {
             return Vector{_mm256_andnot_ps(ones().content, content)};
         }
 
-        AVEL_FINL Vector operator&(const Vector vec) const {
-            return Vector{_mm256_and_ps(content, vec.content)};
+        AVEL_FINL Vector operator&(const Vector rhs) const {
+            return Vector{_mm256_and_ps(content, rhs.content)};
         }
 
-        AVEL_FINL Vector operator|(const Vector vec) const {
-            return Vector{_mm256_or_ps(content, vec.content)};
+        AVEL_FINL Vector operator|(const Vector rhs) const {
+            return Vector{_mm256_or_ps(content, rhs.content)};
         }
 
-        AVEL_FINL Vector operator^(const Vector vec) const {
-            return Vector{_mm256_xor_ps(content, vec.content)};
+        AVEL_FINL Vector operator^(const Vector rhs) const {
+            return Vector{_mm256_xor_ps(content, rhs.content)};
         }
 
         //=================================================
@@ -339,7 +405,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL std::array<scalar_type, width> as_array() const {
-            alignas(16) std::array<scalar_type, width> array{};
+            alignas(alignof(Vector)) std::array<scalar_type, width> array{};
 
             _mm256_store_ps(array.data(), content);
 

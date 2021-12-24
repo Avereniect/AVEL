@@ -44,17 +44,29 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator&=(Vector_mask rhs) {
+            #if defined(AVEL_AVX512VL)
+            content = _kand_mask8(content, rhs.content);
+            #else
             content = _mm_and_ps(content, rhs.content);
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector_mask& operator|=(Vector_mask rhs) {
+            #if defined(AVEL_AVX512VL)
+            content = _kor_mask8(content, rhs.content);
+            #else
             content = _mm_or_ps(content, rhs.content);
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector_mask& operator^=(Vector_mask rhs) {
+            #if defined(AVEL_AVX512VL)
+            content = _kxor_mask8(content, rhs.content);
+            #else
             content = _mm_xor_ps(content, rhs.content);
+            #endif
             return *this;
         }
 
@@ -63,28 +75,49 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask operator~() const {
+            #if defined(AVEL_AVX512VL)
+            return Vector_mask{_knot_mask8(content)};
+            #else
             return Vector_mask{_mm_sub_ps(_mm_setzero_ps(), content)};
+            #endif
         }
 
         AVEL_FINL Vector_mask operator&(Vector_mask rhs) const {
+            #if defined(AVEL_AVX512VL)
+            return Vector_mask{_kand_mask8(content, rhs.content)};
+            #else
             return Vector_mask{_mm_and_ps(content, rhs.content)};
+            #endif
         }
 
         AVEL_FINL Vector_mask operator|(Vector_mask rhs) const {
+            #if defined(AVEL_AVX512VL)
+            return Vector_mask{_kor_mask8(content, rhs.content)};
+            #else
             return Vector_mask{_mm_or_ps(content, rhs.content)};
+            #endif
         }
 
         AVEL_FINL Vector_mask operator^(Vector_mask rhs) const {
+            #if defined(AVEL_AVX512VL)
+            return Vector_mask{_kxor_mask8(content, rhs.content)};
+            #else
             return Vector_mask{_mm_xor_ps(content, rhs.content)};
+            #endif
         }
 
         //=================================================
         // Accessor
         //=================================================
 
-        AVEL_FINL bool operator[](int i) {
+        AVEL_FINL bool operator[](int i) const {
+            #if defined(AVEL_AVX512VL)
+            unsigned mask = _cvtmask16_u32(__mmask16(content));
+            return mask & (1 << i);
+            #else
             int mask = _mm_movemask_ps(content);
             return mask & (1 << i);
+            #endif
         }
 
     private:
@@ -100,12 +133,21 @@ namespace avel {
         //=================================================
 
         AVEL_FINL static primitive from_bool(bool x) {
+            #if defined(AVEL_AVX512VL)
+            static const primitive full_masks[2] {
+                0x00,
+                0xFF
+            };
+
+            return full_masks[x];
+            #else
             static const primitive full_masks[2] {
                 {0,  0},
                 {-1, -1}
             };
 
             return full_masks[x];
+            #endif
         }
 
     };
@@ -189,27 +231,51 @@ namespace avel {
         //=================================================
 
         AVEL_FINL mask operator==(const Vector vec) const {
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm_cmp_ps_mask(content, vec.content, _CMP_EQ_OQ)};
+            #else
             return mask{_mm_cmpeq_ps(content, vec.content)};
+            #endif
         }
 
         AVEL_FINL mask operator!=(const Vector vec) const {
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm_cmp_ps_mask(content, vec.content, _CMP_NEQ_OQ)};
+            #else
             return mask{_mm_cmpneq_ps(content, vec.content)};
+            #endif
         }
 
         AVEL_FINL mask operator<(const Vector vec) const {
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm_cmp_ps_mask(content, vec.content, _CMP_LT_OQ)};
+            #else
             return mask{_mm_cmplt_ps(content, vec.content)};
+            #endif
         }
 
         AVEL_FINL mask operator<=(const Vector vec) const {
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm_cmp_ps_mask(content, vec.content, _CMP_LE_OQ)};
+            #else
             return mask{_mm_cmple_ps(content, vec.content)};
+            #endif
         }
 
         AVEL_FINL mask operator>(const Vector vec) const {
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm_cmp_ps_mask(content, vec.content, _CMP_GT_OQ)};
+            #else
             return mask{_mm_cmpgt_ps(content, vec.content)};
+            #endif
         }
 
         AVEL_FINL mask operator>=(const Vector vec) const {
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm_cmp_ps_mask(content, vec.content, _CMP_GE_OQ)};
+            #else
             return mask{_mm_cmpge_ps(content, vec.content)};
+            #endif
         }
 
         //=================================================
@@ -342,7 +408,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL std::array<scalar_type, width> as_array() const {
-            alignas(16) std::array<scalar_type, width> array{};
+            alignas(alignof(Vector)) std::array<scalar_type, width> array{};
 
             _mm_store_ps(array.data(), content);
 

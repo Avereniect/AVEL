@@ -19,6 +19,7 @@
 
 #ifdef AVEL_AVX
 
+#include "Vec8x32i.hpp"
 #include "Vec8x32f.hpp"
 
 #endif
@@ -27,6 +28,7 @@
 
 #ifdef AVEL_AVX512F
 
+#include "Vec16x32i.hpp"
 #include "Vec16x32f.hpp"
 
 #endif
