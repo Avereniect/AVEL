@@ -385,6 +385,22 @@ namespace avel {
             return Vector{_mm512_xor_si512(content, vec.content)};
         }
 
+        AVEL_FINL Vector operator<<(std::int64_t s) const {
+            return Vector{_mm512_sll_epi32(content, _mm_loadu_si64(&s))};
+        }
+
+        AVEL_FINL Vector operator>>(std::int64_t s) const {
+            return Vector{_mm512_srl_epi32(content, _mm_loadu_si64(&s))};
+        }
+
+        AVEL_FINL Vector operator<<(Vector vec) const {
+            return Vector{_mm512_sllv_epi32(content, vec.content)};
+        }
+
+        AVEL_FINL Vector operator>>(Vector vec) const {
+            return Vector{_mm512_srlv_epi32(content, vec.content)};
+        }
+
         //=================================================
         // Conversions
         //=================================================

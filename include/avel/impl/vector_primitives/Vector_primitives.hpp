@@ -42,7 +42,7 @@ namespace avel {
     #if defined(AVEL_SSE2)
         #include "Vector_primitives_SSE2.ipp"
     #else
-        #include "Vector_primitves_default.ipp"
+        #include "Vector_primitives_default.ipp"
     #endif
 
 }
