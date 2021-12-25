@@ -390,7 +390,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector operator>>(std::int64_t s) const {
-            return Vector{_mm512_srl_epi32(content, _mm_loadu_si64(&s))};
+            return Vector{_mm512_sra_epi32(content, _mm_loadu_si64(&s))};
         }
 
         AVEL_FINL Vector operator<<(Vector vec) const {
@@ -398,7 +398,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector operator>>(Vector vec) const {
-            return Vector{_mm512_srlv_epi32(content, vec.content)};
+            return Vector{_mm512_srav_epi32(content, vec.content)};
         }
 
         //=================================================
