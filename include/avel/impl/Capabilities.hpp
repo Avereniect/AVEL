@@ -106,6 +106,9 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
 #ifdef AVEL_POPCNT
 #endif
 
+#if defined(AVEL_SSE) && !defined(AVEL_SSE2)
+static_assert(false, "AVEL does not support SSE on its own. SSE2 required");
+#endif
 
 
 #endif //AVEL_CAPABILITIES_HPP
