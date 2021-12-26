@@ -472,7 +472,7 @@ namespace avel {
             auto s = vec.as_array();
 
             for (int i = 0; i < width; ++i) {
-                v[i] = v[i] << s[i];
+                v[i] = v[i] << std::max(std::min(s[i], 31), 0);
             }
             return Vector{v.data()};
 
@@ -486,9 +486,39 @@ namespace avel {
             auto v = as_array();
             auto s = vec.as_array();
 
+            #if __cplusplus < 202002L
             for (int i = 0; i < width; ++i) {
-                v[i] = v[i] >> s[i];
+                // If the amount shifted is exactly the integer width, the
+                // behavior is still undefined. This problem is apparent on
+                // Clang so must be explicitly handled.
+                bool is_too_big = s[i] >= (CHAR_BIT * sizeof(std::uint32_t));
+                bool is_too_small = s[i] < 0;
+
+                // TODO: These branches could be eliminated using some bitwise
+                // manipulation
+                if (is_too_small) {
+                    continue;
+                }
+
+                if (is_too_big) {
+                    v[i] = 0x00;
+                    continue;
+                }
+
+                // Shifting a negative value pre C++20 is undefined behaviors
+                // By shifting as unsigned integer this is avoided
+                // Since right shift should shift in ones, and unsigned right
+                // shift shifts in zeroes, double negation allows for "shifting
+                // in ones".
+                // All supported platforms perform conversion between signed
+                // and unsigned types as expected
+                v[i] = ~(std::uint32_t(~v[i]) >> s[i]);
             }
+            #else
+            for (int i = 0; i < width; ++i) {
+                v[i] = v[i] >> std::max(std::min(s[i], 31), 0);
+            }
+            #endif
             return Vector{v.data()};
 
             #endif
