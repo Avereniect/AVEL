@@ -472,10 +472,14 @@ namespace avel {
             auto s = vec.as_array();
 
             for (int i = 0; i < width; ++i) {
-                v[i] = v[i] << std::max(std::min(s[i], 31), 0);
+                if (32 <= s[i]) {
+                    v[i] = 0x00;
+                } else {
+                    v[i] = v[i] << s[i];
+                }
             }
-            return Vector{v.data()};
 
+            return Vector{v.data()};
             #endif
         }
 
@@ -492,16 +496,13 @@ namespace avel {
                 // behavior is still undefined. This problem is apparent on
                 // Clang so must be explicitly handled.
                 bool is_too_big = s[i] >= (CHAR_BIT * sizeof(std::uint32_t));
-                bool is_too_small = s[i] < 0;
 
-                // TODO: These branches could be eliminated using some bitwise
+                // TODO: This branch could be eliminated using some bitwise
                 // manipulation
-                if (is_too_small) {
-                    continue;
-                }
 
                 if (is_too_big) {
-                    v[i] = 0x00;
+                    // Fill with sign bit
+                    v[i] = std::int32_t(-(std::uint32_t(v[i]) >> 31));
                     continue;
                 }
 
@@ -512,11 +513,15 @@ namespace avel {
                 // in ones".
                 // All supported platforms perform conversion between signed
                 // and unsigned types as expected
-                v[i] = ~(std::uint32_t(~v[i]) >> s[i]);
+                v[i] = std::int32_t(~(std::uint32_t(~v[i]) >> s[i]));
             }
             #else
             for (int i = 0; i < width; ++i) {
-                v[i] = v[i] >> std::max(std::min(s[i], 31), 0);
+                if (32 <= s[i]) {
+                    v[i] = 0x00;
+                } else {
+                    v[i] = v[i] << s[i];
+                }
             }
             #endif
             return Vector{v.data()};
