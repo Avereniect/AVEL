@@ -14,10 +14,18 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
     #define AVEL_FINL __attribute__((__always_inline__)) inline
     #include <immintrin.h>
 
+    #if defined(AVEL_AUTO_DETECT)
+        #include "Detect_capabilities_Clang.hpp"
+    #endif
+
 #elif defined(__GNUC__)
     #define AVEL_GCC
     #define AVEL_FINL __attribute__((__always_inline__)) inline
     #include <immintrin.h>
+
+    #if defined(AVEL_AUTO_DETECT)
+        #include "Detect_capabilities_GCC.hpp"
+    #endif
 
 #elif defined(_MSC_VER)
     #define AVEL_MSC
@@ -55,8 +63,12 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
 
 #ifdef AVEL_AVX512F
     #define AVEL_AVX2
+    #define AVELF_FMA
 #endif
 
+#ifdef AVELF_FMA
+    #define AVEL_SSE2
+#endif
 
 #ifdef AVEL_AVX2
     #define AVEL_AVX
@@ -109,6 +121,5 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
 #if defined(AVEL_SSE) && !defined(AVEL_SSE2)
 static_assert(false, "AVEL does not support SSE on its own. SSE2 required");
 #endif
-
 
 #endif //AVEL_CAPABILITIES_HPP
