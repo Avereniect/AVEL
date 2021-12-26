@@ -10,6 +10,7 @@
 
 #ifdef AVEL_SSE2
 
+#include "Vec4x32u.hpp"
 #include "Vec4x32i.hpp"
 #include "Vec4x32f.hpp"
 
@@ -19,6 +20,7 @@
 
 #ifdef AVEL_AVX
 
+#include "Vec8x32u.hpp"
 #include "Vec8x32i.hpp"
 #include "Vec8x32f.hpp"
 
@@ -28,6 +30,7 @@
 
 #ifdef AVEL_AVX512F
 
+#include "Vec16x32u.hpp"
 #include "Vec16x32i.hpp"
 #include "Vec16x32f.hpp"
 

@@ -1,16 +1,16 @@
 namespace avel {
 
-    using vec8x32i = Vector<std::int32_t, 8>;
+    using vec8x32u = Vector<std::uint32_t, 8>;
 
     template<>
-    class alignas(32) Vector_mask<std::int32_t, 8> {
+    class alignas(32) Vector_mask<std::uint32_t, 8> {
     public:
 
         //=================================================
         // Type aliases
         //=================================================
 
-        using primitive = avel::mask_primitive<std::int32_t, 8>::type;
+        using primitive = avel::mask_primitive<std::uint32_t, 8>::type;
 
         //=================================================
         // Constructor
@@ -156,26 +156,26 @@ namespace avel {
 
 
     template<>
-    class alignas(32) Vector<std::int32_t, 8> {
+    class alignas(32) Vector<std::uint32_t, 8> {
     public:
 
         //=================================================
         // Type aliases
         //=================================================
 
-        using scalar_type = std::int32_t;
+        using scalar_type = std::uint32_t;
 
-        using primitive = avel::vector_primitive<std::int32_t, 8>::type;
+        using primitive = avel::vector_primitive<std::uint32_t, 8>::type;
 
         constexpr static unsigned width = 8;
 
-        using mask = Vector_mask<std::int32_t, 8>;
+        using mask = Vector_mask<std::uint32_t, 8>;
 
         template<class U>
         using rebind_type = Vector<U, 8>;
 
         template<int M>
-        using rebind_width = Vector<std::int32_t, M>;
+        using rebind_width = Vector<std::uint32_t, M>;
 
         //=================================================
         // Constructors
@@ -307,7 +307,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator*=(Vector vec) {
-            content = _mm256_mul_epi32(content, vec.content);
+            content = _mm256_mul_epu32(content, vec.content);
             return *this;
         }
 
@@ -358,7 +358,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector operator*(const Vector vec) const {
-            return Vector{_mm256_mul_epi32(content, vec.content)};
+            return Vector{_mm256_mul_epu32(content, vec.content)};
         }
 
         AVEL_FINL Vector operator/(const Vector vec) const {
@@ -436,23 +436,23 @@ namespace avel {
             return *this;
         }
 
-        AVEL_FINL Vector operator<<=(std::uint64_t s) {
+        AVEL_FINL Vector& operator<<=(std::uint64_t s) {
             content = _mm256_sll_epi32(content, _mm_loadu_si64(&s));
             return *this;
         }
 
-        AVEL_FINL Vector operator>>=(std::uint64_t s) {
-            content = _mm256_sra_epi32(content, _mm_loadu_si64(&s));
+        AVEL_FINL Vector& operator>>=(std::uint64_t s) {
+            content = _mm256_srl_epi32(content, _mm_loadu_si64(&s));
             return *this;
         }
 
-        AVEL_FINL Vector operator<<=(Vector<std::uint32_t, width> s) {
-            content = _mm256_sllv_epi32(content, primitive(s));
+        AVEL_FINL Vector& operator<<=(Vector s) {
+            content = _mm256_sllv_epi32(content, s.content);
             return *this;
         }
 
-        AVEL_FINL Vector operator>>=(Vector<std::uint32_t, width> s) {
-            content = _mm256_srav_epi32(content, primitive(s));
+        AVEL_FINL Vector& operator>>=(Vector s) {
+            content = _mm256_srlv_epi32(content, s.content);
             return *this;
         }
 
@@ -481,15 +481,15 @@ namespace avel {
         }
 
         AVEL_FINL Vector operator>>(std::uint64_t s) const {
-            return Vector{_mm256_sra_epi32(content, _mm_loadu_si64(&s))};
+            return Vector{_mm256_srl_epi32(content, _mm_loadu_si64(&s))};
         }
 
-        AVEL_FINL Vector operator<<(Vector<std::uint32_t, width> s) const {
-            return Vector{_mm256_sllv_epi32(content, primitive(s))};
+        AVEL_FINL Vector operator<<(Vector vec) const {
+            return Vector{_mm256_sllv_epi32(content, vec.content)};
         }
 
-        AVEL_FINL Vector operator>>(Vector<std::uint32_t, width> s) const {
-            return Vector{_mm256_srav_epi32(content, primitive(s))};
+        AVEL_FINL Vector operator>>(Vector vec) const {
+            return Vector{_mm256_srlv_epi32(content, vec.content)};
         }
 
         //=================================================

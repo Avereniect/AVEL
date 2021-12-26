@@ -436,6 +436,83 @@ namespace avel {
             return *this;
         }
 
+        AVEL_FINL Vector& operator<<=(std::uint64_t s) {
+            content = _mm_sll_epi32(content, _mm_loadu_si64(&s));
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator>>=(std::uint64_t s) {
+            content = _mm_sra_epi32(content, _mm_loadu_si64(&s));
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator<<=(Vector<std::uint32_t, width> s) {
+            #if defined(AVEL_AVX2)
+            content = _mm_sllv_epi32(content, primitive(s));
+            #else
+            alignof(*this) auto v = as_array();
+            auto s = vec.as_array();
+
+            for (int i = 0; i < width; ++i) {
+                if (32 <= s[i]) {
+                    v[i] = 0x00;
+                } else {
+                    v[i] = v[i] << s[i];
+                }
+            }
+
+            content = _mm_load_ps(v.data());
+            #endif
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator>>=(Vector<std::uint32_t, width> s) {
+            #if defined(AVEL_AVX2)
+            content = _mm_srav_epi32(content, primitive(s));
+            #else
+            alignof(*this) auto v = as_array();
+            auto s = vec.as_array();
+
+            #if __cplusplus < 202002L
+            for (int i = 0; i < width; ++i) {
+                // If the amount shifted is exactly the integer width, the
+                // behavior is still undefined. This problem is apparent on
+                // Clang so must be explicitly handled.
+                bool is_too_big = s[i] >= (CHAR_BIT * sizeof(std::uint32_t));
+
+                // TODO: This branch could be eliminated using some bitwise
+                // manipulation
+
+                if (is_too_big) {
+                    // Fill with sign bit
+                    v[i] = std::int32_t(-(std::uint32_t(v[i]) >> 31));
+                    continue;
+                }
+
+                // Shifting a negative value pre C++20 is undefined behaviors
+                // By shifting as unsigned integer this is avoided
+                // Since right shift should shift in ones, and unsigned right
+                // shift shifts in zeroes, double negation allows for "shifting
+                // in ones".
+                // All supported platforms perform conversion between signed
+                // and unsigned types as expected
+                v[i] = std::int32_t(~(std::uint32_t(~v[i]) >> s[i]));
+            }
+            #else
+            for (int i = 0; i < width; ++i) {
+                if (32 <= s[i]) {
+                    v[i] = 0x00;
+                } else {
+                    v[i] = v[i] << s[i];
+                }
+            }
+            #endif
+            content = _mm_load_ps(v.data());
+
+            #endif
+            return *this;
+        }
+
         //=================================================
         // Bitwise operators
         //=================================================
@@ -456,17 +533,17 @@ namespace avel {
             return Vector{_mm_xor_si128(content, vec.content)};
         }
 
-        AVEL_FINL Vector operator<<(std::int64_t s) const {
+        AVEL_FINL Vector operator<<(std::uint64_t s) const {
             return Vector{_mm_sll_epi32(content, _mm_loadu_si64(&s))};
         }
 
-        AVEL_FINL Vector operator>>(std::int64_t s) const {
+        AVEL_FINL Vector operator>>(std::uint64_t s) const {
             return Vector{_mm_sra_epi32(content, _mm_loadu_si64(&s))};
         }
 
-        AVEL_FINL Vector operator<<(Vector vec) const {
+        AVEL_FINL Vector operator<<(Vector<std::uint32_t, width> vec) const {
             #if defined(AVEL_AVX2)
-            return Vector{_mm_sllv_epi32(content, vec.content)};
+            return Vector{_mm_sllv_epi32(content, primitive(vec))};
             #else
             auto v = as_array();
             auto s = vec.as_array();
@@ -483,9 +560,9 @@ namespace avel {
             #endif
         }
 
-        AVEL_FINL Vector operator>>(Vector vec) const {
+        AVEL_FINL Vector operator>>(Vector<std::uint32_t, width> vec) const {
             #if defined(AVEL_AVX2)
-            return Vector{_mm_srav_epi32(content, vec.content)};
+            return Vector{_mm_srav_epi32(content, primitive(vec))};
             #else
             auto v = as_array();
             auto s = vec.as_array();
