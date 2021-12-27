@@ -368,13 +368,13 @@ namespace avel {
             return *this;
         }
 
-        AVEL_FINL Vector& operator<<=(std::uint64_t s) {
-            content = _mm512_sll_epi32(content, _mm_loadu_si64(&s));
+        AVEL_FINL Vector& operator<<=(std::uint32_t s) {
+            content = _mm512_sll_epi32(content, _mm_loadu_si32(&s));
             return *this;
         }
 
-        AVEL_FINL Vector& operator>>=(std::uint64_t s) {
-            content = _mm512_srl_epi32(content, _mm_loadu_si64(&s));
+        AVEL_FINL Vector& operator>>=(std::uint32_t s) {
+            content = _mm512_srl_epi32(content, _mm_loadu_si32(&s));
             return *this;
         }
 
