@@ -5,6 +5,8 @@ namespace avel {
 
     using vec16x32f = Vector<float, 16>;
 
+    AVEL_FINL vec16x32f trunc(vec16x32f x);
+
     template<>
     class alignas(64) Vector_mask<float, 16> {
     public:
@@ -138,8 +140,16 @@ namespace avel {
 
         AVEL_FINL explicit Vector(
             float a, float b, float c, float d,
-            float e, float f, float g, float h):
-            content(_mm256_setr_ps(a, b, c, d,e, f, g, h)) {}
+            float e, float f, float g, float h,
+            float i, float j, float k, float l,
+            float m, float n, float o, float p
+            ):
+            content(_mm512_setr_ps(
+                a, b, c, d,
+                e, f, g, h,
+                i, j, k, l,
+                m, n, o, p
+            )) {}
 
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}
@@ -377,6 +387,29 @@ namespace avel {
         primitive content;
 
     };
+
+    AVEL_FINL vec16x32f frexp(vec16x32f x, vec16x32f* y); //TODO: Implement
+
+    AVEL_FINL vec16x32f floor(vec16x32f x) {
+        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)};
+    }
+
+    AVEL_FINL vec16x32f ceil(vec16x32f x) {
+        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC)};
+    }
+
+    AVEL_FINL vec16x32f trunc(vec16x32f x) {
+        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
+    }
+
+    AVEL_FINL vec16x32f round(vec16x32f x) {
+        //TODO: Verify behavior matches with std::round for values ending in .5
+        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
+    }
+
+    AVEL_FINL vec16x32f fmod(vec16x32f x, vec16x32f y) {
+        return x % y;
+    }
 
     AVEL_FINL vec16x32f sqrt(vec16x32f v) {
         return vec16x32f{_mm512_sqrt_ps(v)};

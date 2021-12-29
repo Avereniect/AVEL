@@ -2,6 +2,8 @@ namespace avel {
 
     using vec8x32f = Vector<float, 8>;
 
+    AVEL_FINL vec8x32f trunc(vec8x32f x);
+
     template<>
     class alignas(32) Vector_mask<float, 8> {
     public:
@@ -319,7 +321,10 @@ namespace avel {
             return *this;
         }
 
-        Vector& operator%=(Vector rhs);
+        AVEL_FINL Vector& operator%=(const Vector vec) {
+            content = _mm256_sub_ps(content, _mm256_mul_ps(trunc(*this / vec), vec));
+            return *this;
+        }
 
         //=================================================
         // Arithmetic operators
@@ -442,11 +447,28 @@ namespace avel {
 
     };
 
-    /*
-    vec8x32f fmod(vec8x32f x, vec8x32f y) {
+    AVEL_FINL vec8x32f frexp(vec8x32f x, vec8x32f* y); //TODO: Implement
+
+    AVEL_FINL vec8x32f floor(vec8x32f x) {
+        return vec8x32f{_mm256_round_ps(x, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)};
+    }
+
+    AVEL_FINL vec8x32f ceil(vec8x32f x) {
+        return vec8x32f{_mm256_round_ps(x, _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC)};
+    }
+
+    AVEL_FINL vec8x32f trunc(vec8x32f x) {
+        return vec8x32f{_mm256_round_ps(x, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
+    }
+
+    AVEL_FINL vec8x32f round(vec8x32f x) {
+        //TODO: Verify behavior matches with std::round for values ending in .5
+        return vec8x32f{_mm256_round_ps(x, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
+    }
+
+    AVEL_FINL vec8x32f fmod(vec8x32f x, vec8x32f y) {
         return x % y;
     }
-    */
 
     AVEL_FINL vec8x32f sqrt(vec8x32f v) {
         return vec8x32f{_mm256_sqrt_ps(v)};

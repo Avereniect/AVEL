@@ -2,6 +2,8 @@ namespace avel {
 
     using vec4x32f = Vector<float, 4>;
 
+    AVEL_FINL vec4x32f trunc(vec4x32f x);
+
     template<>
     class alignas(16) Vector_mask<float, 4> {
     public:
@@ -320,7 +322,10 @@ namespace avel {
             return *this;
         }
 
-        AVEL_FINL Vector& operator%=(const Vector vec);
+        AVEL_FINL Vector& operator%=(const Vector vec) {
+            content = _mm_sub_ps(content, _mm_mul_ps(trunc(*this / vec), vec));
+            return *this;
+        }
 
         //=================================================
         // Arithmetic operators
@@ -342,7 +347,9 @@ namespace avel {
             return Vector{_mm_div_ps(content, vec.content)};
         }
 
-        AVEL_FINL Vector operator%(const Vector vec) const;
+        AVEL_FINL Vector operator%(const Vector vec) const {
+            return Vector{_mm_sub_ps(content, _mm_mul_ps(trunc(*this / vec), vec))};
+        }
 
         //=================================================
         // Increment/Decrement operators
@@ -589,11 +596,9 @@ namespace avel {
         #endif
     }
 
-    /*
-    vec4x32f fmod(vec4x32f x, vec4x32f y) {
+    AVEL_FINL vec4x32f fmod(vec4x32f x, vec4x32f y) {
         return x % y;
     }
-    */
 
     AVEL_FINL vec4x32f sqrt(vec4x32f v) {
         return vec4x32f{_mm_sqrt_ps(v)};
