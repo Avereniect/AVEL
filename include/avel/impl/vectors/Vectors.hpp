@@ -6,6 +6,9 @@
 #include <avel/Vector.hpp>
 #include <avel/impl/vector_primitives/Vector_primitives.hpp>
 
+//Note: Inclusion order is meaningful as conversion operators are defined in
+//later files.
+
 //128-bit vectors
 
 #ifdef AVEL_SSE2

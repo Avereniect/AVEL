@@ -148,6 +148,9 @@ namespace avel {
         AVEL_FINL explicit Vector(const std::array<scalar_type, width>& array):
             content(_mm512_loadu_si512(array.data())) {}
 
+        AVEL_FINL explicit Vector(Vector<std::uint32_t, width> v):
+            content(primitive(v)) {}
+
         Vector() = default;
         Vector(const Vector&) = default;
         Vector(Vector&&) = default;
@@ -162,8 +165,7 @@ namespace avel {
         }
 
         AVEL_FINL static Vector ones() {
-            const primitive zeroes = _mm512_setzero_si512();
-            primitive reg = _mm512_undefined_si512();
+            primitive reg = _mm512_undefined_epi32();
             return Vector{_mm512_ternarylogic_epi32(reg, reg, reg, 0xFF)};
         }
 
@@ -442,6 +444,10 @@ namespace avel {
 
         AVEL_FINL explicit operator mask() const {
             return *this == zeros();
+        }
+
+        AVEL_FINL explicit operator Vector<std::uint32_t, width>() const {
+            return Vector<std::uint32_t, width>{content};
         }
 
     private:

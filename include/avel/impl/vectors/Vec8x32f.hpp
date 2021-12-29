@@ -176,6 +176,11 @@ namespace avel {
         // Constructors
         //=================================================
 
+        AVEL_FINL explicit Vector(
+            float a, float b, float c, float d,
+            float e, float f, float g, float h):
+            content(_mm256_setr_ps(a, b, c, d,e, f, g, h)) {}
+
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}
 
@@ -187,6 +192,9 @@ namespace avel {
 
         AVEL_FINL explicit Vector(const std::array<scalar_type, width>& a):
             content(_mm256_loadu_ps(a.data())) {}
+
+        AVEL_FINL explicit Vector(Vector<std::int32_t, width> v):
+            content(_mm256_cvtepi32_ps(v)) {}
 
         Vector() = default;
         Vector(const Vector&) = default;
@@ -418,6 +426,10 @@ namespace avel {
 
         AVEL_FINL explicit operator mask() const {
             return *this == zeros();
+        }
+
+        AVEL_FINL explicit operator Vector<std::int32_t, width>() const {
+            return Vector<std::int32_t, width>{_mm256_cvtps_epi32(content)};
         }
 
     private:

@@ -193,6 +193,9 @@ namespace avel {
         AVEL_FINL explicit Vector(const std::array<scalar_type, width>& array):
             content(_mm256_loadu_si256(reinterpret_cast<const primitive*>(array.data()))) {}
 
+        AVEL_FINL explicit Vector(Vector<std::uint32_t, width> v):
+            content(primitive(v)) {}
+
         Vector() = default;
         Vector(const Vector&) = default;
         Vector(Vector&&) = default;
@@ -510,6 +513,10 @@ namespace avel {
 
         AVEL_FINL explicit operator mask() const {
             return *this == zeros();
+        }
+
+        AVEL_FINL explicit operator Vector<std::uint32_t, width>() const {
+            return Vector<std::uint32_t, width>{content};
         }
 
     private:

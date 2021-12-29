@@ -193,6 +193,9 @@ namespace avel {
         AVEL_FINL explicit Vector(const std::array<scalar_type, width>& array):
             content(_mm_loadu_si128(reinterpret_cast<const primitive*>(array.data()))) {}
 
+        AVEL_FINL explicit Vector(Vector<std::uint32_t, width> v):
+            content(primitive(v)) {}
+
         Vector() = default;
         Vector(const Vector&) = default;
         Vector(Vector&&) = default;
@@ -450,18 +453,18 @@ namespace avel {
             #if defined(AVEL_AVX2)
             content = _mm_sllv_epi32(content, primitive(s));
             #else
-            alignof(*this) auto v = as_array();
-            auto s = vec.as_array();
+            alignas(alignof(Vector)) auto v = as_array();
+            auto t = s.as_array();
 
             for (int i = 0; i < width; ++i) {
-                if (32 <= s[i]) {
+                if (32 <= t[i]) {
                     v[i] = 0x00;
                 } else {
-                    v[i] = v[i] << s[i];
+                    v[i] = v[i] << t[i];
                 }
             }
 
-            content = _mm_load_ps(v.data());
+            content = _mm_load_si128((const primitive*)v.data());
             #endif
             return *this;
         }
@@ -470,15 +473,15 @@ namespace avel {
             #if defined(AVEL_AVX2)
             content = _mm_srav_epi32(content, primitive(s));
             #else
-            alignof(*this) auto v = as_array();
-            auto s = vec.as_array();
+            alignas(alignof(Vector)) auto v = as_array();
+            auto t = s.as_array();
 
             #if __cplusplus < 202002L
             for (int i = 0; i < width; ++i) {
                 // If the amount shifted is exactly the integer width, the
                 // behavior is still undefined. This problem is apparent on
                 // Clang so must be explicitly handled.
-                bool is_too_big = s[i] >= (CHAR_BIT * sizeof(std::uint32_t));
+                bool is_too_big = t[i] >= (CHAR_BIT * sizeof(std::uint32_t));
 
                 // TODO: This branch could be eliminated using some bitwise
                 // manipulation
@@ -496,7 +499,7 @@ namespace avel {
                 // in ones".
                 // All supported platforms perform conversion between signed
                 // and unsigned types as expected
-                v[i] = std::int32_t(~(std::uint32_t(~v[i]) >> s[i]));
+                v[i] = std::int32_t(~(std::uint32_t(~v[i]) >> t[i]));
             }
             #else
             for (int i = 0; i < width; ++i) {
@@ -507,7 +510,7 @@ namespace avel {
                 }
             }
             #endif
-            content = _mm_load_ps(v.data());
+            content = _mm_load_si128((const primitive*)v.data());
 
             #endif
             return *this;
@@ -624,6 +627,10 @@ namespace avel {
 
         AVEL_FINL explicit operator mask() const {
             return *this == zeros();
+        }
+
+        AVEL_FINL explicit operator Vector<std::uint32_t, width>() const {
+            return Vector<std::uint32_t, width>{content};
         }
 
     private:

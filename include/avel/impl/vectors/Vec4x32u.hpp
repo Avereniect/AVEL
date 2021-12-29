@@ -450,7 +450,7 @@ namespace avel {
             #if defined(AVEL_AVX2)
             content = _mm_sllv_epi32(content, vec.content);
             #else
-            auto v = as_array();
+            alignas(alignof(Vector)) auto v = as_array();
             auto s = vec.as_array();
 
             for (int i = 0; i < width; ++i) {
@@ -461,7 +461,7 @@ namespace avel {
                 }
             }
 
-            return Vector{v.data()};
+            content = _mm_load_si128((const primitive*)v.data());
             #endif
             return *this;
         }
@@ -481,8 +481,7 @@ namespace avel {
                 }
             }
 
-            return Vector{v.data()};
-
+            content = _mm_load_si128((const primitive*)v.data());
             #endif
             return *this;
         }

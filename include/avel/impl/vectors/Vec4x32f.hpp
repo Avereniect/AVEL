@@ -179,6 +179,9 @@ namespace avel {
         // Constructors
         //=================================================
 
+        AVEL_FINL explicit Vector(float a, float b, float c, float d):
+            content(_mm_setr_ps(a, b, c, d)) {}
+
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}
 
@@ -190,6 +193,9 @@ namespace avel {
 
         AVEL_FINL explicit Vector(const std::array<scalar_type, width>& a):
             content(_mm_loadu_ps(a.data())) {}
+
+        AVEL_FINL explicit Vector(Vector<std::int32_t, width> v):
+            content(_mm_cvtepi32_ps(v)) {}
 
         Vector() = default;
         Vector(const Vector&) = default;
@@ -423,6 +429,48 @@ namespace avel {
             return *this == zeros();
         }
 
+        AVEL_FINL explicit operator Vector<std::int32_t, width>() const {
+            return Vector<std::int32_t, width>{_mm_cvtps_epi32(content)};
+        }
+
+        /*
+        AVEL_FINL explicit operator Vector<std::uint32_t, width>() const {
+            #if defined(AVEL_AVX512VL)
+            return Vector<std::uint32_t, width>(_mm_cvtps_epu32(content));
+
+            #elif defined(AVEL_AVX2)
+            __m128i tmp = _mm_castps_si128(content);
+
+            __m128i exponents = _mm_srli_epi32(tmp, 23);
+            __m128i shift_amounts = _mm_sub_epi32(_mm_set1_epi32(150), exponents);
+
+            const __m128i mantissa_mask = _mm_set1_epi32(0x007FFFFF);
+            __m128i mantissa = _mm_and_si128(tmp, mantissa_mask);
+
+            __m128i l_shifted = _mm_sllv_epi32(mantissa, shift_amounts);
+            __m128i r_shifted = _mm_srlv_epi32(mantissa, _mm_sub_epi32(_mm_setzero_si128(), shift_amounts));
+
+            __m128i blend_mask = _mm_cmplt_epi32(_mm_setzero_si128(), shift_amounts);
+
+            __m128i shifted = _mm_blendv_epi8(l_shifted, r_shifted, blend_mask);
+
+            return Vector<std::uint32_t, width>(shifted);
+
+            #else
+            Vector<std::uint32_t, width> max{150};
+
+            switch (fegetround()) {
+            case FE_TOWARDZERO:
+            case FE_TONEAREST:
+            case FE_UPWARD:
+            case FE_DOWNWARD:
+            }
+
+            return {};
+            #endif
+        }
+        */
+
     private:
 
         //=================================================
@@ -472,88 +520,55 @@ namespace avel {
         return vec4x32f{_mm_round_ps(x, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
         #else
 
-        alignas(alignof(vec4x32f)) auto arr = x.as_array();
+        const __m128i full = vec4x32i::ones();
+        const __m128i data = _mm_castps_si128(x);
 
-        for (int i = 0; i < vec4x32f::width; ++i) {
-            arr[0] = std::trunc(arr[1]);
+        //Extract exponent value to low 8 bits in each element
+        __m128i exponents = _mm_srli_epi32(_mm_slli_epi32(data, 1), 24);
+
+        // Generate mask for which bits should be masked out to perform truncation
+        __m128i mantissa_mask;
+        {
+            // Number of mantissa bits that should be masked out, strictly positive.
+            // May be greater than 23, the number of explicit mantissa bits
+            __m128i shift_amounts = _mm_subs_epu16(exponents, _mm_set1_epi32(118));
+
+            // Evaluates to (-1, 0, 0, 0).
+            __m128i mask0001 = _mm_andnot_si128(_mm_slli_si128(full, 4), full);
+
+
+            //Extract individual shift amounts to lower 64-bit integer and shift individually
+            __m128i s0 = _mm_and_si128(mask0001, shift_amounts);
+            __m128i m0 = _mm_srl_epi32(full, s0);
+
+            __m128i s1 = _mm_and_si128(mask0001, _mm_srli_si128(shift_amounts, 0x4));
+            __m128i m1 = _mm_srl_epi32(full, s1);
+
+            __m128i s2 = _mm_and_si128(mask0001, _mm_srli_si128(shift_amounts, 0x8));
+            __m128i m2 = _mm_srl_epi32(full, s2);
+
+            __m128i s3 = _mm_srli_si128(shift_amounts, 0xC);
+            __m128i m3 = _mm_srl_epi32(full, s3);
+
+
+            __m128i tmp0 = _mm_unpacklo_epi32(m0, m2);
+            __m128i tmp1 = _mm_unpacklo_epi32(m1, m3);
+            mantissa_mask = _mm_unpacklo_epi32(tmp0, tmp1);
         }
 
-        return vec4x32f{arr.data()};
+        //Fills vector elements with 126
+        __m128i lo = _mm_slli_epi32(_mm_srli_epi32(full, 26), 1);
 
-        /*
-        //TODO: Test implementation
+        //Create mask for values that should not be zeroed out because they have exponents greater than 126
+        __m128i zmask = _mm_cmplt_epi32(lo, exponents);
 
-        __m128i exponents = _mm_castps_si128(x);
-        exponents = _mm_slli_epi32(exponents, 1);
-        exponents = _mm_srai_epi32(exponents, 24);
+        // Mask indicating which bits should be copied in returned values
+        __m128i copy_mask = _mm_andnot_si128(mantissa_mask, zmask);
 
-        static const std::uint8_t special_mask[16] {
-            255,000, 000, 000,
-            255,000, 000, 000,
-            255,000, 000, 000,
-            255,000, 000, 000
-        };
-        __m128i special = _mm_load_si128(reinterpret_cast<const __m128i*>(special_mask));
-        __m128i is_special = _mm_cmpeq_epi32(exponents, special);
+        // Copy only bits indicated by mask
+        __m128i ret = _mm_and_si128(copy_mask, data);
 
-        static const std::uint8_t hi_data[16] {
-            150,000, 000, 000,
-            150,000, 000, 000,
-            150,000, 000, 000,
-            150,000, 000, 000
-        };
-        __m128i hi = _mm_load_si128(reinterpret_cast<const __m128i*>(hi_data));
-
-        __m128i full = vec4x32i::ones();
-
-        // Number fo mantissa bits that should be masked out
-        __m128i shift_amounts = _mm_subs_epu8(hi, exponents);
-
-
-        auto tmp1 = vec4x32i{hi}.as_array();
-        auto tmp2 = vec4x32i{exponents}.as_array();
-        auto tmp3 = vec4x32i{shift_amounts}.as_array();
-
-        __m128i mantissa_mask = full;
-        mantissa_mask = _mm_sll_epi32(mantissa_mask, shift_amounts); //TODO: This shift instruction does not take per-lane shift counts
-        auto tmp4 = vec4x32i{mantissa_mask}.as_array();
-        mantissa_mask = _mm_andnot_si128(mantissa_mask, full);
-        auto tmp5 = vec4x32i{mantissa_mask}.as_array();
-
-        __m128i ret = _mm_castps_si128(x);
-        ret = _mm_and_si128(mantissa_mask, shift_amounts);
-
-
-        //Create mask for exponent
-
-        static const std::uint8_t lo_data[16] {
-            127,000, 000, 000,
-            127,000, 000, 000,
-            127,000, 000, 000,
-            127,000, 000, 000
-        };
-        __m128i lo = _mm_load_si128(reinterpret_cast<const __m128i*>(lo_data));
-
-        __m128i exponent_mask = full;
-        exponent_mask = _mm_cmplt_epi32(exponents, lo);
-        exponent_mask = _mm_slli_epi32(exponent_mask, 23);
-        exponent_mask = _mm_andnot_si128(exponent_mask, full);
-
-        ret = _mm_and_si128(ret, exponent_mask);
-
-        // Overwrite with original values if exponent was 255
-        // Handles NaNs and infinities
-
-        return vec4x32f{
-            _mm_castsi128_ps(
-            _mm_or_si128(
-                    _mm_and_si128(ret, _mm_andnot_si128(is_special, full)),
-                    _mm_and_si128(_mm_castps_si128(x), is_special)
-                )
-            )
-        };
-        */
-
+        return vec4x32f{_mm_castsi128_ps(ret)};
         #endif
     }
 
