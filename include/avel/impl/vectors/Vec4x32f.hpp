@@ -5,7 +5,7 @@ namespace avel {
     AVEL_FINL vec4x32f trunc(vec4x32f x);
 
     template<>
-    class alignas(16) Vector_mask<float, 4> {
+    class Vector_mask<float, 4> {
     public:
 
         //=================================================
@@ -109,7 +109,7 @@ namespace avel {
         }
 
         //=================================================
-        // Accessor
+        // Accessors
         //=================================================
 
         AVEL_FINL bool operator[](int i) const {
@@ -120,6 +120,14 @@ namespace avel {
             int mask = _mm_movemask_ps(content);
             return mask & (1 << i);
             #endif
+        }
+
+        //=================================================
+        // Conversion operators
+        //=================================================
+
+        AVEL_FINL operator primitive() const {
+            return content;
         }
 
     private:
@@ -156,7 +164,7 @@ namespace avel {
 
 
     template<>
-    class alignas(16) Vector<float, 4> {
+    class Vector<float, 4> {
     public:
 
         //=================================================
@@ -331,23 +339,23 @@ namespace avel {
         // Arithmetic operators
         //=================================================
 
-        AVEL_FINL Vector operator+(const Vector vec) const {
+        AVEL_FINL Vector operator+(Vector vec) const {
             return Vector{_mm_add_ps(content, vec.content)};
         }
 
-        AVEL_FINL Vector operator-(const Vector vec) const {
+        AVEL_FINL Vector operator-(Vector vec) const {
             return Vector{_mm_sub_ps(content, vec.content)};
         }
 
-        AVEL_FINL Vector operator*(const Vector vec) const {
+        AVEL_FINL Vector operator*(Vector vec) const {
             return Vector{_mm_mul_ps(content, vec.content)};
         }
 
-        AVEL_FINL Vector operator/(const Vector vec) const {
+        AVEL_FINL Vector operator/(Vector vec) const {
             return Vector{_mm_div_ps(content, vec.content)};
         }
 
-        AVEL_FINL Vector operator%(const Vector vec) const {
+        AVEL_FINL Vector operator%(Vector vec) const {
             return Vector{_mm_sub_ps(content, _mm_mul_ps(trunc(*this / vec), vec))};
         }
 
@@ -488,6 +496,18 @@ namespace avel {
 
     };
 
+    AVEL_FINL vec4x32f blend(vec4x32f a, vec4x32f b, vec4x32f::mask m) {
+        #if defined(AVEL_AVX512VL)
+            return vec4x32f{_mm_mask_blend_ps(m, a, b)};
+        #elif defined(AVEL_SSE41)
+        return vec4x32f{_mm_blendv_ps(a, b, m)};
+        #else
+        auto x = _mm_andnot_ps(m, b);
+        auto y = _mm_and_ps(m, a);
+        return vec4x32f{_mm_or_ps(x, y)};
+        #endif
+    }
+
     vec4x32f frexp(vec4x32f x, vec4x32i* y); //TODO: Implement
 
     vec4x32f floor(vec4x32f x) {
@@ -593,6 +613,7 @@ namespace avel {
 
         return vec4x32f{arr.data()};
 
+
         #endif
     }
 
@@ -603,5 +624,192 @@ namespace avel {
     AVEL_FINL vec4x32f sqrt(vec4x32f v) {
         return vec4x32f{_mm_sqrt_ps(v)};
     }
+
+    AVEL_FINL vec4x32f fmadd(vec4x32f m, vec4x32f x, vec4x32f b) {
+        #if defined(AVEL_FMA)
+        return vec4x32f{_mm_fmadd_ps(m, x, b)};
+        #else
+        return m * x + b;
+        #endif
+    }
+
+    AVEL_FINL vec4x32f fmsub(vec4x32f m, vec4x32f x, vec4x32f b) {
+        #if defined(AVEL_FMA)
+        return vec4x32f{_mm_fmsub_ps(m, x, b)};
+        #else
+        return m * x - b;
+        #endif
+    }
+
+    AVEL_FINL vec4x32f fnmadd(vec4x32f m, vec4x32f x, vec4x32f b) {
+        #if defined(AVEL_FMA)
+        return vec4x32f{_mm_fnmadd_ps(m, x, b)};
+        #else
+        return -m * x + b;
+        #endif
+    }
+
+    AVEL_FINL vec4x32f fnmsub(vec4x32f m, vec4x32f x, vec4x32f b) {
+        #if defined(AVEL_FMA)
+        return vec4x32f{_mm_fnmsub_ps(m, x, b)};
+        #else
+        return -m * x - b;
+        #endif
+    }
+
+    AVEL_FINL vec4x32f abs(vec4x32f v) {
+        #if defined(AVEL_AVX)
+        static const std::uint32_t mask{0x7FFFFFFF};
+        return vec4x32f{_mm_and_ps(v, _mm_broadcast_ss(reinterpret_cast<const float*>(mask)))};
+        #else
+        static const std::uint32_t masks[4] {
+            0x7FFFFFFF,
+            0x7FFFFFFF,
+            0x7FFFFFFF,
+            0x7FFFFFFF
+        };
+
+        return vec4x32f{_mm_and_ps(v, _mm_load_ps(reinterpret_cast<const float*>(masks)))};
+        #endif
+    }
+
+    AVEL_FINL vec4x32f sin(vec4x32f angle) {
+        return {};
+    }
+
+    AVEL_FINL vec4x32f cos(vec4x32f angle) {
+        return {};
+    }
+
+    AVEL_FINL std::array<vec4x32f, 2> sincos(vec4x32f angle) {
+        using mask = vec4x32f::mask;
+        alignas(32) static const float constants0[8] {
+            reinterpret_bits<float>(std::uint32_t(0x7FFFFFFF)),
+            0.5f,
+            6.283185307179586f,
+            1.0f / (6.283185307179586f),
+            0.78539816339744830f,
+            1.57079632679489661f,
+            1.0f,
+            0.0f
+        };
+
+        const mask sign_bit_mask{_mm_set1_ps(constants0[0])};
+        vec4x32f abs_angle{_mm_and_ps(angle, sign_bit_mask)};
+
+        //Mods input angle to [-pi, pi) range
+        const vec4x32f half      {constants0[0x01]};
+        const vec4x32f two_pi    {constants0[0x02]};
+        const vec4x32f rcp_two_pi{constants0[0x03]};
+
+        vec4x32f a = abs_angle - (two_pi * trunc(fmadd(abs_angle, rcp_two_pi, half)));
+
+        vec4x32f abs_a = abs(a);
+
+        vec4x32f quart_pi{constants0[0x04]};
+        vec4x32f half_pi{constants0[0x05]};
+
+        // Contain the sign of the final return value.
+        mask c_signs = (half_pi < abs_a);
+        mask s_signs = (a < vec4x32f{0.0f}) ^ (angle < vec4x32f{0.0f});
+
+        // Swap results of Taylor series later if false
+        // Checks to see if angle is more than 45 degrees off the x-axis
+        #if defined(AVEL_AVX512VL)
+        __mmask16 approx_mask = _mm_cmp_ps_mask(
+            _mm_sub_ps(_mm_and_ps(_mm_sub_ps(abs_a, half_pi), sign_bit_mask), quart_pi),
+            _mm_setzero_ps(),
+            _CMP_GT_OQ
+        );
+        #else
+        mask approx_mask = vec4x32f{0.0f} < abs(abs_a - half_pi) - quart_pi;
+        #endif
+
+        // Compute offset that's added to angle to bring it into [-pi/4, pi/4]
+        // range where error of Taylor series is minimized
+        vec4x32f angle_offset{0.0f};
+        #if defined(AVEL_AVX512VL)
+        __mmask16 add_half0 = _mm_cmp_ps_mask(quart_pi, abs_a, _CMP_LT_OQ);
+        __mmask16 add_half1 = _mm_cmp_ps_mask(three_quart_pi, abs_a, _CMP_LT_OQ);
+        angle_offset = _mm_mask_add_ps(angle_offset, add_half0, angle_offset, half_pi);
+        angle_offset = _mm_mask_add_ps(angle_offset, add_half1, angle_offset, half_pi);
+        #else
+        mask add_half0 = (quart_pi < abs_a);
+        mask add_half1 = (quart_pi < (abs_a - half_pi));
+        angle_offset += blend(vec4x32f{0.0f}, half_pi, add_half0);
+        angle_offset += blend(vec4x32f{0.0f}, half_pi, add_half1);
+        #endif
+
+        // Compute exponentiations of adjusted angle
+        vec4x32f x = abs_a - angle_offset;
+        vec4x32f xx = x * x;
+        vec4x32f xxxx = xx * xx;
+        vec4x32f xxxxxx = xx * xxxx;
+        vec4x32f xxxxxxxx = xxxx * xxxx;
+
+        alignas(32) static constexpr float constants1[8] {
+            -1.0f / 2.0f,
+            -1.0f / 6.0f,
+            +1.0f / 24.0f,
+            +1.0f / 120.0f,
+            -1.0f / 720.0f,
+            -1.0f / 5040.0f,
+            +1.0f / 40320.0f,
+            +1.0f / 362880.0f
+        };
+
+        // Sum sine terms
+        vec4x32f st1{constants0[0x06]};
+        vec4x32f st2 = fmadd(vec4x32f{constants1[0x01]}, xx, st1);
+        vec4x32f st3 = fmadd(vec4x32f{constants1[0x03]}, xxxx, st2);
+        vec4x32f st4 = fmadd(vec4x32f{constants1[0x05]}, xxxxxx, st3);
+        vec4x32f st5 = fmadd(vec4x32f{constants1[0x07]}, xxxxxxxx, st4);
+
+        vec4x32f sin = x * st5;
+
+        // Sum cosine terms
+        vec4x32f ct1{constants0[0x06]};
+        vec4x32f ct2 = fmadd(vec4x32f{constants1[0x00]}, xx, ct1);
+        vec4x32f ct3 = fmadd(vec4x32f{constants1[0x02]}, xxxx, ct2);
+        vec4x32f ct4 = fmadd(vec4x32f{constants1[0x04]}, xxxxxx, ct3);
+        vec4x32f ct5 = fmadd(vec4x32f{constants1[0x06]}, xxxxxxxx, ct4);
+
+        vec4x32f cos{ct5};
+
+        //Swap bits depending on approx_mask
+        #if defined(AVEL_AVX512VL)
+        __m128 ret_sin = _mm_mask_blend_ps(approx_mask, cos, sin);
+        __m128 ret_cos = _mm_mask_blend_ps(approx_mask, sin, cos);
+        #else
+        vec4x32f ret_sin = blend(cos, sin, approx_mask);
+        vec4x32f ret_cos = blend(sin, cos, approx_mask);
+        #endif
+
+        // Set sine sign bits
+        #if defined(AVEL_AVX512VL)
+        ret_sin = _mm_and_ps(ret_sin, sign_bit_mask);
+        ret_sin = _mm_mask_sub_ps(ret_sin, s_signs, _mm_setzero_ps(), ret_sin);
+        #else
+        ret_sin = abs(ret_sin);
+        ret_sin = blend(ret_sin, -ret_sin, s_signs);
+        #endif
+
+        // Set cosine sign bits
+        #if defined(AVEL_AVX512VL)
+        ret_cos = _mm_and_ps(ret_cos, sign_bit_mask);
+        ret_cos = _mm_mask_sub_ps(ret_cos, c_signs, _mm_setzero_ps(), ret_cos);
+        #else
+        ret_cos = _mm_and_ps(ret_cos, sign_bit_mask);
+        ret_cos = blend(ret_cos, -ret_cos, c_signs);
+        #endif
+
+        return {vec4x32f{ret_sin}, vec4x32f{ret_cos}};
+    }
+
+    vec4x32f log(vec4x32f v) {
+        return {};
+    }
+
+
 
 }

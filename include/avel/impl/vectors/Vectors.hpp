@@ -3,11 +3,26 @@
 
 #include <cmath>
 
-#include <avel/Vector.hpp>
-#include <avel/impl/vector_primitives/Vector_primitives.hpp>
+#include "../vector_primitives/Vector_primitives.hpp"
+#include "../Utils.hpp"
 
-//Note: Inclusion order is meaningful as conversion operators are defined in
-//later files.
+//Note: The order of inclusion of the following files in meaningful
+
+namespace avel {
+
+    template<class V>
+    V load(const typename V::scalar_type*);
+
+    template<class V>
+    V aligned_load(const typename V::scalar_type*);
+
+    template<class V>
+    V stream_load(const typename V::scalar_type*);
+
+    template<class V>
+    V gather(const typename V::scalar_type*);
+
+}
 
 //128-bit vectors
 

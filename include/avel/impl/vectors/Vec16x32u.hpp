@@ -3,7 +3,7 @@ namespace avel {
     using vec16x32u = Vector<std::uint32_t, 16>;
 
     template<>
-    class alignas(64) Vector_mask<std::uint32_t, 16> {
+    class Vector_mask<std::uint32_t, 16> {
     public:
 
         //=================================================
@@ -86,6 +86,14 @@ namespace avel {
             return _cvtmask16_u32(content) & (1 << i);
         }
 
+        //=================================================
+        // Conversion operators
+        //=================================================
+
+        AVEL_FINL operator primitive() const {
+            return content;
+        }
+
     private:
 
         //=================================================
@@ -111,7 +119,7 @@ namespace avel {
 
 
     template<>
-    class alignas(64) Vector<std::uint32_t, 16> {
+    class Vector<std::uint32_t, 16> {
     public:
 
         //=================================================
@@ -440,7 +448,7 @@ namespace avel {
         }
 
         AVEL_FINL explicit operator mask() const {
-            return *this == zeros();
+            return *this != zeros();
         }
 
     private:

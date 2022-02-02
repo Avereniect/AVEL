@@ -3,7 +3,7 @@ namespace avel {
     using vec4x32i = Vector<std::int32_t, 4>;
 
     template<>
-    class alignas(16) Vector_mask<std::int32_t, 4> {
+    class Vector_mask<std::int32_t, 4> {
     public:
 
         //=================================================
@@ -156,7 +156,7 @@ namespace avel {
 
 
     template<>
-    class alignas(16) Vector<std::int32_t, 4> {
+    class Vector<std::int32_t, 4> {
     public:
 
         //=================================================
@@ -642,5 +642,18 @@ namespace avel {
         primitive content;
 
     };
+
+    //=====================================================
+    // General vector operations
+    //=====================================================
+
+    AVEL_FINL vec4x32i abs(vec4x32i v) {
+        #ifdef AVEL_SSSE3
+        return vec4x32i{_mm_abs_epi32(v)};
+        #else
+        auto y = v >> 31;
+        return (v ^ ) << y;
+        #endif
+    }
 
 }

@@ -3,7 +3,7 @@ namespace avel {
     using vec8x32u = Vector<std::uint32_t, 8>;
 
     template<>
-    class alignas(32) Vector_mask<std::uint32_t, 8> {
+    class Vector_mask<std::uint32_t, 8> {
     public:
 
         //=================================================
@@ -122,6 +122,14 @@ namespace avel {
             #endif
         }
 
+        //=================================================
+        // Conversion operators
+        //=================================================
+
+        AVEL_FINL operator primitive() const {
+            return content;
+        }
+
     private:
 
         //=================================================
@@ -156,7 +164,7 @@ namespace avel {
 
 
     template<>
-    class alignas(32) Vector<std::uint32_t, 8> {
+    class Vector<std::uint32_t, 8> {
     public:
 
         //=================================================
@@ -350,18 +358,31 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector operator+(const Vector vec) const {
+            #if defined(AVEL_AVX2)
             return Vector{_mm256_add_epi32(content, vec.content)};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         AVEL_FINL Vector operator-(const Vector vec) const {
+            #if defined(AVEL_AVX2)
             return Vector{_mm256_sub_epi32(content, vec.content)};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         AVEL_FINL Vector operator*(const Vector vec) const {
+            #if defined(AVEL_AVX2)
             return Vector{_mm256_mul_epu32(content, vec.content)};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         AVEL_FINL Vector operator/(const Vector vec) const {
+            #if defined(AVEL_AVX2)
             //TODO: Provide better implementation
             alignas(alignof(scalar_type) * width) scalar_type array0[width];
             alignas(alignof(scalar_type) * width) scalar_type array1[width];
@@ -374,9 +395,13 @@ namespace avel {
             }
 
             return Vector{_mm256_load_si256(reinterpret_cast<const primitive*>(array0))};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         AVEL_FINL Vector operator%(const Vector vec) const {
+            #if defined(AVEL_AVX2)
             //TODO: Provide better implementation
             alignas(alignof(scalar_type) * width) scalar_type array0[width];
             alignas(alignof(scalar_type) * width) scalar_type array1[width];
@@ -389,6 +414,9 @@ namespace avel {
             }
 
             return Vector{_mm256_load_si256(reinterpret_cast<const primitive*>(array0))};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         //=================================================
@@ -396,25 +424,41 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator++() {
+            #if defined(AVEL_AVX2)
             *this += Vector{1};
             return *this;
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif;
         }
 
         AVEL_FINL Vector operator++(int) {
+            #if defined(AVEL_AVX2)
             auto temp = *this;
             *this += Vector{1};
             return temp;
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif;
         }
 
         AVEL_FINL Vector& operator--() {
+            #if defined(AVEL_AVX2)
             *this -= Vector{1};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector operator--(int) {
+            #if defined(AVEL_AVX2)
             auto temp = *this;
             *this -= Vector{1};
             return temp;
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         //=================================================
@@ -422,37 +466,65 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator&=(Vector vec) {
+            #if defined(AVEL_AVX2)
             content = _mm256_and_si256(content, vec.content);
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator|=(Vector vec) {
+            #if defined(AVEL_AVX2)
             content = _mm256_or_si256(content, vec.content);
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator^=(Vector vec) {
+            #if defined(AVEL_AVX2)
             content = _mm256_xor_si256(content, vec.content);
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator<<=(std::uint64_t s) {
+            #if defined(AVEL_AVX2)
             content = _mm256_sll_epi32(content, _mm_loadu_si64(&s));
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator>>=(std::uint64_t s) {
+            #if defined(AVEL_AVX2)
             content = _mm256_srl_epi32(content, _mm_loadu_si64(&s));
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator<<=(Vector s) {
+            #if defined(AVEL_AVX2)
             content = _mm256_sllv_epi32(content, s.content);
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator>>=(Vector s) {
+            #if defined(AVEL_AVX2)
             content = _mm256_srlv_epi32(content, s.content);
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
             return *this;
         }
 
@@ -461,35 +533,67 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector operator~() const {
+            #if defined(AVEL_AVX2)
             return Vector{_mm256_andnot_si256(content, ones().content)};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         AVEL_FINL Vector operator&(Vector vec) const {
+            #if defined(AVEL_AVX2)
             return Vector{_mm256_and_si256(content, vec.content)};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         AVEL_FINL Vector operator|(Vector vec) const {
+            #if defined(AVEL_AVX2)
             return Vector{_mm256_or_si256(content, vec.content)};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         AVEL_FINL Vector operator^(Vector vec) const {
+            #if defined(AVEL_AVX2)
             return Vector{_mm256_xor_si256(content, vec.content)};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         AVEL_FINL Vector operator<<(std::uint32_t s) const {
+            #if defined(AVEL_AVX2)
             return Vector{_mm256_sll_epi32(content, _mm_loadu_si32(&s))};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         AVEL_FINL Vector operator>>(std::uint32_t s) const {
+            #if defined(AVEL_AVX2)
             return Vector{_mm256_srl_epi32(content, _mm_loadu_si32(&s))};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         AVEL_FINL Vector operator<<(Vector vec) const {
+            #if defined(AVEL_AVX2)
             return Vector{_mm256_sllv_epi32(content, vec.content)};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         AVEL_FINL Vector operator>>(Vector vec) const {
+            #if defined(AVEL_AVX2)
             return Vector{_mm256_srlv_epi32(content, vec.content)};
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
         //=================================================
@@ -509,7 +613,11 @@ namespace avel {
         }
 
         AVEL_FINL explicit operator mask() const {
-            return *this == zeros();
+            #if defined(AVEL_AVX2)
+            return *this != zeros();
+            #else
+            static_assert(false, "Feature unsupported by current ISA extensions");
+            #endif
         }
 
     private:
@@ -521,5 +629,82 @@ namespace avel {
         primitive content;
 
     };
+
+    //=====================================================
+    // General vector operations
+    //=====================================================
+
+    vec8x32u blend(vec8x32u a, vec8x32u b, vec8x32u::mask m) {
+        #if defined(AVEL_AVX512VL)
+        return vec8x32u{_mm256_mask_blend_epi32(m, a, b)};
+        #elif defined(AVEL_AVX2)
+        return vec8x32u{_mm256_blendv_epi8(a, b, m)};
+        #else
+        static_assert(false, "Feature unsupported by current ISA extensions");
+        #endif
+    }
+
+    vec8x32u max(vec8x32u a, vec8x32u b) {
+        #if defined(AVEL_AVX2)
+        return vec8x32u{_mm256_max_epu32(a, b)};
+        #else
+        static_assert(false, "Feature unsupported by current ISA extensions");
+        #endif
+    }
+
+    vec8x32u min(vec8x32u a, vec8x32u b) {
+        #if defined(AVEL_AVX2)
+        return vec8x32u{_mm256_min_epu32(a, b)};
+        #else
+        static_assert(false, "Feature unsupported by current ISA extensions");
+        #endif
+    }
+
+    template<>
+    vec8x32u load<vec8x32u>(const std::uint32_t* ptr) {
+        #if defined(AVEL_AVX)
+        return vec8x32u{_mm256_loadu_si256(reinterpret_cast<const __m256i*>(ptr))};
+        #else
+        static_assert(false, "Feature unsupported by current ISA extensions");
+        #endif
+    }
+
+    template<>
+    vec8x32u aligned_load<vec8x32u>(const std::uint32_t* ptr) {
+        #if defined(AVEL_AVX)
+        return vec8x32u{_mm256_load_si256(reinterpret_cast<const __m256i*>(ptr))};
+        #else
+        static_assert(false, "Feature unsupported by current ISA extensions");
+        #endif
+    }
+
+    template<>
+    vec8x32u stream_load<vec8x32u>(const std::uint32_t* ptr) {
+        #if defined(AVEL_AVX2)
+        return vec8x32u{_mm256_stream_load_si256(reinterpret_cast<const __m256i*>(ptr))};
+        #else
+        static_assert(false, "Feature unsupported by current ISA extensions");
+        #endif
+    }
+
+    //Definition of gather deferred until vector of signed integers is defined
+
+    void store(std::uint32_t* ptr, vec8x32u v) {
+        #if defined(AVEL_AVX2)
+        _mm256_storeu_si256(reinterpret_cast<__m256i*>(ptr), v);
+        #else
+        static_assert(false, "Feature unsupported by current ISA extensions");
+        #endif
+    }
+
+    void aligned_store(std::uint32_t* ptr, vec8x32u v) {
+        _mm256_store_si256(reinterpret_cast<__m256i*>(ptr), v);
+    }
+
+    void stream_store(std::uint32_t* ptr, vec8x32u v) {
+        _mm256_stream_si256(reinterpret_cast<__m256i*>(ptr), v);
+    }
+
+    //Definition of scatter deferred until vector of signed integers is defined
 
 }

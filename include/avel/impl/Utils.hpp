@@ -11,7 +11,7 @@
 namespace avel {
 
     template<class T, class U>
-    T reinterpret_bits(const U v) {
+    AVEL_FINL T reinterpret_bits(const U v) {
         static_assert(sizeof(T) == sizeof(U), "Size of target and source types must be equal");
         static_assert(std::is_trivial<T>::value, "Target type must be trivial");
         static_assert(std::is_trivial<U>::value, "Source type must be trivial");

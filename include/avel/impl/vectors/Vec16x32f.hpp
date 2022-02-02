@@ -8,7 +8,7 @@ namespace avel {
     AVEL_FINL vec16x32f trunc(vec16x32f x);
 
     template<>
-    class alignas(64) Vector_mask<float, 16> {
+    class Vector_mask<float, 16> {
     public:
 
         //=================================================
@@ -123,9 +123,8 @@ namespace avel {
     };
 
 
-
     template<>
-    class alignas(64) Vector<float, 16> {
+    class Vector<float, 16> {
     public:
 
         using scalar_type = float;
@@ -398,36 +397,116 @@ namespace avel {
 
     };
 
+    //=====================================================
+    // Forward declarations
+    //=====================================================
+
+    AVEL_FINL vec16x32f::mask isnan(vec16x32f v);
+
+    //=====================================================
+    // General vector operations
+    //=====================================================
+
     AVEL_FINL vec16x32f blend(vec16x32f a, vec16x32f b, vec16x32f::mask m) {
         return vec16x32f{_mm512_mask_blend_ps(m, a, b)};
     }
 
-    AVEL_FINL vec16x32f frexp(vec16x32f x, vec16x32f* y); //TODO: Implement
-
-    AVEL_FINL vec16x32f floor(vec16x32f x) {
-        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)};
+    AVEL_FINL vec16x32f max(vec16x32f a, vec16x32f b) {
+        return vec16x32f{_mm512_max_ps(a, b)};
     }
 
-    AVEL_FINL vec16x32f ceil(vec16x32f x) {
-        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC)};
+    AVEL_FINL vec16x32f min(vec16x32f a, vec16x32f b) {
+        return vec16x32f{_mm512_min_ps(a, b)};
     }
 
-    AVEL_FINL vec16x32f trunc(vec16x32f x) {
-        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
+    AVEL_FINL vec16x32f abs(vec16x32f v) {
+        return vec16x32f{_mm512_abs_ps(v)};
     }
 
-    AVEL_FINL vec16x32f round(vec16x32f x) {
-        //TODO: Verify behavior matches with std::round for values ending in .5
-        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
+    AVEL_FINL vec16x32f load(const float* ptr) {
+        return vec16x32f{_mm512_loadu_ps(ptr)};
+    }
+
+    AVEL_FINL vec16x32f aligned_load(const float* ptr) {
+        return vec16x32f{_mm512_load_ps(ptr)};
+    }
+
+    AVEL_FINL vec16x32f stream_load(const float* ptr) {
+        return vec16x32f{_mm512_castsi512_ps(_mm512_stream_load_si512((void*) ptr))};
+    }
+
+    AVEL_FINL vec16x32f gather(const float* ptr, vec16x32i o) {
+        return vec16x32f{_mm512_i32gather_ps(o, ptr, sizeof(float))};
+    }
+
+    AVEL_FINL void store(float* ptr, vec16x32f v) {
+        _mm512_storeu_ps(ptr, v);
+    }
+
+    AVEL_FINL void aligned_store(float* ptr, vec16x32f v) {
+        _mm512_store_ps(ptr, v);
+    }
+
+    AVEL_FINL void stream_store(float* ptr, vec16x32f v) {
+        _mm512_stream_ps(ptr, v);
+    }
+
+    AVEL_FINL void scatter(float* ptr, vec16x32i o, vec16x32f v) {
+        _mm512_i32scatter_ps(ptr, o, v, sizeof(float));
+    }
+
+    //=====================================================
+    // Floating-point vector operations
+    //=====================================================
+
+    AVEL_FINL vec16x32f average(vec16x32f a, vec16x32f b) {
+        auto half = vec16x32f{0.5f};
+        return (a - a * half) + (b * half);
+    }
+
+    AVEL_FINL vec16x32f epsilon_increment(vec16x32f v) {
+        const vec16x32u low_bit{0x01};
+        const vec16x32u exponent_mask{0x7f800000};
+
+        auto offset = vec16x32u{_mm512_castps_si512(v)} & exponent_mask | low_bit;
+
+        return vec16x32f{_mm512_add_ps(v, _mm512_castsi512_ps(offset))};
+    }
+
+    AVEL_FINL vec16x32f epsilon_decrement(vec16x32f v) {
+        const vec16x32u low_bit{0x01};
+        const vec16x32u exponent_mask{0x7f800000};
+
+        auto offset = vec16x32u{_mm512_castps_si512(v)} & exponent_mask | low_bit;
+
+        return vec16x32f{_mm512_sub_ps(v, _mm512_castsi512_ps(offset))};
+    }
+
+    AVEL_FINL vec16x32f epsilon_offset(vec16x32f, vec16x32i);
+
+    //=====================================================
+    // cmath basic operations
+    //=====================================================
+
+    AVEL_FINL vec16x32f fabs(vec16x32f v) {
+        return abs(v);
+    }
+
+    AVEL_FINL vec16x32f fabsf(vec16x32f v) {
+        return fabs(v);
     }
 
     AVEL_FINL vec16x32f fmod(vec16x32f x, vec16x32f y) {
         return x % y;
     }
 
-    AVEL_FINL vec16x32f sqrt(vec16x32f v) {
-        return vec16x32f{_mm512_sqrt_ps(v)};
+    AVEL_FINL vec16x32f fmodf(vec16x32f x, vec16x32f y) {
+        return fmod(x, y);
     }
+
+    AVEL_FINL vec16x32f remainderf(vec16x32f v);
+
+    AVEL_FINL vec16x32f remquof(vec16x32f v);
 
     AVEL_FINL vec16x32f fmadd(vec16x32f m, vec16x32f x, vec16x32f b) {
         return vec16x32f{_mm512_fmadd_ps(m, x, b)};
@@ -445,13 +524,115 @@ namespace avel {
         return vec16x32f{_mm512_fnmsub_ps(m, x, b)};
     }
 
-    AVEL_FINL vec16x32f abs(vec16x32f v) {
-        return vec16x32f{_mm512_abs_ps(v)};
+    AVEL_FINL vec16x32f fma(vec16x32f m, vec16x32f x, vec16x32f b) {
+        return fmadd(m, x, b);
     }
 
-    AVEL_FINL vec16x32f sin(vec16x32f angle) {
-        return vec16x32f{};
+    AVEL_FINL vec16x32f fmaf(vec16x32f m, vec16x32f x, vec16x32f b) {
+        return fma(m, x, b);
     }
+
+    AVEL_FINL vec16x32f fmax(vec16x32f a, vec16x32f b) {
+        //TODO: Handle case with two NaNs
+        return max(a, max(b, vec16x32f(INFINITY)));
+    }
+
+    AVEL_FINL vec16x32f fminf(vec16x32f a, vec16x32f b) {
+        //TODO: Handle case with two NaNs
+        return min(a, min(b, vec16x32f(INFINITY)));
+    }
+
+    AVEL_FINL vec16x32f fmin(vec16x32f a, vec16x32f b) {
+        return fminf(a, b);
+    }
+
+    AVEL_FINL vec16x32f fdim(vec16x32f a, vec16x32f b) {
+        //TODO: Make faster?
+        auto tmp = max(a - b, vec16x32f{0.0f});
+        auto nan_mask = isnan(a) | isnan(b);
+        return blend(tmp, vec16x32f{NAN}, nan_mask);
+    }
+
+    AVEL_FINL vec16x32f lerp(vec16x32f a, vec16x32f b, vec16x32f t);
+
+    //=====================================================
+    // Exponential functions
+    //=====================================================
+
+    AVEL_FINL vec16x32f exp(vec16x32f x) {
+        alignas(32) static constexpr float data[12] = {
+            1.0f / 479001600.0f,
+            1.0f / 39916800.0f,
+            1.0f / 3628800.0f,
+            1.0f / 362880.0f,
+            1.0f / 40320.0f,
+            1.0f / 5040.0f,
+            1.0f / 720.0f,
+            1.0f / 120.0f,
+            1.0f / 24.0f,
+            1.0f / 6.0f,
+            1.0f / 2.0f,
+            1.0f / 1.0f,
+        };
+
+        auto abs_x = abs(x);
+
+        auto t0 = vec16x32f (data[0]);
+        auto t1 = fmadd(abs_x, vec16x32f (data[1]), t0);
+        auto t2 = fmadd(abs_x, vec16x32f(data[2]), t1);
+        auto t3 = fmadd(abs_x, vec16x32f(data[3]), t2);
+        auto t4 = fmadd(abs_x, vec16x32f(data[4]), t3);
+        auto t5 = fmadd(abs_x, vec16x32f(data[5]), t4);
+        auto t6 = fmadd(abs_x, vec16x32f(data[6]), t5);
+        auto t7 = fmadd(abs_x, vec16x32f(data[7]), t6);
+        auto t8 = fmadd(abs_x, vec16x32f(data[8]), t7);
+        auto t9 = fmadd(abs_x, vec16x32f(data[9]), t8);
+        auto t10 = fmadd(abs_x, vec16x32f(data[10]), t9);
+        auto t11 = fmadd(abs_x, vec16x32f(data[11]), t10);
+
+        auto recip = vec16x32f(data[11]) / t11;
+
+        auto mask = x < vec16x32f{0.0f};
+        return blend(recip, t11, mask);
+    }
+
+    AVEL_FINL vec16x32f exp2(vec16x32f x) {
+        return exp(x * vec16x32f{69314718056.0f});
+    }
+
+    AVEL_FINL vec16x32f expm1(vec16x32f x);
+
+    AVEL_FINL vec16x32f log(vec16x32f x);
+
+    AVEL_FINL vec16x32f log10(vec16x32f x);
+
+    AVEL_FINL vec16x32f log2(vec16x32f x) {
+        __m512 approximation = _mm512_setzero_ps();
+
+        //TODO: Complete implementation
+
+        return vec16x32f{_mm512_add_ps(_mm512_getexp_ps(x), approximation)};
+    }
+
+    AVEL_FINL vec16x32f log1p(vec16x32f x);
+
+    //=====================================================
+    // Power functions
+    //=====================================================
+
+    AVEL_FINL vec16x32f pow(vec16x32f x);
+
+    AVEL_FINL vec16x32f sqrt(vec16x32f x) {
+        return vec16x32f{_mm512_sqrt_ps(x)};
+    }
+
+    AVEL_FINL vec16x32f cbrt(vec16x32f x);
+
+    AVEL_FINL vec16x32f hypot(vec16x32f x);
+
+    //=====================================================
+    // Trigonometric functions
+    //=====================================================
 
     AVEL_FINL std::array<vec16x32f, 2> sincos(vec16x32f angle) {
         alignas(32) static const float constants0[8] {
@@ -473,7 +654,6 @@ namespace avel {
         const __m512 rcp_two_pi = _mm512_set1_ps(constants0[0x03]);
         __m512 a = _mm512_fnmadd_ps(two_pi, _mm512_roundscale_ps(_mm512_fmadd_ps(abs_angle, rcp_two_pi, half), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC), abs_angle);
 
-        // Taylor series approximation will always return positive sign
         __m512 abs_a = _mm512_abs_ps(a);
 
         __m512 quart_pi = _mm512_set1_ps(constants0[0x04]);
@@ -565,6 +745,157 @@ namespace avel {
         ret_cos = _mm512_mask_sub_ps(ret_cos, c_signs, _mm512_setzero_ps(), ret_cos);
 
         return {vec16x32f{ret_sin}, vec16x32f{ret_cos}};
+    }
+
+    AVEL_FINL vec16x32f sin(vec16x32f angle);
+
+    AVEL_FINL vec16x32f cos(vec16x32f angle);
+
+    AVEL_FINL vec16x32f tan(vec16x32f angle);
+
+    AVEL_FINL vec16x32f asin(vec16x32f x) {
+        // https://wrf.ecse.rpi.edu/Research/Short_Notes/arcsin/fastsqrt.html
+        alignas(32) static constexpr float constants[8] {
+            -0.5860008050f,
+            +1.5719451050f,
+            -1.6696689770f,
+            +0.8999841642f,
+            -0.6575341673f,
+            +1.0123866490f,
+            +0.9998421793f,
+            0.0f
+        };
+
+        vec16x32f offset = sqrt(vec16x32f{1.0f} - (x * x));
+
+        x += offset;
+
+        vec16x32f t0 = fmadd(x, vec16x32f{constants[0]}, vec16x32f{constants[1]});
+        vec16x32f t1 = fmadd(x, t0, vec16x32f{constants[2]});
+        vec16x32f t2 = fmadd(x, t1, vec16x32f{constants[3]});
+        vec16x32f t3 = fmadd(x, t2, vec16x32f{constants[4]});
+        vec16x32f t4 = fmadd(x, t3, vec16x32f{constants[5]});
+        vec16x32f t5 = fmadd(x, t4, vec16x32f{constants[6]});
+
+        return (t5 - offset);
+    }
+
+    AVEL_FINL vec16x32f acos(vec16x32f x) {
+        alignas(32) static constexpr float constants[8] {
+
+        };
+
+        vec16x32f offset = sqrt(vec16x32f{1.0f} - (x * x));
+
+        x +=offset;
+
+        vec16x32f t0 = fmadd(x, vec16x32f{constants[0]}, vec16x32f{constants[1]});
+        vec16x32f t1 = fmadd(x, t0, vec16x32f{constants[2]});
+        vec16x32f t2 = fmadd(x, t1, vec16x32f{constants[3]});
+        vec16x32f t3 = fmadd(x, t2, vec16x32f{constants[4]});
+        vec16x32f t4 = fmadd(x, t3, vec16x32f{constants[5]});
+        vec16x32f t5 = fmadd(x, t4, vec16x32f{constants[6]});
+
+        return (t5 - offset);
+    }
+
+    AVEL_FINL vec16x32f atan(vec16x32f v);
+
+    AVEL_FINL vec16x32f atan2(vec16x32f x, vec16x32f y);
+
+    //=====================================================
+    // Nearest Integer Floating-point operators
+    //=====================================================
+
+    AVEL_FINL vec16x32f ceil(vec16x32f x) {
+        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC)};
+    }
+
+    AVEL_FINL vec16x32f floor(vec16x32f x) {
+        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)};
+    }
+
+    AVEL_FINL vec16x32f trunc(vec16x32f x) {
+        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
+    }
+
+    AVEL_FINL vec16x32f round(vec16x32f x) {
+        //TODO: Verify behavior matches with std::round for values ending in .5
+        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
+    }
+
+    //=====================================================
+    // Floating-point manipulation
+    //=====================================================
+
+    AVEL_FINL vec16x32f frexp(vec16x32f v, vec16x32i* exp);
+
+    AVEL_FINL vec16x32f ldexp(vec16x32f x, vec16x32f exp);
+
+    AVEL_FINL vec16x32f modf(vec16x32f x, vec16x32f* iptr);
+
+    AVEL_FINL vec16x32f scalebn(vec16x32f x, vec16x32f exp);
+
+    AVEL_FINL vec16x32f ilog(vec16x32f x);
+
+    AVEL_FINL vec16x32f logb(vec16x32f x);
+
+    AVEL_FINL vec16x32f copysign(vec16x32f mag, vec16x32f sign) {
+        alignas(16) std::uint32_t mask_data[1] = {
+            0x80000000
+        };
+
+        auto mask = vec16x32f{reinterpret_bits<float>(mask_data[0])};
+
+        //TODO: AVX512F implementation
+        return mask & sign | vec16x32f{_mm512_andnot_ps(mask, mag)};
+    }
+
+    //=====================================================
+    // Classification subroutines
+    //=====================================================
+
+    AVEL_FINL vec16x32u fpclassify(vec16x32f v);
+
+    AVEL_FINL vec16x32f::mask isnan(vec16x32f v) {
+        return (v != v);
+    }
+
+    AVEL_FINL vec16x32f::mask isfininte(vec16x32f v) {
+        return  vec16x32f{_mm512_getexp_ps(v)} != vec16x32f{255.0f};
+    }
+
+    AVEL_FINL vec16x32f::mask isnormal(vec16x32f v) {
+        vec16x32f tmp = vec16x32f{_mm512_getexp_ps(v)};
+        return  (tmp != vec16x32f::zeros()) & (tmp != vec16x32f{255.0f});
+    }
+
+    AVEL_FINL vec16x32f::mask isunordered(vec16x32f x, vec16x32f y) {
+        return isnan(x) | isnan(y);
+    }
+
+    //=====================================================
+    // Comparison subroutines
+    //=====================================================
+
+    AVEL_FINL vec16x32f::mask isgreater(vec16x32f x, vec16x32f y) {
+        return x > y;
+    }
+
+    AVEL_FINL vec16x32f::mask isgreaterequal(vec16x32f x, vec16x32f y) {
+        return x >= y;
+    }
+
+    AVEL_FINL vec16x32f::mask isless(vec16x32f x, vec16x32f y) {
+        return x < y;
+    }
+
+    AVEL_FINL vec16x32f::mask islessequal(vec16x32f x, vec16x32f y) {
+        return x <= y;
+    }
+
+    AVEL_FINL vec16x32f::mask islessgreater(vec16x32f x, vec16x32f y) {
+        return x != y;
     }
 
 }
