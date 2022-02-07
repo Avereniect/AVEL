@@ -2,7 +2,11 @@ namespace avel {
 
     using vec4x32f = Vector<float, 4>;
 
+    using mask4x32f = Vector_mask<float, 4>;
+
     AVEL_FINL vec4x32f trunc(vec4x32f x);
+
+    AVEL_FINL vec4x32f abs(vec4x32f v);
 
     template<>
     class Vector_mask<float, 4> {
@@ -17,6 +21,10 @@ namespace avel {
         //=================================================
         // Constructor
         //=================================================
+
+        AVEL_FINL explicit Vector_mask(Vector_mask<std::uint32_t, 4> v);
+
+        AVEL_FINL explicit Vector_mask(Vector_mask<std::int32_t, 4> v);
 
         AVEL_FINL explicit Vector_mask(const primitive content):
             content(content) {}
@@ -188,6 +196,11 @@ namespace avel {
         //=================================================
         // Constructors
         //=================================================
+
+        AVEL_FINL explicit Vector(vec4x32u v);
+
+        AVEL_FINL explicit Vector(vec4x32i v):
+            content(_mm_cvtepi32_ps(v)) {}
 
         AVEL_FINL explicit Vector(float a, float b, float c, float d):
             content(_mm_setr_ps(a, b, c, d)) {}
@@ -444,48 +457,6 @@ namespace avel {
             return *this == zeros();
         }
 
-        AVEL_FINL explicit operator Vector<std::int32_t, width>() const {
-            return Vector<std::int32_t, width>{_mm_cvtps_epi32(content)};
-        }
-
-        /*
-        AVEL_FINL explicit operator Vector<std::uint32_t, width>() const {
-            #if defined(AVEL_AVX512VL)
-            return Vector<std::uint32_t, width>(_mm_cvtps_epu32(content));
-
-            #elif defined(AVEL_AVX2)
-            __m128i tmp = _mm_castps_si128(content);
-
-            __m128i exponents = _mm_srli_epi32(tmp, 23);
-            __m128i shift_amounts = _mm_sub_epi32(_mm_set1_epi32(150), exponents);
-
-            const __m128i mantissa_mask = _mm_set1_epi32(0x007FFFFF);
-            __m128i mantissa = _mm_and_si128(tmp, mantissa_mask);
-
-            __m128i l_shifted = _mm_sllv_epi32(mantissa, shift_amounts);
-            __m128i r_shifted = _mm_srlv_epi32(mantissa, _mm_sub_epi32(_mm_setzero_si128(), shift_amounts));
-
-            __m128i blend_mask = _mm_cmplt_epi32(_mm_setzero_si128(), shift_amounts);
-
-            __m128i shifted = _mm_blendv_epi8(l_shifted, r_shifted, blend_mask);
-
-            return Vector<std::uint32_t, width>(shifted);
-
-            #else
-            Vector<std::uint32_t, width> max{150};
-
-            switch (fegetround()) {
-            case FE_TOWARDZERO:
-            case FE_TONEAREST:
-            case FE_UPWARD:
-            case FE_DOWNWARD:
-            }
-
-            return {};
-            #endif
-        }
-        */
-
     private:
 
         //=================================================
@@ -495,6 +466,34 @@ namespace avel {
         primitive content;
 
     };
+
+    //=====================================================
+    // Delayed definitions
+    //=====================================================
+
+    Vector<std::uint32_t, 4>::Vector(vec4x32f v):
+        #if defined(AVEL_AVX512VL)
+        content(_mm_cvttps_epu32(v))
+        #else
+        content([v] () -> __m128i {
+
+            //This seems to work, but I'm not entirely sure that it holds in the
+            //general case.
+
+            //High 31 bits
+            __m128i tmp0 = _mm_slli_epi32(_mm_cvttps_epi32(v * vec4x32f{0.5f}), 1);
+
+            //Low 31 bits
+            __m128i tmp1 = _mm_cvttps_epi32(v);
+
+            return vec4x32u{tmp0} | vec4x32u{tmp1};
+        }())
+        #endif
+        {}
+
+    //=====================================================
+    // General vector operations
+    //=====================================================
 
     AVEL_FINL vec4x32f blend(vec4x32f a, vec4x32f b, vec4x32f::mask m) {
         #if defined(AVEL_AVX512VL)
@@ -806,10 +805,6 @@ namespace avel {
         return {vec4x32f{ret_sin}, vec4x32f{ret_cos}};
     }
 
-    vec4x32f log(vec4x32f v) {
-        return {};
-    }
-
-
+    vec4x32f log(vec4x32f v);
 
 }

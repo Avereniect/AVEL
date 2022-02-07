@@ -2,6 +2,8 @@ namespace avel {
 
     using vec16x32u = Vector<std::uint32_t, 16>;
 
+    using mask16x32u = Vector_mask<std::uint32_t, 16>;
+
     template<>
     class Vector_mask<std::uint32_t, 16> {
     public:
@@ -15,6 +17,10 @@ namespace avel {
         //=================================================
         // Constructor
         //=================================================
+
+        AVEL_FINL explicit Vector_mask(Vector_mask<std::int32_t, 16> v);
+
+        AVEL_FINL explicit Vector_mask(Vector_mask<float, 16> v);
 
         AVEL_FINL explicit Vector_mask(primitive content):
             content(content) {}
@@ -143,6 +149,10 @@ namespace avel {
         //=================================================
         // Constructors
         //=================================================
+
+        AVEL_FINL explicit Vector(Vector<std::int32_t, width> v);
+
+        AVEL_FINL explicit Vector(Vector<float, width> v);
 
         AVEL_FINL explicit Vector(const primitive content):
             content(content) {}
@@ -460,5 +470,91 @@ namespace avel {
         primitive content;
 
     };
+
+    //=====================================================
+    // General vector operations
+    //=====================================================
+
+    vec16x32u blend(vec16x32u a, vec16x32u b, mask16x32u m) {
+        return vec16x32u{_mm512_mask_blend_epi32(m, a, b)};
+    }
+
+    vec16x32u max(vec16x32u a, vec16x32u b) {
+        return vec16x32u{_mm512_max_epu32(a, b)};
+    }
+
+    vec16x32u min(vec16x32u a, vec16x32u b) {
+        return vec16x32u{_mm512_min_epu32(a, b)};
+    }
+
+    template<>
+    vec16x32u load<vec16x32u>(const std::uint32_t* ptr) {
+        return vec16x32u{_mm512_loadu_si512(ptr)};
+    }
+
+    template<>
+    vec16x32u aligned_load<vec16x32u>(const std::uint32_t* ptr) {
+        return vec16x32u{_mm512_load_si512(ptr)};
+    }
+
+    template<>
+    vec16x32u stream_load<vec16x32u>(const std::uint32_t* ptr) {
+        return vec16x32u{_mm512_stream_load_si512(ptr)};
+    }
+
+    //Definition of gather deferred until definition of vector of signed integers
+
+    void store(std::uint32_t* ptr, vec16x32u v) {
+        _mm512_storeu_si512(reinterpret_cast<__m128i*>(ptr), v);
+    }
+
+    void aligned_store(std::uint32_t* ptr, vec16x32u v) {
+        _mm512_store_si512(reinterpret_cast<__m128i*>(ptr), v);
+    }
+
+    void stream_store(std::uint32_t* ptr, vec16x32u v) {
+        _mm512_stream_si512(reinterpret_cast<__m128i*>(ptr), v);
+    }
+
+    //=====================================================
+    // Bit operations
+    //=====================================================
+
+    vec16x32u popcount(vec16x32u v) {
+        #if defined(AVEL_AVX512VPOPCNTDQ)
+        return vec16x32u{_mm512_popcnt_epi32(x)};
+        #elif defined(AVEL_AVX512BITALG)
+        auto tmp0 = _mm512_popcnt_epi16(x);
+        auto tmp1 = _mm512_slli_epi32(tmp0, 16);
+
+        auto tmp2 = _mm512_add_epi32(tmp0, tmp1);
+
+        return vec16x32u{_mm512_srli_epi32(tmp2, 16)};
+        #else
+        // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+        v = v - ((v >> 1) & vec16x32u{0x55555555});                    // reuse input as temporary
+        v = (v & vec16x32u{0x33333333}) + ((v >> 2) & vec16x32u{0x33333333});     // temp
+        v = ((v + (v >> 4) & vec16x32u{0xF0F0F0F}) * vec16x32u{0x1010101}) >> 24; // count
+        return v;
+        #endif
+    }
+
+    template<int S>
+    AVEL_FINL vec16x32u rotl(vec16x32u v) {
+        return vec16x32u{_mm512_rol_epi32(v, S)};
+    }
+
+    AVEL_FINL vec16x32u rotl(vec16x32u v, vec16x32u s) {
+        return vec16x32u{_mm512_rolv_epi32(v, s)};
+    }
+
+    template<int S>
+    AVEL_FINL vec16x32u rotr(vec16x32u v) {
+        return vec16x32u{_mm512_ror_epi32(v, S)};
+    }
+
+    AVEL_FINL vec16x32u rotr(vec16x32u v, vec16x32u s) {
+        return vec16x32u{_mm512_rorv_epi32(v, s)};
+    }
 
 }

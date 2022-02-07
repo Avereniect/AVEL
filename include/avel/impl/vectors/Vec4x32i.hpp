@@ -2,6 +2,8 @@ namespace avel {
 
     using vec4x32i = Vector<std::int32_t, 4>;
 
+    using mask4x32i = Vector_mask<std::int32_t, 4>;
+
     template<>
     class Vector_mask<std::int32_t, 4> {
     public:
@@ -15,6 +17,10 @@ namespace avel {
         //=================================================
         // Constructor
         //=================================================
+
+        AVEL_FINL explicit Vector_mask(Vector<std::int32_t, 4> v);
+
+        AVEL_FINL explicit Vector_mask(Vector<float, 4> v);
 
         AVEL_FINL explicit Vector_mask(const primitive content):
             content(content) {}
@@ -122,6 +128,14 @@ namespace avel {
             #endif
         }
 
+        AVEL_FINL operator vec4x32u() const {
+            return vec4x32u{content};
+        }
+
+        AVEL_FINL operator primitive() const {
+            return content;
+        }
+
     private:
 
         //=================================================
@@ -181,6 +195,14 @@ namespace avel {
         // Constructors
         //=================================================
 
+        AVEL_FINL explicit Vector(Vector<std::uint32_t, width> v):
+            content(primitive(v)) {}
+
+        AVEL_FINL explicit Vector(Vector<float, width> v);
+
+        AVEL_FINL explicit Vector(std::int32_t a, std::int32_t b, std::int32_t c, std::int32_t d):
+            content(_mm_set_epi32(d, c, b, a)) {}
+
         AVEL_FINL explicit Vector(const primitive content):
             content(content) {}
 
@@ -192,9 +214,6 @@ namespace avel {
 
         AVEL_FINL explicit Vector(const std::array<scalar_type, width>& array):
             content(_mm_loadu_si128(reinterpret_cast<const primitive*>(array.data()))) {}
-
-        AVEL_FINL explicit Vector(Vector<std::uint32_t, width> v):
-            content(primitive(v)) {}
 
         Vector() = default;
         Vector(const Vector&) = default;
@@ -310,7 +329,24 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator*=(Vector vec) {
+            #if defined(AVEL_SSE41)
             content = _mm_mul_epi32(content, vec.content);
+            #else
+
+            auto y0 = (vec >> 31);
+            primitive abs_a =  (vec ^ y0) - y0;
+
+            auto y1 = (*this >> 31);
+            primitive abs_b = (*this ^ y1) - y1;
+
+            //Filled with sign bit of output
+            auto sign_mask = y0 ^ y1;
+            auto mag = _mm_mul_epu32(abs_a, abs_b);
+
+            //Conditionally negate bits (xor) and add 1 (negation of mask)
+            content = _mm_add_epi32(_mm_xor_si128(mag, sign_mask), _mm_sub_epi32(_mm_setzero_si128(), sign_mask));
+
+            #endif
             return *this;
         }
 
@@ -629,10 +665,6 @@ namespace avel {
             return *this == zeros();
         }
 
-        AVEL_FINL explicit operator Vector<std::uint32_t, width>() const {
-            return Vector<std::uint32_t, width>{content};
-        }
-
     private:
 
         //=================================================
@@ -644,15 +676,190 @@ namespace avel {
     };
 
     //=====================================================
+    // Delayed definitions
+    //=====================================================
+
+    Vector<std::uint32_t, 4>::Vector(vec4x32i v):
+        content(v) {}
+
+    //=====================================================
     // General vector operations
     //=====================================================
+
+    AVEL_FINL vec4x32i blend(vec4x32i a, vec4x32i b, mask4x32i m) {
+        #if defined(AVEL_AVX512VL)
+        return vec4x32i{_mm_mask_blend_epi32(m, a, b)};
+        #elif defined(AVEL_SSE41)
+        return vec4x32i{_mm_blendv_epi8(a, b, m)};
+        #elif defined(AVEL_SSE2)
+        auto x = _mm_andnot_si128(m, a);
+        auto y = _mm_and_si128(m, b);
+        return vec4x32i{_mm_or_si128(x, y)};
+        #endif
+    }
+
+    AVEL_FINL vec4x32i max(vec4x32i a, vec4x32i b) {
+        #if defined(AVEL_SSE41)
+        return vec4x32i{_mm_max_epi32(a, b)};
+        #else
+        return blend(a, b, a < b);
+        #endif
+    }
+
+    AVEL_FINL vec4x32i min(vec4x32i a, vec4x32i b) {
+        #if defined(AVEL_SSE41)
+        return vec4x32i{_mm_min_epi32(a, b)};
+        #else
+        return blend(a, b, b < a);
+        #endif
+    }
 
     AVEL_FINL vec4x32i abs(vec4x32i v) {
         #ifdef AVEL_SSSE3
         return vec4x32i{_mm_abs_epi32(v)};
         #else
         auto y = v >> 31;
-        return (v ^ ) << y;
+        return (v ^ y) - y;
+        #endif
+    }
+
+    template<>
+    AVEL_FINL vec4x32i load<vec4x32i>(const std::int32_t* ptr) {
+        return vec4x32i{_mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr))};
+    }
+
+    template<>
+    AVEL_FINL vec4x32i aligned_load<vec4x32i>(const std::int32_t* ptr) {
+        return vec4x32i{_mm_load_si128(reinterpret_cast<const __m128i*>(ptr))};
+    }
+
+    template<>
+    AVEL_FINL vec4x32i stream_load<vec4x32i>(const std::int32_t* ptr) {
+        #if defined(AVEL_SSE41)
+        //Casting away const is required by intrinsic
+        return vec4x32i{_mm_stream_load_si128((__m128i*)(ptr))};
+        #else
+        return aligned_load<vec4x32i>(ptr);
+        #endif
+    }
+
+    template<>
+    AVEL_FINL vec4x32i gather<vec4x32i>(const std::int32_t* ptr, vec4x32i indices) {
+        #if defined(AVEL_AVX2)
+        return vec4x32i{_mm_i32gather_epi32(ptr, indices, sizeof(std::int32_t))};
+        #else
+        auto i = indices.as_array();
+
+        __m128i a = _mm_loadu_si32(ptr + i[0]);
+        __m128i b = _mm_loadu_si32(ptr + i[1]);
+        __m128i c = _mm_loadu_si32(ptr + i[2]);
+        __m128i d = _mm_loadu_si32(ptr + i[3]);
+
+        __m128i abab = _mm_unpacklo_epi32(a, b);
+        __m128i cdcd = _mm_unpacklo_epi32(c, d);
+
+        __m128i abcd = _mm_unpacklo_epi64(abab, cdcd);
+        return vec4x32i{abcd};
+        #endif
+    }
+
+    AVEL_FINL void store(std::int32_t* ptr, vec4x32i v) {
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), v);
+    }
+
+    AVEL_FINL void aligned_store(std::int32_t* ptr, vec4x32i v) {
+        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), v);
+    }
+
+    AVEL_FINL void stream_store(std::int32_t* ptr, vec4x32i v) {
+        _mm_stream_si128(reinterpret_cast<__m128i*>(ptr), v);
+    }
+
+    AVEL_FINL void scatter(std::int32_t* ptr, vec4x32i indices, vec4x32i v) {
+        #if defined(AVEL_AVX512VL)
+        _mm_i32scatter_epi32(ptr, indices, v, sizeof(std::int32_t));
+        #else
+        auto i = indices.as_array();
+
+        _mm_storeu_si32(ptr + i[0], v);
+        _mm_storeu_si32(ptr + i[1], _mm_bsrli_si128(v, 0x4));
+        _mm_storeu_si32(ptr + i[2], _mm_bsrli_si128(v, 0x8));
+        _mm_storeu_si32(ptr + i[3], _mm_bsrli_si128(v, 0xC));
+        #endif
+    }
+
+    //=====================================================
+    // Integer vector operations
+    //=====================================================
+
+    AVEL_FINL vec4x32i popcount(vec4x32i v) {
+        #if defined(AVEL_AVX512VL) & defined(AVEL_AVX512VPOPCNTDQ)
+        return vec4x32u{_mm_popcnt_epi32(x)};
+        #elif defined(AVELAVX512VL) & defined(AVEL_AVX512BITALG)
+        auto tmp0 = _mm_popcnt_epi16(x);
+        auto tmp1 = _mm_slli_epi32(tmp0, 16);
+
+        auto tmp2 = _mm_add_epi32(tmp0, tmp1);
+
+        return vec4x32u{_mm_srli_epi32(tmp2, 16)};
+        #elif defined(AVEL_POPCNT) & defined(AVEL_SSE42)
+        int a = _mm_extract_epi32(x, 0);
+        int b = _mm_extract_epi32(x, 1);
+        int c = _mm_extract_epi32(x, 2);
+        int d = _mm_extract_epi32(x, 3);
+
+        auto t0 = _mm_setzero_si128();
+        auto t1 = _mm_insert_epi32(t0, _mm_popcnt_u32(a), 0);
+        auto t2 = _mm_insert_epi32(t1, _mm_popcnt_u32(b), 1);
+        auto t3 = _mm_insert_epi32(t2, _mm_popcnt_u32(c), 2);
+        auto t4 = _mm_insert_epi32(t3, _mm_popcnt_u32(d), 3);
+
+        return vec4x32u{t4};
+        #else
+        // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+        v = v - ((v >> 1) & vec4x32i{0x55555555});                    // reuse input as temporary
+        v = (v & vec4x32i{0x33333333}) + ((v >> 2) & vec4x32i{0x33333333});     // temp
+        v = ((v + (v >> 4) & vec4x32i{0xF0F0F0F}) * vec4x32i{0x1010101}) >> 24; // count
+        return v;
+
+        #endif
+    }
+
+    template<int S>
+    AVEL_FINL vec4x32i rotl(vec4x32i v) {
+        #if defined(AVEL_AVX512VL)
+        return vec4x32i{_mm_rol_epi32(v, S)};
+        #else
+        return (v << S) | (v >> (32 - S));
+        #endif
+    }
+
+    AVEL_FINL vec4x32i rotl(vec4x32i v, vec4x32i s) {
+        #if defined(AVEL_AVX512VL)
+        return vec4x32i{_mm_rolv_epi32(v, s)};
+        #else
+        auto l = vec4x32u{v} << vec4x32u{s};
+        auto r = vec4x32u{v} >> (vec4x32u{32} - vec4x32u{v});
+        return vec4x32i{l | r};
+        #endif
+    }
+
+    template<int S>
+    AVEL_FINL vec4x32i rotr(vec4x32i v) {
+        #if defined(AVEL_AVX512VL)
+        return vec4x32i{_mm_ror_epi32(v, S)};
+        #else
+        return (v >> S) | (v << (32 - S));
+        #endif
+    }
+
+    AVEL_FINL vec4x32i rotr(vec4x32i v, vec4x32i s) {
+        #if defined(AVEL_AVX512VL)
+        return vec4x32i{_mm_rorv_epi32(v, s)};
+        #else
+        auto l = vec4x32u{v} >> vec4x32u{s};
+        auto r = vec4x32u{v} << (vec4x32u{32} - vec4x32u{v});
+        return vec4x32i{l | r};
         #endif
     }
 

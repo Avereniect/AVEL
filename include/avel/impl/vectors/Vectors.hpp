@@ -20,7 +20,12 @@ namespace avel {
     V stream_load(const typename V::scalar_type*);
 
     template<class V>
-    V gather(const typename V::scalar_type*);
+    V gather(const typename V::scalar_type*, Vector<std::int32_t, V::width>);
+
+    template<class V>
+    typename V::primitive to_primitive(V v) {
+        return static_cast<typename V::primtive>(v);
+    }
 
 }
 

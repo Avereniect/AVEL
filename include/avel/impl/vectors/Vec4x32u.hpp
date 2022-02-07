@@ -2,6 +2,8 @@ namespace avel {
 
     using vec4x32u = Vector<std::uint32_t, 4>;
 
+    using mask4x32u = Vector_mask<std::uint32_t, 4>;
+
     template<>
     class Vector_mask<std::uint32_t, 4> {
     public:
@@ -15,6 +17,10 @@ namespace avel {
         //=================================================
         // Constructor
         //=================================================
+
+        AVEL_FINL explicit Vector_mask(Vector_mask<std::int32_t, 4> v);
+
+        AVEL_FINL explicit Vector_mask(Vector_mask<float, 4> v);
 
         AVEL_FINL explicit Vector_mask(const primitive content):
             content(content) {}
@@ -162,7 +168,6 @@ namespace avel {
 
     };
 
-
     template<>
     class Vector<std::uint32_t, 4> {
     public:
@@ -188,6 +193,13 @@ namespace avel {
         //=================================================
         // Constructors
         //=================================================
+
+        AVEL_FINL explicit Vector(Vector<std::int32_t, width> v);
+
+        AVEL_FINL explicit Vector(Vector<float, width> v);
+
+        AVEL_FINL explicit Vector(std::uint32_t a, std::uint32_t b, std::uint32_t c, std::uint32_t d):
+            content(_mm_set_epi32(d, c, b, a)) {}
 
         AVEL_FINL explicit Vector(const primitive content):
             content(content) {}
@@ -260,7 +272,8 @@ namespace avel {
             #if defined(AVEL_AVX512VL)
             return mask{_mm_cmplt_epu32_mask(content, vec.content)};
             #else
-            return mask{_mm_cmplt_epi32(content, vec.content)};
+            auto tmp = (*this - vec);
+            return mask{_mm_srai_epi32(tmp, 31)};
             #endif
         }
 
@@ -276,7 +289,11 @@ namespace avel {
             #if defined(AVEL_AVX512VL)
             return mask{_mm_cmpgt_epu32_mask(content, vec.content)};
             #else
-            return mask{_mm_cmpgt_epi32(content, vec.content)};
+            primitive offset = _mm_set1_epi32(-2147483648);
+            return mask{_mm_cmpgt_epi32(
+                _mm_add_epi32(content, offset),
+                _mm_add_epi32(vec.content, offset)
+            )};
             #endif
         }
 
@@ -595,14 +612,14 @@ namespace avel {
     // General vector operations
     //=====================================================
 
-    vec4x32u blend(vec4x32u a, vec4x32u b, vec4x32u::mask m) {
-        #if defined(AVEL)
+    vec4x32u blend(vec4x32u a, vec4x32u b, mask4x32u m) {
+        #if defined(AVEL_AVX512VL)
         return vec4x32u{_mm_mask_blend_epi32(m, a, b)};
         #elif defined(AVEL_SSE41)
         return vec4x32u{_mm_blendv_epi8(a, b, m)};
         #elif defined(AVEL_SSE2)
-        auto x = _mm_andnot_epi32(m, b);
-        auto y = _mm_and_epi32(m, a);
+        auto x = _mm_andnot_si128(m, a);
+        auto y = _mm_and_si128(m, b);
         return vec4x32u{_mm_or_si128(x, y)};
         #endif
     }
@@ -611,11 +628,17 @@ namespace avel {
         #if defined(AVEL_SSE41)
         return vec4x32u{_mm_max_epu32(a, b)};
         #else
-        return ;
+        return blend(a, b, a < b);
         #endif
     }
 
-    vec4x32u min(vec4x32u a, vec4x32u b);
+    vec4x32u min(vec4x32u a, vec4x32u b) {
+        #if defined(AVEL_SSE41)
+        return vec4x32u{_mm_min_epu32(a, b)};
+        #else
+        return blend(a, b, b < a);
+        #endif
+    }
 
     template<>
     vec4x32u load<vec4x32u>(const std::uint32_t* ptr) {
@@ -633,12 +656,11 @@ namespace avel {
         //Casting away of const required by intrinsic
         return vec4x32u{_mm_stream_load_si128((__m128i*)ptr)};
         #else
-        return load(ptr);
+        return aligned_load<vec4x32u>(ptr);
         #endif
     }
 
     //Definition of gather deferred until vector of signed integers is defined
-    //vec4x32u gather(const std::uint32_t* ptr, const avel::Vector<std::int32_t, 4>& indices);
 
     void store(std::uint32_t* ptr, vec4x32u v) {
         _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), v);
@@ -653,6 +675,76 @@ namespace avel {
     }
 
     //Definition of scatter deferred until vector of signed integers is defined
-    //void scatter(std::uint32_t* ptr, vec4x32i, vec4x32u);
+
+    //=====================================================
+    // Bit operations
+    //=====================================================
+
+    vec4x32u popcount(vec4x32u v) {
+        #if defined(AVEL_AVX512VL) & defined(AVEL_AVX512VPOPCNTDQ)
+        return vec4x32u{_mm_popcnt_epi32(x)};
+        #elif defined(AVELAVX512VL) & defined(AVEL_AVX512BITALG)
+        auto tmp0 = _mm_popcnt_epi16(x);
+        auto tmp1 = _mm_slli_epi32(tmp0, 16);
+
+        auto tmp2 = _mm_add_epi32(tmp0, tmp1);
+
+        return vec4x32u{_mm_srli_epi32(tmp2, 16)};
+        #elif defined(AVEL_POPCNT) & defined(AVEL_SSE42)
+        int a = _mm_extract_epi32(x, 0);
+        int b = _mm_extract_epi32(x, 1);
+        int c = _mm_extract_epi32(x, 2);
+        int d = _mm_extract_epi32(x, 3);
+
+        auto t0 = _mm_setzero_si128();
+        auto t1 = _mm_insert_epi32(t0, _mm_popcnt_u32(a), 0);
+        auto t2 = _mm_insert_epi32(t1, _mm_popcnt_u32(b), 1);
+        auto t3 = _mm_insert_epi32(t2, _mm_popcnt_u32(c), 2);
+        auto t4 = _mm_insert_epi32(t3, _mm_popcnt_u32(d), 3);
+
+        return vec4x32u{t4};
+        #else
+        // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+        v = v - ((v >> 1) & vec4x32u{0x55555555});                    // reuse input as temporary
+        v = (v & vec4x32u{0x33333333}) + ((v >> 2) & vec4x32u{0x33333333});     // temp
+        v = ((v + (v >> 4) & vec4x32u{0xF0F0F0F}) * vec4x32u{0x1010101}) >> 24; // count
+        return v;
+
+        #endif
+    }
+
+    template<int S>
+    AVEL_FINL vec4x32u rotl(vec4x32u v) {
+        #if defined(AVEL_AVX512VL)
+        return vec4x32u{_mm_rol_epi32(v, S)};
+        #else
+        return (v << S) | (v >> (32 - S));
+        #endif
+    }
+
+    AVEL_FINL vec4x32u rotl(vec4x32u v, vec4x32u s) {
+        #if defined(AVEL_AVX512VL)
+        return vec4x32u{_mm_rolv_epi32(v, s)};
+        #else
+        return (v << s) | (v >> (vec4x32u{32} - s));
+        #endif
+    }
+
+    template<int S>
+    AVEL_FINL vec4x32u rotr(vec4x32u v) {
+        #if defined(AVEL_AVX512VL)
+        return vec4x32u{_mm_ror_epi32(v, S)};
+        #else
+        return (v >> S) | (v << (32 - S));
+        #endif
+    }
+
+    AVEL_FINL vec4x32u rotr(vec4x32u v, vec4x32u s) {
+        #if defined(AVEL_AVX512VL)
+        return vec4x32u{_mm_rorv_epi32(v, s)};
+        #else
+        return (v >> s) | (v << (vec4x32u {32} - s));
+        #endif
+    }
 
 }

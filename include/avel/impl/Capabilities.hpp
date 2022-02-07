@@ -36,6 +36,9 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
     static_assert(false, "Compiler not supported");
 #endif
 
+#ifdef AVEL_AVX512VPOPCNTDQ
+    #define AVEL_AVX512F
+#endif
 
 #ifdef AVEL_AVX512BW
     #define AVEL_AVX512F

@@ -18,6 +18,10 @@ namespace avel {
         // Constructor
         //=================================================
 
+        AVEL_FINL explicit Vector_mask(Vector_mask<std::uint32_t, 8> v);
+
+        AVEL_FINL explicit Vector_mask(Vector_mask<std::int32_t, 8> v);
+
         AVEL_FINL explicit Vector_mask(const primitive content):
             content(content) {}
 
@@ -186,6 +190,11 @@ namespace avel {
         // Constructors
         //=================================================
 
+        AVEL_FINL explicit Vector(Vector<std::uint32_t, 8> v);
+
+        AVEL_FINL explicit Vector(Vector<std::int32_t, 8> v):
+            content(_mm256_cvtepi32_ps(v)) {}
+
         AVEL_FINL explicit Vector(
             float a, float b, float c, float d,
             float e, float f, float g, float h):
@@ -202,9 +211,6 @@ namespace avel {
 
         AVEL_FINL explicit Vector(const std::array<scalar_type, width>& a):
             content(_mm256_loadu_ps(a.data())) {}
-
-        AVEL_FINL explicit Vector(Vector<std::int32_t, width> v):
-            content(_mm256_cvtepi32_ps(v)) {}
 
         Vector() = default;
         Vector(const Vector&) = default;
@@ -443,10 +449,6 @@ namespace avel {
             return *this == zeros();
         }
 
-        AVEL_FINL explicit operator Vector<std::int32_t, width>() const {
-            return Vector<std::int32_t, width>{_mm256_cvtps_epi32(content)};
-        }
-
     private:
 
         //=================================================
@@ -456,6 +458,22 @@ namespace avel {
         primitive content;
 
     };
+
+    //=====================================================
+    // Delayed definitions
+    //=====================================================
+
+    Vector<std::uint32_t, 8>::Vector(vec8x32f v):
+        #if defined(AVEL_AVX512VL)
+        content()
+        #else
+        content()
+        #endif
+        {}
+
+    //=====================================================
+    // General vector operations
+    //=====================================================
 
     AVEL_FINL vec8x32f blend(vec8x32f a, vec8x32f b, vec8x32f::mask m) {
         #if defined(AVEL_AVX512VL)

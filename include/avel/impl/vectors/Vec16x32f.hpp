@@ -5,6 +5,8 @@ namespace avel {
 
     using vec16x32f = Vector<float, 16>;
 
+    using mask16x32f = Vector_mask<float, 16>;
+
     AVEL_FINL vec16x32f trunc(vec16x32f x);
 
     template<>
@@ -20,6 +22,10 @@ namespace avel {
         //=================================================
         // Constructor
         //=================================================
+
+        AVEL_FINL explicit Vector_mask(Vector_mask<std::uint32_t, 16> v);
+
+        AVEL_FINL explicit Vector_mask(Vector_mask<std::int32_t, 16> v);
 
         AVEL_FINL explicit Vector_mask(const primitive contents):
             content(contents) {}
@@ -145,6 +151,11 @@ namespace avel {
         // Constructors
         //=================================================
 
+        AVEL_FINL explicit Vector(vec16x32u v);
+
+        AVEL_FINL explicit Vector(vec16x32i v):
+            content(_mm512_cvtepi32_ps(v)) {}
+
         AVEL_FINL explicit Vector(
             float a, float b, float c, float d,
             float e, float f, float g, float h,
@@ -169,9 +180,6 @@ namespace avel {
 
         AVEL_FINL explicit Vector(const std::array<scalar_type, width>& a):
             content(_mm512_loadu_ps(a.data())) {}
-
-        AVEL_FINL explicit Vector(Vector<std::int32_t, width> v):
-            content(_mm512_cvtepi32_ps(v)) {}
 
         Vector() = default;
         Vector(const Vector&) = default;
