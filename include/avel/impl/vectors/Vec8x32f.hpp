@@ -18,9 +18,9 @@ namespace avel {
         // Constructor
         //=================================================
 
-        AVEL_FINL explicit Vector_mask(Vector_mask<std::uint32_t, 8> v);
+        //AVEL_FINL explicit Vector_mask(Vector_mask<std::uint32_t, 8> v);
 
-        AVEL_FINL explicit Vector_mask(Vector_mask<std::int32_t, 8> v);
+        //AVEL_FINL explicit Vector_mask(Vector_mask<std::int32_t, 8> v);
 
         AVEL_FINL explicit Vector_mask(const primitive content):
             content(content) {}
@@ -195,10 +195,19 @@ namespace avel {
         AVEL_FINL explicit Vector(Vector<std::int32_t, 8> v):
             content(_mm256_cvtepi32_ps(v)) {}
 
+        AVEL_FINL explicit Vector(mask m):
+        #if defined(AVEL_AVX512VL)
+            content(_mm256_mask_blend_epi32(m, _mm256_setzero_ps(), _mm256_set1_ps(1.0f))) {}
+        #else
+            content(_mm256_blendv_ps(_mm256_setzero_ps(), _mm256_set1_ps(1.0f), m)) {}
+        #endif
+
+        /*
         AVEL_FINL explicit Vector(
             float a, float b, float c, float d,
             float e, float f, float g, float h):
             content(_mm256_setr_ps(a, b, c, d,e, f, g, h)) {}
+        */
 
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}
@@ -446,7 +455,7 @@ namespace avel {
         }
 
         AVEL_FINL explicit operator mask() const {
-            return *this == zeros();
+            return *this != zeros();
         }
 
     private:
@@ -463,13 +472,24 @@ namespace avel {
     // Delayed definitions
     //=====================================================
 
-    Vector<std::uint32_t, 8>::Vector(vec8x32f v):
-        #if defined(AVEL_AVX512VL)
-        content()
-        #else
-        content()
-        #endif
-        {}
+    #if defined(AVEL_AVX2)
+    AVEL_FINL vec8x32u::Vector(vec8x32f v):
+    #if defined(AVEL_AVX512VL)
+        content(_mm256_cvtps_epu32(v)) {}
+    #else
+        content([&] () {
+            auto half = v * vec8x32f{0.5f};
+
+            auto hi = vec8x32u{_mm256_cvtps_epi32(half) << 1};
+            auto lo = vec8x32u{_mm256_cvtps_epi32(v)};
+
+            return hi | lo;
+        } ()) {}
+    #endif
+    #endif
+
+    AVEL_FINL vec8x32i::Vector(vec8x32f v):
+        content(_mm256_cvtps_epi32(v)) {}
 
     //=====================================================
     // General vector operations
@@ -557,7 +577,7 @@ namespace avel {
 
     AVEL_FINL std::array<vec8x32f, 2> sincos(vec8x32f angle) {
         alignas(32) static const float constants0[8] {
-            reinterpret_bits<float>(std::uint32_t(0x7FFFFFFF)),
+            bit_cast<float>(std::uint32_t(0x7FFFFFFF)),
             0.5f,
             6.283185307179586f,
             1.0f / (6.283185307179586f),

@@ -18,9 +18,7 @@ namespace avel {
         // Constructor
         //=================================================
 
-        AVEL_FINL explicit Vector_mask(Vector_mask<std::uint32_t, 16> v);
-
-        AVEL_FINL explicit Vector_mask(Vector_mask<float, 16> v);
+        //AVEL_FINL explicit Vector_mask(Vector_mask<std::uint32_t, 16> v);
 
         AVEL_FINL explicit Vector_mask(primitive content):
             content(content) {}
@@ -146,10 +144,28 @@ namespace avel {
         // Constructors
         //=================================================
 
-        AVEL_FINL explicit Vector(Vector<std::uint32_t, width> v):
+        AVEL_FINL explicit Vector(vec16x32u v):
             content(v) {}
 
         AVEL_FINL explicit Vector(Vector<float, width> v);
+
+        AVEL_FINL explicit Vector(mask m):
+            content(_mm512_mask_blend_epi32(m, _mm512_setzero_epi32(), _mm512_set1_epi32(1))) {}
+
+        /*
+        AVEL_FINL Vector(
+            std::int32_t a, std::int32_t b, std::int32_t c, std::int32_t d,
+            std::int32_t e, std::int32_t f, std::int32_t g, std::int32_t h,
+            std::int32_t i, std::int32_t j, std::int32_t k, std::int32_t l,
+            std::int32_t m, std::int32_t n, std::int32_t o, std::int32_t p
+            ):
+            content(_mm512_setr_epi32(
+                a, b, c, d,
+                e, f, g, h,
+                i, j, k, l,
+                m, n, o, p
+            )) {}
+        */
 
         AVEL_FINL explicit Vector(const primitive content):
             content(content) {}
@@ -158,7 +174,7 @@ namespace avel {
             content(_mm512_set1_epi32(x)) {}
 
         AVEL_FINL explicit Vector(const scalar_type* x):
-            content(_mm512_loadu_si512(reinterpret_cast<const __m128i*>(x))) {}
+            content(_mm512_loadu_si512(reinterpret_cast<const __m512i*>(x))) {}
 
         AVEL_FINL explicit Vector(const std::array<scalar_type, width>& array):
             content(_mm512_loadu_si512(array.data())) {}
@@ -445,7 +461,7 @@ namespace avel {
         AVEL_FINL std::array<scalar_type, width> as_array() const {
             alignas(alignof(Vector)) std::array<scalar_type, width> array{};
 
-            _mm512_store_si512(reinterpret_cast<__m128i*>(array.data()), content);
+            _mm512_store_si512(reinterpret_cast<__m512i*>(array.data()), content);
 
             return array;
         }
@@ -455,11 +471,7 @@ namespace avel {
         }
 
         AVEL_FINL explicit operator mask() const {
-            return *this == zeros();
-        }
-
-        AVEL_FINL explicit operator Vector<std::uint32_t, width>() const {
-            return Vector<std::uint32_t, width>{content};
+            return *this != zeros();
         }
 
     private:
@@ -473,6 +485,23 @@ namespace avel {
     };
 
     //=====================================================
+    // Delayed definitions
+    //=====================================================
+
+    AVEL_FINL vec16x32u::Vector(vec16x32i c):
+        content(c) {}
+
+    template<>
+    AVEL_FINL vec16x32i bit_cast<vec16x32i, vec16x32u>(const vec16x32u& v) {
+        return vec16x32i{static_cast<__m512i>(v)};
+    }
+
+    template<>
+    AVEL_FINL vec16x32u bit_cast<vec16x32u, vec16x32i>(const vec16x32i& v) {
+        return vec16x32u{static_cast<__m512i>(v)};
+    }
+
+    //=====================================================
     // General vector operations
     //=====================================================
 
@@ -482,6 +511,26 @@ namespace avel {
 
     AVEL_FINL vec16x32i max(vec16x32i a, vec16x32i b) {
         return vec16x32i{_mm512_max_epi32(a, b)};
+    }
+
+    AVEL_FINL vec16x32i min(vec16x32i a, vec16x32i b) {
+        return vec16x32i{_mm512_min_epi32(a, b)};
+    }
+
+    AVEL_FINL vec16x32i midpoint(vec16x32i a, vec16x32i b) {
+        const vec16x32u offset{0x80000000};
+
+        #if defined(AVEL_AVX512DQ)
+        auto x = static_cast<vec16x32u>(a) ^ offset;
+        auto y = static_cast<vec16x32u>(b) ^ offset;
+
+        return vec16x32i{midpoint(x, y) ^ offset};
+        #else
+        auto x = static_cast<vec16x32u>(a) + offset;
+        auto y = static_cast<vec16x32u>(b) + offset;
+
+        return vec16x32i{midpoint(x, y) + offset};
+        #endif
     }
 
     AVEL_FINL vec16x32i abs(vec16x32i v) {
@@ -500,7 +549,11 @@ namespace avel {
 
     template<>
     AVEL_FINL vec16x32i stream_load<vec16x32i>(const std::int32_t* ptr) {
+        #if defined(AVEL_GCC)
+        return vec16x32i{_mm512_stream_load_si512((void*)ptr)};
+        #else
         return vec16x32i{_mm512_stream_load_si512(ptr)};
+        #endif
     }
 
     template<>
@@ -517,7 +570,11 @@ namespace avel {
     }
 
     AVEL_FINL void stream_store(std::int32_t* ptr, vec16x32i v) {
+        #if defined(AVEL_GCC)
+        _mm512_stream_si512((__m512i*)ptr, v);
+        #else
         _mm512_stream_si512(ptr, v);
+        #endif
     }
 
     AVEL_FINL void scatter(std::int32_t* ptr, vec16x32i indices, vec16x32i v) {
@@ -530,9 +587,9 @@ namespace avel {
 
     AVEL_FINL vec16x32i popcount(vec16x32i v) {
         #if defined(AVEL_AVX512VPOPCNTDQ)
-        return vec16x32i{_mm512_popcnt_epi32(x)};
+        return vec16x32i{_mm512_popcnt_epi32(v)};
         #elif defined(AVEL_AVX512BITALG)
-        auto tmp0 = _mm512_popcnt_epi16(x);
+        auto tmp0 = _mm512_popcnt_epi16(v);
         auto tmp1 = _mm512_slli_epi32(tmp0, 16);
 
         auto tmp2 = _mm512_add_epi32(tmp0, tmp1);

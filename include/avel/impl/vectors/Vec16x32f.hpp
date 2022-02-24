@@ -23,9 +23,9 @@ namespace avel {
         // Constructor
         //=================================================
 
-        AVEL_FINL explicit Vector_mask(Vector_mask<std::uint32_t, 16> v);
+        //AVEL_FINL explicit Vector_mask(Vector_mask<std::uint32_t, 16> v);
 
-        AVEL_FINL explicit Vector_mask(Vector_mask<std::int32_t, 16> v);
+        //AVEL_FINL explicit Vector_mask(Vector_mask<std::int32_t, 16> v);
 
         AVEL_FINL explicit Vector_mask(const primitive contents):
             content(contents) {}
@@ -156,6 +156,10 @@ namespace avel {
         AVEL_FINL explicit Vector(vec16x32i v):
             content(_mm512_cvtepi32_ps(v)) {}
 
+        AVEL_FINL explicit Vector(mask m):
+            content(_mm512_mask_blend_ps(m, _mm512_setzero_ps(), _mm512_set1_ps(1.0f))) {}
+
+        /*
         AVEL_FINL explicit Vector(
             float a, float b, float c, float d,
             float e, float f, float g, float h,
@@ -168,6 +172,7 @@ namespace avel {
                 i, j, k, l,
                 m, n, o, p
             )) {}
+        */
 
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}
@@ -337,17 +342,35 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector operator&=(const Vector vec) {
+            #if defined(AVEL_AVX512DQ)
             content = _mm512_and_ps(content, vec.content);
+            #else
+            auto a = _mm512_castps_si512(content);
+            auto b = _mm512_castps_si512(vec.content);
+            content = _mm512_castsi512_ps(_mm512_and_si512(a, b));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector operator|=(const Vector vec) {
+            #if defined(AVEL_AVX512DQ)
             content = _mm512_or_ps(content, vec.content);
+            #else
+            auto a = _mm512_castps_si512(content);
+            auto b = _mm512_castps_si512(vec.content);
+            content = _mm512_castsi512_ps(_mm512_or_si512(a, b));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector operator^=(const Vector vec) {
+            #if defined(AVEL_AVX512DQ)
             content = _mm512_xor_ps(content, vec.content);
+            #else
+            auto a = _mm512_castps_si512(content);
+            auto b = _mm512_castps_si512(vec.content);
+            content = _mm512_castsi512_ps(_mm512_xor_si512(a, b));
+            #endif
             return *this;
         }
 
@@ -360,15 +383,33 @@ namespace avel {
         }
 
         AVEL_FINL Vector operator&(const Vector vec) {
+            #if defined(AVEL_AVX512DQ)
             return Vector{_mm512_and_ps(content, vec.content)};
+            #else
+            auto a = _mm512_castps_si512(content);
+            auto b = _mm512_castps_si512(vec.content);
+            return Vector{_mm512_castsi512_ps(_mm512_and_si512(a, b))};
+            #endif
         }
 
         AVEL_FINL Vector operator|(const Vector vec) {
+            #if defined(AVEL_AVX512DQ)
             return Vector{_mm512_or_ps(content, vec.content)};
+            #else
+            auto a = _mm512_castps_si512(content);
+            auto b = _mm512_castps_si512(vec.content);
+            return Vector{_mm512_castsi512_ps(_mm512_or_si512(a, b))};
+            #endif
         }
 
         AVEL_FINL Vector operator^(const Vector vec) {
+            #if defined(AVEL_AVX512DQ)
             return Vector{_mm512_xor_ps(content, vec.content)};
+            #else
+            auto a = _mm512_castps_si512(content);
+            auto b = _mm512_castps_si512(vec.content);
+            return Vector{_mm512_castsi512_ps(_mm512_xor_si512(a, b))};
+            #endif
         }
 
         //=================================================
@@ -388,11 +429,7 @@ namespace avel {
         }
 
         AVEL_FINL explicit operator mask() const {
-            return *this == zeros();
-        }
-
-        AVEL_FINL explicit operator Vector<std::int32_t, width>() const {
-            return Vector<std::int32_t, width>{_mm512_cvtps_epi32(content)};
+            return *this != zeros();
         }
 
     private:
@@ -404,6 +441,36 @@ namespace avel {
         primitive content;
 
     };
+
+    //=====================================================
+    // Delayed definitions
+    //=====================================================
+
+    AVEL_FINL vec16x32u::Vector(vec16x32f c):
+        content(_mm512_cvtps_epu32(c)) {}
+
+    AVEL_FINL vec16x32i::Vector(vec16x32f c):
+        content(_mm512_cvtps_epi32(c)) {}
+
+    template<>
+    AVEL_FINL vec16x32f bit_cast<vec16x32f, vec16x32u>(const vec16x32u& v) {
+        return vec16x32f{_mm512_castsi512_ps(v)};
+    }
+
+    template<>
+    AVEL_FINL vec16x32u bit_cast<vec16x32u, vec16x32f>(const vec16x32f& v) {
+        return vec16x32u{_mm512_castps_si512(v)};
+    }
+
+    template<>
+    AVEL_FINL vec16x32f bit_cast<vec16x32f, vec16x32i>(const vec16x32i& v) {
+        return vec16x32f{_mm512_castsi512_ps(v)};
+    }
+
+    template<>
+    AVEL_FINL vec16x32i bit_cast<vec16x32i, vec16x32f>(const vec16x32f& v) {
+        return vec16x32i{_mm512_castps_si512(v)};
+    }
 
     //=====================================================
     // Forward declarations
@@ -468,29 +535,23 @@ namespace avel {
     //=====================================================
 
     AVEL_FINL vec16x32f average(vec16x32f a, vec16x32f b) {
-        auto half = vec16x32f{0.5f};
+        static const auto half = vec16x32f{0.5f};
         return (a - a * half) + (b * half);
     }
 
-    AVEL_FINL vec16x32f epsilon_increment(vec16x32f v) {
-        const vec16x32u low_bit{0x01};
-        const vec16x32u exponent_mask{0x7f800000};
+    AVEL_FINL vec16x32f epsilon_increment(vec16x32f v);
 
-        auto offset = vec16x32u{_mm512_castps_si512(v)} & exponent_mask | low_bit;
+    AVEL_FINL vec16x32f epsilon_decrement(vec16x32f v);
 
-        return vec16x32f{_mm512_add_ps(v, _mm512_castsi512_ps(offset))};
+    AVEL_FINL vec16x32f epsilon_offset(vec16x32f v, vec16x32u o) ;
+
+    AVEL_FINL vec16x32f epsilon_offset(vec16x32f v, vec16x32i o) {
+        const vec16x32i max_offset_mag{0x7f7fffff};
+
+        vec16x32f offset{};
+
+        return v + offset;
     }
-
-    AVEL_FINL vec16x32f epsilon_decrement(vec16x32f v) {
-        const vec16x32u low_bit{0x01};
-        const vec16x32u exponent_mask{0x7f800000};
-
-        auto offset = vec16x32u{_mm512_castps_si512(v)} & exponent_mask | low_bit;
-
-        return vec16x32f{_mm512_sub_ps(v, _mm512_castsi512_ps(offset))};
-    }
-
-    AVEL_FINL vec16x32f epsilon_offset(vec16x32f, vec16x32i);
 
     //=====================================================
     // cmath basic operations
@@ -644,14 +705,14 @@ namespace avel {
 
     AVEL_FINL std::array<vec16x32f, 2> sincos(vec16x32f angle) {
         alignas(32) static const float constants0[8] {
-            reinterpret_bits<float>(std::uint32_t(0x7FFFFFFF)),
-            0.5f,
-            6.283185307179586f,
-            1.0f / (6.283185307179586f),
-            0.78539816339744830f,
-            1.57079632679489661f,
-            1.0f,
-            0.0f
+            bit_cast<float>(std::uint32_t(0x7FFFFFFF)),
+            0.5f, //One half
+            6.283185307179586f, // Two pi
+            1.0f / (6.283185307179586f), //one over two pi
+            0.78539816339744830f, //1 quarter pi
+            1.57079632679489661f, //1 half pi
+            1.0f, //One
+            0.0f //Zero
         };
 
         __m512 abs_angle = _mm512_abs_ps(angle);
@@ -683,8 +744,11 @@ namespace avel {
             _CMP_GT_OQ
         );
 
-        // Compute offset that's added to angle to bring it into [-pi/4, pi/4]
-        // range where error of Taylor series is minimized
+        //TODO: Use the following constant in deciding which approximation to use
+        //0.88394194 Boundary between approximation
+
+        // Compute offset that's added to angle to bring it into the range of
+        // [-pi/4, pi/4] which the Taylor series are designed to approximate
         auto add_half0 = _mm512_cmp_ps_mask(quart_pi, abs_a, _CMP_LT_OQ);
         auto add_half1 = _mm512_cmp_ps_mask(three_quart_pi, abs_a, _CMP_LT_OQ);
 
@@ -755,13 +819,59 @@ namespace avel {
         return {vec16x32f{ret_sin}, vec16x32f{ret_cos}};
     }
 
-    AVEL_FINL vec16x32f sin(vec16x32f angle);
+    AVEL_FINL vec16x32f sin(vec16x32f angle);/* {
+        alignas(64) static const float constants[16] {
+            bit_cast<float>(std::uint32_t(0x7FFFFFFF)),
+            0.5f, //One half
+            6.283185307179586f, // Two pi
+            1.0f / (6.283185307179586f), //one over two pi
+            0.78539816339744830f, //1 quarter pi
+            1.57079632679489661f, //1 half pi
+            0.8839419395, // Threshold value
+            1.0f / 1.0f, // 1/1!
+            1.0f / 6.0f, // 1/3!
+            1.0f / 120.0f, // 1/5!
+            1.0f / 5040.0f, // 1/7!
+            1.0f / 362880.0f, // 1/9!
+            1.0f / 39916800.0f, // 1/11!
+            1.0f / 6227020800.0f // 1/13!
+        };
 
-    AVEL_FINL vec16x32f cos(vec16x32f angle);
+        auto abs_angle = abs(angle);
 
-    AVEL_FINL vec16x32f tan(vec16x32f angle);
+        //Remaps input angle to [-pi, pi) range
+        vec16x32f half{constants[0x01]};
+        vec16x32f two_pi{constants[0x02]};
+        vec16x32f rcp_two_pi{constants[0x03]};
+        vec16x32f x = fmadd(two_pi, trunc(fmadd(abs_angle, rcp_two_pi, half)), abs_angle);
+
+        vec16x32f u = x * x;
+
+        vec16x32f ret = vec16x32f{constants[13]};
+        ret = fnmadd(u, ret, vec16x32f{constants[12]});
+        ret = fnmadd(u, ret, vec16x32f{constants[11]});
+        ret = fnmadd(u, ret, vec16x32f{constants[10]});
+        ret = fnmadd(u, ret, vec16x32f{constants[9]});
+        ret = fnmadd(u, ret, vec16x32f{constants[8]});
+        ret = fnmadd(u, ret, vec16x32f{constants[7]});
+
+        return ret * x;
+    }
+    */
+
+    AVEL_FINL vec16x32f cos(vec16x32f angle) {
+        //TODO: Cheaper implementation
+        return sincos(angle)[1];
+    }
+
+    AVEL_FINL vec16x32f tan(vec16x32f angle) {
+        //TODO: Cheaper implementation?
+        auto sc = sincos(angle);
+        return sc[0] / sc[1];
+    }
 
     AVEL_FINL vec16x32f asin(vec16x32f x) {
+        //TODO: More accurate implementation
         // https://wrf.ecse.rpi.edu/Research/Short_Notes/arcsin/fastsqrt.html
         alignas(32) static constexpr float constants[8] {
             -0.5860008050f,
@@ -789,22 +899,9 @@ namespace avel {
     }
 
     AVEL_FINL vec16x32f acos(vec16x32f x) {
-        alignas(32) static constexpr float constants[8] {
-
-        };
-
-        vec16x32f offset = sqrt(vec16x32f{1.0f} - (x * x));
-
-        x +=offset;
-
-        vec16x32f t0 = fmadd(x, vec16x32f{constants[0]}, vec16x32f{constants[1]});
-        vec16x32f t1 = fmadd(x, t0, vec16x32f{constants[2]});
-        vec16x32f t2 = fmadd(x, t1, vec16x32f{constants[3]});
-        vec16x32f t3 = fmadd(x, t2, vec16x32f{constants[4]});
-        vec16x32f t4 = fmadd(x, t3, vec16x32f{constants[5]});
-        vec16x32f t5 = fmadd(x, t4, vec16x32f{constants[6]});
-
-        return (t5 - offset);
+        //TODO: More accurate approximation
+        //TODO: Cheaper implementation
+        return asin(-x) - vec16x32f{1.57079632679f};
     }
 
     AVEL_FINL vec16x32f atan(vec16x32f v);
@@ -853,9 +950,9 @@ namespace avel {
             0x80000000
         };
 
-        auto mask = vec16x32f{reinterpret_bits<float>(mask_data[0])};
+        auto mask = vec16x32f{bit_cast<float>(mask_data[0])};
 
-        //TODO: AVX512F implementation
+        //TODO: Pure AVX512F implementation
         return mask & sign | vec16x32f{_mm512_andnot_ps(mask, mag)};
     }
 

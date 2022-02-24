@@ -19,7 +19,7 @@ namespace avel {
     /// A class representing a SIMD register.
     ///
     /// Since this class represents a register, variables of this type should
-    /// not be used in large amounts.
+    /// not be used in large amounts, or for purposes besides .
     ///
     /// \tparam T A fundamental integral or floating-point type.
     template<class T, int N = avel::optimal_vector_width<T>::value>

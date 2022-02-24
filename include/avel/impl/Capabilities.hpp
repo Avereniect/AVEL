@@ -36,6 +36,10 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
     static_assert(false, "Compiler not supported");
 #endif
 
+//=========================================================
+// x86 macros
+//=========================================================
+
 #ifdef AVEL_AVX512VPOPCNTDQ
     #define AVEL_AVX512F
 #endif
@@ -110,20 +114,96 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
 
 #ifdef AVEL_SSE
     #define AVEL_PREFETCH
+    #define AVEL_X86
 #endif
 
 
 #ifdef AVEL_PREFETCH
+#define AVEL_X86
 #endif
 
 #ifdef AVEL_FLUSH
+#define AVEL_X86
 #endif
 
 #ifdef AVEL_POPCNT
+#define AVEL_X86
 #endif
 
 #if defined(AVEL_SSE) && !defined(AVEL_SSE2)
 static_assert(false, "AVEL does not support SSE on its own. SSE2 required");
+#endif
+
+#if defined(AVEL_X86)
+
+#endif
+
+//=========================================================
+// ARM macros
+//=========================================================
+
+#if defined(AVEL_SVE2)
+#define AVEL_SVE
+#endif
+
+#if defined(AVEL_SVE)
+#define AVEL_ARM
+#endif
+
+#if defined(AVEL_NEON)
+#define AVEL_ARM
+#endif
+
+#if defined(AVEL_ARMV8)
+#define AVEL_ARM
+#endif
+
+#if defined(AVEL_ARMV7)
+#define AVEL_ARM
+#endif
+
+#if defined(AVEL_AARCH64)
+#define AVEL_ARM
+#endif
+
+#if defined(AVEL_AARCH32)
+#define AVEL_ARM
+#endif
+
+#if defined(AVEL_ARM)
+
+#endif
+
+//=========================================================
+// Intrinsic headers
+//=========================================================
+
+#if defined(AVEL_GCC)
+    #if defined(AVEL_X86)
+    #include <immintrin.h>
+    #elif defined(AVEL_NEON)
+    #include <arm_neon.h>
+    #endif
+#elif defined(AVEL_CLANG)
+    #if defined(AVEL_X86)
+    #include <immintrin.h>
+    #elif defined(AVEL_NEON)
+    #include <arm_neon.h>
+    #endif
+#else
+static_assert(false, "Compiler not supported");
+#endif
+
+//=========================================================
+// Error checking
+//=========================================================
+
+#if defined(AVEL_ARM) & defined(AVEL_X86)
+static_assert(false, "Macros for multiples ISA's specified.");
+#endif
+
+#if !defined(AVEL_X86) & defined(AVEL_ARM)
+static_assert(false, "No ISA specified")
 #endif
 
 #endif //AVEL_CAPABILITIES_HPP

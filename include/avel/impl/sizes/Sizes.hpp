@@ -64,6 +64,8 @@ namespace avel {
         #include "Sizes_AVX.ipp"
     #elif defined (AVEL_SSE2)
         #include "Sizes_SSE2.ipp"
+    #elif defined(AVEL_NEON)
+        #include "Sizes_NEON.ipp"
     #else
         #include "Sizes_default.ipp"
     #endif

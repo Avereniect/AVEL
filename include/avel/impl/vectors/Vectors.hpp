@@ -6,8 +6,6 @@
 #include "../vector_primitives/Vector_primitives.hpp"
 #include "../Utils.hpp"
 
-//Note: The order of inclusion of the following files in meaningful
-
 namespace avel {
 
     template<class V>
@@ -29,9 +27,11 @@ namespace avel {
 
 }
 
+//Note: The order of inclusion of the following files in meaningful
+
 //128-bit vectors
 
-#ifdef AVEL_SSE2
+#if defined(AVEL_SSE2) | defined(AVEL_NEON)
 
 #include "Vec4x32u.hpp"
 #include "Vec4x32i.hpp"
@@ -62,7 +62,7 @@ namespace avel {
 /*
  * Should these specializations be made?
  * The vector is meant to largely replace a scalar in many contexts and this
- * specialization may be required by a certain template.
+ * specialization may be required by certain templates.
  *
 namespace std {
 

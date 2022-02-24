@@ -18,10 +18,6 @@ namespace avel {
         // Constructor
         //=================================================
 
-        AVEL_FINL explicit Vector_mask(Vector_mask<std::int32_t, 4> v);
-
-        AVEL_FINL explicit Vector_mask(Vector_mask<float, 4> v);
-
         AVEL_FINL explicit Vector_mask(const primitive content):
             content(content) {}
 
@@ -198,13 +194,26 @@ namespace avel {
 
         AVEL_FINL explicit Vector(Vector<float, width> v);
 
-        AVEL_FINL explicit Vector(std::uint32_t a, std::uint32_t b, std::uint32_t c, std::uint32_t d):
-            content(_mm_set_epi32(d, c, b, a)) {}
+        AVEL_FINL explicit Vector(mask m):
+        #if defined(AVEL_AVX512VL)
+            content(_mm_mask_blend_epi32(m, _mm_setzero_si128(), _mm_set1_epi32(1))) {}
+        #else
+            content(_mm_sub_epi32(_mm_setzero_si128(), m)) {}
+        #endif
 
-        AVEL_FINL explicit Vector(const primitive content):
+        /*
+        AVEL_FINL explicit Vector(std::uint32_t a, std::uint32_t b, std::uint32_t c, std::uint32_t d):
+            #if defined(AVEL_SSE2)
+            content(_mm_set_epi32(d, c, b, a)) {}
+            #elif defined(AVEL_ARM)
+            content() {}
+            #endif
+        */
+
+        AVEL_FINL explicit Vector(primitive content):
             content(content) {}
 
-        AVEL_FINL explicit Vector(const scalar_type x):
+        AVEL_FINL explicit Vector(scalar_type x):
             content(_mm_set1_epi32(x)) {}
 
         AVEL_FINL explicit Vector(const scalar_type* x):
@@ -585,7 +594,11 @@ namespace avel {
         AVEL_FINL std::array<scalar_type, width> as_array() const {
             alignas(alignof(Vector)) std::array<scalar_type, width> array{};
 
+            #if defined(AVEL_SSE2)
             _mm_store_si128(reinterpret_cast<primitive*>(array.data()), content);
+            #elif defined(AVEL_ARM)
+
+            #endif
 
             return array;
         }
@@ -612,9 +625,14 @@ namespace avel {
     // General vector operations
     //=====================================================
 
-    vec4x32u blend(vec4x32u a, vec4x32u b, mask4x32u m) {
+    AVEL_FINL vec4x32u blend(vec4x32u a, vec4x32u b, mask4x32u m) {
         #if defined(AVEL_AVX512VL)
-        return vec4x32u{_mm_mask_blend_epi32(m, a, b)};
+        return vec4x32u{_mm_mask_blend_epi32(
+            m,
+            static_cast<__m128i>(a),
+            static_cast<__m128i>(b)
+            )
+        };
         #elif defined(AVEL_SSE41)
         return vec4x32u{_mm_blendv_epi8(a, b, m)};
         #elif defined(AVEL_SSE2)
@@ -624,7 +642,7 @@ namespace avel {
         #endif
     }
 
-    vec4x32u max(vec4x32u a, vec4x32u b) {
+    AVEL_FINL vec4x32u max(vec4x32u a, vec4x32u b) {
         #if defined(AVEL_SSE41)
         return vec4x32u{_mm_max_epu32(a, b)};
         #else
@@ -632,7 +650,7 @@ namespace avel {
         #endif
     }
 
-    vec4x32u min(vec4x32u a, vec4x32u b) {
+    AVEL_FINL vec4x32u min(vec4x32u a, vec4x32u b) {
         #if defined(AVEL_SSE41)
         return vec4x32u{_mm_min_epu32(a, b)};
         #else
@@ -640,18 +658,22 @@ namespace avel {
         #endif
     }
 
+    AVEL_FINL vec4x32u midpoint(vec4x32u a, vec4x32u b) {
+        return (a & b) + ((a ^ b) >> 1);
+    }
+
     template<>
-    vec4x32u load<vec4x32u>(const std::uint32_t* ptr) {
+    AVEL_FINL vec4x32u load<vec4x32u>(const std::uint32_t* ptr) {
         return vec4x32u{_mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr))};
     }
 
     template<>
-    vec4x32u aligned_load<vec4x32u>(const std::uint32_t* ptr) {
+    AVEL_FINL vec4x32u aligned_load<vec4x32u>(const std::uint32_t* ptr) {
         return vec4x32u{_mm_load_si128(reinterpret_cast<const __m128i*>(ptr))};
     }
 
     template<>
-    vec4x32u stream_load<vec4x32u>(const std::uint32_t* ptr) {
+    AVEL_FINL vec4x32u stream_load<vec4x32u>(const std::uint32_t* ptr) {
         #ifdef AVEL_SSE41
         //Casting away of const required by intrinsic
         return vec4x32u{_mm_stream_load_si128((__m128i*)ptr)};
@@ -662,15 +684,15 @@ namespace avel {
 
     //Definition of gather deferred until vector of signed integers is defined
 
-    void store(std::uint32_t* ptr, vec4x32u v) {
+    AVEL_FINL void store(std::uint32_t* ptr, vec4x32u v) {
         _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), v);
     }
 
-    void aligned_store(std::uint32_t* ptr, vec4x32u v) {
+    AVEL_FINL void aligned_store(std::uint32_t* ptr, vec4x32u v) {
         _mm_store_si128(reinterpret_cast<__m128i*>(ptr), v);
     }
 
-    void stream_store(std::uint32_t* ptr, vec4x32u v) {
+    AVEL_FINL void stream_store(std::uint32_t* ptr, vec4x32u v) {
         _mm_stream_si128(reinterpret_cast<__m128i*>(ptr), v);
     }
 
@@ -680,21 +702,21 @@ namespace avel {
     // Bit operations
     //=====================================================
 
-    vec4x32u popcount(vec4x32u v) {
+    AVEL_FINL vec4x32u popcount(vec4x32u v) {
         #if defined(AVEL_AVX512VL) & defined(AVEL_AVX512VPOPCNTDQ)
-        return vec4x32u{_mm_popcnt_epi32(x)};
+        return vec4x32u{_mm_popcnt_epi32(v)};
         #elif defined(AVELAVX512VL) & defined(AVEL_AVX512BITALG)
-        auto tmp0 = _mm_popcnt_epi16(x);
+        auto tmp0 = _mm_popcnt_epi16(v);
         auto tmp1 = _mm_slli_epi32(tmp0, 16);
 
         auto tmp2 = _mm_add_epi32(tmp0, tmp1);
 
         return vec4x32u{_mm_srli_epi32(tmp2, 16)};
         #elif defined(AVEL_POPCNT) & defined(AVEL_SSE42)
-        int a = _mm_extract_epi32(x, 0);
-        int b = _mm_extract_epi32(x, 1);
-        int c = _mm_extract_epi32(x, 2);
-        int d = _mm_extract_epi32(x, 3);
+        int a = _mm_extract_epi32(v, 0);
+        int b = _mm_extract_epi32(v, 1);
+        int c = _mm_extract_epi32(v, 2);
+        int d = _mm_extract_epi32(v, 3);
 
         auto t0 = _mm_setzero_si128();
         auto t1 = _mm_insert_epi32(t0, _mm_popcnt_u32(a), 0);

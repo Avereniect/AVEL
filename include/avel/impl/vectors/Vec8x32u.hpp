@@ -16,10 +16,6 @@ namespace avel {
         // Constructor
         //=================================================
 
-        AVEL_FINL explicit Vector_mask(Vector_mask<std::int32_t, 8> v);
-
-        AVEL_FINL explicit Vector_mask(Vector_mask<float, 8> v);
-
         AVEL_FINL explicit Vector_mask(const primitive content):
             content(content) {}
 
@@ -197,10 +193,19 @@ namespace avel {
 
         AVEL_FINL explicit Vector(Vector<float, width> v);
 
+        AVEL_FINL explicit Vector(mask m):
+        #if defined(AVEL_AVX512VL)
+            content(_mm256_mask_blend_epi32(m, _mm256_setzero_si256(), _mm256_set1_epi32(1))) {}
+        #else
+            content(_mm256_sub_epi32(_mm256_setzero_si256(), m)) {}
+        #endif
+
+        /*
         AVEL_FINL explicit Vector(
             std::uint32_t a, std::uint32_t b, std::uint32_t c, std::uint32_t d,
             std::uint32_t e, std::uint32_t f, std::uint32_t g, std::uint32_t h):
             content(_mm256_set_epi32(h, g, f, e, d, c, b, a)) {}
+        */
 
         AVEL_FINL explicit Vector(const primitive content):
             content(content) {}
@@ -577,7 +582,12 @@ namespace avel {
     #if defined(AVEL_AVX2)
     AVEL_FINL vec8x32u blend(vec8x32u a, vec8x32u b, vec8x32u::mask m) {
         #if defined(AVEL_AVX512VL)
-        return vec8x32u{_mm256_mask_blend_epi32(m, a, b)};
+        return vec8x32u{_mm256_mask_blend_epi32(
+            m,
+            static_cast<__m256i>(a),
+            static_cast<__m256i>(b)
+            )
+        };
         #elif defined(AVEL_AVX2)
         return vec8x32u{_mm256_blendv_epi8(a, b, m)};
         #endif
@@ -589,6 +599,10 @@ namespace avel {
 
     AVEL_FINL vec8x32u min(vec8x32u a, vec8x32u b) {
         return vec8x32u{_mm256_min_epu32(a, b)};
+    }
+
+    AVEL_FINL vec8x32u midpoint(vec8x32u a, vec8x32u b) {
+        return (a & b) + ((a ^ b) >> 1);
     }
 
     template<>
@@ -628,9 +642,9 @@ namespace avel {
 
     vec8x32u popcount(vec8x32u v) {
         #if defined(AVEL_AVX512VL) & defined(AVEL_AVX512VPOPCNTDQ)
-        return vec8x32u{_mm256_popcnt_epi32(x)};
+        return vec8x32u{_mm256_popcnt_epi32(v)};
         #elif defined(AVELAVX512VL) & defined(AVEL_AVX512BITALG)
-        auto tmp0 = _mm256_popcnt_epi16(x);
+        auto tmp0 = _mm256_popcnt_epi16(v);
         auto tmp1 = _mm256_slli_epi32(tmp0, 16);
 
         auto tmp2 = _mm256_add_epi32(tmp0, tmp1);

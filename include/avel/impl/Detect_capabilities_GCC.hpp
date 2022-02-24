@@ -69,12 +69,12 @@
     #define AVEL_AVX512VPOPCNTDQ
 #endif
 
-#ifdef __POPCNT__
-    #define AVEL_POPCNT
-#endif
-
 #ifdef __AVX512VPOPCNTDQ__
     #define AVEL_AVX512VPOPCNTDQ
+#endif
+
+#ifdef __POPCNT__
+    #define AVEL_POPCNT
 #endif
 
 #endif //AVEL_DETECT_CAPABILITIES_GCC_HPP

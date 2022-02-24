@@ -41,10 +41,15 @@ namespace avel {
 
     #if defined(AVEL_SSE2)
         #include "Vector_primitives_SSE2.ipp"
-    #else
-        #include "Vector_primitives_default.ipp"
     #endif
 
+    #if defined(AVEL_NEON)
+        #include "Vector_primitives_NEON.ipp"
+    #endif
+
+    #if !defined(AVEL_SSE) && !defined(AVEL_NEON)
+        #include "Vector_primitives_default.ipp"
+    #endif
 }
 
 #endif //AVEL_VECTOR_PRIMITIVES_HPP

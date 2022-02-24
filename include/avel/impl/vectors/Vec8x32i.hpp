@@ -18,9 +18,7 @@ namespace avel {
         // Constructor
         //=================================================
 
-        AVEL_FINL explicit Vector_mask(Vector<std::int32_t, 8> v);
-
-        AVEL_FINL explicit Vector_mask(Vector<float, 8> v);
+        //AVEL_FINL explicit Vector_mask(Vector_mask<std::uint32_t, 8> v);
 
         AVEL_FINL explicit Vector_mask(const primitive content):
             content(content) {}
@@ -191,14 +189,24 @@ namespace avel {
         // Constructors
         //=================================================
 
-        AVEL_FINL explicit Vector(Vector<std::uint32_t, 8> v);
+        AVEL_FINL explicit Vector(vec8x32u v):
+            content(v) {}
 
         AVEL_FINL explicit Vector(Vector<float, 8> v);
 
+        AVEL_FINL explicit Vector(mask m):
+        #if defined(AVEL_AVX512VL)
+            content(_mm256_mask_blend_epi32(m, _mm256_setzero_si256(), _mm256_set1_epi32(1))) {}
+        #else
+            content(_mm256_sub_epi32(_mm256_setzero_si256(), m)) {}
+        #endif
+
+        /*
         AVEL_FINL explicit Vector(
             std::int32_t a, std::int32_t b, std::int32_t c, std::int32_t d,
             std::int32_t e, std::int32_t f, std::int32_t g, std::int32_t h):
             content(_mm256_set_epi32(h, g, f, e, d, c, b, a)) {}
+        */
 
         AVEL_FINL explicit Vector(const primitive content):
             content(content) {}
@@ -545,17 +553,23 @@ namespace avel {
     // Delayed definitions
     //=====================================================
 
-    Vector<std::uint32_t, 8>::Vector(vec8x32i v):
-        content(v) {}
+    vec8x32u::Vector(vec8x32i c):
+        content(c) {}
 
     //=====================================================
     // General vector operations
     //=====================================================
 
+    #if defined(AVEL_AVX2)
     AVEL_FINL vec8x32i blend(vec8x32i a, vec8x32i b, mask8x32i m) {
         #if defined(AVEL_AVX512VL)
-        return vec8x32i{_mm256_mask_blend_epi32(m, a, b)};
-        #elif defined(AVEL_AVX2)
+        return vec8x32i{_mm256_mask_blend_epi32(
+            m,
+            static_cast<__m256i>(a),
+            static_cast<__m256i>(b)
+            )
+        };
+        #else
         return vec8x32i{_mm256_blendv_epi8(a, b, m)};
         #endif
     }
@@ -568,9 +582,19 @@ namespace avel {
         return vec8x32i{_mm256_min_epi32(a, b)};
     }
 
+    AVEL_FINL vec8x32i midpoint(vec8x32i a, vec8x32i b) {
+        const vec8x32u offset{0x80000000u};
+
+        auto x = vec8x32u{a} ^ offset;
+        auto y = vec8x32u{b} ^ offset;
+
+        return vec8x32i{midpoint(x, y) ^ offset};
+    }
+
     AVEL_FINL vec8x32i abs(vec8x32i v) {
         return vec8x32i{_mm256_abs_epi32(v)};
     }
+    #endif
 
     template<>
     AVEL_FINL vec8x32i load<vec8x32i>(const std::int32_t* ptr) {
@@ -628,16 +652,17 @@ namespace avel {
     // Integer vector operations
     //=====================================================
 
+    #if defined(AVEL_AVX2)
     AVEL_FINL vec8x32i popcount(vec8x32i v) {
         #if defined(AVEL_AVX512VL) & defined(AVEL_AVX512VPOPCNTDQ)
-        return vec8x32i{_mm_popcnt_epi32(x)};
+        return vec8x32i{_mm256_popcnt_epi32(v)};
         #elif defined(AVELAVX512VL) & defined(AVEL_AVX512BITALG)
-        auto tmp0 = _mm_popcnt_epi16(x);
-        auto tmp1 = _mm_slli_epi32(tmp0, 16);
+        auto tmp0 = _mm256_popcnt_epi16(x);
+        auto tmp1 = _mm256_slli_epi32(tmp0, 16);
 
-        auto tmp2 = _mm_add_epi32(tmp0, tmp1);
+        auto tmp2 = _mm256_add_epi32(tmp0, tmp1);
 
-        return vec4x32u{_mm_srli_epi32(tmp2, 16)};
+        return vec4x32u{_mm256_srli_epi32(tmp2, 16)};
         #elif defined(AVEL_POPCNT) & defined(AVEL_SSE42)
         int a = _mm_extract_epi32(x, 0);
         int b = _mm_extract_epi32(x, 1);
@@ -698,5 +723,6 @@ namespace avel {
         return vec8x32i{l | r};
         #endif
     }
+    #endif
 
 }

@@ -18,9 +18,9 @@ namespace avel {
         // Constructor
         //=================================================
 
-        AVEL_FINL explicit Vector_mask(Vector<std::int32_t, 4> v);
+        //AVEL_FINL explicit Vector_mask(Vector_mask<std::uint32_t, 4> v);
 
-        AVEL_FINL explicit Vector_mask(Vector<float, 4> v);
+        //AVEL_FINL explicit Vector_mask(Vector_mask<float, 4> v);
 
         AVEL_FINL explicit Vector_mask(const primitive content):
             content(content) {}
@@ -128,10 +128,6 @@ namespace avel {
             #endif
         }
 
-        AVEL_FINL operator vec4x32u() const {
-            return vec4x32u{content};
-        }
-
         AVEL_FINL operator primitive() const {
             return content;
         }
@@ -195,13 +191,22 @@ namespace avel {
         // Constructors
         //=================================================
 
-        AVEL_FINL explicit Vector(Vector<std::uint32_t, width> v):
+        AVEL_FINL explicit Vector(vec4x32u v):
             content(primitive(v)) {}
 
         AVEL_FINL explicit Vector(Vector<float, width> v);
 
+        AVEL_FINL explicit Vector(mask m):
+        #if defined(AVEL_AVX512VL)
+            content(_mm_mask_blend_epi32(m, _mm_setzero_si128(), _mm_set1_epi32(1))) {}
+        #else
+            content(_mm_sub_epi32(_mm_setzero_si128(), m)) {}
+        #endif
+
+        /*
         AVEL_FINL explicit Vector(std::int32_t a, std::int32_t b, std::int32_t c, std::int32_t d):
             content(_mm_set_epi32(d, c, b, a)) {}
+        */
 
         AVEL_FINL explicit Vector(const primitive content):
             content(content) {}
@@ -662,7 +667,7 @@ namespace avel {
         }
 
         AVEL_FINL explicit operator mask() const {
-            return *this == zeros();
+            return *this != zeros();
         }
 
     private:
@@ -679,8 +684,8 @@ namespace avel {
     // Delayed definitions
     //=====================================================
 
-    Vector<std::uint32_t, 4>::Vector(vec4x32i v):
-        content(v) {}
+    AVEL_FINL vec4x32u::Vector(vec4x32i c):
+        content(c) {}
 
     //=====================================================
     // General vector operations
@@ -688,7 +693,12 @@ namespace avel {
 
     AVEL_FINL vec4x32i blend(vec4x32i a, vec4x32i b, mask4x32i m) {
         #if defined(AVEL_AVX512VL)
-        return vec4x32i{_mm_mask_blend_epi32(m, a, b)};
+        return vec4x32i{_mm_mask_blend_epi32(
+            m,
+            static_cast<__m128i>(a),
+            static_cast<__m128i>(b)
+            )
+        };
         #elif defined(AVEL_SSE41)
         return vec4x32i{_mm_blendv_epi8(a, b, m)};
         #elif defined(AVEL_SSE2)
@@ -712,6 +722,15 @@ namespace avel {
         #else
         return blend(a, b, b < a);
         #endif
+    }
+
+    AVEL_FINL vec4x32i midpoint(vec4x32i a, vec4x32i b) {
+        const vec4x32u mask{0x80000000};
+
+        auto x = vec4x32u{a} ^ mask;
+        auto y = vec4x32u{b} ^ mask;
+
+        return vec4x32i{midpoint(x, y) ^ mask};
     }
 
     AVEL_FINL vec4x32i abs(vec4x32i v) {
@@ -794,19 +813,19 @@ namespace avel {
 
     AVEL_FINL vec4x32i popcount(vec4x32i v) {
         #if defined(AVEL_AVX512VL) & defined(AVEL_AVX512VPOPCNTDQ)
-        return vec4x32u{_mm_popcnt_epi32(x)};
+        return vec4x32i{_mm_popcnt_epi32(v)};
         #elif defined(AVELAVX512VL) & defined(AVEL_AVX512BITALG)
-        auto tmp0 = _mm_popcnt_epi16(x);
+        auto tmp0 = _mm_popcnt_epi16(v);
         auto tmp1 = _mm_slli_epi32(tmp0, 16);
 
         auto tmp2 = _mm_add_epi32(tmp0, tmp1);
 
-        return vec4x32u{_mm_srli_epi32(tmp2, 16)};
+        return vec4x32i{_mm_srli_epi32(tmp2, 16)};
         #elif defined(AVEL_POPCNT) & defined(AVEL_SSE42)
-        int a = _mm_extract_epi32(x, 0);
-        int b = _mm_extract_epi32(x, 1);
-        int c = _mm_extract_epi32(x, 2);
-        int d = _mm_extract_epi32(x, 3);
+        int a = _mm_extract_epi32(v, 0);
+        int b = _mm_extract_epi32(v, 1);
+        int c = _mm_extract_epi32(v, 2);
+        int d = _mm_extract_epi32(v, 3);
 
         auto t0 = _mm_setzero_si128();
         auto t1 = _mm_insert_epi32(t0, _mm_popcnt_u32(a), 0);
@@ -814,7 +833,7 @@ namespace avel {
         auto t3 = _mm_insert_epi32(t2, _mm_popcnt_u32(c), 2);
         auto t4 = _mm_insert_epi32(t3, _mm_popcnt_u32(d), 3);
 
-        return vec4x32u{t4};
+        return vec4x32i{t4};
         #else
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
         v = v - ((v >> 1) & vec4x32i{0x55555555});                    // reuse input as temporary
