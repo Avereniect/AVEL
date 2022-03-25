@@ -2,6 +2,8 @@ namespace avel {
 
     using vec8x32f = Vector<float, 8>;
 
+    using mask8x32f = Vector_mask<float, 8>;
+
     AVEL_FINL vec8x32f trunc(vec8x32f x);
 
     template<>
@@ -491,6 +493,32 @@ namespace avel {
     AVEL_FINL vec8x32i::Vector(vec8x32f v):
         content(_mm256_cvtps_epi32(v)) {}
 
+    template<>
+    AVEL_FINL vec8x32f bit_cast<vec8x32f, vec8x32u>(const vec8x32u& v) {
+        return vec8x32f{_mm256_castsi256_ps(v)};
+    }
+
+    template<>
+    AVEL_FINL vec8x32u bit_cast<vec8x32u, vec8x32f>(const vec8x32f& v) {
+        return vec8x32u{_mm256_castps_si256(v)};
+    }
+
+    template<>
+    AVEL_FINL vec8x32f bit_cast<vec8x32f, vec8x32i>(const vec8x32i& v) {
+        return vec8x32f{_mm256_castsi256_ps(v)};
+    }
+
+    template<>
+    AVEL_FINL vec8x32i bit_cast<vec8x32i, vec8x32f>(const vec8x32f& v) {
+        return vec8x32i{_mm256_castps_si256(v)};
+    }
+
+    //=====================================================
+    // Forward declarations
+    //=====================================================
+
+    AVEL_FINL vec8x32f::mask isnan(vec8x32f v);
+
     //=====================================================
     // General vector operations
     //=====================================================
@@ -503,46 +531,149 @@ namespace avel {
         #endif
     }
 
-    AVEL_FINL vec8x32f frexp(vec8x32f x, vec8x32f* y); //TODO: Implement
-
-    AVEL_FINL vec8x32f floor(vec8x32f x) {
-        return vec8x32f{_mm256_round_ps(x, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)};
+    AVEL_FINL vec8x32f max(vec8x32f a, vec8x32f b) {
+        return vec8x32f{_mm256_max_ps(a, b)};
     }
 
-    AVEL_FINL vec8x32f ceil(vec8x32f x) {
-        return vec8x32f{_mm256_round_ps(x, _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC)};
+    AVEL_FINL vec8x32f min(vec8x32f a, vec8x32f b) {
+        return vec8x32f{_mm256_min_ps(a, b)};
     }
 
-    AVEL_FINL vec8x32f trunc(vec8x32f x) {
-        return vec8x32f{_mm256_round_ps(x, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
+    AVEL_FINL vec8x32f abs(vec8x32f v) {
+        return v & ~vec8x32f{float_bit_mask};
     }
 
-    AVEL_FINL vec8x32f round(vec8x32f x) {
-        //TODO: Verify behavior matches with std::round for values ending in .5
-        return vec8x32f{_mm256_round_ps(x, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
+    template<>
+    AVEL_FINL vec8x32f load<vec8x32f>(const float* ptr) {
+        return vec8x32f{_mm256_loadu_ps(ptr)};
+    }
+
+    template<>
+    AVEL_FINL vec8x32f aligned_load<vec8x32f>(const float* ptr) {
+        return vec8x32f{_mm256_load_ps(ptr)};
+    }
+
+    template<>
+    AVEL_FINL vec8x32f stream_load<vec8x32f>(const float* ptr) {
+        return vec8x32f{_mm256_castsi256_ps(_mm256_stream_load_si256((__m256i*) ptr))};
+    }
+
+    template<>
+    AVEL_FINL vec8x32f gather<vec8x32f>(const float* ptr, vec8x32i o) {
+        #if defined(AVEL_AVX2)
+        return vec8x32f{_mm256_i32gather_ps(ptr, o, sizeof(float))};
+        #else
+        auto offset_array = o.as_array();
+
+        __m128 a = _mm_load_ss(ptr + offset_array[0]);
+        __m128 b = _mm_load_ss(ptr + offset_array[1]);
+        __m128 c = _mm_load_ss(ptr + offset_array[2]);
+        __m128 d = _mm_load_ss(ptr + offset_array[3]);
+
+        __m128 e = _mm_load_ss(ptr + offset_array[4]);
+        __m128 f = _mm_load_ss(ptr + offset_array[5]);
+        __m128 g = _mm_load_ss(ptr + offset_array[6]);
+        __m128 h = _mm_load_ss(ptr + offset_array[7]);
+
+        __m128 abab = _mm_unpacklo_ps(a, b);
+        __m128 cdcd = _mm_unpacklo_ps(c, d);
+
+        __m128 abcd = _mm_unpacklo_pd(abab, cdcd);
+
+        __m128 efef = _mm_unpacklo_ps(e, f);
+        __m128 ghgh = _mm_unpacklo_ps(g, h);
+
+        __m128 efgh = _mm_unpacklo_pd(efef, ghgh);
+
+        return vec8x32f{_mm256_insertf128_ps(_mm256_zextps128_ps256(abcd), efgh, 0x01)};
+        #endif
+    }
+
+    AVEL_FINL void store(float* ptr, vec8x32f v) {
+        _mm256_storeu_ps(ptr, v);
+    }
+
+    AVEL_FINL void aligned_store(float* ptr, vec8x32f v) {
+        _mm256_store_ps(ptr, v);
+    }
+
+    AVEL_FINL void stream_store(float* ptr, vec8x32f v) {
+        _mm256_stream_ps(ptr, v);
+    }
+
+    AVEL_FINL void scatter(float* ptr, vec8x32i indices, vec8x32f v) {
+        #if defined(AVEL_AVX512VL)
+        _mm256_i32scatter_epi32(ptr, indices, v, sizeof(float));
+        #else
+        auto i = indices.as_array();
+
+        __m128 lo = _mm256_castps256_ps128(v);
+        __m128 hi = _mm256_extractf128_ps(v, 0x01);
+
+        _mm_store_ss(ptr + i[0], lo);
+        _mm_store_ss(ptr + i[1], _mm_permute_ps(lo, 0x01));
+        _mm_store_ss(ptr + i[2], _mm_permute_ps(lo, 0x02));
+        _mm_store_ss(ptr + i[3], _mm_permute_ps(lo, 0x03));
+
+        _mm_store_ss(ptr + i[4], _mm_permute_ps(hi, 0x00));
+        _mm_store_ss(ptr + i[5], _mm_permute_ps(hi, 0x01));
+        _mm_store_ss(ptr + i[6], _mm_permute_ps(hi, 0x02));
+        _mm_store_ss(ptr + i[7], _mm_permute_ps(hi, 0x03));
+        #endif
+    }
+
+    //=====================================================
+    // Floating-point vector operations
+    //=====================================================
+
+    AVEL_FINL vec8x32f average(vec8x32f a, vec8x32f b) {
+        static const auto half = vec8x32f{0.5f};
+        return (a - a * half) + (b * half);
+    }
+
+    AVEL_FINL vec8x32f epsilon_increment(vec8x32f v);
+
+    AVEL_FINL vec8x32f epsilon_decrement(vec8x32f v);
+
+    AVEL_FINL vec8x32f epsilon_offset(vec8x32f v, vec8x32f o);
+
+    //=====================================================
+    // cmath basic operations
+    //=====================================================
+
+    AVEL_FINL vec8x32f fabs(vec8x32f v) {
+        return abs(v);
+    }
+
+    AVEL_FINL vec8x32f fabsf(vec8x32f v) {
+        return fabs(v);
     }
 
     AVEL_FINL vec8x32f fmod(vec8x32f x, vec8x32f y) {
         return x % y;
     }
 
-    AVEL_FINL vec8x32f sqrt(vec8x32f v) {
-        return vec8x32f{_mm256_sqrt_ps(v)};
+    AVEL_FINL vec8x32f fmodf(vec8x32f x, vec8x32f y) {
+        return fmod(x, y);
     }
+
+    AVEL_FINL vec8x32f remainderf(vec8x32f v);
+
+    AVEL_FINL vec8x32f remquof(vec8x32f v);
 
     AVEL_FINL vec8x32f fmadd(vec8x32f m, vec8x32f x, vec8x32f b) {
         #if defined(AVEL_FMA)
         return vec8x32f{_mm256_fmadd_ps(m, x, b)};
         #else
-        return m * x + b;
+        return vec8x32f{m * x + b};
         #endif
     }
 
-    AVEL_FINL vec8x32f fmsub(vec8x32f m, vec8x32f x, vec8x32f b) {
+    AVEL_FINL vec8x32f fmsubb(vec8x32f m, vec8x32f x, vec8x32f b) {
         #if defined(AVEL_FMA)
         return vec8x32f{_mm256_fmsub_ps(m, x, b)};
         #else
-        return m * x - b;
+        return vec8x32f{m * x - b};
         #endif
     }
 
@@ -550,7 +681,7 @@ namespace avel {
         #if defined(AVEL_FMA)
         return vec8x32f{_mm256_fnmadd_ps(m, x, b)};
         #else
-        return -m * x + b;
+        return vec8x32f{-m * x + b};
         #endif
     }
 
@@ -558,200 +689,293 @@ namespace avel {
         #if defined(AVEL_FMA)
         return vec8x32f{_mm256_fnmsub_ps(m, x, b)};
         #else
-        return -m * x - b;
+        return vec8x32f{-m * x - b};
         #endif
     }
 
-    AVEL_FINL vec8x32f abs(vec8x32f v) {
-        static const std::uint32_t mask{0x7FFFFFFF};
-        return vec8x32f{_mm256_and_ps(v, _mm256_broadcast_ss(reinterpret_cast<const float*>(mask)))};
+    AVEL_FINL vec8x32f fma(vec8x32f m, vec8x32f x, vec8x32f b) {
+        return fmadd(m, x, b);
+    }
+
+    AVEL_FINL vec8x32f fmaf(vec8x32f m, vec8x32f x, vec8x32f b) {
+        return fma(m, x, b);
+    }
+
+    AVEL_FINL vec8x32f fmax(vec8x32f a, vec8x32f b) {
+        //TODO: Handle case with two NaNs
+        return max(a, max(b, vec8x32f(INFINITY)));
+    }
+
+    AVEL_FINL vec8x32f fminf(vec8x32f a, vec8x32f b) {
+        //TODO: Handle case with two NaNs
+        return min(a, min(b, vec8x32f(INFINITY)));
+    }
+
+    AVEL_FINL vec8x32f fmin(vec8x32f a, vec8x32f b) {
+        return fminf(a, b);
+    }
+
+    AVEL_FINL vec8x32f fdim(vec8x32f a, vec8x32f b) {
+        //TODO: Make faster?
+        auto tmp = max(a - b, vec8x32f{0.0f});
+        auto nan_mask = isnan(a) | isnan(b);
+        return blend(tmp, vec8x32f{NAN}, nan_mask);
+    }
+
+    AVEL_FINL vec8x32f lerp(vec8x32f a, vec8x32f b, vec8x32f t);
+
+    //=====================================================
+    // Exponential functions
+    //=====================================================
+
+    AVEL_FINL vec8x32f exp(vec8x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t: array) {
+            t = std::exp(t);
+        }
+
+        return aligned_load<vec8x32f>(array.data());
+    }
+
+    AVEL_FINL vec8x32f exp2(vec8x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::exp2(t);
+        }
+
+        return aligned_load<vec8x32f>(array.data());
+    }
+
+    AVEL_FINL vec8x32f expm1(vec8x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::expm1(t);
+        }
+
+        return aligned_load<vec8x32f>(array.data());
+    }
+
+    AVEL_FINL vec8x32f log(vec8x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::log(t);
+        }
+
+        return aligned_load<vec8x32f>(array.data());
+    }
+
+    AVEL_FINL vec8x32f log10(vec8x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::log10(t);
+        }
+
+        return aligned_load<vec8x32f>(array.data());
+    }
+
+    AVEL_FINL vec8x32f log2(vec8x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::log2(t);
+        }
+
+        return aligned_load<vec8x32f>(array.data());
+    }
+
+    AVEL_FINL vec8x32f log1p(vec8x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::log1p(t);
+        }
+
+        return aligned_load<vec8x32f>(array.data());
+    }
+
+    //=====================================================
+    // Power functions
+    //=====================================================
+
+    AVEL_FINL vec8x32f pow(vec8x32f base, vec8x32f exp) {
+        //TODO: Replace with vectorized implementation
+        auto base_array = base.as_array();
+        auto exp_array = exp.as_array();
+
+        for (unsigned i = 0; i < vec8x32f::width; ++i) {
+            base_array[i] = std::pow(base_array[i], exp_array[i]);
+        }
+
+        return aligned_load<vec8x32f>(base_array.data());
+    }
+
+    AVEL_FINL vec8x32f sqrt(vec8x32f x) {
+        return vec8x32f{_mm256_sqrt_ps(x)};
+    }
+
+    AVEL_FINL vec8x32f cbrt(vec8x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::cbrt(t);
+        }
+
+        return aligned_load<vec8x32f>(array.data());
+    }
+
+    AVEL_FINL vec8x32f hypot(vec8x32f x, vec8x32f y) {
+        //TODO: Replace with vectorized implementation
+        auto x_array = x.as_array();
+        auto y_array = y.as_array();
+
+        for (unsigned i = 0; i < vec8x32f::width; ++i) {
+            x_array[i] = std::hypot(x_array[i], y_array[i]);
+        }
+
+        return aligned_load<vec8x32f>(x_array.data());
+    }
+
+    //=====================================================
+    // Trigonometric functions
+    //=====================================================
+
+    AVEL_FINL std::array<vec8x32f, 2> sincos(vec8x32f angle) {
+        //TODO: Replace with vectorized implementation
+        auto array0 = angle.as_array();
+        auto array1 = angle.as_array();
+
+        for (unsigned i = 0; i < vec8x32f::width; ++i) {
+            #if defined(AVEL_GCC)
+            sincosf(array0[i], array0.data() + i, array1.data() + i);
+            #elif defined(AVEL_CLANG)
+            sincosf(array0[i], array0.data() + i, array1.data() + i);
+            #else
+            static_assert(false, "Default not implemented");
+            #endif
+        }
+
+        return {
+            aligned_load<vec8x32f>(array0.data()),
+            aligned_load<vec8x32f>(array1.data())
+        };
     }
 
     AVEL_FINL vec8x32f sin(vec8x32f angle) {
-        return {};
+        //TODO: Replace with vectorized implementation
+        auto array = angle.as_array();
+
+        for (auto& t : array) {
+            t = std::sin(t);
+        }
+
+        return aligned_load<vec8x32f>(array.data());
     }
 
     AVEL_FINL vec8x32f cos(vec8x32f angle) {
-        return {};
+        //TODO: Replace with vectorized implementation
+        auto array = angle.as_array();
+
+        for (auto& t : array) {
+            t = std::cos(t);
+        }
+
+        return aligned_load<vec8x32f>(array.data());
     }
 
-    AVEL_FINL std::array<vec8x32f, 2> sincos(vec8x32f angle) {
-        alignas(32) static const float constants0[8] {
-            bit_cast<float>(std::uint32_t(0x7FFFFFFF)),
-            0.5f,
-            6.283185307179586f,
-            1.0f / (6.283185307179586f),
-            0.78539816339744830f,
-            1.57079632679489661f,
-            1.0f,
-            0.0f
-        };
+    AVEL_FINL vec8x32f tan(vec8x32f angle) {
+        //TODO: Replace with vectorized implementation
+        auto array = angle.as_array();
 
-        const __m256 sign_bit_mask = _mm256_set1_ps(constants0[0]);
-        __m256 abs_angle = _mm256_and_ps(angle, sign_bit_mask);
+        for (auto& t : array) {
+            t = std::tan(t);
+        }
 
-        //Mods input angle to [-pi, pi) range
-        const __m256 half       = _mm256_set1_ps(constants0[0x01]);
-        const __m256 two_pi     = _mm256_set1_ps(constants0[0x02]);
-        const __m256 rcp_two_pi = _mm256_set1_ps(constants0[0x03]);
-        #if defined(AVEL_FMA)
-        __m256 a = _mm256_fnmadd_ps(two_pi, _mm256_round_ps(_mm256_fmadd_ps(abs_angle, rcp_two_pi, half), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC), abs_angle);
-        #else
-        __m256 a0 = _mm256_add_ps(_mm256_mul_ps(abs_angle, rcp_two_pi), half);
-        __m256 a1 = _mm256_round_ps(a0, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
-        __m256 a = _mm256_sub_ps(abs_angle, _mm256_mul_ps(two_pi, a1));
-        #endif
+        return aligned_load<vec8x32f>(array.data());
+    }
 
-        // Taylor series approximation will always return positive sign
-        __m256 abs_a = _mm256_and_ps(a, sign_bit_mask);
+    AVEL_FINL vec8x32f asin(vec8x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
 
-        __m256 quart_pi = _mm256_set1_ps(constants0[0x04]);
-        __m256 half_pi  = _mm256_set1_ps(constants0[0x05]);
-         __m256 three_quart_pi = _mm256_add_ps(half_pi, quart_pi);
+        for (auto& t : array) {
+            t = std::asin(t);
+        }
 
-        // Contain the sign of the final return value.
-        #if defined(AVEL_AVX512VL)
-        __mmask16 c_signs = _mm256_cmp_ps_mask(half_pi, abs_a, _CMP_LT_OQ);
-        __mmask16 s_signs = _kxor_mask16(
-            _mm256_cmp_ps_mask(a, _mm256_setzero_ps(), _CMP_LT_OQ),
-            _mm256_cmp_ps_mask(angle, _mm256_setzero_ps(), _CMP_LT_OQ)
-        );
-        #else
-        __m256 c_signs = _mm256_cmp_ps(half_pi, abs_a, _CMP_LT_OQ);
-        __m256 s_signs = _mm256_xor_ps(
-            _mm256_cmp_ps(a, _mm256_setzero_ps(), _CMP_LT_OQ),
-            _mm256_cmp_ps(angle, _mm256_setzero_ps(), _CMP_LT_OQ)
-        );
-        #endif
+        return aligned_load<vec8x32f>(array.data());
+    }
 
-        // Swap results of Taylor series later if false
-        // Checks to see if angle is more than 45 degrees off the x-axis
-        #if defined(AVEL_AVX512VL)
-        __mmask16 approx_mask = _mm256_cmp_ps_mask(
-            _mm256_sub_ps(_mm256_and_ps(_mm256_sub_ps(abs_a, half_pi), sign_bit_mask), quart_pi),
-            _mm256_setzero_ps(),
-            _CMP_GT_OQ
-        );
-        #else
-        __m256 approx_mask = _mm256_cmp_ps(
-            _mm256_sub_ps(_mm256_and_ps(_mm256_sub_ps(abs_a, half_pi), sign_bit_mask), quart_pi),
-            _mm256_setzero_ps(),
-            _CMP_GT_OQ
-        );
-        #endif
+    AVEL_FINL vec8x32f acos(vec8x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
 
-        // Compute offset that's added to angle to bring it into [-pi/4, pi/4]
-        // range where error of Taylor series is minimized
-        __m256 angle_offset = _mm256_setzero_ps();
-        #if defined(AVEL_AVX512VL)
-        __mmask16 add_half0 = _mm256_cmp_ps_mask(quart_pi, abs_a, _CMP_LT_OQ);
-        __mmask16 add_half1 = _mm256_cmp_ps_mask(three_quart_pi, abs_a, _CMP_LT_OQ);
-        angle_offset = _mm256_mask_add_ps(angle_offset, add_half0, angle_offset, half_pi);
-        angle_offset = _mm256_mask_add_ps(angle_offset, add_half1, angle_offset, half_pi);
-        #else
-        __m256 add_half0 = _mm256_cmp_ps(quart_pi, abs_a, _CMP_LT_OQ);
-        __m256 add_half1 = _mm256_cmp_ps(three_quart_pi, abs_a, _CMP_LT_OQ);
-        angle_offset = _mm256_add_ps(angle_offset, _mm256_blendv_ps(_mm256_setzero_ps(), half_pi, add_half0));
-        angle_offset = _mm256_add_ps(angle_offset, _mm256_blendv_ps(_mm256_setzero_ps(), half_pi, add_half1));
-        #endif
+        for (auto& t : array) {
+            t = std::acos(t);
+        }
 
-        // Compute exponentiations of adjusted angle
-        __m256 x = _mm256_sub_ps(abs_a, angle_offset);
-        __m256 xx = _mm256_mul_ps(x, x);
-        __m256 xxxx = _mm256_mul_ps(xx, xx);
-        __m256 xxxxxx = _mm256_mul_ps(xx, xxxx);
-        __m256 xxxxxxxx = _mm256_mul_ps(xxxx, xxxx);
+        return aligned_load<vec8x32f>(array.data());
+    }
 
-        alignas(32) static constexpr float constants1[8] {
-            -1.0f / 2.0f,
-            -1.0f / 6.0f,
-            +1.0f / 24.0f,
-            +1.0f / 120.0f,
-            -1.0f / 720.0f,
-            -1.0f / 5040.0f,
-            +1.0f / 40320.0f,
-            +1.0f / 362880.0f
-        };
+    AVEL_FINL vec8x32f atan(vec8x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
 
-        // Denominators for sine terms
-        const __m256 sd0 = _mm256_set1_ps(constants1[0x01]);
-        const __m256 sd1 = _mm256_set1_ps(constants1[0x03]);
-        const __m256 sd2 = _mm256_set1_ps(constants1[0x05]);
-        const __m256 sd3 = _mm256_set1_ps(constants1[0x07]);
+        for (auto& t : array) {
+            t = std::atan(t);
+        }
 
-        // Sum sine terms
-        #if defined(AVEL_FMA)
-        __m256 st1 = _mm256_set1_ps(constants0[0x06]);
-        __m256 st2 = _mm256_fmadd_ps(sd0, xx, st1);
-        __m256 st3 = _mm256_fmadd_ps(sd1, xxxx, st2);
-        __m256 st4 = _mm256_fmadd_ps(sd2, xxxxxx, st3);
-        __m256 st5 = _mm256_fmadd_ps(sd3, xxxxxxxx, st4);
-        #else
-        __m256 st1 = _mm256_set1_ps(constants0[0x06]);
-        __m256 st2 = _mm256_add_ps(_mm256_mul_ps(sd0, xx), st1);
-        __m256 st3 = _mm256_add_ps(_mm256_mul_ps(sd1, xxxx), st2);
-        __m256 st4 = _mm256_add_ps(_mm256_mul_ps(sd2, xxxxxx), st3);
-        __m256 st5 = _mm256_add_ps(_mm256_mul_ps(sd3, xxxxxxxx), st4);
-        #endif
+        return aligned_load<vec8x32f>(array.data());
+    }
 
-        __m256 sin = _mm256_mul_ps(x, st5);
+    AVEL_FINL vec8x32f atan2(vec8x32f x, vec8x32f y);
 
-        // Denominators for cosine terms
-        const __m256 cd0 = _mm256_set1_ps(constants1[0x00]);
-        const __m256 cd1 = _mm256_set1_ps(constants1[0x02]);
-        const __m256 cd2 = _mm256_set1_ps(constants1[0x04]);
-        const __m256 cd3 = _mm256_set1_ps(constants1[0x06]);
+    //=====================================================
+    // Nearest Integer Floating-point operators
+    //=====================================================
 
-        // Sum cosine terms
-        #if defined(AVEL_FMA)
-        __m256 ct1 = _mm256_set1_ps(constants0[0x06]);
-        __m256 ct2 = _mm256_fmadd_ps(cd0, xx, ct1);
-        __m256 ct3 = _mm256_fmadd_ps(cd1, xxxx, ct2);
-        __m256 ct4 = _mm256_fmadd_ps(cd2, xxxxxx, ct3);
-        __m256 ct5 = _mm256_fmadd_ps(cd3, xxxxxxxx, ct4);
-        #else
-        __m256 ct1 = _mm256_set1_ps(constants0[0x06]);
-        __m256 ct2 = _mm256_add_ps(_mm256_mul_ps(cd0, xx), ct1);
-        __m256 ct3 = _mm256_add_ps(_mm256_mul_ps(cd1, xxxx), ct2);
-        __m256 ct4 = _mm256_add_ps(_mm256_mul_ps(cd2, xxxxxx), ct3);
-        __m256 ct5 = _mm256_add_ps(_mm256_mul_ps(cd3, xxxxxxxx), ct4);
-        #endif
+    AVEL_FINL vec8x32f ceil(vec8x32f x) {
+        return vec8x32f{_mm256_round_ps(x, _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC)};
+    }
 
-        __m256 cos = ct5;
+    AVEL_FINL vec8x32f floor(vec8x32f x) {
+        return vec8x32f{_mm256_round_ps(x, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)};
+    }
 
-        //Swap bits depending on approx_mask
-        #if defined(AVEL_AVX512VL)
-        __m256 ret_sin = _mm256_mask_blend_ps(approx_mask, cos, sin);
-        __m256 ret_cos = _mm256_mask_blend_ps(approx_mask, sin, cos);
-        #else
-        __m256 ret_sin = _mm256_blendv_ps(cos, sin, approx_mask);
-        __m256 ret_cos = _mm256_blendv_ps(sin, cos, approx_mask);
-        #endif
+    AVEL_FINL vec8x32f trunc(vec8x32f x) {
+        return vec8x32f{_mm256_round_ps(x, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
+    }
 
-        // Set sine sign bits
-        #if defined(AVEL_AVX512VL)
-        ret_sin = _mm256_and_ps(ret_sin, sign_bit_mask);
-        ret_sin = _mm256_mask_sub_ps(ret_sin, s_signs, _mm256_setzero_ps(), ret_sin);
-        #else
-        ret_sin = _mm256_and_ps(ret_sin, sign_bit_mask);
-        ret_sin = _mm256_blendv_ps(ret_sin, _mm256_sub_ps(_mm256_setzero_ps(), ret_sin), s_signs);
-        #endif
-
-        // Set cosine sign bits
-        #if defined(AVEL_AVX512VL)
-        ret_cos = _mm256_and_ps(ret_cos, sign_bit_mask);
-        ret_cos = _mm256_mask_sub_ps(ret_cos, c_signs, _mm256_setzero_ps(), ret_cos);
-        #else
-        ret_cos = _mm256_and_ps(ret_cos, sign_bit_mask);
-        ret_cos = _mm256_blendv_ps(ret_cos, _mm256_sub_ps(_mm256_setzero_ps(), ret_cos), c_signs);
-        #endif
-
-        return {vec8x32f{ret_sin}, vec8x32f{ret_cos}};
+    AVEL_FINL vec8x32f round(vec8x32f x) {
+        return vec8x32f{_mm256_round_ps(x, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
     }
 
     //=====================================================
     // Floating-point manipulation
     //=====================================================
+
+    AVEL_FINL vec8x32f frexp(vec8x32f v, vec8x32i* exp);
+
+    AVEL_FINL vec8x32f ldexp(vec8x32f x, vec8x32f exp);
+
+    AVEL_FINL vec8x32f modf(vec8x32f x, vec8x32f* iptr);
+
+    AVEL_FINL vec8x32f scalebn(vec8x32f x, vec8x32f exp);
+
+    AVEL_FINL vec8x32f ilog(vec8x32f x);
+
+    AVEL_FINL vec8x32f logb(vec8x32f x);
 
     AVEL_FINL vec8x32f copysign(vec8x32f mag, vec8x32f sign) {
         alignas(16) std::uint32_t mask_data[1] = {
@@ -761,6 +985,63 @@ namespace avel {
         auto mask = vec8x32f{_mm256_set1_ps(mask_data[0])};
 
         return mask & sign | vec8x32f{_mm256_andnot_ps(mask, mag)};
+    }
+
+    //=====================================================
+    // Classification subroutines
+    //=====================================================
+
+    AVEL_FINL vec8x32f fpclassify(vec8x32f v);
+
+    AVEL_FINL vec8x32f::mask isnan(vec8x32f v) {
+        return (v != v);
+    }
+
+    AVEL_FINL vec8x32f::mask isfininte(vec8x32f v) {
+        #if defined(AVEL_AVX512VL)
+        return  vec8x32f{_mm512_getexp_ps(v)} != vec8x32f{255.0f};
+        #else
+        vec8x32f m = vec8x32f{float_exponent_mask};
+        return (v & m) == m;
+        #endif
+    }
+
+    AVEL_FINL vec8x32f::mask isnormal(vec8x32f v) {
+        #if defined(AVEL_AVX512VL)
+        vec8x32f tmp = vec8x32f{_mm256_getexp_ps(v)};
+        return  (tmp != vec8x32f::zeros()) & (tmp != vec8x32f{255.0f});
+        #else
+        vec8x32f tmp = (v & vec8x32f(float_bit_mask));
+        return  (tmp != vec8x32f::zeros()) & (tmp != vec8x32f{float_exponent_mask});
+        #endif
+    }
+
+    AVEL_FINL vec8x32f::mask isunordered(vec8x32f x, vec8x32f y) {
+        return isnan(x) | isnan(y);
+    }
+
+    //=====================================================
+    // Comparison subroutines
+    //=====================================================
+
+    AVEL_FINL vec8x32f::mask isgreater(vec8x32f x, vec8x32f y) {
+        return x > y;
+    }
+
+    AVEL_FINL vec8x32f::mask isgreaterequal(vec8x32f x, vec8x32f y) {
+        return x >= y;
+    }
+
+    AVEL_FINL vec8x32f::mask isless(vec8x32f x, vec8x32f y) {
+        return x < y;
+    }
+
+    AVEL_FINL vec8x32f::mask islessequal(vec8x32f x, vec8x32f y) {
+        return x <= y;
+    }
+
+    AVEL_FINL vec8x32f::mask islessgreater(vec8x32f x, vec8x32f y) {
+        return x != y;
     }
 
 }

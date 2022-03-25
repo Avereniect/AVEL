@@ -5,8 +5,8 @@
 #ifndef AVEL_UTILS_HPP
 #define AVEL_UTILS_HPP
 
-#include <cstdint>
 #include <type_traits>
+#include "Capabilities.hpp"
 
 namespace avel {
 
@@ -24,6 +24,38 @@ namespace avel {
         }
 
         return ret;
+    }
+
+    template<std::size_t Alignment, class T>
+    AVEL_FINL const T* align_pointer(const T* p) {
+        return align_pointer<Alignment>(reinterpret_cast<const void*>(p));
+    }
+
+    template<std::size_t Alignment>
+    AVEL_FINL const void* align_pointer(const void* p) {
+        constexpr bool is_power_of_two = (Alignment && !(Alignment & (Alignment - 1)));
+        static_assert(is_power_of_two, "Alignment was not a power of 2");
+
+        auto bits = reinterpret_cast<intptr_t>(p);
+        const intptr_t mask = !(intptr_t(Alignment) - 1);
+        auto ret = (mask & bits);
+        return reinterpret_cast<const void*>(ret);
+    }
+
+    template<std::size_t Alignment, class T>
+    AVEL_FINL T* align_pointer(T* p) {
+        return align_pointer<Alignment>(reinterpret_cast<void*>(p));
+    }
+
+    template<std::size_t Alignment>
+    AVEL_FINL void* align_pointer(void* p) {
+        constexpr bool is_power_of_two = (Alignment && !(Alignment & (Alignment - 1)));
+        static_assert(is_power_of_two, "Alignment was not a power of 2");
+
+        auto bits = reinterpret_cast<intptr_t>(p);
+        const intptr_t mask = !(intptr_t(Alignment) - 1);
+        auto ret = (mask & bits);
+        return reinterpret_cast<void*>(ret);
     }
 
 }

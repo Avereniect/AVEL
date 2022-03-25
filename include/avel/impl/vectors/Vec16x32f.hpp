@@ -479,7 +479,7 @@ namespace avel {
     AVEL_FINL vec16x32f::mask isnan(vec16x32f v);
 
     //=====================================================
-    // General vector operations
+    // General float vector operations
     //=====================================================
 
     AVEL_FINL vec16x32f blend(vec16x32f a, vec16x32f b, vec16x32f::mask m) {
@@ -498,19 +498,23 @@ namespace avel {
         return vec16x32f{_mm512_abs_ps(v)};
     }
 
-    AVEL_FINL vec16x32f load(const float* ptr) {
+    template<>
+    AVEL_FINL vec16x32f load<vec16x32f>(const float* ptr) {
         return vec16x32f{_mm512_loadu_ps(ptr)};
     }
 
-    AVEL_FINL vec16x32f aligned_load(const float* ptr) {
+    template<>
+    AVEL_FINL vec16x32f aligned_load<vec16x32f>(const float* ptr) {
         return vec16x32f{_mm512_load_ps(ptr)};
     }
 
-    AVEL_FINL vec16x32f stream_load(const float* ptr) {
+    template<>
+    AVEL_FINL vec16x32f stream_load<vec16x32f>(const float* ptr) {
         return vec16x32f{_mm512_castsi512_ps(_mm512_stream_load_si512((void*) ptr))};
     }
 
-    AVEL_FINL vec16x32f gather(const float* ptr, vec16x32i o) {
+    template<>
+    AVEL_FINL vec16x32f gather<vec16x32f>(const float* ptr, vec16x32i o) {
         return vec16x32f{_mm512_i32gather_ps(o, ptr, sizeof(float))};
     }
 
@@ -543,15 +547,7 @@ namespace avel {
 
     AVEL_FINL vec16x32f epsilon_decrement(vec16x32f v);
 
-    AVEL_FINL vec16x32f epsilon_offset(vec16x32f v, vec16x32u o) ;
-
-    AVEL_FINL vec16x32f epsilon_offset(vec16x32f v, vec16x32i o) {
-        const vec16x32i max_offset_mag{0x7f7fffff};
-
-        vec16x32f offset{};
-
-        return v + offset;
-    }
+    AVEL_FINL vec16x32f epsilon_offset(vec16x32f v, vec16x32u o);
 
     //=====================================================
     // cmath basic operations
@@ -629,6 +625,16 @@ namespace avel {
     //=====================================================
 
     AVEL_FINL vec16x32f exp(vec16x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::exp(t);
+        }
+
+        return aligned_load<vec16x32f>(array.data());
+
+        /*
         alignas(32) static constexpr float data[12] = {
             1.0f / 479001600.0f,
             1.0f / 39916800.0f,
@@ -663,47 +669,155 @@ namespace avel {
 
         auto mask = x < vec16x32f{0.0f};
         return blend(recip, t11, mask);
+        */
     }
 
     AVEL_FINL vec16x32f exp2(vec16x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::exp2(t);
+        }
+
+        return aligned_load<vec16x32f>(array.data());
+
+        /*
         return exp(x * vec16x32f{69314718056.0f});
+        */
     }
 
-    AVEL_FINL vec16x32f expm1(vec16x32f x);
+    AVEL_FINL vec16x32f expm1(vec16x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
 
-    AVEL_FINL vec16x32f log(vec16x32f x);
+        for (auto& t : array) {
+            t = std::expm1(t);
+        }
 
-    AVEL_FINL vec16x32f log10(vec16x32f x);
+        return aligned_load<vec16x32f>(array.data());
+    }
+
+    AVEL_FINL vec16x32f log(vec16x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::log(t);
+        }
+
+        return aligned_load<vec16x32f>(array.data());
+    }
+
+    AVEL_FINL vec16x32f log10(vec16x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::log10(t);
+        }
+
+        return aligned_load<vec16x32f>(array.data());
+    }
 
     AVEL_FINL vec16x32f log2(vec16x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::log2(t);
+        }
+
+        return aligned_load<vec16x32f>(array.data());
+
+        /*
         __m512 approximation = _mm512_setzero_ps();
 
         //TODO: Complete implementation
 
         return vec16x32f{_mm512_add_ps(_mm512_getexp_ps(x), approximation)};
+        */
     }
 
-    AVEL_FINL vec16x32f log1p(vec16x32f x);
+    AVEL_FINL vec16x32f log1p(vec16x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::log1p(t);
+        }
+
+        return aligned_load<vec16x32f>(array.data());
+    }
 
     //=====================================================
     // Power functions
     //=====================================================
 
-    AVEL_FINL vec16x32f pow(vec16x32f x);
+    AVEL_FINL vec16x32f pow(vec16x32f base, vec16x32f exp) {
+        //TODO: Replace with vectorized implementation
+        auto base_array = base.as_array();
+        auto exp_array = exp.as_array();
+
+        for (unsigned i = 0; i < vec16x32f::width; ++i) {
+            base_array[i] = std::pow(base_array[i], exp_array[i]);
+        }
+
+        return aligned_load<vec16x32f>(base_array.data());
+    }
 
     AVEL_FINL vec16x32f sqrt(vec16x32f x) {
         return vec16x32f{_mm512_sqrt_ps(x)};
     }
 
-    AVEL_FINL vec16x32f cbrt(vec16x32f x);
+    AVEL_FINL vec16x32f cbrt(vec16x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
 
-    AVEL_FINL vec16x32f hypot(vec16x32f x);
+        for (auto& t : array) {
+            t = std::cbrt(t);
+        }
+
+        return aligned_load<vec16x32f>(array.data());
+    }
+
+    AVEL_FINL vec16x32f hypot(vec16x32f x, vec16x32f y) {
+        //TODO: Replace with vectorized implementation
+        auto x_array = x.as_array();
+        auto y_array = y.as_array();
+
+        for (unsigned i = 0; i < vec16x32f::width; ++i) {
+            x_array[i] = std::hypot(x_array[i], y_array[i]);
+        }
+
+        return aligned_load<vec16x32f>(x_array.data());
+    }
 
     //=====================================================
     // Trigonometric functions
     //=====================================================
 
     AVEL_FINL std::array<vec16x32f, 2> sincos(vec16x32f angle) {
+        //TODO: Replace with vectorized implementation
+        auto array0 = angle.as_array();
+        auto array1 = angle.as_array();
+
+        for (unsigned i = 0; i < vec16x32f::width; ++i) {
+            #if defined(AVEL_GCC)
+            sincosf(array0[i], array0.data() + i, array1.data() + i);
+            #elif defined(AVEL_CLANG)
+            sincosf(array0[i], array0.data() + i, array1.data() + i);
+            #else
+            static_assert(false, "Default not implemented");
+            #endif
+        }
+
+        return {
+            aligned_load<vec16x32f>(array0.data()),
+            aligned_load<vec16x32f>(array1.data())
+        };
+
+        /*
         alignas(32) static const float constants0[8] {
             bit_cast<float>(std::uint32_t(0x7FFFFFFF)),
             0.5f, //One half
@@ -721,6 +835,7 @@ namespace avel {
         const __m512 half       = _mm512_set1_ps(constants0[0x01]);
         const __m512 two_pi     = _mm512_set1_ps(constants0[0x02]);
         const __m512 rcp_two_pi = _mm512_set1_ps(constants0[0x03]);
+
         __m512 a = _mm512_fnmadd_ps(two_pi, _mm512_roundscale_ps(_mm512_fmadd_ps(abs_angle, rcp_two_pi, half), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC), abs_angle);
 
         __m512 abs_a = _mm512_abs_ps(a);
@@ -817,9 +932,20 @@ namespace avel {
         ret_cos = _mm512_mask_sub_ps(ret_cos, c_signs, _mm512_setzero_ps(), ret_cos);
 
         return {vec16x32f{ret_sin}, vec16x32f{ret_cos}};
+        */
     }
 
-    AVEL_FINL vec16x32f sin(vec16x32f angle);/* {
+    AVEL_FINL vec16x32f sin(vec16x32f angle) {
+        //TODO: Replace with vectorized implementation
+        auto array = angle.as_array();
+
+        for (auto& t : array) {
+            t = std::sin(t);
+        }
+
+        return aligned_load<vec16x32f>(array.data());
+
+        /*
         alignas(64) static const float constants[16] {
             bit_cast<float>(std::uint32_t(0x7FFFFFFF)),
             0.5f, //One half
@@ -856,21 +982,42 @@ namespace avel {
         ret = fnmadd(u, ret, vec16x32f{constants[7]});
 
         return ret * x;
+        */
     }
-    */
 
     AVEL_FINL vec16x32f cos(vec16x32f angle) {
-        //TODO: Cheaper implementation
-        return sincos(angle)[1];
+        //TODO: Replace with vectorized implementation
+        auto array = angle.as_array();
+
+        for (auto& t : array) {
+            t = std::cos(t);
+        }
+
+        return aligned_load<vec16x32f>(array.data());
     }
 
     AVEL_FINL vec16x32f tan(vec16x32f angle) {
-        //TODO: Cheaper implementation?
-        auto sc = sincos(angle);
-        return sc[0] / sc[1];
+        //TODO: Replace with vectorized implementation
+        auto array = angle.as_array();
+
+        for (auto& t : array) {
+            t = std::tan(t);
+        }
+
+        return aligned_load<vec16x32f>(array.data());
     }
 
     AVEL_FINL vec16x32f asin(vec16x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::asin(t);
+        }
+
+        return aligned_load<vec16x32f>(array.data());
+
+        /*
         //TODO: More accurate implementation
         // https://wrf.ecse.rpi.edu/Research/Short_Notes/arcsin/fastsqrt.html
         alignas(32) static constexpr float constants[8] {
@@ -896,15 +1043,36 @@ namespace avel {
         vec16x32f t5 = fmadd(x, t4, vec16x32f{constants[6]});
 
         return (t5 - offset);
+        */
     }
 
     AVEL_FINL vec16x32f acos(vec16x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::acos(t);
+        }
+
+        return aligned_load<vec16x32f>(array.data());
+
+        /*
         //TODO: More accurate approximation
         //TODO: Cheaper implementation
         return asin(-x) - vec16x32f{1.57079632679f};
+        */
     }
 
-    AVEL_FINL vec16x32f atan(vec16x32f v);
+    AVEL_FINL vec16x32f atan(vec16x32f x) {
+        //TODO: Replace with vectorized implementation
+        auto array = x.as_array();
+
+        for (auto& t : array) {
+            t = std::atan(t);
+        }
+
+        return aligned_load<vec16x32f>(array.data());
+    }
 
     AVEL_FINL vec16x32f atan2(vec16x32f x, vec16x32f y);
 
@@ -925,7 +1093,6 @@ namespace avel {
     }
 
     AVEL_FINL vec16x32f round(vec16x32f x) {
-        //TODO: Verify behavior matches with std::round for values ending in .5
         return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
     }
 

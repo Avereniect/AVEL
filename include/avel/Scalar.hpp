@@ -2,8 +2,8 @@
 // Created by avereniect on 2/22/22.
 //
 
-#ifndef AVEL_SCALARS_HPP
-#define AVEL_SCALARS_HPP
+#ifndef AVEL_SCALAR_HPP
+#define AVEL_SCALAR_HPP
 
 namespace avel {
 
@@ -13,4 +13,4 @@ namespace avel {
 
 #include "avel/impl/scalars/scalar32f.hpp"
 
-#endif //AVEL_SCALARS_HPP
+#endif //AVEL_SCALAR_HPP

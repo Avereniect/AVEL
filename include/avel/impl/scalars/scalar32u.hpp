@@ -7,7 +7,10 @@
 
 namespace avel {
 
-
+    [[nodiscard]]
+    constexpr inline bool is_pow2(const std::uint32_t v) {
+        return v && !(v & (v - 1));
+    }
 
 }
 

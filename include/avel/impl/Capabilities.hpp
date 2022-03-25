@@ -206,4 +206,17 @@ static_assert(false, "Macros for multiples ISA's specified.");
 static_assert(false, "No ISA specified")
 #endif
 
+//=========================================================
+// Cache details
+//=========================================================
+
+#if !defined(AVEL_CACHE_SIZE)
+    #if defined(AVEL_ARM)
+        #define AVEL_CACHE_SIZE 128
+    #endif
+    #if defined(AVEL_X86)
+        #define AVEL_CACHE_SIZE 64
+    #endif
+#endif
+
 #endif //AVEL_CAPABILITIES_HPP

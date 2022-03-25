@@ -5,6 +5,7 @@
 
 #include "../vector_primitives/Vector_primitives.hpp"
 #include "../Utils.hpp"
+#include "../Constants.hpp"
 
 namespace avel {
 
