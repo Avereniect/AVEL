@@ -52,8 +52,8 @@ namespace avel {
         constexpr bool is_power_of_two = (Alignment && !(Alignment & (Alignment - 1)));
         static_assert(is_power_of_two, "Alignment was not a power of 2");
 
-        auto bits = reinterpret_cast<intptr_t>(p);
-        const intptr_t mask = !(intptr_t(Alignment) - 1);
+        auto bits = reinterpret_cast<std::intptr_t>(p);
+        const std::intptr_t mask = !(std::intptr_t(Alignment) - 1);
         auto ret = (mask & bits);
         return reinterpret_cast<void*>(ret);
     }
