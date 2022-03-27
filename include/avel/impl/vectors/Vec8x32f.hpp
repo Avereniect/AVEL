@@ -199,7 +199,7 @@ namespace avel {
 
         AVEL_FINL explicit Vector(mask m):
         #if defined(AVEL_AVX512VL)
-            content(_mm256_mask_blend_epi32(m, _mm256_setzero_ps(), _mm256_set1_ps(1.0f))) {}
+            content(_mm256_mask_blend_ps(m, _mm256_setzero_ps(), _mm256_set1_ps(1.0f))) {}
         #else
             content(_mm256_blendv_ps(_mm256_setzero_ps(), _mm256_set1_ps(1.0f), m)) {}
         #endif
@@ -603,7 +603,7 @@ namespace avel {
 
     AVEL_FINL void scatter(float* ptr, vec8x32i indices, vec8x32f v) {
         #if defined(AVEL_AVX512VL)
-        _mm256_i32scatter_epi32(ptr, indices, v, sizeof(float));
+        _mm256_i32scatter_ps(ptr, indices, v, sizeof(float));
         #else
         auto i = indices.as_array();
 
@@ -999,7 +999,7 @@ namespace avel {
 
     AVEL_FINL vec8x32f::mask isfininte(vec8x32f v) {
         #if defined(AVEL_AVX512VL)
-        return  vec8x32f{_mm512_getexp_ps(v)} != vec8x32f{255.0f};
+        return  vec8x32f{_mm256_getexp_ps(v)} != vec8x32f{255.0f};
         #else
         vec8x32f m = vec8x32f{float_exponent_mask};
         return (v & m) == m;

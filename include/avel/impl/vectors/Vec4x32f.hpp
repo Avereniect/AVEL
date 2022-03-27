@@ -600,7 +600,7 @@ namespace avel {
 
     AVEL_FINL void scatter(float* ptr, vec4x32i indices, vec4x32f v) {
         #if defined(AVEL_AVX512VL)
-        _mm_i32scatter_epi32(ptr, indices, v, sizeof(float));
+        _mm_i32scatter_ps(ptr, indices, v, sizeof(float));
         #else
         auto i = indices.as_array();
 
@@ -1077,7 +1077,7 @@ namespace avel {
 
     AVEL_FINL vec4x32f::mask isfininte(vec4x32f v) {
         #if defined(AVEL_AVX512VL)
-        return  vec8x32f{_mm512_getexp_ps(v)} != vec8x32f{255.0f};
+        return  vec4x32f{_mm_getexp_ps(v)} != vec4x32f{255.0f};
         #else
         vec4x32f m = vec4x32f{float_exponent_mask};
         return (v & m) == m;
@@ -1086,8 +1086,8 @@ namespace avel {
 
     AVEL_FINL vec4x32f::mask isnormal(vec4x32f v) {
         #if defined(AVEL_AVX512VL)
-        vec8x32f tmp = vec8x32f{_mm256_getexp_ps(v)};
-        return  (tmp != vec8x32f::zeros()) & (tmp != vec8x32f{255.0f});
+        vec4x32f tmp = vec4x32f{_mm_getexp_ps(v)};
+        return  (tmp != vec4x32f::zeros()) & (tmp != vec4x32f{255.0f});
         #else
         vec4x32f tmp = (v & vec4x32f(float_bit_mask));
         return  (tmp != vec4x32f::zeros()) & (tmp != vec4x32f{float_exponent_mask});
