@@ -135,17 +135,17 @@ namespace avel {
 
         using scalar_type = float;
 
-        using primitive = avel::vector_primitive<float, 16>::type;
-
         constexpr static unsigned width = 16;
 
-        using mask = Vector_mask<float, 16>;
+        using primitive = avel::vector_primitive<scalar_type, width>::type;
+
+        using mask = Vector_mask<scalar_type, width>;
 
         template<class U>
-        using rebind_type = Vector<U, 16>;
+        using rebind_type = Vector<U, width>;
 
         template<int M>
-        using rebind_width = Vector<float, M>;
+        using rebind_width = Vector<scalar_type, M>;
 
         //=================================================
         // Constructors

@@ -183,17 +183,17 @@ namespace avel {
 
         using scalar_type = float;
 
-        using primitive = avel::vector_primitive<float, 4>::type;
-
         constexpr static unsigned width = 4;
 
-        using mask = Vector_mask<float, 4>;
+        using primitive = avel::vector_primitive<scalar_type, width>::type;
+
+        using mask = Vector_mask<scalar_type, width>;
 
         template<class U>
-        using rebind_type = Vector<U, 4>;
+        using rebind_type = Vector<U, width>;
 
         template<int M>
-        using rebind_width = Vector<float, M>;
+        using rebind_width = Vector<scalar_type, M>;
 
         //=================================================
         // Constructors
@@ -580,7 +580,7 @@ namespace avel {
         __m128 abab = _mm_unpacklo_ps(a, b);
         __m128 cdcd = _mm_unpacklo_ps(c, d);
 
-        __m128 abcd = _mm_unpacklo_pd(abab, cdcd);
+        __m128 abcd = _mm_castpd_ps(_mm_unpacklo_pd(_mm_castps_pd(abab), _mm_castps_pd(cdcd)));
 
         return vec4x32f{abcd};
         #endif
