@@ -52,6 +52,26 @@ namespace avel {
         Vector_mask& operator=(Vector_mask&&) = default;
 
         //=================================================
+        // Comparison operators
+        //=================================================
+
+        AVEL_FINL bool operator==(Vector_mask rhs) {
+            #if defined(AVEL_AVX512VL)
+            return (_cvtmask16_u32(content) == _cvtmask16_u32(rhs.content));
+            #elif defined(AVEL_SSE2)
+            return 0xF == _mm_movemask_ps(_mm_cmpeq_ps(content, rhs.content));
+            #endif
+        }
+
+        AVEL_FINL bool operator!=(Vector_mask rhs) {
+            #if defined(AVEL_AVX512VL)
+            return (_cvtmask16_u32(content) != _cvtmask16_u32(rhs.content));
+            #elif defined(AVEL_SSE2)
+            return 0xF != _mm_movemask_ps(_mm_cmpeq_ps(content, rhs.content));
+            #endif
+        }
+
+        //=================================================
         // Bitwise assignment operators
         //=================================================
 
@@ -140,6 +160,14 @@ namespace avel {
             return content;
         }
 
+        AVEL_FINL operator bool() const {
+            #if defined(AVEL_AVX512VL)
+            return 0xF == _mm512_mask2int(content);
+            #elif defined(AVEL_SSE2)
+            return 0xF == _mm_movemask_ps(content);
+            #endif
+        }
+
     private:
 
         //=================================================
@@ -173,6 +201,7 @@ namespace avel {
     };
 
 
+
     template<>
     class Vector<float, 4> {
     public:
@@ -181,9 +210,9 @@ namespace avel {
         // Type aliases
         //=================================================
 
-        using scalar_type = float;
-
         constexpr static unsigned width = 4;
+
+        using scalar_type = float;
 
         using primitive = avel::vector_primitive<scalar_type, width>::type;
 
@@ -1023,7 +1052,7 @@ namespace avel {
         #endif
     }
 
-    vec4x32f round(vec4x32f x) {
+    AVEL_FINL vec4x32f round(vec4x32f x) {
         #if defined(AVELSSE41)
         //TODO: Verify behavior matches with std::round for values ending in .5
         return vec4x32f{_mm_round_ps(x, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
