@@ -6,6 +6,7 @@
 #define AVEL_UTILS_HPP
 
 #include <type_traits>
+#include <cstdint>
 #include "Capabilities.hpp"
 
 namespace avel {
@@ -17,6 +18,7 @@ namespace avel {
         static_assert(std::is_trivial<U>::value, "Source type must be trivial");
 
         T ret;
+
         auto* src = reinterpret_cast<const unsigned char*>(&v);
         auto* dst = reinterpret_cast<unsigned char*>(&ret);
         for (std::size_t i = 0; i < sizeof(T); ++i) {
@@ -36,8 +38,8 @@ namespace avel {
         constexpr bool is_power_of_two = (Alignment && !(Alignment & (Alignment - 1)));
         static_assert(is_power_of_two, "Alignment was not a power of 2");
 
-        auto bits = reinterpret_cast<intptr_t>(p);
-        const intptr_t mask = !(intptr_t(Alignment) - 1);
+        auto bits = reinterpret_cast<std::intptr_t>(p);
+        const std::intptr_t mask = !(std::intptr_t(Alignment) - 1);
         auto ret = (mask & bits);
         return reinterpret_cast<const void*>(ret);
     }
