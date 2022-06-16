@@ -128,7 +128,7 @@ namespace avel {
         }
 
         //=================================================
-        // Accessor
+        // Accessors
         //=================================================
 
         AVEL_FINL bool operator[](int i) const {
@@ -150,8 +150,20 @@ namespace avel {
             #endif
         }
 
+        //=================================================
+        // Conversion operators
+        //=================================================
+
         AVEL_FINL operator primitive() const {
             return content;
+        }
+
+        AVEL_FINL operator bool() const {
+            #if defined(AVEL_AVX512VL)
+            return _mm512_mask2int(content);
+            #elif defined(AVEL_SSE2)
+            return (0xFFFF == _mm_movemask_epi8(content));
+            #endif
         }
 
     private:
@@ -200,9 +212,9 @@ namespace avel {
         // Type aliases
         //=================================================
 
-        using scalar_type = std::int32_t;
-
         constexpr static unsigned width = 4;
+
+        using scalar_type = std::int32_t;
 
         using primitive = avel::vector_primitive<scalar_type, width>::type;
 
@@ -412,6 +424,8 @@ namespace avel {
             }
 
             content = _mm_load_si128(reinterpret_cast<const primitive*>(array0));
+
+
 
             return *this;
         }
@@ -809,6 +823,13 @@ namespace avel {
         #endif
     }
 
+    template<>
+    AVEL_FINL vec4x32i broadcast<vec4x32i>(std::int32_t x) {
+        #if defined(AVEL_SSE2)
+        return vec4x32i{_mm_set1_epi32(x)};
+        #endif
+    }
+
     AVEL_FINL void store(std::int32_t* ptr, vec4x32i v) {
         _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), v);
     }
@@ -838,7 +859,7 @@ namespace avel {
     // Integer vector operations
     //=====================================================
 
-    AVEL_FINL vec4x32i popcount(vec4x32i v) {
+    AVEL_FINL vec4x32i pop_count(vec4x32i v) {
         #if defined(AVEL_AVX512VL) & defined(AVEL_AVX512VPOPCNTDQ)
         return vec4x32i{_mm_popcnt_epi32(v)};
         #elif defined(AVELAVX512VL) & defined(AVEL_AVX512BITALG)

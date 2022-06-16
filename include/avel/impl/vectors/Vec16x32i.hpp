@@ -90,8 +90,16 @@ namespace avel {
             return _cvtmask16_u32(content) & (1 << i);
         }
 
+        //=================================================
+        // Conversion operators
+        //=================================================
+
         AVEL_FINL operator primitive() const {
             return content;
+        }
+
+        AVEL_FINL operator bool() const {
+            return 0xFFFF == _mm512_mask2int(content);
         }
 
     private:
@@ -126,9 +134,9 @@ namespace avel {
         // Type aliases
         //=================================================
 
-        using scalar_type = std::int32_t;
-
         constexpr static unsigned width = 16;
+
+        using scalar_type = std::int32_t;
 
         using primitive = avel::vector_primitive<scalar_type, width>::type;
 
@@ -561,6 +569,11 @@ namespace avel {
         return vec16x32i{_mm512_i32gather_epi32(indices, ptr, sizeof(std::int32_t))};
     }
 
+    template<>
+    AVEL_FINL vec16x32i broadcast<vec16x32i>(std::int32_t x) {
+        return vec16x32i{_mm512_set1_epi32(x)};
+    }
+
     AVEL_FINL void store(std::int32_t* ptr, vec16x32i v) {
         _mm512_storeu_si512(ptr, v);
     }
@@ -585,7 +598,7 @@ namespace avel {
     // Integer vector operations
     //=====================================================
 
-    AVEL_FINL vec16x32i popcount(vec16x32i v) {
+    AVEL_FINL vec16x32i pop_count(vec16x32i v) {
         #if defined(AVEL_AVX512VPOPCNTDQ)
         return vec16x32i{_mm512_popcnt_epi32(v)};
         #elif defined(AVEL_AVX512BITALG)

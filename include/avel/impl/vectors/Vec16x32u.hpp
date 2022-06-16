@@ -42,6 +42,18 @@ namespace avel {
         Vector_mask& operator=(Vector_mask&&) = default;
 
         //=================================================
+        // Comparison operators
+        //=================================================
+
+        AVEL_FINL bool operator==(Vector_mask rhs) const noexcept {
+            return (_cvtmask16_u32(content) == _cvtmask16_u32(rhs));
+        }
+
+        AVEL_FINL bool operator!=(Vector_mask rhs) const noexcept {
+            return (_cvtmask16_u32(content) != _cvtmask16_u32(rhs));
+        }
+
+        //=================================================
         // Bitwise assignment operators
         //=================================================
 
@@ -96,6 +108,10 @@ namespace avel {
             return content;
         }
 
+        AVEL_FINL operator bool() const {
+            return 0xFFFF == _mm512_mask2int(content);
+        }
+
     private:
 
         //=================================================
@@ -128,9 +144,9 @@ namespace avel {
         // Type aliases
         //=================================================
 
-        using scalar_type = std::uint32_t;
-
         constexpr static unsigned width = 16;
+
+        using scalar_type = std::uint32_t;
 
         using primitive = avel::vector_primitive<scalar_type, width>::type;
 
@@ -275,35 +291,38 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator/=(Vector vec) {
-            //TODO: Provide better implementation
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
+            Vector quotient{};
 
-            _mm512_store_si512(reinterpret_cast<primitive*>(array0), content);
-            _mm512_store_si512(reinterpret_cast<__m512*>(array1), vec.content);
+            for (std::uint32_t i = 32; (i-- > 0) && (*this != zeros());) {
+                mask b = (*this >> i) >= vec;
 
-            for (int i = 0; i < width; ++i) {
-                array0[i] = array0[i] / array1[i];
+                #if defined(AVEL_AVX512VL)
+                *this = _mm512_mask_sub_epi32(*this, b, *this, (vec << i));
+                #elif defined(AVEL_SSE2) || defined(AVEL_NEON)
+                *this -= (Vector{rimitive(b)} & (vec << i));
+                #endif
+
+                *this -= (-Vector{b} & (vec << i));
+                quotient |= (Vector{b} << i);
             }
 
-            content = _mm512_load_si512(reinterpret_cast<const __m512*>(array0));
+            *this = quotient;
 
             return *this;
         }
 
         AVEL_FINL Vector& operator%=(const Vector vec) {
-            //TODO: Provide better implementation
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
+            for (std::uint32_t i = 32; (i-- > 0) && bool(*this != zeros());) {
+                mask b = (*this >> i) >= vec;
 
-            _mm512_store_si512(reinterpret_cast<primitive*>(array0), content);
-            _mm512_store_si512(reinterpret_cast<primitive*>(array1), vec.content);
+                #if defined(AVEL_AVX512VL)
+                *this = _mm512_mask_sub_epi32(*this, b, *this, (vec << i));
+                #elif defined(AVEL_SSE2) || defined(AVEL_NEON)
+                *this -= (Vector{primitive(b)} & (vec << i));
+                #endif
 
-            for (int i = 0; i < width; ++i) {
-                array0[i] = array0[i] % array1[i];
+                *this -= (-Vector{b} & (vec << i));
             }
-
-            content = _mm512_load_si512(reinterpret_cast<const primitive*>(array0));
 
             return *this;
         }
@@ -526,6 +545,11 @@ namespace avel {
 
     //Definition of gather deferred until definition of vector of signed integers
 
+    template<>
+    AVEL_FINL vec16x32u broadcast<vec16x32u>(std::uint32_t x) {
+        return vec16x32u{_mm512_set1_epi32(x)};
+    }
+
     void store(std::uint32_t* ptr, vec16x32u v) {
         _mm512_storeu_si512(reinterpret_cast<__m512i*>(ptr), v);
     }
@@ -542,7 +566,7 @@ namespace avel {
     // Bit operations
     //=====================================================
 
-    vec16x32u popcount(vec16x32u v) {
+    AVEL_FINL vec16x32u pop_count(vec16x32u v) {
         #if defined(AVEL_AVX512VPOPCNTDQ)
         return vec16x32u{_mm512_popcnt_epi32(v)};
         #elif defined(AVEL_AVX512BITALG)

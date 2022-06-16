@@ -4,6 +4,8 @@ namespace avel {
 
     using mask4x32u = Vector_mask<std::uint32_t, 4>;
 
+    div_t<vec4x32u> div(vec4x32u numerator, vec4x32u denominator);
+
     template<>
     class Vector_mask<std::uint32_t, 4> {
     public:
@@ -40,6 +42,26 @@ namespace avel {
 
         Vector_mask& operator=(const Vector_mask&) = default;
         Vector_mask& operator=(Vector_mask&&) = default;
+
+        //=================================================
+        // Comparison operators
+        //=================================================
+
+        AVEL_FINL bool operator==(Vector_mask rhs) const noexcept {
+            #if defined(AVEL_AVX512VL)
+            return (_mm512_mask2int(content) == _mm512_mask2int(rhs.content));
+            #elif defined(AVEL_SSE2)
+            return (0xFFFF == _mm_movemask_epi8(_mm_cmpeq_epi32(content, rhs)));
+            #endif
+        }
+
+        AVEL_FINL bool operator!=(Vector_mask rhs) const noexcept {
+            #if defined(AVEL_AVX512VL)
+            return (_mm512_mask2int(content) != _mm512_mask2int(rhs.content));
+            #elif defined(AVEL_SSE2)
+            return (0xFFFF != _mm_movemask_epi8(_mm_cmpeq_epi32(content, rhs)));
+            #endif
+        }
 
         //=================================================
         // Bitwise assignment operators
@@ -129,7 +151,7 @@ namespace avel {
 
         AVEL_FINL bool operator[](int i) const {
             #if defined(AVEL_AVX512VL)
-            unsigned mask = _cvtmask16_u32(__mmask16(content));
+            unsigned mask = _mm512_mask2int(content);
             return mask & (1 << i);
             #elif defined(AVEL_SSE2)
             int mask = _mm_movemask_epi8(content);
@@ -152,6 +174,14 @@ namespace avel {
 
         AVEL_FINL operator primitive() const {
             return content;
+        }
+
+        AVEL_FINL operator bool() const {
+            #if defined(AVEL_AVX512VL)
+            return _mm512_mask2int(content);
+            #elif defined(AVEL_SSE2)
+            return (0xFFFF == _mm_movemask_epi8(content));
+            #endif
         }
 
     private:
@@ -199,9 +229,9 @@ namespace avel {
         // Type aliases
         //=================================================
 
-        using scalar_type = std::uint32_t;
-
         constexpr static unsigned width = 4;
+
+        using scalar_type = std::uint32_t;
 
         using primitive = avel::vector_primitive<scalar_type, width>::type;
 
@@ -422,65 +452,14 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator/=(Vector vec) {
-            //TODO: Provide better implementation
-            #if defined(AVEL_SSE2)
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
-
-            _mm_store_si128(reinterpret_cast<primitive*>(array0), content);
-            _mm_store_si128(reinterpret_cast<primitive*>(array1), vec.content);
-
-            for (int i = 0; i < width; ++i) {
-                array0[i] = array0[i] / array1[i];
-            }
-
-            content = _mm_load_si128(reinterpret_cast<const primitive*>(array0));
-            #elif defined(AVEL_NEON)
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
-
-            vst1q_u32(array0, content);
-            vst1q_u32(array1, vec.content);
-
-            for (int i = 0; i < width; ++i) {
-                array0[i] = array0[i] / array1[i];
-            }
-
-            content = vld1q_u32(array0);
-            #endif
-
+            auto results = div(*this, vec);
+            *this = results.quot;
             return *this;
         }
 
         AVEL_FINL Vector& operator%=(const Vector vec) {
-            //TODO: Provide better implementation
-            #if defined(AVEL_SSE2)
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
-
-            _mm_store_si128(reinterpret_cast<primitive*>(array0), content);
-            _mm_store_si128(reinterpret_cast<primitive*>(array1), vec.content);
-
-            for (int i = 0; i < width; ++i) {
-                array0[i] = array0[i] % array1[i];
-            }
-
-            content = _mm_load_si128(reinterpret_cast<const primitive*>(array0));
-            #else
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
-
-            vst1q_u32(array0, content);
-            vst1q_u32(array1, vec.content);
-
-            for (int i = 0; i < width; ++i) {
-                array0[i] = array0[i] % array1[i];
-            }
-
-            content = vld1q_u32(array0);
-
-            #endif
-
+            auto results = div(*this, vec);
+            *this = results.rem;
             return *this;
         }
 
@@ -513,61 +492,13 @@ namespace avel {
         }
 
         AVEL_FINL Vector operator/(const Vector vec) const {
-            //TODO: Provide better implementation
-            #if defined(AVEL_SSE2)
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
-
-            _mm_store_si128(reinterpret_cast<primitive*>(array0), content);
-            _mm_store_si128(reinterpret_cast<primitive*>(array1), vec.content);
-
-            for (int i = 0; i < width; ++i) {
-                array0[i] = array0[i] / array1[i];
-            }
-
-            return Vector{_mm_load_si128(reinterpret_cast<const primitive*>(array0))};
-            #elif defined(AVEL_NEON)
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
-
-            vst1q_u32(array0, content);
-            vst1q_u32(array1, vec.content);
-
-            for (int i = 0; i < width; ++i) {
-                array0[i] = array0[i] / array1[i];
-            }
-
-            return Vector{vld1q_u32(array0)};
-            #endif
+            auto results = div(*this, vec);
+            return results.quot;
         }
 
         AVEL_FINL Vector operator%(const Vector vec) const {
-            //TODO: Provide better implementation
-            #if defined(AVEL_SSE2)
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
-
-            _mm_store_si128(reinterpret_cast<primitive*>(array0), content);
-            _mm_store_si128(reinterpret_cast<primitive*>(array1), vec.content);
-
-            for (int i = 0; i < width; ++i) {
-                array0[i] = array0[i] % array1[i];
-            }
-
-            return Vector{_mm_load_si128(reinterpret_cast<const primitive*>(array0))};
-            #elif defined(AVEL_NEON)
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
-
-            vst1q_u32(array0, content);
-            vst1q_u32(array1, vec.content);
-
-            for (int i = 0; i < width; ++i) {
-                array0[i] = array0[i] % array1[i];
-            }
-
-            return Vector{vld1q_u32(array0)};
-            #endif
+            auto results = div(*this, vec);
+            return results.rem;
         }
 
         //=================================================
@@ -898,11 +829,16 @@ namespace avel {
 
     //Definition of gather deferred until vector of signed integers is defined
 
+    template<>
+    AVEL_FINL vec4x32u broadcast<vec4x32u>(std::uint32_t x) {
+        #if defined(AVEL_SSE2)
+        return vec4x32u{_mm_set1_epi32(x)};
+        #endif
+    }
+
     AVEL_FINL void store(std::uint32_t* ptr, vec4x32u v) {
         #if defined(AVEL_SSE2)
         _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), v);
-        #elif defined(AVEL_NEON)
-        vst1q_u32(ptr, v);
         #endif
     }
 
@@ -925,10 +861,33 @@ namespace avel {
     //Definition of scatter deferred until vector of signed integers is defined
 
     //=====================================================
+    // Integer arithmetic functions
+    //=====================================================
+
+    AVEL_FINL div_t<vec4x32u>div(vec4x32u numerator, vec4x32u denominator) {
+        vec4x32u quotient{};
+
+        auto z = vec4x32u::zeros();
+        for (std::uint32_t i = 32; (i-- > 0) && (numerator != z);) {
+            mask4x32u b = (numerator >> i) >= denominator;
+
+            #if defined(AVEL_AVX512VL)
+            numerator -= vec4x32u{_mm_mask_sub_epi32(numerator, b, numerator, (denominator << i))};
+            #elif defined(AVEL_SSE2)
+            numerator -= (vec4x32u{vec4x32u::primitive(b)} & (denominator << i));
+            #endif
+
+            quotient |= (vec4x32u {b} << i);
+        }
+
+        return {quotient, numerator};
+    }
+
+    //=====================================================
     // Bit operations
     //=====================================================
 
-    AVEL_FINL vec4x32u popcount(vec4x32u v) {
+    AVEL_FINL vec4x32u pop_count(vec4x32u v) {
         #if defined(AVEL_AVX512VL) & defined(AVEL_AVX512VPOPCNTDQ)
         return vec4x32u{_mm_popcnt_epi32(v)};
         #elif defined(AVELAVX512VL) & defined(AVEL_AVX512BITALG)
