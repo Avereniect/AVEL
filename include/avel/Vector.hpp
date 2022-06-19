@@ -10,6 +10,17 @@
 namespace avel {
 
     ///
+    /// class that is returned by avel::div to return quotient and remainder
+    /// values
+    ///
+    /// \tparam V Specialization of avel::Vector
+    template<class V>
+    struct div_type {
+        V quot;
+        V rem;
+    };
+
+    ///
     /// \tparam T Integral or floating-point type
     /// \tparam N Vector width
     template<class T, int N = avel::optimal_vector_width<T>::value>
