@@ -4,7 +4,7 @@ namespace avel {
 
     using mask4x32u = Vector_mask<std::uint32_t, 4>;
 
-    div_t<vec4x32u> div(vec4x32u numerator, vec4x32u denominator);
+    div_type<vec4x32u> div(vec4x32u numerator, vec4x32u denominator);
 
     template<>
     class Vector_mask<std::uint32_t, 4> {
@@ -864,7 +864,7 @@ namespace avel {
     // Integer arithmetic functions
     //=====================================================
 
-    AVEL_FINL div_t<vec4x32u>div(vec4x32u numerator, vec4x32u denominator) {
+    AVEL_FINL div_type<vec4x32u> div(vec4x32u numerator, vec4x32u denominator) {
         vec4x32u quotient{};
 
         auto z = vec4x32u::zeros();
