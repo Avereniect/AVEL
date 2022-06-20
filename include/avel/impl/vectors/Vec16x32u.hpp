@@ -4,6 +4,8 @@ namespace avel {
 
     using mask16x32u = Vector_mask<std::uint32_t, 16>;
 
+    div_type<vec16x32u> div(vec16x32u numerator, vec16x32u denominator);
+
     template<>
     class Vector_mask<std::uint32_t, 16> {
     public:
@@ -291,39 +293,14 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator/=(Vector vec) {
-            Vector quotient{};
-
-            for (std::uint32_t i = 32; (i-- > 0) && (*this != zeros());) {
-                mask b = (*this >> i) >= vec;
-
-                #if defined(AVEL_AVX512VL)
-                *this = _mm512_mask_sub_epi32(*this, b, *this, (vec << i));
-                #elif defined(AVEL_SSE2) || defined(AVEL_NEON)
-                *this -= (Vector{rimitive(b)} & (vec << i));
-                #endif
-
-                *this -= (-Vector{b} & (vec << i));
-                quotient |= (Vector{b} << i);
-            }
-
-            *this = quotient;
-
+            auto results = div(*this, vec);
+            *this = results.quot;
             return *this;
         }
 
         AVEL_FINL Vector& operator%=(const Vector vec) {
-            for (std::uint32_t i = 32; (i-- > 0) && bool(*this != zeros());) {
-                mask b = (*this >> i) >= vec;
-
-                #if defined(AVEL_AVX512VL)
-                *this = _mm512_mask_sub_epi32(*this, b, *this, (vec << i));
-                #elif defined(AVEL_SSE2) || defined(AVEL_NEON)
-                *this -= (Vector{primitive(b)} & (vec << i));
-                #endif
-
-                *this -= (-Vector{b} & (vec << i));
-            }
-
+            auto results = div(*this, vec);
+            *this = results.rem;
             return *this;
         }
 
@@ -508,34 +485,34 @@ namespace avel {
     // General vector operations
     //=====================================================
 
-    vec16x32u blend(vec16x32u a, vec16x32u b, mask16x32u m) {
+    AVEL_FINL vec16x32u blend(vec16x32u a, vec16x32u b, mask16x32u m) {
         return vec16x32u{_mm512_mask_blend_epi32(m, a, b)};
     }
 
-    vec16x32u max(vec16x32u a, vec16x32u b) {
+    AVEL_FINL vec16x32u max(vec16x32u a, vec16x32u b) {
         return vec16x32u{_mm512_max_epu32(a, b)};
     }
 
-    vec16x32u min(vec16x32u a, vec16x32u b) {
+    AVEL_FINL vec16x32u min(vec16x32u a, vec16x32u b) {
         return vec16x32u{_mm512_min_epu32(a, b)};
     }
 
-    vec16x32u midpoint(vec16x32u a, vec16x32u b) {
+    AVEL_FINL vec16x32u midpoint(vec16x32u a, vec16x32u b) {
         return (a & b) + ((a ^ b) >> 1);
     }
 
     template<>
-    vec16x32u load<vec16x32u>(const std::uint32_t* ptr) {
+    AVEL_FINL vec16x32u load<vec16x32u>(const std::uint32_t* ptr) {
         return vec16x32u{_mm512_loadu_si512(ptr)};
     }
 
     template<>
-    vec16x32u aligned_load<vec16x32u>(const std::uint32_t* ptr) {
+    AVEL_FINL vec16x32u aligned_load<vec16x32u>(const std::uint32_t* ptr) {
         return vec16x32u{_mm512_load_si512(ptr)};
     }
 
     template<>
-    vec16x32u stream_load<vec16x32u>(const std::uint32_t* ptr) {
+    AVEL_FINL vec16x32u stream_load<vec16x32u>(const std::uint32_t* ptr) {
         #if defined AVEL_GCC
         return vec16x32u{_mm512_stream_load_si512((void*)ptr)};
         #else
@@ -550,16 +527,35 @@ namespace avel {
         return vec16x32u{_mm512_set1_epi32(x)};
     }
 
-    void store(std::uint32_t* ptr, vec16x32u v) {
+    AVEL_FINL void store(std::uint32_t* ptr, vec16x32u v) {
         _mm512_storeu_si512(reinterpret_cast<__m512i*>(ptr), v);
     }
 
-    void aligned_store(std::uint32_t* ptr, vec16x32u v) {
+    AVEL_FINL void aligned_store(std::uint32_t* ptr, vec16x32u v) {
         _mm512_store_si512(reinterpret_cast<__m512i*>(ptr), v);
     }
 
-    void stream_store(std::uint32_t* ptr, vec16x32u v) {
+    AVEL_FINL void stream_store(std::uint32_t* ptr, vec16x32u v) {
         _mm512_stream_si512(reinterpret_cast<__m512i*>(ptr), v);
+    }
+
+    //Definition of scatter deferred until vector of signed integers is defined
+
+    //=====================================================
+    // Integer arithmetic functions
+    //=====================================================
+
+    AVEL_FINL div_type<vec16x32u> div(vec16x32u numerator, vec16x32u denominator) {
+        vec16x32u quotient{};
+
+        auto z = vec16x32u::zeros();
+        for (std::uint32_t i = 32; (i-- > 0) && (numerator != z);) {
+            vec16x32u::mask b = (numerator >> i) >= denominator;
+            numerator = _mm512_mask_sub_epi32(numerator, b, numerator, (denominator << i));
+            quotient |= (vec16x32u{b} << i); //TODO: Pretty sure constructing vector from mask is incorrect
+        }
+
+        return {quotient, numerator};
     }
 
     //=====================================================
