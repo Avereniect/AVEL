@@ -22,13 +22,11 @@ namespace avel {
     V gather(const typename V::scalar_type*, Vector<std::int32_t, V::width>);
 
     template<class V>
-    typename V::primitive to_primitive(V v) {
-        return static_cast<typename V::primtive>(v);
-    }
+    V broadcast(typename V::scalar_type);
 
 }
 
-//Note: The order of inclusion of the following files in meaningful
+//Note: The order of inclusion of the following files is meaningful
 
 //128-bit vectors
 
