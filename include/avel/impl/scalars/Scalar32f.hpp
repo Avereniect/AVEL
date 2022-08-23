@@ -7,7 +7,10 @@
 
 namespace avel {
 
-
+    [[nodiscard]]
+    AVEL_FINL float blend(float a, float b, bool m) {
+        return (a * float(!m)) + (b * float(m));
+    }
 
 }
 
