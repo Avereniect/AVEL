@@ -3,37 +3,43 @@
 
 #include <cmath>
 
-#include "../vector_primitives/Vector_primitives.hpp"
-#include "../Utils.hpp"
+//#include "../vector_primitives/Vector_primitives.hpp"
+#include "../Misc.hpp"
 #include "../Constants.hpp"
 
 namespace avel {
 
     template<class V>
-    V load(const typename V::scalar_type*);
+    V load(const typename V::scalar*);
 
     template<class V>
-    V aligned_load(const typename V::scalar_type*);
+    V aligned_load(const typename V::scalar*);
 
     template<class V>
-    V stream_load(const typename V::scalar_type*);
+    V stream_load(const typename V::scalar*);
 
     template<class V>
-    V gather(const typename V::scalar_type*, Vector<std::int32_t, V::width>);
+    V gather(const typename V::scalar*, Vector<std::int32_t, V::width>);
 
     template<class V>
-    V broadcast(typename V::scalar_type);
+    V broadcast(typename V::scalar);
 
 }
 
-//Note: The order of inclusion of the following files is meaningful
+// Note: The order of inclusion of the following files is meaningful as later
+// files use declarations contained within earlier files
 
 //128-bit vectors
 
 #if defined(AVEL_SSE2) | defined(AVEL_NEON)
 
+#include "Vec8x16u.hpp"
+
 #include "Vec4x32u.hpp"
 #include "Vec4x32i.hpp"
+
+#include "Vec2x64u.hpp"
+
 #include "Vec4x32f.hpp"
 
 #endif
@@ -44,6 +50,9 @@ namespace avel {
 
 #include "Vec8x32u.hpp"
 #include "Vec8x32i.hpp"
+
+#include "Vec4x64u.hpp"
+
 #include "Vec8x32f.hpp"
 
 #endif
@@ -54,6 +63,9 @@ namespace avel {
 
 #include "Vec16x32u.hpp"
 #include "Vec16x32i.hpp"
+
+#include "Vec8x64u.hpp"
+
 #include "Vec16x32f.hpp"
 
 #endif

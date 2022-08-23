@@ -11,10 +11,20 @@ namespace avel {
     public:
 
         //=================================================
+        // Static constants
+        //=================================================
+
+        constexpr static unsigned width = 8;
+
+        //=================================================
         // Type aliases
         //=================================================
 
-        using primitive = avel::mask_primitive<float, 8>::type;
+        #if defined(AVEL_AVX512VL)
+        using primitive = __mmask8;
+        #elif defined(AVEL_AVX)
+        using primitive = __m256;
+        #endif
 
         //=================================================
         // Constructor
@@ -46,6 +56,26 @@ namespace avel {
 
         Vector_mask& operator=(const Vector_mask&) = default;
         Vector_mask& operator=(Vector_mask&&) = default;
+
+        //=================================================
+        // Comparison operators
+        //=================================================
+
+        AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) {
+            #if defined(AVEL_AVX512VL)
+            return (_cvtmask16_u32(primitive(lhs)) == _cvtmask16_u32(primitive(rhs)));
+            #elif defined(AVEL_AVX)
+            return 0xFF == _mm256_movemask_ps(_mm256_cmp_ps(lhs, rhs, _CMP_EQ_OQ));
+            #endif
+        }
+
+        AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) {
+            #if defined(AVEL_AVX512VL)
+            return (_cvtmask16_u32(primitive(lhs)) != _cvtmask16_u32(primitive(rhs)));
+            #elif defined(AVEL_AVX)
+            return 0xFF != _mm256_movemask_ps(_mm256_cmp_ps(lhs, rhs, _CMP_EQ_OQ));
+            #endif
+        }
 
         //=================================================
         // Bitwise assignment operators
@@ -168,25 +198,60 @@ namespace avel {
 
     };
 
+    //=====================================================
+    // Mask functions
+    //=====================================================
+
+    std::uint32_t count(mask8x32f m) {
+        #if defined(AVEL_AVX512VL)
+        return popcount(_mm512_mask2int(m));
+        #elif defined(AVEL_SSE2)
+        return popcount(_mm256_movemask_ps(m));
+        #endif
+    }
+
+    bool any(mask8x32f m) {
+        #if defined(AVEL_AVX512VL)
+        return _mm512_mask2int(m);
+        #elif defined(AVEL_SSE2)
+        return _mm256_movemask_ps(m);
+        #endif
+    }
+
+    bool all(mask8x32f m) {
+        #if defined(AVEL_AVX512VL)
+        return 0xFF == _mm512_mask2int(m);
+        #elif defined(AVEL_SSE2)
+        return 0xFF == _mm256_movemask_ps(m);
+        #endif
+    }
 
 
     template<>
-    class Vector<float, 8> {
+    class alignas(sizeof(float) * 8) Vector<float, 8> {
     public:
 
-        using scalar_type = float;
+        //=================================================
+        // Static constants
+        //=================================================
 
         constexpr static unsigned width = 8;
 
-        using primitive = avel::vector_primitive<scalar_type, width>::type;
+        //=================================================
+        // Type aliases
+        //=================================================
 
-        using mask = Vector_mask<scalar_type, width>;
+        using scalar = float;
+
+        using primitive = __m256;
+
+        using mask = Vector_mask<scalar, width>;
 
         template<class U>
         using rebind_type = Vector<U, width>;
 
         template<int M>
-        using rebind_width = Vector<scalar_type, M>;
+        using rebind_width = Vector<scalar, M>;
 
         //=================================================
         // Constructors
@@ -214,13 +279,13 @@ namespace avel {
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}
 
-        AVEL_FINL explicit Vector(scalar_type x):
+        AVEL_FINL explicit Vector(scalar x):
             content(_mm256_set1_ps(x)) {}
 
-        AVEL_FINL explicit Vector(const scalar_type* x):
+        AVEL_FINL explicit Vector(const scalar* x):
             content(_mm256_loadu_ps(x)) {}
 
-        AVEL_FINL explicit Vector(const std::array<scalar_type, width>& a):
+        AVEL_FINL explicit Vector(const std::array<scalar, width>& a):
             content(_mm256_loadu_ps(a.data())) {}
 
         Vector() = default;
@@ -253,7 +318,7 @@ namespace avel {
             return *this;
         }
 
-        AVEL_FINL Vector& operator=(scalar_type x) {
+        AVEL_FINL Vector& operator=(scalar x) {
             content = _mm256_set1_ps(x);
             return *this;
         }
@@ -314,7 +379,7 @@ namespace avel {
         // Unary arithmetic operators
         //=================================================
 
-        AVEL_FINL Vector operator+() {
+        AVEL_FINL Vector operator+() const {
             return *this;
         }
 
@@ -405,17 +470,17 @@ namespace avel {
         // Bitwise assignment operators
         //=================================================
 
-        AVEL_FINL Vector operator&=(const Vector rhs) {
+        AVEL_FINL Vector operator&=(Vector rhs) {
             content = _mm256_and_ps(content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector operator|=(const Vector rhs) {
+        AVEL_FINL Vector operator|=(Vector rhs) {
             content = _mm256_or_ps(content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector operator^=(const Vector rhs) {
+        AVEL_FINL Vector operator^=(Vector rhs) {
             content = _mm256_xor_ps(content, rhs.content);
             return *this;
         }
@@ -428,15 +493,15 @@ namespace avel {
             return Vector{_mm256_andnot_ps(ones().content, content)};
         }
 
-        AVEL_FINL Vector operator&(const Vector rhs) const {
+        AVEL_FINL Vector operator&(Vector rhs) const {
             return Vector{_mm256_and_ps(content, rhs.content)};
         }
 
-        AVEL_FINL Vector operator|(const Vector rhs) const {
+        AVEL_FINL Vector operator|(Vector rhs) const {
             return Vector{_mm256_or_ps(content, rhs.content)};
         }
 
-        AVEL_FINL Vector operator^(const Vector rhs) const {
+        AVEL_FINL Vector operator^(Vector rhs) const {
             return Vector{_mm256_xor_ps(content, rhs.content)};
         }
 
@@ -444,8 +509,8 @@ namespace avel {
         // Conversions
         //=================================================
 
-        AVEL_FINL std::array<scalar_type, width> as_array() const {
-            alignas(alignof(Vector)) std::array<scalar_type, width> array{};
+        AVEL_FINL std::array<scalar, width> as_array() const {
+            alignas(alignof(Vector)) std::array<scalar, width> array{};
 
             _mm256_store_ps(array.data(), content);
 
@@ -539,8 +604,12 @@ namespace avel {
         return vec8x32f{_mm256_min_ps(a, b)};
     }
 
+    AVEL_FINL vec8x32f clamp(vec8x32f x, vec8x32f lo, vec8x32f hi) {
+        return vec8x32f{min(max(x, lo), hi)};
+    }
+
     AVEL_FINL vec8x32f abs(vec8x32f v) {
-        return v & ~vec8x32f{float_bit_mask};
+        return v & ~vec8x32f{float_sign_bit_mask};
     }
 
     template<>
@@ -578,15 +647,20 @@ namespace avel {
         __m128 abab = _mm_unpacklo_ps(a, b);
         __m128 cdcd = _mm_unpacklo_ps(c, d);
 
-        __m128 abcd = _mm_unpacklo_pd(abab, cdcd);
+        __m128 abcd = _mm_castpd_ps(_mm_unpacklo_pd(_mm_castps_pd(abab), _mm_castps_pd(cdcd)));
 
         __m128 efef = _mm_unpacklo_ps(e, f);
         __m128 ghgh = _mm_unpacklo_ps(g, h);
 
-        __m128 efgh = _mm_unpacklo_pd(efef, ghgh);
+        __m128 efgh = _mm_castpd_ps(_mm_unpacklo_pd(_mm_castps_pd(efef), _mm_castps_pd(ghgh)));
 
         return vec8x32f{_mm256_insertf128_ps(_mm256_zextps128_ps256(abcd), efgh, 0x01)};
         #endif
+    }
+
+    template<>
+    AVEL_FINL vec8x32f broadcast<vec8x32f>(float x) {
+        return vec8x32f{_mm256_set1_ps(x)};
     }
 
     AVEL_FINL void store(float* ptr, vec8x32f v) {
@@ -961,6 +1035,10 @@ namespace avel {
         return vec8x32f{_mm256_round_ps(x, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
     }
 
+    AVEL_FINL vec8x32f nearbyint(vec8x32f v) {
+        return vec8x32f{_mm256_round_ps(v, _MM_FROUND_CUR_DIRECTION)};
+    }
+
     //=====================================================
     // Floating-point manipulation
     //=====================================================
@@ -1011,7 +1089,7 @@ namespace avel {
         vec8x32f tmp = vec8x32f{_mm256_getexp_ps(v)};
         return  (tmp != vec8x32f::zeros()) & (tmp != vec8x32f{255.0f});
         #else
-        vec8x32f tmp = (v & vec8x32f(float_bit_mask));
+        vec8x32f tmp = (v & vec8x32f(float_sign_bit_mask));
         return  (tmp != vec8x32f::zeros()) & (tmp != vec8x32f{float_exponent_mask});
         #endif
     }

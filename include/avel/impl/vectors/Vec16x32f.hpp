@@ -1,6 +1,3 @@
-#include "avel/Vector.hpp"
-#include "avel/impl/vector_primitives/Vector_primitives.hpp"
-
 namespace avel {
 
     using vec16x32f = Vector<float, 16>;
@@ -14,10 +11,16 @@ namespace avel {
     public:
 
         //=================================================
+        // Static constants
+        //=================================================
+
+        constexpr static unsigned width = 16;
+
+        //=================================================
         // Type aliases
         //=================================================
 
-        using primitive = avel::mask_primitive<float, 16>::type;
+        using primitive = __mmask16;
 
         //=================================================
         // Constructor
@@ -49,6 +52,18 @@ namespace avel {
 
         Vector_mask& operator=(const Vector_mask&) = default;
         Vector_mask& operator=(Vector_mask&&) = default;
+
+        //=================================================
+        // Comparison operators
+        //=================================================
+
+        AVEL_FINL bool operator==(Vector_mask rhs) {
+            return _mm512_mask2int(content) == _mm512_mask2int(rhs.content);
+        }
+
+        AVEL_FINL bool operator!=(Vector_mask rhs) {
+            return _mm512_mask2int(content) != _mm512_mask2int(rhs.content);
+        }
 
         //=================================================
         // Bitwise assignment operators
@@ -126,26 +141,51 @@ namespace avel {
 
             return full_masks[x];
         }
+
     };
+
+    //=====================================================
+    // Mask functions
+    //=====================================================
+
+    std::uint32_t count(mask16x32f m) {
+        return popcount(_mm512_mask2int(m));
+    }
+
+    bool any(mask16x32f m) {
+        return _mm512_mask2int(m);
+    }
+
+    bool all(mask16x32f m) {
+        return 0xFFFF == _mm512_mask2int(m);
+    }
 
 
     template<>
-    class Vector<float, 16> {
+    class alignas(sizeof(float) * 16)Vector<float, 16> {
     public:
 
-        using scalar_type = float;
+        //=================================================
+        // Static constants
+        //=================================================
 
         constexpr static unsigned width = 16;
 
-        using primitive = avel::vector_primitive<scalar_type, width>::type;
+        //=================================================
+        // Type aliases
+        //=================================================
 
-        using mask = Vector_mask<scalar_type, width>;
+        using scalar = float;
+
+        using primitive = __m512;
+
+        using mask = Vector_mask<scalar, width>;
 
         template<class U>
         using rebind_type = Vector<U, width>;
 
         template<int M>
-        using rebind_width = Vector<scalar_type, M>;
+        using rebind_width = Vector<scalar, M>;
 
         //=================================================
         // Constructors
@@ -177,13 +217,13 @@ namespace avel {
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}
 
-        AVEL_FINL explicit Vector(scalar_type x):
+        AVEL_FINL explicit Vector(scalar x):
             content(_mm512_set1_ps(x)) {}
 
-        AVEL_FINL explicit Vector(const scalar_type* x):
+        AVEL_FINL explicit Vector(const scalar* x):
             content(_mm512_loadu_ps(x)) {}
 
-        AVEL_FINL explicit Vector(const std::array<scalar_type, width>& a):
+        AVEL_FINL explicit Vector(const std::array<scalar, width>& a):
             content(_mm512_loadu_ps(a.data())) {}
 
         Vector() = default;
@@ -216,7 +256,7 @@ namespace avel {
             return *this;
         }
 
-        AVEL_FINL Vector& operator=(scalar_type x) {
+        AVEL_FINL Vector& operator=(scalar x) {
             content = _mm512_set1_ps(x);
             return *this;
         }
@@ -225,27 +265,27 @@ namespace avel {
         // Comparison operators
         //=================================================
 
-        AVEL_FINL mask operator==(const Vector vec) const {
+        AVEL_FINL mask operator==(Vector vec) const {
             return mask{_mm512_cmp_ps_mask(content, vec.content, _CMP_EQ_OQ)};
         }
 
-        AVEL_FINL mask operator!=(const Vector vec) const {
+        AVEL_FINL mask operator!=(Vector vec) const {
             return mask{_mm512_cmp_ps_mask(content, vec.content, _CMP_NEQ_OQ)};
         }
 
-        AVEL_FINL mask operator<(const Vector vec) const {
+        AVEL_FINL mask operator<(Vector vec) const {
             return mask{_mm512_cmp_ps_mask(content, vec.content, _CMP_LT_OQ)};
         }
 
-        AVEL_FINL mask operator<=(const Vector vec) const {
+        AVEL_FINL mask operator<=(Vector vec) const {
             return mask{_mm512_cmp_ps_mask(content, vec.content, _CMP_LE_OQ)};
         }
 
-        AVEL_FINL mask operator>(const Vector vec) const {
+        AVEL_FINL mask operator>(Vector vec) const {
             return mask{_mm512_cmp_ps_mask(content, vec.content, _CMP_GT_OQ)};
         }
 
-        AVEL_FINL mask operator>=(const Vector vec) const {
+        AVEL_FINL mask operator>=(Vector vec) const {
             return mask{_mm512_cmp_ps_mask(content, vec.content, _CMP_GE_OQ)};
         }
 
@@ -253,7 +293,7 @@ namespace avel {
         // Unary arithmetic operators
         //=================================================
 
-        AVEL_FINL Vector operator+() {
+        AVEL_FINL Vector operator+() const {
             return *this;
         }
 
@@ -341,7 +381,7 @@ namespace avel {
         // Bitwise assignment operators
         //=================================================
 
-        AVEL_FINL Vector operator&=(const Vector vec) {
+        AVEL_FINL Vector operator&=(Vector vec) {
             #if defined(AVEL_AVX512DQ)
             content = _mm512_and_ps(content, vec.content);
             #else
@@ -352,7 +392,7 @@ namespace avel {
             return *this;
         }
 
-        AVEL_FINL Vector operator|=(const Vector vec) {
+        AVEL_FINL Vector operator|=(Vector vec) {
             #if defined(AVEL_AVX512DQ)
             content = _mm512_or_ps(content, vec.content);
             #else
@@ -363,7 +403,7 @@ namespace avel {
             return *this;
         }
 
-        AVEL_FINL Vector operator^=(const Vector vec) {
+        AVEL_FINL Vector operator^=(Vector vec) {
             #if defined(AVEL_AVX512DQ)
             content = _mm512_xor_ps(content, vec.content);
             #else
@@ -378,11 +418,11 @@ namespace avel {
         // Bitwise operators
         //=================================================
 
-        AVEL_FINL Vector operator~() {
+        AVEL_FINL Vector operator~() const {
             return Vector{_mm512_andnot_ps(ones().content, content)};
         }
 
-        AVEL_FINL Vector operator&(const Vector vec) {
+        AVEL_FINL Vector operator&(Vector vec) const {
             #if defined(AVEL_AVX512DQ)
             return Vector{_mm512_and_ps(content, vec.content)};
             #else
@@ -392,7 +432,7 @@ namespace avel {
             #endif
         }
 
-        AVEL_FINL Vector operator|(const Vector vec) {
+        AVEL_FINL Vector operator|(Vector vec) const {
             #if defined(AVEL_AVX512DQ)
             return Vector{_mm512_or_ps(content, vec.content)};
             #else
@@ -402,7 +442,7 @@ namespace avel {
             #endif
         }
 
-        AVEL_FINL Vector operator^(const Vector vec) {
+        AVEL_FINL Vector operator^(Vector vec) const {
             #if defined(AVEL_AVX512DQ)
             return Vector{_mm512_xor_ps(content, vec.content)};
             #else
@@ -416,8 +456,8 @@ namespace avel {
         // Conversions
         //=================================================
 
-        AVEL_FINL std::array<scalar_type, width> as_array() const {
-            alignas(alignof(Vector)) std::array<scalar_type, width> array{};
+        AVEL_FINL std::array<scalar, width> as_array() const {
+            alignas(alignof(Vector)) std::array<scalar, width> array{};
 
             _mm512_store_ps(array.data(), content);
 
@@ -494,6 +534,10 @@ namespace avel {
         return vec16x32f{_mm512_min_ps(a, b)};
     }
 
+    AVEL_FINL vec16x32f clamp(vec16x32f x, vec16x32f lo, vec16x32f hi) {
+        return vec16x32f{min(max(x, lo), hi)};
+    }
+
     AVEL_FINL vec16x32f abs(vec16x32f v) {
         return vec16x32f{_mm512_abs_ps(v)};
     }
@@ -516,6 +560,11 @@ namespace avel {
     template<>
     AVEL_FINL vec16x32f gather<vec16x32f>(const float* ptr, vec16x32i o) {
         return vec16x32f{_mm512_i32gather_ps(o, ptr, sizeof(float))};
+    }
+
+    template<>
+    AVEL_FINL vec16x32f broadcast<vec16x32f>(float x) {
+        return vec16x32f{_mm512_set1_ps(x)};
     }
 
     AVEL_FINL void store(float* ptr, vec16x32f v) {
@@ -1080,27 +1129,31 @@ namespace avel {
     // Nearest Integer Floating-point operators
     //=====================================================
 
-    AVEL_FINL vec16x32f ceil(vec16x32f x) {
-        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC)};
+    AVEL_FINL vec16x32f ceil(vec16x32f v) {
+        return vec16x32f{_mm512_roundscale_ps(v, _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC)};
     }
 
-    AVEL_FINL vec16x32f floor(vec16x32f x) {
-        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)};
+    AVEL_FINL vec16x32f floor(vec16x32f v) {
+        return vec16x32f{_mm512_roundscale_ps(v, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)};
     }
 
-    AVEL_FINL vec16x32f trunc(vec16x32f x) {
-        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
+    AVEL_FINL vec16x32f trunc(vec16x32f v) {
+        return vec16x32f{_mm512_roundscale_ps(v, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
     }
 
-    AVEL_FINL vec16x32f round(vec16x32f x) {
-        return vec16x32f{_mm512_roundscale_ps(x, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
+    AVEL_FINL vec16x32f round(vec16x32f v) {
+        return vec16x32f{_mm512_roundscale_ps(v, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
+    }
+
+    AVEL_FINL vec16x32f nearbyint(vec16x32f v) {
+        return vec16x32f{_mm512_roundscale_ps(v, _MM_FROUND_CUR_DIRECTION)};
     }
 
     //=====================================================
     // Floating-point manipulation
     //=====================================================
 
-    AVEL_FINL vec16x32f frexp(vec16x32f v, vec16x32i* exp);
+    AVEL_FINL vec16x32f frexp(vec16x32f x, vec16x32i* exp);
 
     AVEL_FINL vec16x32f ldexp(vec16x32f x, vec16x32f exp);
 

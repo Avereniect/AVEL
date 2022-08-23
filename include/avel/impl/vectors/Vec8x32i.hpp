@@ -9,10 +9,20 @@ namespace avel {
     public:
 
         //=================================================
+        // Static constants
+        //=================================================
+
+        constexpr static unsigned width = 8;
+
+        //=================================================
         // Type aliases
         //=================================================
 
-        using primitive = avel::mask_primitive<std::int32_t, 8>::type;
+        #if defined(AVEL_AVX512VL)
+        using primitive = __mmask8;
+        #elif defined(AVEL_AVX)
+        using primitive = __m256i;
+        #endif
 
         //=================================================
         // Constructor
@@ -130,14 +140,6 @@ namespace avel {
         // Conversion operators
         //=================================================
 
-        AVEL_FINL operator bool() const {
-            #if defined(AVEL_AVX512VL)
-            return _mm512_mask2int(content);
-            #elif defined(AVEL_AVX2)
-            return (0xFFFFFFFF == _mm256_movemask_epi8(content));
-            #endif
-        }
-
         AVEL_FINL operator primitive() const {
             return content;
         }
@@ -174,28 +176,62 @@ namespace avel {
 
     };
 
+    //=====================================================
+    // Mask functions
+    //=====================================================
+
+    #if defined(AVEL_AVX2)
+    std::uint32_t count(mask8x32i m) {
+        #if defined(AVEL_AVX512VL)
+        return popcount(_mm512_mask2int(m));
+        #elif defined(AVEL_AVX2)
+        return popcount(_mm256_movemask_epi8(m)) / sizeof(std::int32_t);
+        #endif
+    }
+
+    bool any(mask8x32i m) {
+        #if defined(AVEL_AVX512VL)
+        return _mm512_mask2int(m);
+        #elif defined(AVEL_AVX2)
+        return _mm256_movemask_epi8(m);
+        #endif
+    }
+
+    bool all(mask8x32i m) {
+        #if defined(AVEL_AVX512VL)
+        return 0xFF == _mm512_mask2int(m);
+        #elif defined(AVEL_AVX2)
+        return 0xFFFFFFFFu == _mm256_movemask_epi8(m);
+        #endif
+    }
+    #endif
+
 
     template<>
     class Vector<std::int32_t, 8> {
     public:
 
         //=================================================
-        // Type aliases
+        // Static constants
         //=================================================
 
         constexpr static unsigned width = 8;
 
-        using scalar_type = std::int32_t;
+        //=================================================
+        // Type aliases
+        //=================================================
 
-        using primitive = avel::vector_primitive<scalar_type, width>::type;
+        using scalar = std::int32_t;
 
-        using mask = Vector_mask<scalar_type, width>;
+        using primitive = __m256i;
+
+        using mask = Vector_mask<scalar, width>;
 
         template<class U>
         using rebind_type = Vector<U, width>;
 
         template<int M>
-        using rebind_width = Vector<scalar_type, M>;
+        using rebind_width = Vector<scalar, M>;
 
         //=================================================
         // Constructors
@@ -223,13 +259,13 @@ namespace avel {
         AVEL_FINL explicit Vector(const primitive content):
             content(content) {}
 
-        AVEL_FINL explicit Vector(const scalar_type x):
+        AVEL_FINL explicit Vector(const scalar x):
             content(_mm256_set1_epi32(x)) {}
 
-        AVEL_FINL explicit Vector(const scalar_type* x):
+        AVEL_FINL explicit Vector(const scalar* x):
             content(_mm256_loadu_si256(reinterpret_cast<const primitive*>(x))) {}
 
-        AVEL_FINL explicit Vector(const std::array<scalar_type, width>& array):
+        AVEL_FINL explicit Vector(const std::array<scalar, width>& array):
             content(_mm256_loadu_si256(reinterpret_cast<const primitive*>(array.data()))) {}
 
         Vector() = default;
@@ -262,7 +298,7 @@ namespace avel {
             return *this;
         }
 
-        AVEL_FINL Vector& operator=(scalar_type x) {
+        AVEL_FINL Vector& operator=(scalar x) {
             content = _mm256_set1_epi32(x);
             return *this;
         }
@@ -346,14 +382,14 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator*=(Vector vec) {
-            content = _mm256_mul_epi32(content, vec.content);
+            content = _mm256_mullo_epi32(content, vec.content);
             return *this;
         }
 
         AVEL_FINL Vector& operator/=(Vector vec) {
             //TODO: Provide better implementation
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
+            alignas(alignof(scalar) * width) scalar array0[width];
+            alignas(alignof(scalar) * width) scalar array1[width];
 
             _mm256_store_si256(reinterpret_cast<primitive*>(array0), content);
             _mm256_store_si256(reinterpret_cast<primitive*>(array1), vec.content);
@@ -369,8 +405,8 @@ namespace avel {
 
         AVEL_FINL Vector& operator%=(const Vector vec) {
             //TODO: Provide better implementation
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
+            alignas(alignof(scalar) * width) scalar array0[width];
+            alignas(alignof(scalar) * width) scalar array1[width];
 
             _mm256_store_si256(reinterpret_cast<primitive*>(array0), content);
             _mm256_store_si256(reinterpret_cast<primitive*>(array1), vec.content);
@@ -397,13 +433,13 @@ namespace avel {
         }
 
         AVEL_FINL Vector operator*(const Vector vec) const {
-            return Vector{_mm256_mul_epi32(content, vec.content)};
+            return Vector{_mm256_mullo_epi32(content, vec.content)};
         }
 
         AVEL_FINL Vector operator/(const Vector vec) const {
             //TODO: Provide better implementation
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
+            alignas(alignof(scalar) * width) scalar array0[width];
+            alignas(alignof(scalar) * width) scalar array1[width];
 
             _mm256_store_si256(reinterpret_cast<primitive*>(array0), content);
             _mm256_store_si256(reinterpret_cast<primitive*>(array1), vec.content);
@@ -417,8 +453,8 @@ namespace avel {
 
         AVEL_FINL Vector operator%(const Vector vec) const {
             //TODO: Provide better implementation
-            alignas(alignof(scalar_type) * width) scalar_type array0[width];
-            alignas(alignof(scalar_type) * width) scalar_type array1[width];
+            alignas(alignof(scalar) * width) scalar array0[width];
+            alignas(alignof(scalar) * width) scalar array1[width];
 
             _mm256_store_si256(reinterpret_cast<primitive*>(array0), content);
             _mm256_store_si256(reinterpret_cast<primitive*>(array1), vec.content);
@@ -535,8 +571,8 @@ namespace avel {
         // Conversions
         //=================================================
 
-        AVEL_FINL std::array<scalar_type, width> as_array() const {
-            alignas(alignof(Vector)) std::array<scalar_type, width> array{};
+        AVEL_FINL std::array<scalar, width> as_array() const {
+            alignas(alignof(Vector)) std::array<scalar, width> array{};
 
             _mm256_store_si256(reinterpret_cast<primitive*>(array.data()), content);
 
@@ -592,6 +628,10 @@ namespace avel {
 
     AVEL_FINL vec8x32i min(vec8x32i a, vec8x32i b) {
         return vec8x32i{_mm256_min_epi32(a, b)};
+    }
+
+    AVEL_FINL vec8x32i clamp(vec8x32i x, vec8x32i lo, vec8x32i hi) {
+        return vec8x32i{min(max(x, lo), hi)};
     }
 
     AVEL_FINL vec8x32i midpoint(vec8x32i a, vec8x32i b) {
