@@ -13,9 +13,6 @@ namespace avel {
 
 }
 
-#include "avel/impl/scalars/Scalar32f.hpp"
-#include "avel/impl/scalars/Scalar32u.hpp"
-
-#include "avel/impl/scalars/Scalar64u.hpp"
+#include "avel/impl/scalars/Scalars.hpp"
 
 #endif //AVEL_SCALAR_HPP
