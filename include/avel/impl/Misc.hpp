@@ -2,14 +2,33 @@
 // Created by avereniect on 1/3/22.
 //
 
-#ifndef AVEL_UTILS_HPP
-#define AVEL_UTILS_HPP
+#ifndef AVEL_MISC_HPP
+#define AVEL_MISC_HPP
 
 #include <type_traits>
 #include <cstdint>
 #include "Capabilities.hpp"
 
 namespace avel {
+
+    //=====================================================
+    // Utility classes
+    //=====================================================
+
+    ///
+    /// class that is returned by avel::div to return quotient and remainder
+    /// values
+    ///
+    /// \tparam T An integral type
+    template<class T>
+    struct div_type {
+        T quot;
+        T rem;
+    };
+
+    //=====================================================
+    // Bit-wise operations
+    //=====================================================
 
     template<class T, class U>
     AVEL_FINL T bit_cast(const U& v) {
@@ -27,6 +46,10 @@ namespace avel {
 
         return ret;
     }
+
+    //=====================================================
+    // Pointer alignment
+    //=====================================================
 
     template<std::size_t Alignment, class T>
     AVEL_FINL const T* align_pointer(const T* p) {
@@ -60,6 +83,28 @@ namespace avel {
         return reinterpret_cast<void*>(ret);
     }
 
+    //=====================================================
+    // Synchronization
+    //=====================================================
+
+    void load_fence() {
+        #if defined(AVEL_SSE2)
+        _mm_lfence();
+        #endif
+    }
+
+    void store_fence() {
+        #if defined(AVEL_SSE2)
+        _mm_sfence();
+        #endif
+    }
+
+    void load_store_fence() {
+        #if defined(AVEL_SSE2)
+        _mm_mfence();
+        #endif
+    }
+
 }
 
-#endif //AVEL_UTILS_HPP
+#endif //AVEL_MISC_HPP
