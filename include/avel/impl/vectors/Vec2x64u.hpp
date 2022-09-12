@@ -90,7 +90,7 @@ namespace avel {
 
             primitive array_data = _mm_loadu_si16(arr.data());
             #if defined(AVEL_AVX2)
-            array_data = _mm_broadcastd_epi32(t0);
+            array_data = _mm_broadcastd_epi32(array_data);
             #else
             array_data = _mm_shuffle_epi32(array_data, 0x00);
             #endif
@@ -664,16 +664,20 @@ namespace avel {
         AVEL_FINL Vector& operator<<=(Vector rhs) {
             #if defined(AVEL_AVX2)
             content = _mm_sllv_epi64(content, rhs.content);
+
             #elif defined(AVEL_SSE2)
-            for (unsigned i = 0; i < 6; ++i) {
-                vec2x64u threshold{1u << i};
-                mask2x64u m = (rhs > threshold);
-                *this = blend(*this, *this << i, m);
+            for (unsigned i = 0; i  < 6; ++i) {
+                std::uint64_t s = 1ul << i;
+                auto t0 = rhs & vec2x64u{s};
+                auto m = vec2x64u{} < t0;
+                content = blend(*this, *this << s, mask(m));
             }
 
-            return *this;
+            content = vec2x64u{content} & broadcast_bits(rhs < vec2x64u{64});
+
             #elif defined(AVEL_NEON)
             content = vshlq_u64(content, vreinterpretq_s32_u32(rhs.content));
+
             #endif
             return *this;
         }
@@ -701,91 +705,56 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL Vector operator~() const {
-            #if defined(AVEL_SSE2)
+            #if defined(AVEL_AVX512F)
+            return Vector{_mm_ternarylogic_epi32(content, content, content, 0x01)};
+            #elif defined(AVEL_SSE2)
             primitive t = _mm_undefined_si128();
             return Vector{_mm_andnot_si128(content, _mm_cmpeq_epi32(t, t))};
             #elif defined(AVEL_NEON)
-            return Vector{vmvnq_u64(content)};
+            return Vector{vmvnq_u32(content)};
             #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend Vector operator&(Vector lhs, Vector rhs) {
-            #if defined(AVEL_SSE2)
-            return Vector{_mm_and_si128(lhs, rhs)};
-            #elif defined(AVEL_NEON)
-            return Vector{vandq_u64(lhs, rhs)};
-            #endif
+            lhs &= rhs;
+            return lhs;
         }
 
         [[nodiscard]]
         AVEL_FINL friend Vector operator|(Vector lhs, Vector rhs) {
-            #if defined(AVEL_SSE2)
-            return Vector{_mm_or_si128(lhs, rhs)};
-            #elif defined(AVEL_NEON)
-            return Vector{vorrq_u32(content, rhs.content)};
-            #endif
+            lhs |= rhs;
+            return lhs;
         }
 
         [[nodiscard]]
         AVEL_FINL friend Vector operator^(Vector lhs, Vector rhs) {
-            #if defined(AVEL_SSE2)
-            return Vector{_mm_xor_si128(lhs, rhs)};
-            #elif defined(AVEL_NEON)
-            return Vector{veorq_u32(content, rhs.content)};
-            #endif
+            lhs ^= rhs;
+            return lhs;
         }
 
         [[nodiscard]]
-        AVEL_FINL friend Vector operator<<(Vector lhs, std::uint32_t s) {
-            #if defined(AVEL_SSE2)
-            return Vector{_mm_sll_epi64(lhs, _mm_cvtsi32_si128(s))};
-            #elif defined(AVEL_NEON)
-            return Vector{vshlq_u32(content, vdupq_n_s32(static_cast<std::int32_t>(s)))};
-            #endif
+        AVEL_FINL friend Vector operator<<(Vector lhs, std::uint32_t rhs) {
+            lhs <<= rhs;
+            return lhs;
         }
 
         [[nodiscard]]
-        AVEL_FINL friend Vector operator>>(Vector lhs, std::uint32_t s) {
-            #if defined(AVEL_SSE2)
-            return Vector{_mm_srl_epi64(lhs, _mm_cvtsi32_si128(s))};
-            #elif defined(AVEL_NEON)
-            return Vector{vsraq_n_u32(content, vdupq_n_u32(s), 0x00)};
-            #endif
+        AVEL_FINL friend Vector operator>>(Vector lhs, std::uint32_t rhs) {
+            lhs >>= rhs;
+            return lhs;
         }
 
         [[nodiscard]]
         AVEL_FINL friend Vector operator<<(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX2)
-            return Vector{_mm_sllv_epi64(lhs, rhs)};
-            #elif defined(AVEL_SSE2)
-            for (unsigned i = 0; i < 6; ++i) {
-                vec2x64u threshold{1u << i};
-                mask2x64u m = (rhs > threshold);
-                lhs = blend(lhs, lhs << i, m);
-            }
-
+            lhs <<= rhs;
             return lhs;
-            #elif defined(AVEL_NEON)
-            return Vector{vshlq_u32(content, vreinterpretq_s32_u32(vec))};
-            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend Vector operator>>(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX2)
-            return Vector{_mm_srlv_epi64(lhs, rhs)};
-            #elif defined(AVEL_SSE2)
-            for (unsigned i = 0; i < 6; ++i) {
-                vec2x64u threshold{1u << i};
-                mask2x64u m = (rhs > threshold);
-                lhs = blend(lhs, lhs >> i, m);
-            }
-
+            lhs >>= rhs;
             return lhs;
-            #elif defined(AVEL_NEON)
-            return Vector{vsraq_n_u32(content, vec, 0x00)};
-            #endif
         }
 
         //=================================================

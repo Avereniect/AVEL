@@ -13,6 +13,9 @@ namespace avel {
     class alignas(32) Reciprocal<std::uint64_t> {
     public:
 
+        template<class U>
+        friend class Reciprocal;
+
         //=================================================
         // -ctors
         //=================================================
@@ -24,7 +27,7 @@ namespace avel {
 
         explicit Reciprocal(std::uint64_t d, std::uint64_t l):
             m(compute_m(l, d)),
-            sh1(min(l, 1)),
+            sh1(min(l, std::uint64_t(1))),
             sh2(l - sh1),
             d(d) {}
 
@@ -75,7 +78,7 @@ namespace avel {
         //=================================================
 
         std::uint64_t m = 0;
-        std::uint64_t sh1 = 0;
+        bool sh1 = false;
         std::uint64_t sh2 = 0;
         std::uint64_t d = 0;
 

@@ -15,6 +15,9 @@ namespace avel {
 
         //TODO: Complete implementation
 
+        template<class U>
+        friend class Reciprocal;
+
         //=================================================
         // -ctors
         //=================================================

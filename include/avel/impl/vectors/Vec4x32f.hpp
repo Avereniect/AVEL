@@ -654,7 +654,7 @@ namespace avel {
         #if defined(AVEL_AVX2)
         return vec4x32f{_mm_i32gather_ps(ptr, o, sizeof(float))};
         #else
-        auto offset_array = o.as_array();
+        auto offset_array = to_array(o);
 
         __m128 a = _mm_load_ss(ptr + offset_array[0]);
         __m128 b = _mm_load_ss(ptr + offset_array[1]);
@@ -695,7 +695,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         _mm_i32scatter_ps(ptr, indices, v, sizeof(float));
         #else
-        auto i = indices.as_array();
+        auto i = to_array(indices);
 
         _mm_store_ss(ptr + i[0], v);
         _mm_store_ss(ptr + i[1], _mm_permute_ps(v, 0x01));
@@ -1064,7 +1064,7 @@ namespace avel {
         return vec4x32f{_mm_round_ps(x, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
         #else
 
-        const __m128i full = vec4x32i::ones();
+        const __m128i full = vec4x32i(0xFFFFFFFF);
         const __m128i data = _mm_castps_si128(x);
 
         //Extract exponent value to low 8 bits in each element
@@ -1073,6 +1073,8 @@ namespace avel {
         // Generate mask for which bits should be masked out to perform truncation
         __m128i mantissa_mask;
         {
+            //TODO: Replace these shifts
+
             // Number of mantissa bits that should be masked out, strictly positive.
             // May be greater than 23, the number of explicit mantissa bits
             __m128i shift_amounts = _mm_subs_epu16(exponents, _mm_set1_epi32(118));
@@ -1215,10 +1217,10 @@ namespace avel {
         mask4x32u nan_mask      {_mm_fpclass_ps_mask(v, 0x01 | 0x80)};
         mask4x32u subnormal_mask{_mm_fpclass_ps_mask(v, 0x20)};
         mask4x32u zero_mask     {_mm_fpclass_ps_mask(v, 0x02 | 0x04)};
-        mask4x32u normal_mask   {~(infinite_mask | nan_mask | subnormal_mask | zero_mask)};
+        mask4x32u normal_mask   {!(infinite_mask | nan_mask | subnormal_mask | zero_mask)};
         #elif defined(AVEL_SSE)
 
-
+        //TODO: Implement
         mask4x32u infinite_mask{};
         mask4x32u nan_mask{};
         mask4x32u normal_mask{};

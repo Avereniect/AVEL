@@ -4,7 +4,7 @@
 #include <cmath>
 
 //#include "../vector_primitives/Vector_primitives.hpp"
-#include "../Misc.hpp"
+#include "avel/Misc.hpp"
 #include "../Constants.hpp"
 
 namespace avel {

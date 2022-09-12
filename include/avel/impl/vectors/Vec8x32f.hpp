@@ -628,11 +628,11 @@ namespace avel {
     }
 
     template<>
-    AVEL_FINL vec8x32f gather<vec8x32f>(const float* ptr, vec8x32i o) {
+    AVEL_FINL vec8x32f gather<vec8x32f>(const float* ptr, vec8x32i indices) {
         #if defined(AVEL_AVX2)
-        return vec8x32f{_mm256_i32gather_ps(ptr, o, sizeof(float))};
+        return vec8x32f{_mm256_i32gather_ps(ptr, indices, sizeof(float))};
         #else
-        auto offset_array = o.as_array();
+        auto offset_array = to_array(indices);
 
         __m128 a = _mm_load_ss(ptr + offset_array[0]);
         __m128 b = _mm_load_ss(ptr + offset_array[1]);
@@ -679,7 +679,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         _mm256_i32scatter_ps(ptr, indices, v, sizeof(float));
         #else
-        auto i = indices.as_array();
+        auto i = to_array(indices);
 
         __m128 lo = _mm256_castps256_ps128(v);
         __m128 hi = _mm256_extractf128_ps(v, 0x01);
