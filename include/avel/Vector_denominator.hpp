@@ -8,6 +8,6 @@
 #include "Scalar_reciprocal.hpp"
 #include "Vector.hpp"
 
-#include "impl/vector_reciprocals/Vector_reciprocals.hpp"
+#include "impl/reciprocal_vectors/Reciprocal_vectors.hpp"
 
 #endif //AVEL_VECTOR_RECIPROCAL_HPP

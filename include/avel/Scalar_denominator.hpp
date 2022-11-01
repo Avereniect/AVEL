@@ -32,6 +32,6 @@ namespace avel {
 
 }
 
-#include "impl/scalar_reciprocals/Scalar_reciprocals.hpp"
+#include "impl/reciprocals/Scalar_reciprocals.hpp"
 
 #endif //AVEL_SCALAR_RECIPROCAL_HPP

@@ -22,7 +22,6 @@ namespace avel::tests {
         Reciprocal<vec4x32u> recip{vec4x32u{{0x02, 0x03, 0x05, 0x07}}};
 
         vec4x32u x{210};
-
         x *= recip;
 
         EXPECT_TRUE(all(x == vec4x32u{{105, 70, 42, 30}}));

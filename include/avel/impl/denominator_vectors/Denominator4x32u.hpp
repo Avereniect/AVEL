@@ -80,8 +80,8 @@ namespace avel {
         //=================================================
 
         static vec4x32u mulhi(vec4x32u x, vec4x32u y) {
-            vec4x32u lo{_mm_srli_si128(_mm_mul_epu32(x, y), 4)};
-            vec4x32u hi{_mm_mul_epu32(_mm_srli_si128(x, 4), _mm_srli_si128(y, 4))};
+            vec4x32u lo{_mm_srli_si128(_mm_mul_epu32(decay(x), decay(y)), 4)};
+            vec4x32u hi{_mm_mul_epu32(_mm_srli_si128(decay(x), 4), _mm_srli_si128(decay(y), 4))};
 
             mask4x32u m{{false, true, false, true}};
             return blend(lo, hi, m);

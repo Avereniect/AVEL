@@ -69,12 +69,20 @@
     #define AVEL_AVX512VPOPCNTDQ
 #endif
 
-#ifdef __AVX512VPOPCNTDQ__
-    #define AVEL_AVX512VPOPCNTDQ
+#ifdef __GFNI__
+    #define AVEL_GFNI
 #endif
 
 #ifdef __POPCNT__
     #define AVEL_POPCNT
+#endif
+
+#ifdef __BMI2__
+    #define AVEL_BMI2
+#endif
+
+#ifdef __BMI__
+    #define AVEL_BMI
 #endif
 
 #endif //AVEL_DETECT_CAPABILITIES_GCC_HPP
