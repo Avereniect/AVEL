@@ -1,7 +1,3 @@
-//
-// Created by avereniect on 1/3/22.
-//
-
 #ifndef AVEL_MISC_HPP
 #define AVEL_MISC_HPP
 
@@ -56,28 +52,6 @@ namespace avel {
         }
 
         return ret;
-        #endif
-    }
-
-    //=====================================================
-    // Synchronization
-    //=====================================================
-
-    void load_fence() {
-        #if defined(AVEL_SSE2)
-        _mm_lfence();
-        #endif
-    }
-
-    void store_fence() {
-        #if defined(AVEL_SSE2)
-        _mm_sfence();
-        #endif
-    }
-
-    void load_store_fence() {
-        #if defined(AVEL_SSE2)
-        _mm_mfence();
         #endif
     }
 
