@@ -1,33 +1,34 @@
 #ifndef AVEL_VECTOR_HPP
 #define AVEL_VECTOR_HPP
 
-#if !defined(AVEL_X86) & !defined(AVEL_ARM)
-    static_assert(false, "Use of vector classes required an ISA to be specified");
-#endif
-
 #include <cstdint>
 
-#include <avel/impl/Capabilities.hpp>
-#include "avel/impl/Sizes.hpp"
+#include "./impl/Capabilities.hpp"
+#include "./impl/Sizes.hpp"
 
 #include "Scalar.hpp"
 
 namespace avel {
 
     ///
+    /// A class representing a mask to be used
+    ///
     /// \tparam T Integral or floating-point type
     /// \tparam N Vector width
-    template<class T, int N>
+    template<class T, std::uint32_t N>
     class Vector_mask;
 
     ///
     /// A class representing a SIMD register.
     ///
     /// Since this class represents a register, variables of this type should
-    /// not be used in large amounts, or for purposes besides .
+    /// not be used in large amounts, or for purposes besides processing of
+    /// data.
+    ///
+    /// Manipulations of
     ///
     /// \tparam T A fundamental integral or floating-point type.
-    template<class T, int N>
+    template<class T, std::uint32_t N>
     class Vector;
 
     //=====================================================
@@ -64,11 +65,44 @@ namespace avel {
     using vecMx32f = Vector<float, AVEL_MAX_WIDTH_32F>;
     using vecMx64f = Vector<double, AVEL_MAX_WIDTH_64F>;
 
+    //=====================================================
+    // Type traits
+    //=====================================================
+
+    template<class T>
+    struct is_vector : public std::integral_constant<bool, false> {};
+
+    template<class T, std::uint32_t N>
+    struct is_vector<Vector<T, N>> : public ::std::integral_constant<bool, true> {};
+
+    #if 201402L <= __cplusplus
+
+    template<class T>
+    constexpr bool is_vector_v = is_vector<T>::value;
+
+    #endif
+
+
+
+
+    template<class T>
+    struct is_vector_mask : public std::integral_constant<bool, false> {};
+
+    template<class T, std::uint32_t N>
+    struct is_vector_mask<Vector_mask<T, N>> : public ::std::integral_constant<bool, true> {};
+
+    #if 201402L <= __cplusplus
+
+    template<class T>
+    constexpr bool is_vector_mask_v = is_vector_mask<T>::value;
+
+    #endif
+
 }
 
 #include "impl/vectors/Vectors.hpp"
 
-#if defined(AVEL_SCALAR_RECIPROCAL_HPP)
+#if defined(AVEL_SCALAR_DENOMINATOR_HPP)
     #include "impl/vector_reciprocal/Vector_reciprocals.hpp"
 #endif
 

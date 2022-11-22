@@ -5,9 +5,14 @@
 #ifndef AVEL_MISC_HPP
 #define AVEL_MISC_HPP
 
+#if __cplusplus >= 202002L
+    #include <bit>
+#endif
+
 #include <type_traits>
 #include <cstdint>
-#include "Capabilities.hpp"
+
+#include "avel/impl/Capabilities.hpp"
 
 namespace avel {
 
@@ -21,7 +26,7 @@ namespace avel {
     ///
     /// \tparam T An integral type
     template<class T>
-    struct div_type {
+    struct alignas(2 * alignof(T)) div_type {
         T quot;
         T rem;
     };
@@ -31,56 +36,27 @@ namespace avel {
     //=====================================================
 
     template<class T, class U>
-    AVEL_FINL T bit_cast(const U& v) {
+    AVEL_FINL T bit_cast(const U& u) {
         static_assert(sizeof(T) == sizeof(U), "Size of target and source types must be equal");
-        static_assert(std::is_trivial<T>::value, "Target type must be trivial");
-        static_assert(std::is_trivial<U>::value, "Source type must be trivial");
+        static_assert(std::is_trivially_copyable<T>::value, "Target type must be trivial");
+        static_assert(std::is_trivially_copyable<U>::value, "Source type must be trivial");
+
+        #if __cplusplus >= 202002L
+        return std::bit_cast<T>(u);
+
+        #else
 
         T ret;
 
-        auto* src = reinterpret_cast<const unsigned char*>(&v);
+        auto* src = reinterpret_cast<const unsigned char*>(&u);
         auto* dst = reinterpret_cast<unsigned char*>(&ret);
+
         for (std::size_t i = 0; i < sizeof(T); ++i) {
             dst[i] = src[i];
         }
 
         return ret;
-    }
-
-    //=====================================================
-    // Pointer alignment
-    //=====================================================
-
-    template<std::size_t Alignment, class T>
-    AVEL_FINL const T* align_pointer(const T* p) {
-        return align_pointer<Alignment>(reinterpret_cast<const void*>(p));
-    }
-
-    template<std::size_t Alignment>
-    AVEL_FINL const void* align_pointer(const void* p) {
-        constexpr bool is_power_of_two = (Alignment && !(Alignment & (Alignment - 1)));
-        static_assert(is_power_of_two, "Alignment was not a power of 2");
-
-        auto bits = reinterpret_cast<std::intptr_t>(p);
-        const std::intptr_t mask = !(std::intptr_t(Alignment) - 1);
-        auto ret = (mask & bits);
-        return reinterpret_cast<const void*>(ret);
-    }
-
-    template<std::size_t Alignment, class T>
-    AVEL_FINL T* align_pointer(T* p) {
-        return align_pointer<Alignment>(reinterpret_cast<void*>(p));
-    }
-
-    template<std::size_t Alignment>
-    AVEL_FINL void* align_pointer(void* p) {
-        constexpr bool is_power_of_two = (Alignment && !(Alignment & (Alignment - 1)));
-        static_assert(is_power_of_two, "Alignment was not a power of 2");
-
-        auto bits = reinterpret_cast<std::intptr_t>(p);
-        const std::intptr_t mask = !(std::intptr_t(Alignment) - 1);
-        auto ret = (mask & bits);
-        return reinterpret_cast<void*>(ret);
+        #endif
     }
 
     //=====================================================
