@@ -16,7 +16,7 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
     #define AVEL_FINL inline
 
     #if defined(AVEL_AUTO_DETECT)
-        #include "Detect_capabilities_Clang.hpp"
+        #include "Detect_capabilities.hpp"
     #endif
 
 #elif defined(__GNUC__)
@@ -25,7 +25,7 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
     #define AVEL_FINL inline
 
     #if defined(AVEL_AUTO_DETECT)
-        #include "Detect_capabilities_GCC.hpp"
+        #include "Detect_capabilities.hpp"
     #endif
 
 #elif defined(_MSC_VER)
@@ -33,6 +33,10 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
     //#define AVEL_FINL __forceinline
     #define AVEL_FINL inline
     #include "intrin.h"
+
+    #if defined(AVEL_AUTO_DETECT)
+        static_assert(false, "Cannot detect capabilites on MSVC.");
+    #endif
 #elif
     static_assert(false, "Compiler not supported");
 #endif
@@ -41,9 +45,14 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
 // x86 macros
 //=========================================================
 
-#ifdef AVEL_AVX512GFNI
-    #define AVEL_AVX512
+#ifdef AVEL_GFNI
+    #define AVEL_AVX512F
 #endif
+
+#ifdef AVEL_AVX512BITALG
+    #define AVEL_AVX512F
+#endif
+
 
 #ifdef AVEL_AVX512VPOPCNTDQ
     #define AVEL_AVX512F
@@ -64,16 +73,6 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
 #endif
 
 
-#ifdef AVEL_AVX512_BITALG
-    #define AVEL_AVX512F
-#endif
-
-
-#ifdef AVEL_AVX512VPOPCNTDQ
-    #define AVEL_AVX512F
-#endif
-
-
 #ifdef AVEL_AVX512CD
     #define AVEL_AVX512F
 #endif
@@ -85,8 +84,8 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
 #endif
 
 
-#ifdef AVELF_FMA
-    #define AVEL_SSE2
+#ifdef AVEL_FMA
+    #define AVEL_AVX
 #endif
 
 
@@ -164,31 +163,29 @@ static_assert(false, "AVEL does not support SSE on its own. SSE2 required");
 // ARM macros
 //=========================================================
 
+#if defined(AVEL_ARMV9)
+    #define AVEL_SVE
+#endif
+
 #if defined(AVEL_SVE2)
     #define AVEL_SVE
 #endif
 
 #if defined(AVEL_SVE)
-    #define AVEL_ARM
-#endif
-
-#if defined(AVEL_NEON)
-    #define AVEL_ARM
-#endif
-
-#if defined(AVEL_ARMV8)
-    #define AVEL_ARM
-#endif
-
-#if defined(AVEL_ARMV7)
+    #define AVEL_AARCH64
     #define AVEL_ARM
 #endif
 
 #if defined(AVEL_AARCH64)
+    #define AVEL_NEON
     #define AVEL_ARM
 #endif
 
 #if defined(AVEL_AARCH32)
+    #define AVEL_ARM
+#endif
+
+#if defined(AVEL_NEON)
     #define AVEL_ARM
 #endif
 
@@ -202,23 +199,34 @@ static_assert(false, "AVEL does not support SSE on its own. SSE2 required");
 
 #if defined(AVEL_GCC)
     #if defined(AVEL_X86)
-    #include <x86intrin.h>
-    #include <immintrin.h>
+        #include <x86intrin.h>
+        #include <immintrin.h>
 
-    #include <avx512vlintrin.h>
+        #include <avx512vlintrin.h>
+    #endif
 
-    #elif defined(AVEL_NEON)
-    #include <arm_neon.h>
+    #if defined(AVEL_NEON)
+        #include <arm_neon.h>
+    #endif
+
+    #if defined(AVEL_SVE)
+        #include <arm_sve.h>
     #endif
 #elif defined(AVEL_CLANG)
     #if defined(AVEL_X86)
-    #include <x86intrin.h>
-    #include <immintrin.h>
-    #elif defined(AVEL_NEON)
-    #include <arm_neon.h>
+        #include <x86intrin.h>
+        #include <immintrin.h>
+    #endif
+
+    #if defined(AVEL_NEON)
+        #include <arm_neon.h>
+    #endif
+
+    #if defined(AVEL_SVE)
+        #include <arm_sve.h>
     #endif
 #else
-static_assert(false, "Compiler not supported");
+    static_assert(false, "Compiler not supported");
 #endif
 
 //=========================================================
@@ -226,24 +234,7 @@ static_assert(false, "Compiler not supported");
 //=========================================================
 
 #if defined(AVEL_ARM) & defined(AVEL_X86)
-static_assert(false, "Macros for multiples ISA's specified.");
-#endif
-
-//#if !defined(AVEL_X86) & !defined(AVEL_ARM)
-//static_assert(false, "No ISA specified");
-//#endif
-
-//=========================================================
-// Cache details
-//=========================================================
-
-#if !defined(AVEL_CACHE_SIZE)
-    #if defined(AVEL_ARM)
-        #define AVEL_CACHE_SIZE 128
-    #endif
-    #if defined(AVEL_X86)
-        #define AVEL_CACHE_SIZE 64
-    #endif
+    static_assert(false, "Macros for conflicting ISAs specified.");
 #endif
 
 #endif //AVEL_CAPABILITIES_HPP
