@@ -1,13 +1,12 @@
-//
-// Created by avereniect on 6/12/22.
-//
-
 #ifndef AVEL_SCALAR32U_TESTS_HPP
 #define AVEL_SCALAR32U_TESTS_HPP
 
 #include <gtest/gtest.h>
+#include <bit>
 
-namespace avel::tests {
+namespace avel_tests {
+
+    using namespace avel;
 
     TEST(Scalar32u_broadcast_bits, False) {
         EXPECT_EQ(broadcast_bits<std::uint32_t>(false), 0x00000000);
@@ -130,6 +129,10 @@ namespace avel::tests {
         EXPECT_EQ(popcount(0x49249249u), 0x0B);
     }
 
+    TEST(Scalar32u, Pop_count_misc) {
+        EXPECT_EQ(popcount(0x11110000u), 0x04);
+    }
+
     TEST(Scalar32u_byteswap, Lo_byte) {
         EXPECT_EQ(byteswap(0x000000FFu), 0xFF000000);
     }
@@ -232,8 +235,20 @@ namespace avel::tests {
         EXPECT_EQ(bit_floor(0x0000'0008u), 0x0000'0008);
     }
 
+    TEST(Scalar32u, Bit_width) {
+        EXPECT_EQ(bit_width(0x0000'0000u), 0x0000'0000);
+        EXPECT_EQ(bit_width(0x0000'0001u), 0x0000'0001);
+        EXPECT_EQ(bit_width(0x0000'0002u), 0x0000'0002);
+        EXPECT_EQ(bit_width(0x0000'0003u), 0x0000'0002);
+        EXPECT_EQ(bit_width(0x0000'0004u), 0x0000'0003);
+        EXPECT_EQ(bit_width(0x0000'0005u), 0x0000'0003);
+        EXPECT_EQ(bit_width(0x0000'0006u), 0x0000'0003);
+        EXPECT_EQ(bit_width(0x0000'0007u), 0x0000'0003);
+        EXPECT_EQ(bit_width(0x0000'0008u), 0x0000'0004);
+    }
+
     TEST(Scalar32u, Bit_ceil) {
-        EXPECT_EQ(bit_ceil(0x0000'0000u), 0x0000'0000);
+        EXPECT_EQ(bit_ceil(0x0000'0000u), 0x0000'0001);
         EXPECT_EQ(bit_ceil(0x0000'0001u), 0x0000'0001);
         EXPECT_EQ(bit_ceil(0x0000'0002u), 0x0000'0002);
         EXPECT_EQ(bit_ceil(0x0000'0003u), 0x0000'0004);
@@ -256,8 +271,25 @@ namespace avel::tests {
         EXPECT_FALSE(has_single_bit(0x0007u));
     }
 
-    TEST(Scalar32u, Scalar8u) {
+    TEST(Scalar32u, Midpoint) {
+        EXPECT_EQ(std::midpoint(0u, 0u), avel::midpoint(0u, 0u));
+        EXPECT_EQ(std::midpoint(0u, 1u), avel::midpoint(0u, 1u));
+        EXPECT_EQ(std::midpoint(1u, 0u), avel::midpoint(1u, 0u));
+        EXPECT_EQ(std::midpoint(1u, 1u), avel::midpoint(1u, 1u));
+        EXPECT_EQ(std::midpoint(0u, 2u), avel::midpoint(0u, 2u));
+        EXPECT_EQ(std::midpoint(2u, 0u), avel::midpoint(2u, 0u));
+    }
 
+    TEST(Scalar32u, Midpoint_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            std::uint32_t a = random32u();
+            std::uint32_t b = random32u();
+
+            auto result = avel::midpoint(a, b);
+            auto baseline = std::midpoint(a, b);
+
+            EXPECT_EQ(result, baseline);
+        }
     }
 
 }

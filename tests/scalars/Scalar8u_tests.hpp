@@ -1,7 +1,3 @@
-//
-// Created by avereniect on 8/3/22.
-//
-
 #ifndef AVEL_SCALAR8U_TESTS_HPP
 #define AVEL_SCALAR8U_TESTS_HPP
 
