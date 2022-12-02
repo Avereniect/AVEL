@@ -1,5 +1,5 @@
-#ifndef AVEL_VEC1X64U_HPP
-#define AVEL_VEC1X64U_HPP
+#ifndef AVEL_VEC1X16U_HPP
+#define AVEL_VEC1X16U_HPP
 
 namespace avel {
 
@@ -7,22 +7,22 @@ namespace avel {
     // Type aliases
     //=====================================================
 
-    using vec1x64u = Vector<std::uint64_t, 1>;
+    using vec1x16u = Vector<std::uint16_t, 1>;
 
-    using mask1x64u = Vector_mask<std::uint64_t, 1>;
+    using mask1x16u = Vector_mask<std::uint16_t, 1>;
 
     //=====================================================
     // Forward declarations
     //=====================================================
 
-    div_type<vec1x64u> div(vec1x64u numerator, vec1x64u denominator);
+    div_type<vec1x16u> div(vec1x16u numerator, vec1x16u denominator);
 
 
 
 
 
     template<>
-    class Vector_mask<std::uint64_t, 1> : public avel_impl::Vector_mask1xT {
+    class Vector_mask<std::uint16_t, 1> : public avel_impl::Vector_mask1xT {
         using base = avel_impl::Vector_mask1xT;
     public:
 
@@ -125,119 +125,65 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL std::uint32_t count(mask1x64u m) {
-        return std::uint32_t(decay(m));
-    }
-
-    [[nodiscard]]
-    AVEL_FINL bool any(mask1x64u m) {
+    AVEL_FINL std::uint32_t count(mask1x16u m) {
         return bool(decay(m));
     }
 
     [[nodiscard]]
-    AVEL_FINL bool all(mask1x64u m) {
-        return bool(decay(m) & 0x1);
+    AVEL_FINL bool any(mask1x16u m) {
+        return bool(decay(m));
     }
 
     [[nodiscard]]
-    AVEL_FINL bool none(mask1x64u m) {
+    AVEL_FINL bool all(mask1x16u m) {
+        return bool(decay(m));
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool none(mask1x16u m) {
         return !all(m);
     }
 
     //=====================================================
     // Mask conversions
     //=====================================================
-
+    
+    template<>
     [[nodiscard]]
-    AVEL_FINL std::uint64_t to_integer(mask1x64u m) {
-        return std::uint64_t(decay(m));
+    AVEL_FINL std::array<mask1x16u, 1> convert<mask1x16u, mask1x16u>(mask1x16u m) {
+        return {m};
     }
 
     template<>
     [[nodiscard]]
-    AVEL_FINL std::array<mask1x64u, 1> convert<mask1x64u, mask1x64u>(mask1x64u m) {
-        return std::array<mask1x64u, 1>{m};
+    AVEL_FINL std::array<mask1x8u, 1> convert<mask1x8u, mask1x16u>(mask1x16u m) {
+        return {mask1x8u{decay(m)}};
     }
 
     template<>
     [[nodiscard]]
-    AVEL_FINL std::array<mask1x8u, 1> convert<mask1x8u, mask1x64u>(mask1x64u m) {
-        return std::array<mask1x8u, 1>{mask1x8u{decay(m)}};
+    AVEL_FINL std::array<mask1x8i, 1> convert<mask1x8i, mask1x16u>(mask1x16u m) {
+        return {mask1x8i{decay(m)}};
     }
 
     template<>
     [[nodiscard]]
-    AVEL_FINL std::array<mask1x8i, 1> convert<mask1x8i, mask1x64u>(mask1x64u m) {
-        return std::array<mask1x8i, 1>{mask1x8i{decay(m)}};
+    AVEL_FINL std::array<mask1x16u, 1> convert<mask1x16u, mask1x8u>(mask1x8u m) {
+        return {mask1x16u{decay(m)}};
     }
 
     template<>
     [[nodiscard]]
-    AVEL_FINL std::array<mask1x16u, 1> convert<mask1x16u, mask1x64u>(mask1x64u m) {
-        return std::array<mask1x16u, 1>{mask1x16u{decay(m)}};
+    AVEL_FINL std::array<mask1x16u, 1> convert<mask1x16u, mask1x8i>(mask1x8i m) {
+        return {mask1x16u{decay(m)}};
     }
 
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x16i, 1> convert<mask1x16i, mask1x64u>(mask1x64u m) {
-        return std::array<mask1x16i, 1>{mask1x16i{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x32u, 1> convert<mask1x32u, mask1x64u>(mask1x64u m) {
-        return std::array<mask1x32u, 1>{mask1x32u{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x32i, 1> convert<mask1x32i, mask1x64u>(mask1x64u m) {
-        return std::array<mask1x32i, 1>{mask1x32i{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x64u, 1> convert<mask1x64u, mask1x8u>(mask1x8u m) {
-        return std::array<mask1x64u, 1>{mask1x64u{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x64u, 1> convert<mask1x64u, mask1x8i>(mask1x8i m) {
-        return std::array<mask1x64u, 1>{mask1x64u{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x64u, 1> convert<mask1x64u, mask1x16u>(mask1x16u m) {
-        return std::array<mask1x64u, 1>{mask1x64u{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x64u, 1> convert<mask1x64u, mask1x16i>(mask1x16i m) {
-        return std::array<mask1x64u, 1>{mask1x64u{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x64u, 1> convert<mask1x64u, mask1x32u>(mask1x32u m) {
-        return std::array<mask1x64u, 1>{mask1x64u{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x64u, 1> convert<mask1x64u, mask1x32i>(mask1x32i m) {
-        return std::array<mask1x64u, 1>{mask1x64u{decay(m)}};
-    }
-
-
-
+    
 
 
 
     template<>
-    class alignas(8) Vector<std::uint64_t, 1> {
+    class alignas(2) Vector<std::uint16_t, 1> {
     public:
 
         //=================================================
@@ -250,9 +196,9 @@ namespace avel {
         // Type aliases
         //=================================================
 
-        using scalar = std::uint64_t;
+        using scalar = std::uint16_t;
 
-        using primitive = std::uint64_t;
+        using primitive = std::uint16_t;
 
         using mask = Vector_mask<scalar, width>;
 
@@ -353,7 +299,7 @@ namespace avel {
             return *this;
         }
 
-        //Definition of operator-() deferred until after definition of vec1x64i
+        //Definition of operator-() deferred until after definition of vec1x16i
 
         //=================================================
         // Arithmetic assignment operators
@@ -466,8 +412,8 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator<<=(long long rhs) {
-            if (rhs > 63) {
-                content = 0;
+            if (15 < rhs) {
+                content  = 0;
             } else {
                 content <<= rhs;
             }
@@ -475,8 +421,8 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
-            if (rhs > 63) {
-                content = 0;
+            if (15 < rhs) {
+                content  = 0;
             } else {
                 content >>= rhs;
             }
@@ -484,7 +430,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator<<=(Vector rhs) {
-            if (rhs.content > 63) {
+            if (15 < rhs.content) {
                 content = 0;
             } else {
                 content <<= rhs.content;
@@ -493,8 +439,8 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator>>=(Vector rhs) {
-            if (rhs.content > 63) {
-                content = 0;
+            if (15 < rhs.content) {
+                content  = 0;
             } else {
                 content >>= rhs.content;
             }
@@ -573,27 +519,27 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u broadcast_bits(mask1x64u m) {
-        return vec1x64u{broadcast_bits<std::uint64_t>(decay(m))};
+    AVEL_FINL vec1x16u broadcast_bits(mask1x16u m) {
+        return vec1x16u{broadcast_bits<std::uint16_t>(decay(m))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u blend(vec1x64u a, vec1x64u b, mask1x64u m) {
-        return vec1x64u{blend(decay(a), decay(b), decay(m))};
+    AVEL_FINL vec1x16u blend(vec1x16u a, vec1x16u b, mask1x16u m) {
+        return vec1x16u{blend(decay(a), decay(b), decay(m))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u max(vec1x64u a, vec1x64u b) {
-        return vec1x64u{max(decay(a), decay(b))};
+    AVEL_FINL vec1x16u max(vec1x16u a, vec1x16u b) {
+        return vec1x16u{max(decay(a), decay(b))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u min(vec1x64u a, vec1x64u b) {
-        return vec1x64u{min(decay(a), decay(b))};
+    AVEL_FINL vec1x16u min(vec1x16u a, vec1x16u b) {
+        return vec1x16u{min(decay(a), decay(b))};
     }
 
     [[nodiscard]]
-    AVEL_FINL std::array<vec1x64u, 2> minmax(vec1x64u a, vec1x64u b) {
+    AVEL_FINL std::array<vec1x16u, 2> minmax(vec1x16u a, vec1x16u b) {
         if (decay(a) < decay(b)) {
             return {a, b};
         } else {
@@ -602,42 +548,42 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u clamp(vec1x64u x, vec1x64u lo, vec1x64u hi) {
+    AVEL_FINL vec1x16u clamp(vec1x16u x, vec1x16u lo, vec1x16u hi) {
         return min(max(x, lo), hi);
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u midpoint(vec1x64u a, vec1x64u b) {
-        vec1x64u t0 = a & b & vec1x64u{0x1};
-        vec1x64u t1 = (a | b) & vec1x64u{0x1} & broadcast_bits(a > b);
-        vec1x64u t2 = t0 | t1;
+    AVEL_FINL vec1x16u midpoint(vec1x16u a, vec1x16u b) {
+        vec1x16u t0 = a & b & vec1x16u{0x1};
+        vec1x16u t1 = (a | b) & vec1x16u{0x1} & broadcast_bits(a > b);
+        vec1x16u t2 = t0 | t1;
         return (a >> 1) + (b >> 1) + t2;
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u average(vec1x64u a, vec1x64u b) {
-        return (a >> 1) + (b >> 1) + (a & b & vec1x64u{0x1});
+    AVEL_FINL vec1x16u average(vec1x16u a, vec1x16u b) {
+        return (a >> 1) + (b >> 1) + (a & b & vec1x16u{0x1});
     }
 
-    //Definition of neg_abs delayed until vec1x64i is defined
+    //Definition of neg_abs delayed until vec1x16i is defined
 
     template<>
     [[nodiscard]]
-    AVEL_FINL vec1x64u load<vec1x64u>(const std::uint64_t* ptr) {
-        return vec1x64u{*ptr};
+    AVEL_FINL vec1x16u load<vec1x16u>(const std::uint16_t* ptr) {
+        return vec1x16u{*ptr};
     }
 
     template<>
     [[nodiscard]]
-    AVEL_FINL vec1x64u aligned_load<vec1x64u>(const std::uint64_t* ptr) {
-        return vec1x64u{*ptr};
+    AVEL_FINL vec1x16u aligned_load<vec1x16u>(const std::uint16_t* ptr) {
+        return vec1x16u{*ptr};
     }
 
-    AVEL_FINL void store(std::uint64_t* ptr, vec1x64u v) {
+    AVEL_FINL void store(std::uint16_t* ptr, vec1x16u v) {
         *ptr = decay(v);
     }
 
-    AVEL_FINL void aligned_store(std::uint64_t* ptr, vec1x64u v) {
+    AVEL_FINL void aligned_store(std::uint16_t* ptr, vec1x16u v) {
         *ptr = decay(v);
     }
 
@@ -646,76 +592,76 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL div_type<vec1x64u> div(vec1x64u numerator, vec1x64u denominator) {
-        div_type<vec1x64u> ret;
+    AVEL_FINL div_type<vec1x16u> div(vec1x16u numerator, vec1x16u denominator) {
+        div_type<vec1x16u> ret;
         ret.quot = decay(numerator) / decay(denominator);
         ret.rem  = decay(numerator) % decay(denominator);
         return ret;
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u popcount(vec1x64u v) {
-        return vec1x64u{popcount(decay(v))};
+    AVEL_FINL vec1x16u popcount(vec1x16u v) {
+        return vec1x16u{popcount(decay(v))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u countl_zero(vec1x64u v) {
-        return vec1x64u{countl_zero(decay(v))};
+    AVEL_FINL vec1x16u countl_zero(vec1x16u v) {
+        return vec1x16u{countl_zero(decay(v))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u countl_one(vec1x64u v) {
-        return vec1x64u{countl_one(decay(v))};
+    AVEL_FINL vec1x16u countl_one(vec1x16u v) {
+        return vec1x16u{countr_zero(decay(v))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u countr_zero(vec1x64u v) {
-        return vec1x64u{countr_zero(decay(v))};
+    AVEL_FINL vec1x16u countr_zero(vec1x16u v) {
+        return vec1x16u{countr_zero(decay(v))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u countr_one(vec1x64u v) {
-        return vec1x64u{countr_one(decay(v))};
+    AVEL_FINL vec1x16u countr_one(vec1x16u v) {
+        return vec1x16u{countr_one(decay(v))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u bit_width(vec1x64u v) {
-        return vec1x64u{bit_width(decay(v))};
+    AVEL_FINL vec1x16u bit_width(vec1x16u v) {
+        return vec1x16u{bit_width(decay(v))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u bit_floor(vec1x64u v) {
-        return vec1x64u{bit_floor(decay(v))};
+    AVEL_FINL vec1x16u bit_floor(vec1x16u v) {
+        return vec1x16u{bit_floor(decay(v))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u bit_ceil(vec1x64u v) {
-        return vec1x64u{bit_ceil(decay(v))};
+    AVEL_FINL vec1x16u bit_ceil(vec1x16u v) {
+        return vec1x16u{bit_ceil(decay(v))};
     }
 
     [[nodiscard]]
-    AVEL_FINL mask1x64u has_single_bit(vec1x64u v) {
-        return mask1x64u{has_single_bit(decay(v))};
+    AVEL_FINL mask1x16u has_single_bit(vec1x16u v) {
+        return mask1x16u{has_single_bit(decay(v))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u rotl(vec1x64u v, long long s) {
-        return vec1x64u{rotl(decay(v), s)};
+    AVEL_FINL vec1x16u rotl(vec1x16u v, long long s) {
+        return vec1x16u{rotl(decay(v), s)};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u rotl(vec1x64u v, vec1x64u s) {
-        return vec1x64u{rotl(decay(v), decay(s))};
+    AVEL_FINL vec1x16u rotl(vec1x16u v, vec1x16u s) {
+        return vec1x16u{rotl(decay(v), decay(s))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u rotr(vec1x64u v, long long s) {
-        return vec1x64u{rotr(decay(v), s)};
+    AVEL_FINL vec1x16u rotr(vec1x16u v, long long s) {
+        return vec1x16u{rotr(decay(v), s)};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64u rotr(vec1x64u v, vec1x64u s) {
-        return vec1x64u{rotr(decay(v), decay(s))};
+    AVEL_FINL vec1x16u rotr(vec1x16u v, vec1x16u s) {
+        return vec1x16u{rotr(decay(v), decay(s))};
     }
 
     //=====================================================
@@ -723,90 +669,43 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    std::array<std::uint64_t, 1> to_array(vec1x64u x) {
-        alignas(8) std::array<std::uint64_t, 1> ret;
+    AVEL_FINL std::array<std::uint16_t, 1> to_array(vec1x16u x) {
+        alignas(2) std::array<std::uint16_t, 1> ret;
         aligned_store(ret.data(), x);
         return ret;
     }
-
+    
     template<>
     [[nodiscard]]
-    std::array<vec1x64u, 1> convert<vec1x64u, vec1x64u>(vec1x64u x) {
-        return std::array<vec1x64u, 1>{x};
+    AVEL_FINL std::array<vec1x16u, 1> convert<vec1x16u, vec1x16u>(vec1x16u x) {
+        return {x};
     }
 
     template<>
     [[nodiscard]]
-    std::array<vec1x8u, 1> convert<vec1x8u, vec1x64u>(vec1x64u x) {
-        return std::array<vec1x8u, 1>{vec1x8u{std::uint8_t(decay(x) & 0xFF)}};
+    AVEL_FINL std::array<vec1x8u, 1> convert<vec1x8u, vec1x16u>(vec1x16u x) {
+        return {vec1x8u{std::uint8_t(decay(x) & 0xFF)}};
     }
 
     template<>
     [[nodiscard]]
-    std::array<vec1x8i, 1> convert<vec1x8i, vec1x64u>(vec1x64u x) {
-        return std::array<vec1x8i, 1>{vec1x8i{std::int8_t(decay(x) & 0xFF)}};
+    AVEL_FINL std::array<vec1x8i, 1> convert<vec1x8i, vec1x16u>(vec1x16u x) {
+        return {vec1x8i{std::int8_t(decay(x) & 0xFF)}};
     }
 
     template<>
     [[nodiscard]]
-    std::array<vec1x16u, 1> convert<vec1x16u, vec1x64u>(vec1x64u x) {
-        return std::array<vec1x16u, 1>{vec1x16u{std::uint16_t(decay(x) & 0xFFFF)}};
+    AVEL_FINL std::array<vec1x16u, 1> convert<vec1x16u, vec1x8u>(vec1x8u x) {
+        return {vec1x16u{std::uint16_t(decay(x))}};
     }
 
     template<>
     [[nodiscard]]
-    std::array<vec1x16i, 1> convert<vec1x16i, vec1x64u>(vec1x64u x) {
-        return std::array<vec1x16i, 1>{vec1x16i{std::int16_t(decay(x) & 0xFFFF)}};
+    AVEL_FINL std::array<vec1x16u, 1> convert<vec1x16u, vec1x8i>(vec1x8i x) {
+        return {vec1x16u{std::uint16_t(decay(x))}};
     }
-
-    template<>
-    [[nodiscard]]
-    std::array<vec1x32u, 1> convert<vec1x32u, vec1x64u>(vec1x64u x) {
-        return std::array<vec1x32u, 1>{vec1x32u{std::uint32_t(decay(x) & 0xFFFFFFFF)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    std::array<vec1x32i, 1> convert<vec1x32i, vec1x64u>(vec1x64u x) {
-        return std::array<vec1x32i, 1>{vec1x32i{std::int32_t(decay(x) & 0xFFFFFFFF)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    std::array<vec1x64u, 1> convert<vec1x64u, vec1x8u>(vec1x8u x) {
-        return std::array<vec1x64u, 1>{vec1x64u{std::uint64_t(decay(x))}};
-    }
-
-    template<>
-    [[nodiscard]]
-    std::array<vec1x64u, 1> convert<vec1x64u, vec1x8i>(vec1x8i x) {
-        return std::array<vec1x64u, 1>{vec1x64u{std::uint64_t(decay(x))}};
-    }
-
-    template<>
-    [[nodiscard]]
-    std::array<vec1x64u, 1> convert<vec1x64u, vec1x16u>(vec1x16u x) {
-        return std::array<vec1x64u, 1>{vec1x64u{std::uint64_t(decay(x))}};
-    }
-
-    template<>
-    [[nodiscard]]
-    std::array<vec1x64u, 1> convert<vec1x64u, vec1x16i>(vec1x16i x) {
-        return std::array<vec1x64u, 1>{vec1x64u{std::uint64_t(decay(x))}};
-    }
-
-    template<>
-    [[nodiscard]]
-    std::array<vec1x64u, 1> convert<vec1x64u, vec1x32u>(vec1x32u x) {
-        return std::array<vec1x64u, 1>{vec1x64u{std::uint64_t(decay(x))}};
-    }
-
-    template<>
-    [[nodiscard]]
-    std::array<vec1x64u, 1> convert<vec1x64u, vec1x32i>(vec1x32i x) {
-        return std::array<vec1x64u, 1>{vec1x64u{std::uint64_t(decay(x))}};
-    }
-
+   
 }
 
-#endif //AVEL_VEC1x64U_HPP
+#endif //AVEL_VEC1x16U_HPP
+
