@@ -1,9 +1,5 @@
-//
-// Created by avereniect on 6/21/22.
-//
-
-#ifndef AVEL_SCALAR_RECIPROCAL_HPP
-#define AVEL_SCALAR_RECIPROCAL_HPP
+#ifndef AVEL_SCALAR_DENOMINATOR_HPP
+#define AVEL_SCALAR_DENOMINATOR_HPP
 
 #include "Scalar.hpp"
 
@@ -12,26 +8,23 @@
 namespace avel {
 
     ///
+    /// A class which is used to speed up division.
     ///
-    /// A class which is used to speed up division by using
-    /// Granlund-Montgomery's technique for divison by invariant integers using
-    /// multiplication.
-    ///
-    /// Multiplying an object of type T by a Reciprocal object delivers the same
+    /// Multiplying an object of type T by a Denominator object delivers the same
     /// results as dividing by the value d, the parameter passed to the
-    /// constructor of the Reciprocal object. On average, this multiplication
+    /// constructor of the Denominator object. On average, this multiplication
     /// should perform better than executing an integer division instruction.
     ///
-    /// The constructor of Reciprocal itself requires the execution of an
-    /// integer division so the purpose of this class is to speed up the case
-    /// where various integer values have to all be divided by a common
-    /// denominator.
+    /// Note, that the constructor of Denominator itself requires the execution
+    /// of an integer division. Hence, using this class will likely not lead to
+    /// improved performance unless using it to divide multiple numerators by
+    /// the same denominator.
     ///
     template<class T>
-    class Reciprocal;
+    class Denominator;
 
 }
 
-#include "impl/reciprocals/Scalar_reciprocals.hpp"
+#include "impl/denominators/Denominators.hpp"
 
-#endif //AVEL_SCALAR_RECIPROCAL_HPP
+#endif //AVEL_SCALAR_DENOMINATOR_HPP

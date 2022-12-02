@@ -1,7 +1,3 @@
-//
-// Created by avereniect on 2/22/22.
-//
-
 #ifndef AVEL_SCALAR_HPP
 #define AVEL_SCALAR_HPP
 
