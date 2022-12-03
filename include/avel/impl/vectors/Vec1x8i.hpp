@@ -413,11 +413,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
-            if (rhs > 7) {
-                content = 0;
-            } else {
-                content >>= rhs;
-            }
+            content >>= (rhs > 7) ? 7 : rhs;
             return *this;
         }
 
@@ -431,11 +427,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator>>=(Vector rhs) {
-            if (rhs.content > 7) {
-                content = 0;
-            } else {
-                content >>= rhs.content;
-            }
+            content >>= (decay(rhs) > 7) ? 7 : decay(rhs);
             return *this;
         }
 

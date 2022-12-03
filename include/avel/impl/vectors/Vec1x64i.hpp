@@ -490,11 +490,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
-            if (rhs > 63) {
-                content = 0;
-            } else {
-                content >>= rhs;
-            }
+            content >>= (rhs > 63) ? 63 : rhs;
             return *this;
         }
 
@@ -508,11 +504,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator>>=(Vector rhs) {
-            if (rhs.content > 63) {
-                content = 0;
-            } else {
-                content >>= rhs.content;
-            }
+            content >>= (decay(rhs) > 63) ? 63 : decay(rhs);
             return *this;
         }
 
