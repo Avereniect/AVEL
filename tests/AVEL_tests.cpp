@@ -16,8 +16,8 @@
 //#define AVEL_AVX
 //#define AVEL_SSE42
 //#define AVEL_SSE41
-//#define AVEL_SSSE3
-//#define AVEL_SSE3
+#define AVEL_SSSE3
+#define AVEL_SSE3
 #define AVEL_SSE2
 //#define AVEL_CLFLUSH
 //#define AVEL_BMI2
@@ -28,15 +28,14 @@
 //#define AVEL_AARCH64
 //#define AVEL_NEON
 
-
 //#include <avel/Avel.hpp>
-//#include <avel/Cache.hpp>l
+//#include <avel/Cache.hpp>
 #include <avel/Scalar.hpp>
 #include <avel/Vector.hpp>
 #include <avel/Scalar_denominator.hpp>
 #include <avel/Vector_denominator.hpp>
-#include <avel/Normalized_int.hpp>
-#include <avel/Normalized_int_vector.hpp>
+//#include <avel/Normalized_int.hpp>
+//#include <avel/Normalized_int_vector.hpp>
 //#include <avel/Vector_view.hpp>
 //#include <avel/Random.hpp>
 
@@ -99,8 +98,8 @@ namespace avel_tests {
 #include "scalars/Scalar64u_tests.hpp"
 #include "scalars/Scalar64i_tests.hpp"
 
-//#include "scalars/Scalar32f.hpp"
-//#include "scalars/Scalar64f.hpp"
+//#include "scalars/Scalar32f_tests.hpp"
+//#include "scalars/Scalar64f_tests.hpp"
 
 
 
@@ -117,36 +116,35 @@ namespace avel_tests {
 #include "denominators/Denom64i_tests.hpp"
 
 
+#if defined(AVEL_SSE2) || defined(AVE_NEON)
+    #include "vectors/Vec16x8u_tests.hpp"
+    #include "vectors/Vec16x8i_tests.hpp"
 
-#include "vectors/Vec16x8u_tests.hpp"
-#include "vectors/Vec16x8i_tests.hpp"
+    #include "vectors/Vec8x16u_tests.hpp"
+    #include "vectors/Vec8x16i_tests.hpp"
 
-#include "vectors/Vec8x16u_tests.hpp"
-#include "vectors/Vec8x16i_tests.hpp"
+    #include "vectors/Vec4x32u_tests.hpp"
+    #include "vectors/Vec4x32i_tests.hpp"
 
-#include "vectors/Vec4x32u_tests.hpp"
-#include "vectors/Vec4x32i_tests.hpp"
+    //#include "vectors/Vec2x64u_tests.hpp"
+    //#include "vectors/Vec2x64i_tests.hpp"
 
-#include "vectors/Vec2x64u_tests.hpp"
-#include "vectors/Vec2x64i_tests.hpp"
+    //#include "vectors/Vec4x32f_tests.hpp"
+    //#include "vectors/Vec2x64f_tests.hpp"
 
+    #include "denominator_vectors/Denom16x8u_tests.hpp"
+    #include "denominator_vectors/Denom16x8i_tests.hpp"
 
+    #include "denominator_vectors/Denom8x16u_tests.hpp"
+    #include "denominator_vectors/Denom8x16i_tests.hpp"
 
-#include "denominator_vectors/Denom16x8u_tests.hpp"
-#include "denominator_vectors/Denom16x8i_tests.hpp"
+    #include "denominator_vectors/Denom4x32u_tests.hpp"
+    #include "denominator_vectors/Denom4x32i_tests.hpp"
 
-#include "denominator_vectors/Denom8x16u_tests.hpp"
-#include "denominator_vectors/Denom8x16i_tests.hpp"
+    //#include "denominator_vectors/Denom2x64u_tests.hpp"
+    //#include "denominator_vectors/Denom2x64i_tests.hpp"
 
-#include "denominator_vectors/Denom4x32u_tests.hpp"
-#include "denominator_vectors/Denom4x32i_tests.hpp"
-
-#include "denominator_vectors/Denom2x64u_tests.hpp"
-#include "denominator_vectors/Denom2x64i_tests.hpp"
-
-//#include "vectors/Vec4x32f_tests.hpp"
-
-
+#endif
 
 using namespace avel;
 using namespace avel_impl;
