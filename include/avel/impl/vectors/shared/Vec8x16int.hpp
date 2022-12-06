@@ -139,7 +139,8 @@ namespace avel_impl {
                 content = _mm_or_si128(a, b);
             }
 
-            content = _mm_and_si128(content, _mm_cmplt_epi16(rhs.content, _mm_set1_epi16(16)));
+            auto m = _mm_cmplt_epi16(rhs.content, _mm_set1_epi16(16));
+            content = _mm_and_si128(content, m);
 
             #endif
             return *this;
