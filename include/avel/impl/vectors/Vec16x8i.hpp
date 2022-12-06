@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec16x8i> div(vec16x8i numerator, vec16x8i denominator);
-    vec16x8i broadcast_bits(mask16x8i m);
+    vec16x8i broadcast_mask(mask16x8i m);
     vec16x8i blend(vec16x8i a, vec16x8i b, mask16x8i m);
     vec16x8i countl_one(vec16x8i x);
 
@@ -74,7 +74,7 @@ namespace avel {
             static_assert(sizeof(bool) == 1);
 
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            __m128i array_data = _mm_loadu_si32(arr.data());
+            __m128i array_data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()));
             content = primitive(_mm_cmplt_epi8_mask(_mm_setzero_si128(), array_data));
 
             #elif defined(AVEL_SSE2)
@@ -194,7 +194,8 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool all(mask16x8i m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        return 0xFFFF == _mm512_mask2int(decay(m));
+        auto t0 = _mm512_mask2int(decay(m));
+        return 0xFFFF == t0;
         #elif defined(AVEL_SSE41)
         return _mm_test_all_ones(decay(m));
         #elif defined(AVEL_SSE2)
@@ -800,19 +801,22 @@ namespace avel {
 
         AVEL_FINL Vector& operator>>=(Vector rhs) {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            __m256i whole = _mm256_cvtepu8_epi16(content);
-            __m256i shifts = _mm256_cvtepu8_epi16(rhs.content);
-            content = _mm256_cvtepi16_epi8(_mm256_srav_epi16(whole, shifts));
+            auto whole = _mm256_cvtepi8_epi16(content);
+            auto shifts = _mm256_cvtepi8_epi16(rhs.content);
+            auto shifted = _mm256_srav_epi16(whole, shifts);
+            content = _mm256_cvtepi16_epi8(shifted);
 
             #elif defined(AVEL_AVX2)
-            __m256i whole = _mm256_cvtepu8_epi16(content);
-            __m256i shifts = _mm256_cvtepu8_epi16(rhs.content);
-            __m256i truncated = _mm256_and_si256(_mm256_set1_epi16(0x00FF), _mm256_srav_epi16(whole, shifts));
-            content = _mm256_castsi256_si128(_mm256_packs_epi16(truncated, _mm256_undefined_si256()));
+            auto lhs_whole = _mm256_cvtepi8_epi16(content);
+            auto rhs_whole = _mm256_cvtepi8_epi16(rhs.content);
 
-            //TODO: Offer divide and conquer approach?
+            auto shifted = _mm256_srav_epi16(lhs_whole, rhs_whole);
+            auto packed = _mm256_packs_epi16(shifted, _mm256_zextsi128_si256(_mm256_extractf128_si256(shifted, 0x1)));
+
+            content = _mm256_castsi256_si128(packed);
 
             #elif defined(AVEL_SSE2)
+            //TODO: Offer alternative approach
             alignas(16) std::int8_t data[16];
             alignas(16) std::int8_t shifts[16];
 
@@ -925,8 +929,8 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec16x8i broadcast_bits(mask16x8i m) {
-        return vec16x8i{broadcast_bits(mask16x8u{m})};
+    AVEL_FINL vec16x8i broadcast_mask(mask16x8i m) {
+        return vec16x8i{broadcast_mask(mask16x8u{m})};
     }
 
     [[nodiscard]]
@@ -983,13 +987,21 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x8i average(vec16x8i a, vec16x8i b) {
-        #if defined(AVEL_SSE2)
-        vec16x8i addition_mask{static_cast<std::int8_t>(0x80)};
-        a ^= addition_mask;
-        b ^= addition_mask;
+    AVEL_FINL vec16x8i average(vec16x8i x, vec16x8i y) {
+        #if defined(AVEL_AVX512VL)
+        auto z = (x >> 1) + (y >> 1);
+        auto c = _mm_cmplt_epi8(decay(z), _mm_setzero_si128());
+        auto d = _mm_ternarylogic_epi32(decay(x), decay(y), c, 0xE8);
 
-        return vec16x8i{average(vec16x8u{a}, vec16x8u{b})} ^ addition_mask;
+        return z + (vec16x8i{d} & vec16x8i{0x1});
+
+        #elif defined(AVEL_SSE2)
+        auto z = (x >> 1) + (y >> 1);
+        auto c = z < vec16x8i{0};
+        auto d = (x & y) | (broadcast_mask(c) & (x ^ y));
+
+        return z + (d & vec16x8i{0x1});
+
         #endif
 
         #if defined(AVEL_NEON)
@@ -1073,7 +1085,7 @@ namespace avel {
         //TODO: Consider performing division with abs_neg values
         for (; (i-- > 0) && any(mask16x8u(numerator));) {
             mask16x8u b = ((numerator >> i) >= denominator);
-            numerator -= (broadcast_bits(b) & (denominator << i));
+            numerator -= (broadcast_mask(b) & (denominator << i));
             quotient |= (vec16x8u{b} << i);
         }
 
