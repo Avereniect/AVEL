@@ -1,7 +1,3 @@
-//
-// Created by avereniect on 2/22/22.
-//
-
 namespace avel {
 
     //=====================================================
@@ -20,7 +16,7 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    AVEL_FINL std::uint32_t broadcast_bits<std::uint32_t>(bool x) {
+    AVEL_FINL std::uint32_t broadcast_mask<std::uint32_t>(bool x) {
         return -std::uint32_t(x);
     }
 
@@ -29,6 +25,7 @@ namespace avel {
         #if defined(AVEL_POPCNT)
         return _popcnt32(x);
         #else
+        //TODO: Consider using per nibble lookup table as alternative
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
         x = x - ((x >> 1) & 0x55555555u);
         x = (x & 0x33333333u) + ((x >> 2) & 0x33333333u);
@@ -71,6 +68,7 @@ namespace avel {
         #if defined(AVEL_X86)
         return countl_zero(~x);
         #else
+        //TODO: Consider using lookup table
 
         // Divide and conquer implementation
         std::uint32_t sum = (x == 0xFFFFFFFF);
@@ -110,6 +108,7 @@ namespace avel {
         }
 
         #else
+        //TODO: Consider using lookup table
         //Divide and conquer implementation
         std::uint32_t ret = 0x00;
 
@@ -147,31 +146,36 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::uint32_t bit_width(std::uint32_t x) {
         #if defined(AVEL_X86)
-        return _bit_scan_reverse(x);
+        if (x == 0) {
+            return 0;
+        } else {
+            return _bit_scan_reverse(x) + 1;
+        }
         #else
+        //TODO: Consider using lookup table
         if (x == 0) {
             return 0;
         }
 
         std::uint32_t ret = 0x00;
 
-        bool b0 = x & 0xFFFF'0000;
+        bool b0 = x & 0xFFFF0000;
         ret += b0 * 16;
         x >>= (b0 * 16);
 
-        bool b1 = x & 0xFFFF'FF00;
+        bool b1 = x & 0xFFFFFF00;
         ret += b1 * 8;
         x >>= (b1 * 8);
 
-        bool b2 = x & 0xFFFF'FFF0;
+        bool b2 = x & 0xFFFFFFF0;
         ret += b2 * 4;
         x >>= (b2 * 4);
 
-        bool b3 = x & 0xFFFF'FFFC;
+        bool b3 = x & 0xFFFFFFFC;
         ret += b3 * 2;
         x >>= (b3 * 2);
 
-        bool b4 = x & 0xFFFF'FFFE;
+        bool b4 = x & 0xFFFFFFFE;
         ret += b4 * 1;
 
         return ret + 1;
@@ -184,8 +188,10 @@ namespace avel {
         if (x == 0) {
             return 0;
         }
-        return 1 << bit_width(x);
+
+        return 1 << _bit_scan_reverse(x);
         #else
+        //TODO: Consider using lookup table
         x = x | (x >> 1);
         x = x | (x >> 2);
         x = x | (x >> 4);
@@ -198,10 +204,15 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::uint32_t bit_ceil(std::uint32_t x) {
         #if defined(AVEL_X86)
-        auto width = bit_width(x);
-        auto tmp = (x != 0) << width;
+        if (x == 0) {
+            return 1;
+        }
+
+        auto width = _bit_scan_reverse(x);
+        auto tmp = 1 << width;
         return tmp << (tmp != x);
         #else
+        //TODO: Consider using lookup table
         --x;
         x |= x >> 1;
         x |= x >> 2;
@@ -223,30 +234,30 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL std::uint32_t rotl(std::uint32_t x, std::uint32_t y) {
+    AVEL_FINL std::uint32_t rotl(std::uint32_t x, long long s) {
         #if defined(AVEL_X86)
-        return _rotl(x, y);
+        return _rotl(x, s);
         #else
-        y &= 0x1F;
-        if (y == 0) {
+        s &= 0x1F;
+        if (s == 0) {
             return x;
         }
 
-        return (x << y) | (x >> (32 - y));
+        return (x << s) | (x >> (32 - s));
         #endif
     }
 
     [[nodiscard]]
-    AVEL_FINL std::uint32_t rotr(std::uint32_t x, std::uint32_t y) {
+    AVEL_FINL std::uint32_t rotr(std::uint32_t x, long long s) {
         #if defined(AVEL_X86)
-        return _rotr(x, y);
+        return _rotr(x, s);
         #else
-        y &= 0x1F;
-        if (y == 0) {
+        s &= 0x1F;
+        if (s == 0) {
             return x;
         }
 
-        return (x >> y) | (x << (32 - y));
+        return (x >> s) | (x << (32 - s));
         #endif
     }
 
@@ -256,9 +267,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::int32_t neg_abs(std::uint32_t x) {
-        return -x;
-        //auto y = ~x >> 31;
-        //return (x ^ y) - y;
+        std::int32_t y = x;
+        if (y < 0) {
+            return y;
+        } else {
+            return -y;
+        }
     }
 
     [[nodiscard]]
@@ -286,21 +300,30 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL std::array<std::uint32_t, 2> minmax(std::uint32_t a, std::uint32_t b) {
+        if (a < b) {
+            return {a, b};
+        } else {
+            return {b, a};
+        }
+    }
+
+    [[nodiscard]]
     AVEL_FINL std::uint32_t clamp(std::uint32_t x, std::uint32_t lo, std::uint32_t hi) {
         return min(max(x, lo), hi);
     }
 
     [[nodiscard]]
-    AVEL_FINL std::uint32_t midpoint(std::uint32_t a, std::uint32_t b) {
-        std::uint32_t t0 = a & b & std::uint32_t{0x1};
-        std::uint32_t t1 = (a | b) & std::uint32_t{0x1} & avel::broadcast_bits<std::uint32_t>(a > b);
-        std::uint32_t t2 = t0 | t1;
-        return (a >> 1) + (b >> 1) + t2;
+    AVEL_FINL std::uint32_t average(std::uint32_t a, std::uint32_t b) {
+        //TODO: AARCH32-suitable implementation
+        return (std::uint64_t(a) + std::uint64_t(b)) >> 1;
     }
 
     [[nodiscard]]
-    AVEL_FINL std::uint32_t average(std::uint32_t a, std::uint32_t b) {
-        return (a >> 1) + (b >> 1) + (a & b & std::uint32_t{0x1});
+    AVEL_FINL std::uint32_t midpoint(std::uint32_t a, std::uint32_t b) {
+        //TODO: AARCH32-suitable implementation
+        auto t0 = (b < a) & (a ^ b) & 0x1;
+        return ((std::uint64_t(a) + std::uint64_t(b)) >> 1) + t0;
     }
 
 }

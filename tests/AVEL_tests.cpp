@@ -2,7 +2,7 @@
 #include <random>
 #include <cfenv>
 
-//#define AVEL_AUTO_DETECT
+#define AVEL_AUTO_DETECT
 //#define AVEL_GFNI
 //#define AVEL_AVX512VPOPCNTDQ
 //#define AVEL_AVX512BITALG
@@ -16,10 +16,9 @@
 //#define AVEL_AVX
 //#define AVEL_SSE42
 //#define AVEL_SSE41
-#define AVEL_SSSE3
-#define AVEL_SSE3
-#define AVEL_SSE2
-//#define AVEL_CLFLUSH
+//#define AVEL_SSSE3
+//#define AVEL_SSE3
+//#define AVEL_SSE2
 //#define AVEL_BMI2
 //#define AVEL_BMI
 //#define AVEL_POPCNT
@@ -45,7 +44,7 @@ namespace avel_tests {
 
     static constexpr std::size_t iterations = 1024;
 
-    auto seed_sequence = std::seed_seq({0xDEADBEEF});
+    std::seed_seq seed_sequence{std::initializer_list<unsigned>{0xDEADBEEF}};
 
     static auto random8u = std::mt19937{seed_sequence};
     static auto random16u = std::mt19937{seed_sequence};
