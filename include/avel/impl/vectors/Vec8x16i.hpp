@@ -1076,7 +1076,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16i neg_abs(vec8x16i x) {
-        #ifdef AVEL_SSSE3
+        #if defined(AVEL_SSSE3)
         return -vec8x16i{_mm_abs_epi16(decay(x))};
 
         #elif defined(AVEL_SSE2)
@@ -1088,7 +1088,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16i neg_abs(vec8x16u x) {
-        #ifdef AVEL_SSSE3
+        #if defined(AVEL_SSSE3)
         return -vec8x16i{_mm_abs_epi16(decay(x))};
 
         #elif defined(AVEL_SSE2)

@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec4x32u> div(vec4x32u numerator, vec4x32u denominator);
-    vec4x32u broadcast_bits(mask4x32u m);
+    vec4x32u broadcast_mask(mask4x32u m);
     vec4x32u blend(vec4x32u a, vec4x32u b, mask4x32u m);
     vec4x32u countl_one(vec4x32u x);
 
@@ -76,7 +76,10 @@ namespace avel {
         #endif
 
         AVEL_FINL explicit Vector_mask(const std::array<bool, 4>& arr) {
-            static_assert(sizeof(bool) == 1);
+            static_assert(
+                sizeof(bool) == 1,
+                "Implementation assumes bool occupy a single byte"
+            );
 
             #if defined(AVEL_AVX512VL)
             __m128i array_data = _mm_loadu_si32(arr.data());
@@ -1160,7 +1163,7 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec4x32u broadcast_bits(mask4x32u m) {
+    AVEL_FINL vec4x32u broadcast_mask(mask4x32u m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         return vec4x32u{_mm_movm_epi32(decay(m))};
 
@@ -1247,14 +1250,6 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32u midpoint(vec4x32u a, vec4x32u b) {
-        vec4x32u t0 = a & b & vec4x32u{0x1};
-        vec4x32u t1 = (a | b) & vec4x32u{0x1} & broadcast_bits(a > b);
-        vec4x32u t2 = t0 | t1;
-        return (a >> 1) + (b >> 1) + t2;
-    }
-
-    [[nodiscard]]
     AVEL_FINL vec4x32u average(vec4x32u a, vec4x32u b) {
         #if defined(AVEL_SSE2)
         return (a >> 1) + (b >> 1) + (a & b & vec4x32u{0x1});
@@ -1263,6 +1258,14 @@ namespace avel {
         #if defined(AVEL_NEON)
         return vec4x32u{vhaddq_u32(decay(a), decay(b))};
         #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x32u midpoint(vec4x32u a, vec4x32u b) {
+        vec4x32u t0 = a & b & vec4x32u{0x1};
+        vec4x32u t1 = (a | b) & vec4x32u{0x1} & broadcast_mask(a > b);
+        vec4x32u t2 = t0 | t1;
+        return (a >> 1) + (b >> 1) + t2;
     }
 
     //Definition of neg_abs delayed until vec4x32i is defined
@@ -1396,7 +1399,7 @@ namespace avel {
         //TODO: Optimize body with masked instructions
         for (; (i-- > 0) && any(mask4x32u(x));) {
             mask4x32u b = ((x >> i) >= y);
-            x -= (broadcast_bits(b) & (y << i));
+            x -= (broadcast_mask(b) & (y << i));
             quotient |= (vec4x32u{b} << i);
         }
 
@@ -1405,10 +1408,10 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32u popcount(vec4x32u x) {
-        #if defined(AVEL_AVX512VL) & defined(AVEL_AVX512VPOPCNTDQ)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
         return vec4x32u{_mm_popcnt_epi32(decay(x))};
 
-        #elif defined(AVELAVX512VL) & defined(AVEL_AVX512BITALG)
+        #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
         auto tmp0 = _mm_popcnt_epi16(x);
         auto tmp1 = _mm_slli_epi32(tmp0, 16);
         auto tmp2 = _mm_add_epi32(tmp0, tmp1);
@@ -1475,7 +1478,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
         return vec4x32u{_mm_lzcnt_epi32(decay(x))};
 
-        #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512F)
+        #elif defined(AVEL_AVX512VL)
         auto floats = _mm_add_ps(_mm_cvtepu32_ps(decay(x)), _mm_set1_ps(0.5f));
         __m128i biased_exponents = _mm_srli_epi32(_mm_castps_si128(floats), 23);
         __m128i lzcnt = _mm_subs_epu16(_mm_set1_epi32(158), biased_exponents);
@@ -1501,7 +1504,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32u countl_one(vec4x32u x) {
-        #if defined(AVEl_AVX512VL) & defined(AVEL_AVX512CD)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
         return vec4x32u{_mm_lzcnt_epi32(~x)};
         #elif defined(AVEL_SSE2)
         return countl_zero(~x);
@@ -1512,27 +1515,27 @@ namespace avel {
 
         vec4x32u m0{0xFFFF0000u};
         mask4x32u b0 = (m0 & x) == m0;
-        sum += broadcast_bits(b0) & vec4x32u{16};
-        x <<= broadcast_bits(b0) * vec4x32u{16};
+        sum += broadcast_mask(b0) & vec4x32u{16};
+        x <<= broadcast_mask(b0) * vec4x32u{16};
 
         vec4x32u m1{0xFF000000u};
         mask4x32u b1 = (m1 & x) == m1;
-        sum += broadcast_bits(b1) & vec4x32u{8};
-        x <<= broadcast_bits(b1) & vec4x32u{8};
+        sum += broadcast_mask(b1) & vec4x32u{8};
+        x <<= broadcast_mask(b1) & vec4x32u{8};
 
         vec4x32u m2{0xF0000000u};
         mask4x32u b2 = (m2 & x) == m2;
-        sum += broadcast_bits(b2) & vec4x32u{4};
-        x <<= broadcast_bits(b2) & vec4x32u{4};
+        sum += broadcast_mask(b2) & vec4x32u{4};
+        x <<= broadcast_mask(b2) & vec4x32u{4};
 
         vec4x32u m3{0xC0000000u};
         mask4x32u b3 = (m3 & x) == m3;
-        sum += broadcast_bits(b3) & vec4x32u{2};
-        x <<= broadcast_bits(b3) & vec4x32u{2};
+        sum += broadcast_mask(b3) & vec4x32u{2};
+        x <<= broadcast_mask(b3) & vec4x32u{2};
 
         vec4x32u m4{0x80000000u};
         mask4x32u b4 = (m4 & x) == m4;
-        sum += broadcast_bits(b4) & vec4x32u{1};
+        sum += broadcast_mask(b4) & vec4x32u{1};
 
         return sum;
         */
@@ -1586,7 +1589,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32u bit_floor(vec4x32u x) {
-        #if defined(AVEL_AVX512CD) && defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
         vec4x32u leading_zeros = countl_zero(x);
         mask4x32u zero_mask = (leading_zeros != vec4x32u{32});
 
@@ -1634,7 +1637,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask4x32u has_single_bit(vec4x32u v) {
-        #if (defined(AVEL_AVX512VPOPCNTDQ) || defined(AVEL_AVX512BITALG)) && defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && (defined(AVEL_AVX512VPOPCNTDQ) || defined(AVEL_AVX512BITALG))
         return popcount(v) == vec4x32u{1};
         #elif defined(AVEL_SSE2) || defined(AVEL_NEON)
         return mask4x32u{v} & !mask4x32u{v & (v - vec4x32u{1})};
@@ -1889,7 +1892,7 @@ namespace avel {
         alignas(32) std::array<vec1x64f, 4> ret;
         //TODO: Implement
 
-        #if defined(AVEL_AVX512F) && defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL)
         auto whole = _mm256_cvtepu32_pd(decay(m));
         _mm_store_pd(reinterpret_cast<double*>(ret.data()), whole);
 

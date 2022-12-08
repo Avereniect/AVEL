@@ -71,7 +71,10 @@ namespace avel {
             base(convert<Vector_mask>(v)[0]) {}
 
         AVEL_FINL explicit Vector_mask(const std::array<bool, 16>& arr) {
-            static_assert(sizeof(bool) == 1);
+            static_assert(
+                sizeof(bool) == 1,
+                "Implementation assumes bool occupy a single byte"
+            );
 
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             __m128i array_data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()));

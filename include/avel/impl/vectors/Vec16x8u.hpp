@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec16x8u> div(vec16x8u numerator, vec16x8u denominator);
-    vec16x8u broadcast_bits(mask16x8u m);
+    vec16x8u broadcast_mask(mask16x8u m);
     vec16x8u blend(vec16x8u a, vec16x8u b, mask16x8u m);
     vec16x8u countl_one(vec16x8u x);
 
@@ -71,7 +71,10 @@ namespace avel {
             base(convert<Vector_mask>(v)[0]) {}
 
         AVEL_FINL explicit Vector_mask(const std::array<bool, 16>& arr) {
-            static_assert(sizeof(bool) == 1);
+            static_assert(
+                sizeof(bool) == 1,
+                "Implementation assumes bool occupy a single byte"
+            );
 
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             __m128i array_data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()));
@@ -1012,7 +1015,7 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec16x8u broadcast_bits(mask16x8u m) {
+    AVEL_FINL vec16x8u broadcast_mask(mask16x8u m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return vec16x8u{_mm_movm_epi8(decay(m))};
 
@@ -1070,10 +1073,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec16x8u average(vec16x8u a, vec16x8u b) {
         #if defined(AVEL_SSE2)
-        auto t0 = vec16x8u{_mm_avg_epu8(decay(a), decay(b))};
-        auto t1 = a ^ b;
-        auto t2 = vec16x8u{0x1};
-        return t0 - (t1 & t2);
+        return vec16x8u{_mm_avg_epu8(decay(a), decay(b))} - ((a ^ b) & vec16x8u{0x1});
 
         #endif
 
@@ -1084,15 +1084,19 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x8u midpoint(vec16x8u a, vec16x8u b) {
-        #if defined(AVEL_SSE2)
-        auto t0 = decay(broadcast_bits(b < a));
+        #if defined(AVEL_AVX512VL)
         auto t1 = _mm_avg_epu8(decay(a), decay(b));
-        auto t2 = decay(a ^ b);
-        auto t3 = _mm_andnot_si128(t0, t2);
-        auto t4 = _mm_set1_epi8(0x1);
-        auto t5 = _mm_and_si128(t3, t4);
+        auto t5 = _mm_and_si128(_mm_ternarylogic_epi32(a, b, decay(broadcast_mask(b < a)), 0x14), _mm_set1_epi8(0x1));
         auto t6 = _mm_sub_epi8(t1, t5);
         return vec16x8u{t6};
+
+        #elif defined(AVEL_SSE2)
+        auto t1 = _mm_avg_epu8(decay(a), decay(b));
+        auto t3 = _mm_andnot_si128(decay(broadcast_mask(b < a)), decay(a ^ b));
+        auto t5 = _mm_and_si128(t3, _mm_set1_epi8(0x1));
+        auto t6 = _mm_sub_epi8(t1, t5);
+        return vec16x8u{t6};
+
         #endif
 
         #if defined(AVEL_NEON)
@@ -1106,7 +1110,7 @@ namespace avel {
         //return vec16x8u{t6};
 
         vec16x8u t0 = vec16x8u{vhaddq_u8(decay(a), decay(b))};
-        vec16x8u t1 = (a | b) & vec16x8u{0x1} & broadcast_bits(a > b);
+        vec16x8u t1 = (a | b) & vec16x8u{0x1} & broadcast_mask(a > b);
         return t0 | t1;
         #endif
     }
@@ -1151,7 +1155,7 @@ namespace avel {
         //TODO: Optimize body with AVX512 mask instructions
         for (; (i-- > 0) && any(mask16x8u(x));) {
             mask16x8u b = ((x >> i) >= y);
-            x -= (broadcast_bits(b) & (y << i));
+            x -= (broadcast_mask(b) & (y << i));
             quotient |= (vec16x8u{b} << i);
         }
 
@@ -1278,17 +1282,17 @@ namespace avel {
 
         vec16x8u m0{0xF0u};
         mask16x8u b0 = (m0 & x) == m0;
-        sum += broadcast_bits(b0) & vec16x8u{4};
-        x <<= broadcast_bits(b0) & vec16x8u{4};
+        sum += broadcast_mask(b0) & vec16x8u{4};
+        x <<= broadcast_mask(b0) & vec16x8u{4};
 
         vec16x8u m1{0xC0u};
         mask16x8u b1 = (m1 & x) == m1;
-        sum += broadcast_bits(b1) & vec16x8u{2};
-        x <<= broadcast_bits(b1) & vec16x8u{2};
+        sum += broadcast_mask(b1) & vec16x8u{2};
+        x <<= broadcast_mask(b1) & vec16x8u{2};
 
         vec16x8u m2{0x80u};
         mask16x8u b2 = (m2 & x) == m2;
-        sum += broadcast_bits(b2) & vec16x8u{1};
+        sum += broadcast_mask(b2) & vec16x8u{1};
 
         return sum;
         #endif
@@ -1428,17 +1432,17 @@ namespace avel {
         vec16x8u ret{0x00};
 
         auto b0 = mask16x8u{x & vec16x8u{0xF0}};
-        auto t0 = broadcast_bits(b0) & vec16x8u{4};
+        auto t0 = broadcast_mask(b0) & vec16x8u{4};
         ret += t0;
         x >>= t0;
 
         auto b1 = mask16x8u{x & vec16x8u{0xFC}};
-        auto t1 = broadcast_bits(b1) & vec16x8u{2};
+        auto t1 = broadcast_mask(b1) & vec16x8u{2};
         ret += t1;
         x >>= t1;
 
         auto b2 = mask16x8u{x & vec16x8u{0xFE}};
-        auto t2 = broadcast_bits(b2) & vec16x8u{1};
+        auto t2 = broadcast_mask(b2) & vec16x8u{1};
         ret += t2;
 
         return blend(ret + vec16x8u{1}, vec16x8u{0x0}, zero_mask);

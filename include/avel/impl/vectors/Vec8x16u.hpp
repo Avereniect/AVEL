@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec8x16u> div(vec8x16u numerator, vec8x16u denominator);
-    vec8x16u broadcast_bits(mask8x16u m);
+    vec8x16u broadcast_mask(mask8x16u m);
     vec8x16u blend(vec8x16u a, vec8x16u b, mask8x16u m);
     vec8x16u countl_one(vec8x16u x);
 
@@ -60,8 +60,12 @@ namespace avel {
             base(convert<Vector_mask>(x)[0]) {}
 
         AVEL_FINL explicit Vector_mask(const std::array<bool, 8>& arr) {
-            static_assert(sizeof(bool) == 1);
-            #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VL)
+            static_assert(
+                sizeof(bool) == 1,
+                "Implementation assumes bool occupy a single byte"
+            );
+
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             __m128i array_data = _mm_loadu_si64(arr.data());
             content = __mmask8(_mm_cmplt_epi8_mask(_mm_setzero_si128(), array_data));
 
@@ -154,7 +158,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(mask8x16u m) {
-        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return popcount(_mm512_mask2int(decay(m)));
 
         #elif defined(AVEL_SSE2)
@@ -165,7 +169,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool any(mask8x16u m) {
-        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return _mm512_mask2int(decay(m));
 
         #elif defined(AVEL_SSE2)
@@ -177,7 +181,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool all(mask8x16u m) {
-        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return 0xFF == _mm512_mask2int(decay(m));
 
         #elif defined(AVEL_SSE2)
@@ -565,7 +569,7 @@ namespace avel {
         #endif
 
         AVEL_FINL explicit Vector(mask m):
-        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             base(_mm_mask_blend_epi16(decay(m), _mm_setzero_si128(), _mm_set1_epi16(1))) {}
         #elif defined(AVEL_SSE2)
             base(_mm_sub_epi16(_mm_setzero_si128(), static_cast<primitive>(m))) {}
@@ -617,7 +621,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator==(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VL)
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return mask{_mm_cmpeq_epi16_mask(lhs.content, rhs.content)};
             #elif defined(AVEL_SSE2)
             return mask{_mm_cmpeq_epi16(lhs.content, rhs.content)};
@@ -626,7 +630,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator!=(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VL)
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return mask{_mm_cmpneq_epu16_mask(lhs.content, rhs.content)};
             #elif defined(AVEL_SSE2)
             return !(lhs == rhs);
@@ -635,7 +639,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator<(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VL)
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return mask{_mm_cmplt_epu16_mask(lhs.content, rhs.content)};
 
             #elif defined(AVEL_SSE2)
@@ -647,7 +651,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator<=(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VL)
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return mask{_mm_cmple_epu16_mask(lhs.content, rhs.content)};
             #elif defined(AVEL_SSE2)
             return !mask{lhs > rhs};
@@ -656,7 +660,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator>(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VL)
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return mask{_mm_cmpgt_epu16_mask(lhs.content, rhs.content)};
 
             #elif defined(AVEL_SSE2)
@@ -668,7 +672,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator>=(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VL)
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return mask{_mm_cmpge_epu16_mask(lhs.content, rhs.content)};
             #elif defined(AVEL_SSE2)
             return !mask{lhs < rhs};
@@ -893,8 +897,8 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec8x16u broadcast_bits(mask8x16u m) {
-        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VL)
+    AVEL_FINL vec8x16u broadcast_mask(mask8x16u m) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return vec8x16u{_mm_movm_epi16(decay(m))};
 
         #elif defined(AVEL_SSE2)
@@ -905,7 +909,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u blend(vec8x16u a, vec8x16u b, mask8x16u m) {
-        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return vec8x16u{_mm_mask_blend_epi16(decay(m), decay(a), decay(b))};
 
         #elif defined(AVEL_SSE41)
@@ -957,8 +961,11 @@ namespace avel {
         };
 
         #elif defined(AVEL_SSE2)
-        auto mask = b < a;
-        return {blend(a, b, mask), blend(b, a, mask)};
+        auto m = b < a;
+        return std::array<vec8x16u, 2>{
+            blend(a, b, m),
+            blend(b, a, m)
+        };
 
         #endif
     }
@@ -971,7 +978,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x16u midpoint(vec8x16u a, vec8x16u b) {
         vec8x16u t0 = a & b & vec8x16u{0x1};
-        vec8x16u t1 = (a | b) & vec8x16u{0x1} & broadcast_bits(a > b);
+        vec8x16u t1 = (a | b) & vec8x16u{0x1} & broadcast_mask(a > b);
         vec8x16u t2 = t0 | t1;
         return (a >> 1) + (b >> 1) + t2;
     }
@@ -1026,7 +1033,7 @@ namespace avel {
         auto z = vec8x16u{};
         for (std::uint32_t i = 16; (i-- > 0) && any(x != z);) {
             mask8x16u b = ((x >> i) >= y);
-            x -= (broadcast_bits(b) & (y << i));
+            x -= (broadcast_mask(b) & (y << i));
             quotient |= (vec8x16u{b} << i);
         }
 
@@ -1039,7 +1046,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u popcount(vec8x16u x) {
-        #if defined(AVELAVX512VL) && defined(AVEL_AVX512BITALG)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
         return vec8x16u{_mm_popcnt_epi16(x)};
 
         #elif defined(AVEL_SSE3)
@@ -1087,22 +1094,22 @@ namespace avel {
 
         vec8x16u m0{0xFF00u};
         mask8x16u b0 = (m0 & x) == m0;
-        sum += broadcast_bits(b0) & vec8x16u{8};
-        x <<= broadcast_bits(b0) & vec8x16u{8};
+        sum += broadcast_mask(b0) & vec8x16u{8};
+        x <<= broadcast_mask(b0) & vec8x16u{8};
 
         vec8x16u m1{0xF000u};
         mask8x16u b1 = (m1 & x) == m1;
-        sum += broadcast_bits(b1) & vec8x16u{4};
-        x <<= broadcast_bits(b1) & vec8x16u{4};
+        sum += broadcast_mask(b1) & vec8x16u{4};
+        x <<= broadcast_mask(b1) & vec8x16u{4};
 
         vec8x16u m2{0xC000u};
         mask8x16u b2 = (m2 & x) == m2;
-        sum += broadcast_bits(b2) & vec8x16u{2};
-        x <<= broadcast_bits(b2) & vec8x16u{2};
+        sum += broadcast_mask(b2) & vec8x16u{2};
+        x <<= broadcast_mask(b2) & vec8x16u{2};
 
         vec8x16u m3{0x8000u};
         mask8x16u b3 = (m3 & x) == m3;
-        sum += broadcast_bits(b3) & vec8x16u{1};
+        sum += broadcast_mask(b3) & vec8x16u{1};
 
         return sum;
     }
@@ -1184,22 +1191,22 @@ namespace avel {
         vec8x16u ret{0x0000};
 
         auto b0 = mask8x16u{x & vec8x16u{0xFF00}};
-        auto t0 = broadcast_bits(b0) & vec8x16u{8};
+        auto t0 = broadcast_mask(b0) & vec8x16u{8};
         ret += t0;
         x >>= t0;
 
         auto b1 = mask8x16u{x & vec8x16u{0xFFF0}};
-        auto t1 = broadcast_bits(b1) & vec8x16u{4};
+        auto t1 = broadcast_mask(b1) & vec8x16u{4};
         ret += t1;
         x >>= t1;
 
         auto b2 = mask8x16u{x & vec8x16u{0xFFFC}};
-        auto t2 = broadcast_bits(b2) & vec8x16u{2};
+        auto t2 = broadcast_mask(b2) & vec8x16u{2};
         ret += t2;
         x >>= t2;
 
         auto b3 = mask8x16u{x & vec8x16u{0xFFFE}};
-        auto t3 = broadcast_bits(b3) & vec8x16u{1};
+        auto t3 = broadcast_mask(b3) & vec8x16u{1};
         ret += t3;
 
         return blend(ret + vec8x16u{1}, vec8x16u{0}, zero_mask);
@@ -1233,7 +1240,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask8x16u has_single_bit(vec8x16u x) {
-        #if defined(AVEL_AVX512VL) && defined(AVX512_BITALG)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
         return pop_count(x) == vec8x16u{1};
 
         #else
