@@ -795,7 +795,8 @@ namespace avel {
 
         AVEL_FINL Vector& operator>>=(long long s) {
             #if defined(AVEL_SSE2)
-            content = _mm_srl_epi16(content, _mm_loadu_si32(&s));
+            //TODO: Saturate shift value
+            content = _mm_srl_epi16(content, _mm_cvtsi32_si128(static_cast<int>(s)));
             #endif
             return *this;
         }
@@ -1047,9 +1048,9 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x16u popcount(vec8x16u x) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
-        return vec8x16u{_mm_popcnt_epi16(x)};
+        return vec8x16u{_mm_popcnt_epi16(decay(x))};
 
-        #elif defined(AVEL_SSE3)
+        #elif defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t table_data[16] {
             0, 1, 1, 2,
             1, 2, 2, 3,
@@ -1241,7 +1242,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL mask8x16u has_single_bit(vec8x16u x) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
-        return pop_count(x) == vec8x16u{1};
+        return popcount(x) == vec8x16u{1};
 
         #else
         return mask8x16u{x} & !mask8x16u{x & (x - vec8x16u{1})};

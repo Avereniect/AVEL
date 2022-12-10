@@ -809,14 +809,7 @@ namespace avel {
             auto shifted = _mm256_srav_epi16(whole, shifts);
             content = _mm256_cvtepi16_epi8(shifted);
 
-            #elif defined(AVEL_AVX2)
-            auto lhs_whole = _mm256_cvtepi8_epi16(content);
-            auto rhs_whole = _mm256_cvtepi8_epi16(rhs.content);
-
-            auto shifted = _mm256_srav_epi16(lhs_whole, rhs_whole);
-            auto packed = _mm256_packs_epi16(shifted, _mm256_zextsi128_si256(_mm256_extractf128_si256(shifted, 0x1)));
-
-            content = _mm256_castsi256_si128(packed);
+            //TODO: Offer AVX2 version?
 
             #elif defined(AVEL_SSE2)
             //TODO: Offer alternative approach

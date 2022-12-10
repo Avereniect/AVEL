@@ -900,14 +900,7 @@ namespace avel {
             __m256i shifts = _mm256_cvtepu8_epi16(rhs.content);
             content = _mm256_cvtepi16_epi8(_mm256_srlv_epi16(whole, shifts));
 
-            #elif defined(AVEL_AVX2)
-            auto lhs_whole = _mm256_cvtepu8_epi16(content);
-            auto rhs_whole = _mm256_cvtepu8_epi16(rhs.content);
-
-            auto shifted = _mm256_srlv_epi16(lhs_whole, rhs_whole);
-            auto packed = _mm256_packus_epi16(shifted, _mm256_zextsi128_si256(_mm256_extractf128_si256(shifted, 0x1)));
-
-            content = _mm256_castsi256_si128(packed);
+            //TODO: Offer AVX2 version?
 
             #elif defined(AVEL_SSE2)
             //TODO: Offer divide and conqueuer approach?
@@ -1359,7 +1352,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x8u countr_one(vec16x8u x) {
-        #if defined(AVEL_SSE3)
+        #if defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 0, 2,
             0, 1, 0, 3,
@@ -2007,7 +2000,7 @@ namespace avel {
         _mm512_store_pd(reinterpret_cast<double*>(ret.data() + 0x0), lo);
         _mm512_store_pd(reinterpret_cast<double*>(ret.data() + 0x8), hi);
 
-        #elif defined(AVEL_AVX)
+        #elif defined(AVEL_AVX2)
         auto half0 = _mm256_cvtepu8_epi32(decay(x));
         auto half1 = _mm256_cvtepu8_epi32(_mm_unpackhi_epi64(decay(x), decay(x)));
 

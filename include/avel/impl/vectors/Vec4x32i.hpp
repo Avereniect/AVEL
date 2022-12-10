@@ -81,11 +81,12 @@ namespace avel {
             );
 
             #if defined(AVEL_AVX512VL)
-            __m128i array_data = _mm_loadu_si32(arr.data());
-            content = __mmask8(_mm_cmplt_epi8_mask(_mm_setzero_si128(), array_data));
+            auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
+            auto expanded = _mm_cvtepi8_epi32(array_data);
+            content = _mm_cmplt_epu32_mask(_mm_setzero_si128(), expanded);
 
             #elif defined(AVEL_SSE2)
-            primitive array_data = _mm_loadu_si32(arr.data());
+            primitive array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
             array_data = _mm_unpacklo_epi8(array_data, array_data);
             array_data = _mm_unpacklo_epi16(array_data, array_data);
             content = _mm_cmplt_epi32(_mm_setzero_si128(), array_data);
@@ -153,9 +154,11 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator&=(Vector_mask rhs) {
             #if defined(AVEL_AVX512VL)
-            content = _kand_mask8(content, rhs.content);
+            content &= decay(rhs);
+
             #elif defined(AVEL_SSE2)
             content = _mm_and_si128(content, rhs.content);
+
             #endif
 
             #if defined(AVEL_NEON)
@@ -167,7 +170,7 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator|=(Vector_mask rhs) {
             #if defined(AVEL_AVX512VL)
-            content = _kor_mask8(content, rhs.content);
+            content |= decay(rhs);
             #elif defined(AVEL_SSE2)
             content = _mm_or_si128(content, rhs.content);
             #endif
@@ -181,7 +184,8 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator^=(Vector_mask rhs) {
             #if defined(AVEL_AVX512VL)
-            content = _kxor_mask8(content, rhs.content);
+            content ^= decay(rhs);
+
             #elif defined(AVEL_SSE2)
             content = _mm_xor_si128(content, rhs.content);
             #endif
@@ -198,10 +202,12 @@ namespace avel {
 
         AVEL_FINL Vector_mask operator!() const {
             #if defined(AVEL_AVX512VL)
-            return Vector_mask{_kxor_mask8(content, 0x0f)};
+            return Vector_mask{static_cast<__mmask8>(content ^ 0x0f)};
+
             #elif defined(AVEL_SSE2)
             primitive tmp = _mm_undefined_si128();
             return Vector_mask{_mm_andnot_si128(content, _mm_cmpeq_epi32(tmp, tmp))};
+
             #endif
 
             #if defined(AVEL_NEON)
@@ -303,19 +309,19 @@ namespace avel {
     AVEL_FINL std::array<mask1x8u, 4> convert<mask1x8u, mask4x32i>(mask4x32i m) {
         alignas(4) std::array<mask1x8u, 4> ret;
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        _mm_storeu_si32(ret.data(), _mm_sub_epi32(_mm_setzero_si128(), _mm_movm_epi8(decay(m))));
+        ret = bit_cast<std::array<mask1x8u, 4>>(_mm_cvtsi128_si32(_mm_sub_epi32(_mm_setzero_si128(), _mm_movm_epi8(decay(m)))));
 
         #elif defined(AVEL_AVX512VL)
         auto t0 = _mm_mask_blend_epi32(decay(m), _mm_setzero_si128(), _mm_set1_epi32(0x1));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x8u, 4>>(_mm_cvtsi128_si32(t2));
 
         #elif defined(AVEL_SSE2)
         auto t0 = _mm_sub_epi32(_mm_setzero_si128(), decay(m));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x8u, 4>>(_mm_cvtsi128_si32(t2));
 
         #endif
         return ret;
@@ -325,20 +331,21 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::array<mask1x8i, 4> convert<mask1x8i, mask4x32i>(mask4x32i m) {
         alignas(4) std::array<mask1x8i, 4> ret;
+
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        _mm_storeu_si32(ret.data(), _mm_movm_epi8(decay(m)));
+        ret = bit_cast<std::array<mask1x8i, 4>>(_mm_cvtsi128_si32(_mm_movm_epi8(decay(m))));
 
         #elif defined(AVEL_AVX512VL)
         auto t0 = _mm_mask_blend_epi32(decay(m), _mm_setzero_si128(), _mm_set1_epi32(0x1));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x8i, 4>>(_mm_cvtsi128_si32(t2));
 
         #elif defined(AVEL_SSE2)
         auto t0 = _mm_sub_epi32(_mm_setzero_si128(), decay(m));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x8i, 4>>(_mm_cvtsi128_si32(t2));
 
         #endif
         return ret;
@@ -348,20 +355,21 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::array<mask1x16u, 4> convert<mask1x16u, mask4x32i>(mask4x32i m) {
         alignas(4) std::array<mask1x16u, 4> ret;
+
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        _mm_storeu_si32(ret.data(), _mm_movm_epi8(decay(m)));
+        ret = bit_cast<std::array<mask1x16u, 4>>(_mm_cvtsi128_si32(_mm_movm_epi8(decay(m))));
 
         #elif defined(AVEL_AVX512VL)
         auto t0 = _mm_mask_blend_epi32(decay(m), _mm_setzero_si128(), _mm_set1_epi32(0x1));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x16u, 4>>(_mm_cvtsi128_si32(t2));
 
         #elif defined(AVEL_SSE2)
         auto t0 = _mm_sub_epi32(_mm_setzero_si128(), decay(m));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x16u, 4>>(_mm_cvtsi128_si32(t2));
 
         #endif
         return ret;
@@ -372,19 +380,19 @@ namespace avel {
     AVEL_FINL std::array<mask1x16i, 4> convert<mask1x16i, mask4x32i>(mask4x32i m) {
         alignas(4) std::array<mask1x16i, 4> ret;
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        _mm_storeu_si32(ret.data(), _mm_movm_epi8(decay(m)));
+        ret = bit_cast<std::array<mask1x16i, 4>>(_mm_cvtsi128_si32(_mm_movm_epi8(decay(m))));
 
         #elif defined(AVEL_AVX512VL)
         auto t0 = _mm_mask_blend_epi32(decay(m), _mm_setzero_si128(), _mm_set1_epi32(0x1));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x16i, 4>>(_mm_cvtsi128_si32(t2));
 
         #elif defined(AVEL_SSE2)
         auto t0 = _mm_sub_epi32(_mm_setzero_si128(), decay(m));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x16i, 4>>(_mm_cvtsi128_si32(t2));
 
         #endif
         return ret;
@@ -394,20 +402,21 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::array<mask1x32u, 4> convert<mask1x32u, mask4x32i>(mask4x32i m) {
         alignas(4) std::array<mask1x32u, 4> ret;
+
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        _mm_storeu_si32(ret.data(), _mm_movm_epi8(decay(m)));
+        ret = bit_cast<std::array<mask1x32u, 4>>(_mm_cvtsi128_si32(_mm_movm_epi8(decay(m))));
 
         #elif defined(AVEL_AVX512VL)
         auto t0 = _mm_mask_blend_epi32(decay(m), _mm_setzero_si128(), _mm_set1_epi32(0x1));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x32u, 4>>(_mm_cvtsi128_si32(t2));
 
         #elif defined(AVEL_SSE2)
         auto t0 = _mm_sub_epi32(_mm_setzero_si128(), decay(m));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x32u, 4>>(_mm_cvtsi128_si32(t2));
 
         #endif
         return ret;
@@ -417,20 +426,21 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::array<mask1x32i, 4> convert<mask1x32i, mask4x32i>(mask4x32i m) {
         alignas(4) std::array<mask1x32i, 4> ret;
+
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        _mm_storeu_si32(ret.data(), _mm_movm_epi8(decay(m)));
+        ret = bit_cast<std::array<mask1x32i, 4>>(_mm_cvtsi128_si32(_mm_movm_epi8(decay(m))));
 
         #elif defined(AVEL_AVX512VL)
         auto t0 = _mm_mask_blend_epi32(decay(m), _mm_setzero_si128(), _mm_set1_epi32(0x1));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x32i, 4>>(_mm_cvtsi128_si32(t2));
 
         #elif defined(AVEL_SSE2)
         auto t0 = _mm_sub_epi32(_mm_setzero_si128(), decay(m));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x32i, 4>>(_mm_cvtsi128_si32(t2));
 
         #endif
         return ret;
@@ -441,19 +451,19 @@ namespace avel {
     AVEL_FINL std::array<mask1x64u, 4> convert<mask1x64u, mask4x32i>(mask4x32i m) {
         alignas(4) std::array<mask1x64u, 4> ret;
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        _mm_storeu_si32(ret.data(), _mm_movm_epi8(decay(m)));
+        ret = bit_cast<std::array<mask1x64u, 4>>(_mm_cvtsi128_si32(_mm_movm_epi8(decay(m))));
 
         #elif defined(AVEL_AVX512VL)
         auto t0 = _mm_mask_blend_epi32(decay(m), _mm_setzero_si128(), _mm_set1_epi32(0x1));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x64u, 4>>(_mm_cvtsi128_si32(t2));
 
         #elif defined(AVEL_SSE2)
         auto t0 = _mm_sub_epi32(_mm_setzero_si128(), decay(m));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x64u, 4>>(_mm_cvtsi128_si32(t2));
 
         #endif
         return ret;
@@ -464,19 +474,19 @@ namespace avel {
     AVEL_FINL std::array<mask1x64i, 4> convert<mask1x64i, mask4x32i>(mask4x32i m) {
         alignas(4) std::array<mask1x64i, 4> ret;
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        _mm_storeu_si32(ret.data(), _mm_movm_epi8(decay(m)));
+        ret = bit_cast<std::array<mask1x64i, 4>>(_mm_cvtsi128_si32(_mm_movm_epi8(decay(m))));
 
         #elif defined(AVEL_AVX512VL)
         auto t0 = _mm_mask_blend_epi32(decay(m), _mm_setzero_si128(), _mm_set1_epi32(0x1));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x64i, 4>>(_mm_cvtsi128_si32(t2));
 
         #elif defined(AVEL_SSE2)
         auto t0 = _mm_sub_epi32(_mm_setzero_si128(), decay(m));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x64i, 4>>(_mm_cvtsi128_si32(t2));
 
         #endif
         return ret;
@@ -487,19 +497,19 @@ namespace avel {
     AVEL_FINL std::array<mask1x32f, 4> convert<mask1x32f, mask4x32i>(mask4x32i m) {
         alignas(4) std::array<mask1x32f, 4> ret;
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        _mm_storeu_si32(ret.data(), _mm_movm_epi8(decay(m)));
+        ret = bit_cast<std::array<mask1x32f, 4>>(_mm_cvtsi128_si32(_mm_movm_epi8(decay(m))));
 
         #elif defined(AVEL_AVX512VL)
         auto t0 = _mm_mask_blend_epi32(decay(m), _mm_setzero_si128(), _mm_set1_epi32(0x1));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x32f, 4>>(_mm_cvtsi128_si32(t2));
 
         #elif defined(AVEL_SSE2)
         auto t0 = _mm_sub_epi32(_mm_setzero_si128(), decay(m));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x32f, 4>>(_mm_cvtsi128_si32(t2));
 
         #endif
         return ret;
@@ -509,18 +519,19 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::array<mask1x64f, 4> convert<mask1x64f, mask4x32i>(mask4x32i m) {
         alignas(4) std::array<mask1x64f, 4> ret;
+
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        _mm_storeu_si32(ret.data(), _mm_movm_epi8(decay(m)));
+        ret = bit_cast<std::array<mask1x64f, 4>>(_mm_cvtsi128_si32(_mm_movm_epi8(decay(m))));
 
         #elif defined(AVEL_AVX512VL)
         auto t0 = _mm_mask_blend_epi32(decay(m), _mm_setzero_si128(), _mm_set1_epi32(0x1));
-        _mm_storeu_si32(ret.data(), _mm_cvtepi32_epi8(t0));
+        ret = bit_cast<std::array<mask1x64f, 4>>(_mm_cvtsi128_si32(t0));
 
         #elif defined(AVEL_SSE2)
         auto t0 = _mm_sub_epi32(_mm_setzero_si128(), decay(m));
         auto t1 = _mm_packs_epi32(t0, t0);
         auto t2 = _mm_packs_epi16(t1, t1);
-        _mm_storeu_si32(ret.data(), t2);
+        ret = bit_cast<std::array<mask1x64f, 4>>(_mm_cvtsi128_si32(t2));
 
         #endif
         return ret;
@@ -1178,7 +1189,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL Vector operator~() const {
-            #if defined(AVEL_AVX512F)
+            #if defined(AVEL_AVX512VL)
             return Vector{_mm_ternarylogic_epi32(content, content, content, 0x01)};
             #elif defined(AVEL_SSE2)
             return Vector{_mm_andnot_si128(content, _mm_set1_epi32(0xFFFFFFFF))};
@@ -1426,13 +1437,14 @@ namespace avel {
     AVEL_FINL vec4x32u gather<vec4x32u>(const std::uint32_t* ptr, vec4x32i indices) {
         #if defined(AVEL_AVX2)
         return vec4x32u{_mm_i32gather_epi32(ptr, indices, sizeof(std::uint32_t))};
+
         #elif defined(AVEL_SSE2)
         auto i = to_array(indices);
 
-        auto a = _mm_loadu_si32(ptr + i[0]);
-        auto b = _mm_loadu_si32(ptr + i[1]);
-        auto c = _mm_loadu_si32(ptr + i[2]);
-        auto d = _mm_loadu_si32(ptr + i[3]);
+        auto a = _mm_cvtsi32_si128(ptr[i[0]]);
+        auto b = _mm_cvtsi32_si128(ptr[i[1]]);
+        auto c = _mm_cvtsi32_si128(ptr[i[2]]);
+        auto d = _mm_cvtsi32_si128(ptr[i[3]]);
 
         auto abab = _mm_unpacklo_epi32(a, b);
         auto cdcd = _mm_unpacklo_epi32(c, d);
@@ -1461,10 +1473,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         auto i = to_array(indices);
 
-        __m128i a = _mm_loadu_si32(ptr + i[0]);
-        __m128i b = _mm_loadu_si32(ptr + i[1]);
-        __m128i c = _mm_loadu_si32(ptr + i[2]);
-        __m128i d = _mm_loadu_si32(ptr + i[3]);
+        __m128i a = _mm_cvtsi32_si128(ptr[i[0]]);
+        __m128i b = _mm_cvtsi32_si128(ptr[i[1]]);
+        __m128i c = _mm_cvtsi32_si128(ptr[i[2]]);
+        __m128i d = _mm_cvtsi32_si128(ptr[i[3]]);
 
         __m128i abab = _mm_unpacklo_epi32(a, b);
         __m128i cdcd = _mm_unpacklo_epi32(c, d);
@@ -1510,10 +1522,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         auto i = to_array(indices);
 
-        _mm_storeu_si32(ptr + i[0], decay(x));
-        _mm_storeu_si32(ptr + i[1], _mm_bsrli_si128(decay(x), 0x4));
-        _mm_storeu_si32(ptr + i[2], _mm_bsrli_si128(decay(x), 0x8));
-        _mm_storeu_si32(ptr + i[3], _mm_bsrli_si128(decay(x), 0xC));
+        ptr[i[0]] = _mm_cvtsi128_si32(decay(x));
+        ptr[i[1]] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x4));
+        ptr[i[2]] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x8));
+        ptr[i[3]] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0xC));
         #endif
 
         #if defined(AVEL_NEON)
@@ -1530,10 +1542,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         auto i = to_array(indices);
 
-        _mm_storeu_si32(ptr + i[0], decay(x));
-        _mm_storeu_si32(ptr + i[1], _mm_bsrli_si128(decay(x), 0x4));
-        _mm_storeu_si32(ptr + i[2], _mm_bsrli_si128(decay(x), 0x8));
-        _mm_storeu_si32(ptr + i[3], _mm_bsrli_si128(decay(x), 0xC));
+        ptr[i[0]] = _mm_cvtsi128_si32(decay(x));
+        ptr[i[1]] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x4));
+        ptr[i[2]] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x8));
+        ptr[i[3]] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0xC));
         #endif
 
         #if defined(AVEL_NEON)
@@ -1658,13 +1670,13 @@ namespace avel {
         alignas(4) std::array<vec1x8u, 4> ret;
 
         #if defined(AVEL_AVX512F)
-        _mm_storeu_si32(ret.data(), _mm512_cvtepi32_epi8(_mm512_zextsi128_si512(decay(m))));
+        ret = bit_cast<std::array<vec1x8u, 4>>(_mm_cvtsi128_si32(_mm_cvtepi32_epi8(decay(m))));
 
         #elif defined(AVEL_SSE2)
         auto tmp0 = _mm_and_si128(decay(m), _mm_set1_epi32(0xFF));
         auto tmp2 = _mm_packus_epi32(decay(m), _mm_setzero_si128());
         auto tmp3 = _mm_packus_epi16(decay(m), _mm_setzero_si128());
-        _mm_storeu_si32(ret.data(), tmp3);
+        ret = bit_cast<std::array<vec1x8u, 4>>(_mm_cvtsi128_si32(tmp3));
 
         #endif
         return ret;
@@ -1676,13 +1688,13 @@ namespace avel {
         alignas(4) std::array<vec1x8i, 4> ret;
 
         #if defined(AVEL_AVX512F)
-        _mm_storeu_si32(ret.data(), _mm512_cvtepi32_epi8(_mm512_zextsi128_si512(decay(m))));
+        ret = bit_cast<std::array<vec1x8i, 4>>(_mm_cvtsi128_si32(_mm_cvtepi32_epi8(decay(m))));
 
         #elif defined(AVEL_SSE2)
         auto tmp0 = _mm_and_si128(decay(m), _mm_set1_epi32(0xFF));
         auto tmp1 = _mm_packus_epi32(tmp0, _mm_setzero_si128());
         auto tmp2 = _mm_packus_epi16(tmp1, _mm_setzero_si128());
-        _mm_storeu_si32(ret.data(), tmp2);
+        ret = bit_cast<std::array<vec1x8i, 4>>(_mm_cvtsi128_si32(tmp2));
 
         #endif
         return ret;
@@ -1694,7 +1706,7 @@ namespace avel {
         alignas(4) std::array<vec1x16u, 4> ret;
 
         #if defined(AVEL_AVX512F)
-        _mm_storeu_si64(ret.data(), _mm256_cvtepi32_epi16(_mm256_zextsi128_si256(decay(m))));
+        ret = bit_cast<std::array<vec1x16u, 4>>(_mm_cvtsi128_si64(_mm_cvtepi32_epi16(decay(m))));
 
         #elif defined(AVEL_SSE2)
         auto tmp0 = _mm_and_si128(decay(m), _mm_set1_epi32(0xFF));
@@ -1711,7 +1723,7 @@ namespace avel {
         alignas(8) std::array<vec1x16i, 4> ret;
 
         #if defined(AVEL_AVX512F)
-        _mm_storeu_si64(ret.data(), _mm256_cvtepi32_epi16(_mm256_zextsi128_si256(decay(m))));
+        ret = bit_cast<std::array<vec1x16i, 4>>(_mm_cvtsi128_si64(_mm_cvtepi32_epi16(decay(m))));
 
         #elif defined(AVEL_SSE2)
         auto tmp0 = _mm_and_si128(decay(m), _mm_set1_epi32(0xFF));

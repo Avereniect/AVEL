@@ -156,7 +156,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return Vector_mask{primitive(_knot_mask16(content))};
 
-            #elif defined(AVEL_AVX512F)
+            #elif defined(AVEL_AVX512VL)
             return Vector_mask{_mm_ternarylogic_epi32(content, content, content, 0x01)};
 
             #elif defined(AVEL_SSE2)
@@ -1428,7 +1428,7 @@ namespace avel {
         auto half0 = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(whole));
         auto half1 = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(_mm_unpackhi_epi64(whole, whole)));
 
-        _mm256_store_ps(reinterpret_cast<float*>(ret.data() + 0x0), _mm256_cvtepi32_ps(_mm256_set_m128i(half0, half1)));
+        _mm256_store_ps(reinterpret_cast<float*>(ret.data()), _mm256_set_m128(half0, half1));
 
         #elif defined(AVEL_SSE41)
         auto whole = decay(x);
