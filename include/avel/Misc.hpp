@@ -34,11 +34,13 @@ namespace avel {
     template<class T, class U>
     AVEL_FINL T bit_cast(const U& u) {
         static_assert(sizeof(T) == sizeof(U), "Size of target and source types must be equal");
-        static_assert(std::is_trivial<T>::value, "Target type must be trivial");
-        static_assert(std::is_trivial<U>::value, "Source type must be trivial");
+        static_assert(std::is_trivially_copyable<T>::value, "Target type must be trivially copyable");
+        static_assert(std::is_trivially_copyable<U>::value, "Source type must be trivially copyable");
 
         #if __cplusplus >= 202002L
         return std::bit_cast<T>(u);
+
+        //TODO: Consider using unions if using GCC
 
         #else
 

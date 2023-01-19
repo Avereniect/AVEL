@@ -2,78 +2,202 @@
 #define AVEL_IMPL_VECTORS_HPP
 
 #include <cmath>
+#include <array>
 
-//#include "../vector_primitives/Vector_primitives.hpp"
 #include "avel/Misc.hpp"
 #include "../Constants.hpp"
 
 namespace avel {
 
-    template<class V>
-    V load(const typename V::scalar*);
+    //=====================================================
+    // Type aliases
+    //=====================================================
+
+    using arr1xb = std::array<bool, 1>;
+    using arr2xb = std::array<bool, 2>;
+    using arr4xb = std::array<bool, 4>;
+    using arr8xb = std::array<bool, 8>;
+    using arr16xb = std::array<bool, 16>;
+    using arr32xb = std::array<bool, 32>;
+    using arr64xb = std::array<bool, 64>;
+
+    //=====================================================
+    // Load/Store Functions
+    //=====================================================
 
     template<class V>
-    V aligned_load(const typename V::scalar*);
+    V load(const typename V::scalar* p, std::uint32_t n);
+
+    template<class V, std::uint32_t N = V::width>
+    V load(const typename V::scalar* ptr) {
+        static_assert(N <= V::width, "Cannot load more elements than width of vector");
+        typename std::enable_if<N <= V::width, int>::type dummy_variable = 0;
+
+        //Relying on const folding to optimize this implementation
+        return load<V>(ptr, N);
+    }
+
 
     template<class V>
-    V stream_load(const typename V::scalar*);
+    V aligned_load(const typename V::scalar* p, std::uint32_t);
+
+    template<class V, std::uint32_t N = V::width>
+    V aligned_load(const typename V::scalar* ptr) {
+        static_assert(N <= V::width, "Cannot load more elements than width of vector");
+        typename std::enable_if<N <= V::width, int>::type dummy_variable = 0;
+
+        //Relying on const folding to optimize this implementation
+        return aligned_load<V>(ptr, N);
+    }
+
 
     template<class V>
-    V gather(const typename V::scalar*, Vector<std::int32_t, V::width>);
+    V gather(const typename V::scalar* ptr, Vector<std::int32_t, V::width>, std::uint32_t n);
+
+    template<class V, std::uint32_t N = V::width>
+    V gather(const typename V::scalar* ptr, Vector<std::int32_t, V::width>) {
+        static_assert(N <= V::width, "Cannot load more elements than width of vector");
+        typename std::enable_if<N <= V::width, int>::type dummy_variable = 0;
+
+        //Relying on const folding to optimize this implementation
+        return gather<V>(ptr, N);
+    }
+
+    //=====================================================
+    // Misc. Functions
+    //=====================================================
+
+    template<class V0, class V1>
+    std::array<V0, V1::width / V0::width> decompose(V1);
+
+    template<class V0, class V1>
+    std::array<V0, V1::width / V0::width + bool(V1::width % V0::width)> convert(V1);
 
     template<class V>
-    V broadcast(typename V::scalar);
+    typename V::primitive decay(V v) {
+        return static_cast<typename V::primitive>(v);
+    }
 
 }
 
 // Note: The order of inclusion of the following files is meaningful as later
-// files use declarations contained within earlier files
+// files use declarations/definitions contained within earlier files
+
+/*
+#if defined(AVEL_AVX512F)
+    #include "shared/Mask8xT.hpp"
+    #include "shared/Mask16xT.hpp"
+    #include "shared/Mask32xT.hpp"
+    #include "shared/Mask64xT.hpp"
+#endif
+*/
+
+//Native vectors
+
+#include "shared/Vec1xT.hpp"
+
+#include "Vec1x8u.hpp"
+#include "Vec1x8i.hpp"
+
+#include "Vec1x16u.hpp"
+#include "Vec1x16i.hpp"
+
+#include "Vec1x32u.hpp"
+#include "Vec1x32i.hpp"
+
+#include "Vec1x64u.hpp"
+#include "Vec1x64i.hpp"
+
+#include "Vec1x32f.hpp"
+#include "Vec1x64f.hpp"
 
 //128-bit vectors
 
-#if defined(AVEL_SSE2) | defined(AVEL_NEON)
+#if defined(AVEL_SSE2) || defined(AVEL_NEON)
+    //#include "shared/Mask128b.hpp"
+    //#include "shared/Vec128b.hpp"
 
-#include "Vec8x16u.hpp"
+    //#include "shared/Vec16x8int.hpp"
+    #include "Vec16x8u.hpp"
+    #include "Vec16x8i.hpp"
 
-#include "Vec4x32u.hpp"
-#include "Vec4x32i.hpp"
+    //#include "shared/Vec8x16int.hpp"
+    #include "Vec8x16u.hpp"
+    #include "Vec8x16i.hpp"
 
-#include "Vec2x64u.hpp"
+    //#include "shared/Vec4x32int.hpp"
+    #include "Vec4x32u.hpp"
+    #include "Vec4x32i.hpp"
 
-#include "Vec4x32f.hpp"
+    //#include "shared/Vec2x64int.hpp"
+    #include "Vec2x64u.hpp"
+    #include "Vec2x64i.hpp"
+
+    #include "Vec4x32f.hpp"
+    #include "Vec2x64f.hpp"
 
 #endif
 
 //256-bit vectors
 
-#ifdef AVEL_AVX
+#if defined(AVEL_AVX)
+    #include "shared/Mask256b.hpp"
+    #include "shared/Vec256b.hpp"
 
-#include "Vec8x32u.hpp"
-#include "Vec8x32i.hpp"
+    //#include "shared/Vec8x32int.hpp"
+    #include "Vec8x32u.hpp"
+    #include "Vec8x32i.hpp"
 
-#include "Vec4x64u.hpp"
+    #include "shared/Vec4x64int.hpp"
+    #include "Vec4x64u.hpp"
+    #include "Vec4x64i.hpp"
 
-#include "Vec8x32f.hpp"
+    #include "Vec8x32f.hpp"
+    #include "Vec4x64f.hpp"
+
+#endif
+
+#if defined(AVEL_AVX2)
+    //#include "shared/Vec32x8int.hpp"
+    #include "Vec32x8u.hpp"
+    #include "Vec32x8i.hpp"
+
+    //#include "shared/Vec16x16int.hpp"
+    #include "Vec16x16u.hpp"
+    #include "Vec16x16i.hpp"
 
 #endif
 
 //512-bit vectors
 
-#ifdef AVEL_AVX512F
+#if defined(AVEL_AVX512F)
+    #include "shared/Vec512b.hpp"
 
-#include "Vec16x32u.hpp"
-#include "Vec16x32i.hpp"
+    #include "shared/Vec64x8int.hpp"
+    #include "Vec64x8u.hpp"
+    #include "Vec64x8i.hpp"
 
-#include "Vec8x64u.hpp"
+    #include "shared/Vec32x16int.hpp"
+    #include "Vec32x16u.hpp"
+    #include "Vec32x16i.hpp"
 
-#include "Vec16x32f.hpp"
+    #include "shared/Vec16x32int.hpp"
+    #include "Vec16x32u.hpp"
+    #include "Vec16x32i.hpp"
+
+    #include "shared/Vec8x64int.hpp"
+    #include "Vec8x64u.hpp"
+    #include "Vec8x64i.hpp"
+
+    #include "Vec16x32f.hpp"
+    #include "Vec8x64f.hpp"
 
 #endif
 
 /*
  * Should these specializations be made?
  * The vector is meant to largely replace a scalar in many contexts and this
- * specialization may be required by certain templates.
+ * specialization may be useful to code built on top of this library
  *
 namespace std {
 

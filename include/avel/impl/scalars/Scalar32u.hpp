@@ -50,7 +50,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t countl_zero(std::uint32_t x) {
-        #if defined(AVEL_BMI)
+        #if defined(AVEL_LZCNT)
         return _lzcnt_u32(x);
         #elif defined(AVEL_X86)
         if (x) {
@@ -67,6 +67,7 @@ namespace avel {
     AVEL_FINL std::uint32_t countl_one(std::uint32_t x) {
         #if defined(AVEL_X86)
         return countl_zero(~x);
+
         #else
         //TODO: Consider using lookup table
 
@@ -100,6 +101,7 @@ namespace avel {
     AVEL_FINL std::uint32_t countr_zero(std::uint32_t x) {
         #if defined(AVEL_BMI)
         return __tzcnt_u32(x);
+
         #elif defined(AVEL_X86)
         if (x) {
             return _bit_scan_forward(x);
@@ -208,11 +210,15 @@ namespace avel {
             return 1;
         }
 
-        auto width = _bit_scan_reverse(x);
-        auto tmp = 1 << width;
+        auto tmp = 1 << _bit_scan_reverse(x);
         return tmp << (tmp != x);
+
         #else
         //TODO: Consider using lookup table
+        if (x == 0) {
+            return 1;
+        }
+
         --x;
         x |= x >> 1;
         x |= x >> 2;
@@ -276,9 +282,12 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL std::uint32_t blend(std::uint32_t a, std::uint32_t b, bool m) {
-        std::uint32_t mask = -m;
-        return (a & ~mask) | (b & mask);
+    AVEL_FINL std::uint32_t blend(bool m, std::uint32_t a, std::uint32_t b) {
+        if (m) {
+            return a;
+        } else {
+            return b;
+        }
     }
 
     [[nodiscard]]

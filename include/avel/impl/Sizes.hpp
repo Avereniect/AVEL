@@ -121,7 +121,7 @@
     #define AVEL_MAX_WIDTH_32F 8
     #define AVEL_MAX_WIDTH_64F 4
 
-#elif defined(AVEL_SSE2) | defined(AVEL_NEON)
+#elif defined(AVEL_SSE2) || defined(AVEL_NEON)
     #define AVEL_NATURAL_WIDTH_8U 16
     #define AVEL_NATURAL_WIDTH_16U 8
     #define AVEL_NATURAL_WIDTH_32U 4
@@ -152,7 +152,7 @@
 
 #endif
 
-#if !defined(AVEL_SSE2) & !defined(AVEL_NEON)
+#if !defined(AVEL_SSE2) && !defined(AVEL_NEON)
     #define AVEL_NATURAL_WIDTH_8U 1
     #define AVEL_NATURAL_WIDTH_16U 1
     #define AVEL_NATURAL_WIDTH_32U 1

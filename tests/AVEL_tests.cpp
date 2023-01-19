@@ -1,8 +1,9 @@
 #include <gtest/gtest.h>
-#include <random>
-#include <cfenv>
 
-#define AVEL_AUTO_DETECT
+#include <random>
+
+//#define AVEL_FORCE_INLINE
+//#define AVEL_AUTO_DETECT
 //#define AVEL_GFNI
 //#define AVEL_AVX512VPOPCNTDQ
 //#define AVEL_AVX512BITALG
@@ -21,13 +22,14 @@
 //#define AVEL_SSE2
 //#define AVEL_BMI2
 //#define AVEL_BMI
+//#define AVEL_LZCNT
 //#define AVEL_POPCNT
 //#define AVEL_X86
 
 //#define AVEL_AARCH64
 //#define AVEL_NEON
 
-//#include <avel/Avel.hpp>
+#include <avel/Avel.hpp>
 //#include <avel/Cache.hpp>
 #include <avel/Scalar.hpp>
 #include <avel/Vector.hpp>
@@ -44,12 +46,10 @@ namespace avel_tests {
 
     static constexpr std::size_t iterations = 1024;
 
-    std::seed_seq seed_sequence{std::initializer_list<unsigned>{0xDEADBEEF}};
-
-    static auto random8u = std::mt19937{seed_sequence};
-    static auto random16u = std::mt19937{seed_sequence};
-    static auto random32u = std::mt19937{seed_sequence};
-    static auto random64u = std::mt19937_64{seed_sequence};
+    static auto random8u  = std::mt19937{0xDEADBEEF};
+    static auto random16u = std::mt19937{0xDEADBEEF};
+    static auto random32u = std::mt19937{0xDEADBEEF};
+    static auto random64u = std::mt19937_64{0xDEADBEEF};
 
     auto random32f = [] () {
         static std::uniform_int_distribution<std::int32_t> distribution{
@@ -97,7 +97,7 @@ namespace avel_tests {
 #include "scalars/Scalar64u_tests.hpp"
 #include "scalars/Scalar64i_tests.hpp"
 
-//#include "scalars/Scalar32f_tests.hpp"
+#include "scalars/Scalar32f_tests.hpp"
 //#include "scalars/Scalar64f_tests.hpp"
 
 
@@ -115,7 +115,7 @@ namespace avel_tests {
 #include "denominators/Denom64i_tests.hpp"
 
 
-#if defined(AVEL_SSE2) || defined(AVE_NEON)
+#if defined(AVEL_SSE2) || defined(AVEL_NEON)
     #include "vectors/Vec16x8u_tests.hpp"
     #include "vectors/Vec16x8i_tests.hpp"
 
@@ -125,8 +125,8 @@ namespace avel_tests {
     #include "vectors/Vec4x32u_tests.hpp"
     #include "vectors/Vec4x32i_tests.hpp"
 
-    //#include "vectors/Vec2x64u_tests.hpp"
-    //#include "vectors/Vec2x64i_tests.hpp"
+    #include "vectors/Vec2x64u_tests.hpp"
+    #include "vectors/Vec2x64i_tests.hpp"
 
     //#include "vectors/Vec4x32f_tests.hpp"
     //#include "vectors/Vec2x64f_tests.hpp"

@@ -5,154 +5,177 @@
 #include <limits>
 #include <cfenv>
 
-static_assert(CHAR_BIT == 8, "x86 bytes are 8 bits. Compiling for non x86 architecture");
+static_assert(CHAR_BIT == 8, "x86 and ARM bytes are 8 bits. Compiling for non x86 architecture");
+static_assert(sizeof(bool) == 1, "Functions that operate on arrays of bools assume bools occupy a single byte");
 static_assert(std::numeric_limits<float>::is_iec559, "IEEE 754 floats required");
 static_assert(sizeof(float) == 4, "Size of floats should be 32 bits");
 static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
 
-#ifdef __clang__
-    #define AVEL_CLANG
-    //#define AVEL_FINL __attribute__((__always_inline__)) inline
-    #define AVEL_FINL inline
+#if defined(__INTEL_LLVM_COMPILER)
+    #define AVEL_ICX
+
+    #if defined(AVEL_FORCE_INLINE)
+        #define AVEL_FINL __attribute__((__always_inline__)) inline
+    #else
+        #define AVEL_FINL inline
+    #endif
 
     #if defined(AVEL_AUTO_DETECT)
         #include "Detect_capabilities.hpp"
     #endif
+
+    #include "Verify_capabilities.hpp"
+
+#elif defined(__clang__)
+    #define AVEL_CLANG
+
+    #if defined(AVEL_FORCE_INLINE)
+        #define AVEL_FINL __attribute__((__always_inline__)) inline
+    #else
+        #define AVEL_FINL inline
+    #endif
+
+    #if defined(AVEL_AUTO_DETECT)
+        #include "Detect_capabilities.hpp"
+    #endif
+
+    #include "Verify_capabilities.hpp"
 
 #elif defined(__GNUC__)
     #define AVEL_GCC
-    //#define AVEL_FINL __attribute__((__always_inline__)) inline
-    #define AVEL_FINL inline
+
+    #if defined(AVEL_FORCE_INLINE)
+        #define AVEL_FINL __attribute__((__always_inline__)) inline
+    #else
+        #define AVEL_FINL inline
+    #endif
 
     #if defined(AVEL_AUTO_DETECT)
         #include "Detect_capabilities.hpp"
     #endif
 
+    #include "Verify_capabilities.hpp"
+
 #elif defined(_MSC_VER)
     #define AVEL_MSVC
-    //#define AVEL_FINL __forceinline
-    #define AVEL_FINL inline
-    #include "intrin.h"
+
+    #if defined(AVEL_FORCE_INLINE)
+        #define AVEL_FINL __forceinline inline
+    #else
+        #define AVEL_FINL inline
+    #endif
 
     #if defined(AVEL_AUTO_DETECT)
         static_assert(false, "Cannot detect capabilites on MSVC.");
     #endif
 #elif
-    static_assert(false, "Compiler not supported");
+    static_assert(
+        false,
+        "Compiler is not supported. Compilation not likely to function"
+    );
 #endif
 
 //=========================================================
 // x86 macros
 //=========================================================
 
-#ifdef AVEL_GFNI
+#if defined(AVEL_GFNI)
     #define AVEL_AVX512F
 #endif
 
-#ifdef AVEL_AVX512BITALG
+#if defined(AVEL_AVX512VBMI2)
     #define AVEL_AVX512F
 #endif
 
-
-#ifdef AVEL_AVX512VPOPCNTDQ
+#if defined(AVEL_AVX512VBMI)
     #define AVEL_AVX512F
 #endif
 
-#ifdef AVEL_AVX512BW
+#if defined(AVEL_AVX512BITALG)
     #define AVEL_AVX512F
 #endif
 
-
-#ifdef AVEL_AVX512DQ
+#if defined(AVEL_AVX512VPOPCNTDQ)
     #define AVEL_AVX512F
 #endif
 
-
-#ifdef AVEL_AVX512VL
+#if defined(AVEL_AVX512CD)
     #define AVEL_AVX512F
 #endif
 
-
-#ifdef AVEL_AVX512CD
+#if defined(AVEL_AVX512VL)
     #define AVEL_AVX512F
 #endif
 
+#if defined(AVEL_AVX512DQ)
+    #define AVEL_AVX512F
+#endif
 
-#ifdef AVEL_AVX512F
+#if defined(AVEL_AVX512BW)
+    #define AVEL_AVX512F
+#endif
+
+#if defined(AVEL_AVX512F)
     #define AVEL_AVX2
-    #define AVELF_FMA
+    #define AVEL_FMA
 #endif
 
-
-#ifdef AVEL_FMA
+#if defined(AVEL_FMA)
     #define AVEL_AVX
 #endif
 
-
-#ifdef AVEL_AVX2
+#if defined(AVEL_AVX2)
     #define AVEL_AVX
-    #define AVEL_BMI2
 #endif
 
-
-#ifdef AVEL_AVX
+#if defined(AVEL_AVX)
     #define AVEL_SSE42
-    #define AVEL_BMI
 #endif
 
-
-#ifdef AVEL_SSE42
+#if defined(AVEL_SSE42)
     #define AVEL_SSE41
+    #define AVEL_POPCNT
 #endif
 
-
-#ifdef AVEL_SSE41
+#if defined(AVEL_SSE41)
     #define AVEL_SSSE3
 #endif
 
-
-#ifdef AVEL_SSSE3
+#if defined(AVEL_SSSE3)
     #define AVEL_SSE3
 #endif
 
-
-#ifdef AVEL_SSE3
+#if defined(AVEL_SSE3)
     #define AVEL_SSE2
 #endif
 
-
-#ifdef AVEL_SSE2
+#if defined(AVEL_SSE2)
     #define AVEL_SSE
 #endif
 
-#ifdef AVEL_SSE
+#if defined(AVEL_SSE)
     #define AVEL_PREFETCH
     #define AVEL_X86
 #endif
 
-
-#ifdef AVEL_PREFETCH
+#if defined(AVEL_BMI2)
     #define AVEL_X86
 #endif
 
-#ifdef AVEL_FLUSH
+#if defined(AVEL_BMI)
     #define AVEL_X86
 #endif
 
-#ifdef AVEL_BMI2
-    #define AVEVL_BMI
-#endif
-
-#ifdef AVEL_BMI
+#if defined(AVEL_LZCNT)
     #define AVEL_X86
 #endif
 
-#ifdef AVEL_POPCNT
+#if defined(AVEL_POPCNT)
     #define AVEL_X86
 #endif
 
-#if defined(AVEL_SSE) && !defined(AVEL_SSE2)
-static_assert(false, "AVEL does not support SSE on its own. SSE2 required");
+#if defined(AVEL_PREFETCH)
+    #define AVEL_X86
 #endif
 
 #if defined(AVEL_X86)
@@ -197,12 +220,16 @@ static_assert(false, "AVEL does not support SSE on its own. SSE2 required");
 // Intrinsic headers
 //=========================================================
 
-#if defined(AVEL_GCC)
+#if defined(AVEL_ICX)
     #if defined(AVEL_X86)
         #include <x86intrin.h>
         #include <immintrin.h>
+    #endif
 
-        #include <avx512vlintrin.h>
+#elif defined(AVEL_GCC)
+    #if defined(AVEL_X86)
+        #include <x86intrin.h>
+        #include <immintrin.h>
     #endif
 
     #if defined(AVEL_NEON)
@@ -212,6 +239,7 @@ static_assert(false, "AVEL does not support SSE on its own. SSE2 required");
     #if defined(AVEL_SVE)
         #include <arm_sve.h>
     #endif
+
 #elif defined(AVEL_CLANG)
     #if defined(AVEL_X86)
         #include <x86intrin.h>
@@ -225,6 +253,7 @@ static_assert(false, "AVEL does not support SSE on its own. SSE2 required");
     #if defined(AVEL_SVE)
         #include <arm_sve.h>
     #endif
+
 #else
     static_assert(false, "Compiler not supported");
 #endif
@@ -233,8 +262,18 @@ static_assert(false, "AVEL does not support SSE on its own. SSE2 required");
 // Error checking
 //=========================================================
 
-#if defined(AVEL_ARM) & defined(AVEL_X86)
-    static_assert(false, "Macros for conflicting ISAs specified.");
+#if defined(AVEL_SSE) && !defined(AVEL_SSE2)
+static_assert(false, "AVEL does not support SSE on its own. SSE2 required");
+#endif
+
+/*
+#if defined(AVEL_NEON) && !defined(AVEL_AARCH64)
+static_assert(false, "AVEL does not support 32-bit ARM at this time");
+#endif
+*/
+
+#if defined(AVEL_ARM) && defined(AVEL_X86)
+static_assert(false, "Macros for conflicting ISAs specified.");
 #endif
 
 #endif //AVEL_CAPABILITIES_HPP

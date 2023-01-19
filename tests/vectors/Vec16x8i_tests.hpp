@@ -88,7 +88,7 @@ namespace avel_tests {
 
     TEST(Mask16x8i, Construct_from_array_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<bool, 16> input_array0;
+            arr16xb input_array0;
             std::uint16_t cnt = 0;
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u() & 0x1;
@@ -170,12 +170,12 @@ namespace avel_tests {
 
     TEST(Mask16x8i, Equality_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<bool, 16> input_array0{};
+            arr16xb input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u() & 0x1;
             }
 
-            std::array<bool, 16> input_array1{};
+            arr16xb input_array1{};
             input_array1[0] = !input_array0[0];
             for (std::size_t j = 1; j < input_array0.size(); ++j) {
                 input_array1[j] = random8u() & 0x1;
@@ -234,12 +234,12 @@ namespace avel_tests {
 
     TEST(Mask16x8i, Inequality_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<bool, 16> input_array0{};
+            arr16xb input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u() & 0x1;
             }
 
-            std::array<bool, 16> input_array1{};
+            arr16xb input_array1{};
             input_array1[0] = !input_array0[0];
             for (std::size_t j = 1; j < input_array0.size(); ++j) {
                 input_array1[j] = random8u() & 0x1;
@@ -496,7 +496,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Convert_from_mask_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<bool, 16> data;
+            arr16xb data;
             for (std::size_t j = 0; j < data.size(); ++j) {
                 data[j] = random8u() & 0x1;
             }
@@ -532,7 +532,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Construct_from_array_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> data;
+            arr16x8i data;
 
             for (std::size_t j = 0; j < data.size(); ++j) {
                 data[j] = random8u();
@@ -590,7 +590,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Equality_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> data;
+            arr16x8i data;
             for (std::size_t j = 0; j < data.size(); ++j) {
                 data[j] = random8u();
             }
@@ -604,8 +604,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Inequality_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> data0;
-            std::array<std::int8_t, 16> data1;
+            arr16x8i data0;
+            arr16x8i data1;
             for (std::size_t j = 0; j < data0.size(); ++j) {
                 data0[j] = random8u();
                 data1[j] = random8u() ;
@@ -622,8 +622,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Less_than_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
                 input_array1[j] = random8u();
@@ -634,7 +634,7 @@ namespace avel_tests {
 
             auto results = (input0 < input1);
 
-            std::array<bool, 16> results_array{};
+            arr16xb results_array{};
             for (std::size_t j = 0; j < results_array.size(); ++j) {
                 results_array[j] = input_array0[j] < input_array1[j];
             }
@@ -645,8 +645,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Less_than_or_equal_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
                 input_array1[j] = random8u();
@@ -657,7 +657,7 @@ namespace avel_tests {
 
             auto results = (input0 <= input1);
 
-            std::array<bool, 16> results_array{};
+            arr16xb results_array{};
             for (std::size_t j = 0; j < results_array.size(); ++j) {
                 results_array[j] = input_array0[j] <= input_array1[j];
             }
@@ -668,8 +668,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Greater_than_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
                 input_array1[j] = random8u();
@@ -680,7 +680,7 @@ namespace avel_tests {
 
             auto results = (input0 > input1);
 
-            std::array<bool, 16> results_array{};
+            arr16xb results_array{};
             for (std::size_t j = 0; j < results_array.size(); ++j) {
                 results_array[j] = input_array0[j] > input_array1[j];
             }
@@ -691,8 +691,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Greater_than_or_equal_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
                 input_array1[j] = random8u();
@@ -703,7 +703,7 @@ namespace avel_tests {
 
             auto results = (input0 >= input1);
 
-            std::array<bool, 16> results_array{};
+            arr16xb results_array{};
             for (std::size_t j = 0; j < results_array.size(); ++j) {
                 results_array[j] = input_array0[j] >= input_array1[j];
             }
@@ -752,8 +752,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Plus_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -767,7 +767,7 @@ namespace avel_tests {
             auto results = input0;
             results += input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j] + input_array1[j];
             }
@@ -778,8 +778,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Minus_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -793,7 +793,7 @@ namespace avel_tests {
             auto results = input0;
             results -= input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j] - input_array1[j];
             }
@@ -804,8 +804,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Times_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -819,7 +819,7 @@ namespace avel_tests {
             auto results = input0;
             results *= input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j] * input_array1[j];
             }
@@ -830,8 +830,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Div_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -847,7 +847,7 @@ namespace avel_tests {
             auto results = input0;
             results /= input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j] / input_array1[j];
             }
@@ -858,8 +858,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Mod_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -875,7 +875,7 @@ namespace avel_tests {
             auto results = input0;
             results %= input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j] % input_array1[j];
             }
@@ -890,8 +890,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Addition_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -903,7 +903,7 @@ namespace avel_tests {
 
             auto results = input0 + input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j] + input_array1[j];
             }
@@ -914,8 +914,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Subtraction_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -927,7 +927,7 @@ namespace avel_tests {
 
             auto results = input0 - input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j] - input_array1[j];
             }
@@ -938,8 +938,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Multiplication_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -951,7 +951,7 @@ namespace avel_tests {
 
             auto results = input0 * input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j] * input_array1[j];
             }
@@ -962,8 +962,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Division_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -978,7 +978,7 @@ namespace avel_tests {
 
             auto results = input0 / input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j] / input_array1[j];
             }
@@ -989,8 +989,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Mod_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -1005,7 +1005,7 @@ namespace avel_tests {
 
             auto results = input0 % input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j] % input_array1[j];
             }
@@ -1020,7 +1020,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Pre_increment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1029,7 +1029,7 @@ namespace avel_tests {
             ++input0;
 
             auto results = input0;
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = ++input_array0[j];
             }
@@ -1040,7 +1040,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Post_increment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1049,7 +1049,7 @@ namespace avel_tests {
             input0++;
 
             auto results = input0;
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = ++input_array0[j];
             }
@@ -1060,7 +1060,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Pre_decrement_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1069,7 +1069,7 @@ namespace avel_tests {
             --input0;
 
             auto results = input0;
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = +--input_array0[j];
             }
@@ -1080,7 +1080,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Post_decrement_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1089,7 +1089,7 @@ namespace avel_tests {
             input0--;
 
             auto results = input0;
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = --input_array0[j];
             }
@@ -1104,8 +1104,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Bitwise_and_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -1118,7 +1118,7 @@ namespace avel_tests {
             auto results = input0;
             results &= input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j] & input_array1[j];
             }
@@ -1129,8 +1129,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Bitwise_or_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -1143,7 +1143,7 @@ namespace avel_tests {
             auto results = input0;
             results |= input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j] | input_array1[j];
             }
@@ -1154,8 +1154,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Bitwise_xor_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -1168,7 +1168,7 @@ namespace avel_tests {
             auto results = input0;
             results ^= input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j] ^ input_array1[j];
             }
@@ -1179,19 +1179,19 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Left_shift_by_scalar_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
 
-            std::int8_t input1 = random8u() % 16;
+            std::int8_t input1 = random8u() % 9;
 
             vec16x8i input0{input_array0};
 
             auto results = input0;
             results <<= input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 if (input1 >= 8) {
                     results_array[j] = 0x00;
@@ -1206,12 +1206,12 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Left_shift_by_vector_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
-                input_array1[j] = random8u() % 16;
+                input_array1[j] = random8u() % 9;
             }
 
             vec16x8i input0{input_array0};
@@ -1220,7 +1220,7 @@ namespace avel_tests {
             auto results = input0;
             results <<= input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 if (input_array1[j] >= 8) {
                     results_array[j] = 0x00;
@@ -1235,19 +1235,19 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Right_shift_by_scalar_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
 
-            std::int8_t input1 = random8u() % 16;
+            std::int8_t input1 = random8u() % 9;
 
             vec16x8i input0{input_array0};
 
             auto results = input0;
             results >>= input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 if (input1 >= 8) {
                     if (input_array0[j] < 0) {
@@ -1266,12 +1266,12 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Right_shift_by_vector_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
-                input_array1[j] = random8u() % 16;
+                input_array1[j] = random8u() % 9;
             }
 
             vec16x8i input0{input_array0};
@@ -1280,7 +1280,7 @@ namespace avel_tests {
             auto results = input0;
             results >>= input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 if (input_array1[j] >= 8) {
                     if (input_array0[j] < 0) {
@@ -1303,7 +1303,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Bitwise_negation_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1312,7 +1312,7 @@ namespace avel_tests {
 
             auto results = ~input0;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = ~input_array0[j];
             }
@@ -1323,18 +1323,18 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Left_shift_by_scalar_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
 
-            std::int8_t input1 = random8u() % 16;
+            std::int8_t input1 = random8u() % 9;
 
             vec16x8i input0{input_array0};
 
             auto results = input0 << input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 if (input1 >= 8) {
                     results_array[j] = 0x00;
@@ -1349,12 +1349,12 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Left_shift_by_vector_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
-                input_array1[j] = random8u() % 16;
+                input_array1[j] = random8u() % 9;
             }
 
             vec16x8i input0{input_array0};
@@ -1362,7 +1362,7 @@ namespace avel_tests {
 
             auto results = input0 << input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 if (input_array1[j] >= 8) {
                     results_array[j] = 0x00;
@@ -1377,18 +1377,18 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Right_shift_by_scalar_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
 
-            std::int8_t input1 = random8u() % 16;
+            std::int8_t input1 = random8u() % 9;
 
             vec16x8i input0{input_array0};
 
             auto results = input0 >> input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 if (input1 >= 8) {
                     if (input_array0[j] < 0) {
@@ -1407,12 +1407,12 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Right_shift_by_vector_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
-                input_array1[j] = random8u() % 16;
+                input_array1[j] = random8u() % 9;
             }
 
             vec16x8i input0{input_array0};
@@ -1420,7 +1420,7 @@ namespace avel_tests {
 
             auto results = input0 >> input1;
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 if (input_array1[j] >= 8) {
                     if (input_array0[j] < 0) {
@@ -1452,7 +1452,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Conversion_to_mask_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1461,7 +1461,7 @@ namespace avel_tests {
 
             auto results = mask16x8i{input0};
 
-            std::array<bool, 16> results_array{};
+            arr16xb results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j];
             }
@@ -1474,9 +1474,9 @@ namespace avel_tests {
     // General vector functions
     //=====================================================
 
-    TEST(Vec16x8i, broadcast_mask_random) {
+    TEST(Vec16x8i, Broadcast_mask_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<bool, 16> input_array0{};
+            arr16xb input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u() & 0x1;
             }
@@ -1485,7 +1485,7 @@ namespace avel_tests {
 
             auto results = broadcast_mask(input0);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 if (input_array0[j]) {
                     results_array[j] = 0xff;
@@ -1500,29 +1500,25 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Blend_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
-            std::array<bool, 16> input_array2{};
+            arr16xb input_array0{};
+            arr16x8i input_array1{};
+            arr16x8i input_array2{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
-                input_array0[j] = random8u();
+                input_array0[j] = random8u() & 0x1;
                 input_array1[j] = random8u();
-                input_array2[j] = random8u() & 0x1;
+                input_array2[j] = random8u();
             }
 
-            vec16x8i input0{input_array0};
+            mask16x8i input0{input_array0};
             vec16x8i input1{input_array1};
-            mask16x8i input2{input_array2};
+            vec16x8i input2{input_array2};
 
             auto results = blend(input0, input1, input2);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
-                if (input_array2[j]) {
-                    results_array[j] = input_array1[j];
-                } else {
-                    results_array[j] = input_array0[j];
-                }
+                results_array[j] = blend(input_array0[j], input_array1[j], input_array2[j]);
             }
 
             EXPECT_TRUE(all(results == vec16x8i{results_array}));
@@ -1531,8 +1527,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Max_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -1544,7 +1540,7 @@ namespace avel_tests {
 
             auto results = max(input0, input1);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = std::max(input_array0[j], input_array1[j]);
             }
@@ -1555,8 +1551,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Min_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -1568,7 +1564,7 @@ namespace avel_tests {
 
             auto results = min(input0, input1);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = std::min(input_array0[j], input_array1[j]);
             }
@@ -1579,8 +1575,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Minmax_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -1592,11 +1588,12 @@ namespace avel_tests {
 
             auto results = minmax(input0, input1);
 
-            std::array<std::int8_t, 16> results_array0{};
-            std::array<std::int8_t, 16> results_array1{};
+            arr16x8i results_array0{};
+            arr16x8i results_array1{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
-                results_array0[j] = std::min(input_array0[j], input_array1[j]);
-                results_array1[j] = std::max(input_array0[j], input_array1[j]);
+                auto xy = minmax(input_array0[j], input_array1[j]);
+                results_array0[j] = xy[0];
+                results_array1[j] = xy[1];
             }
 
             EXPECT_TRUE(all(results[0] == vec16x8i{results_array0}));
@@ -1606,9 +1603,9 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Clamp_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
-            std::array<std::int8_t, 16> input_array2{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
+            arr16x8i input_array2{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
                 input_array1[j] = random8u();
@@ -1623,7 +1620,7 @@ namespace avel_tests {
 
             auto results = clamp(input0, xy[0], xy[1]);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 auto xy = minmax(input_array1[j], input_array2[j]);
                 results_array[j] = clamp(input_array0[j], xy[0], xy[1]);
@@ -1635,8 +1632,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Average_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
                 input_array1[j] = random8u();
@@ -1647,7 +1644,7 @@ namespace avel_tests {
 
             auto results = average(input0, input1);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = average(input_array0[j], input_array1[j]);
             }
@@ -1658,8 +1655,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Midpoint_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
-            std::array<std::int8_t, 16> input_array1{};
+            arr16x8i input_array0{};
+            arr16x8i input_array1{};
 
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
@@ -1671,7 +1668,7 @@ namespace avel_tests {
 
             auto results = midpoint(input0, input1);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = midpoint(input_array0[j], input_array1[j]);
             }
@@ -1680,9 +1677,32 @@ namespace avel_tests {
         }
     }
 
+    TEST(vec16x8i, Negate_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr16xb input_array0{};
+            arr16x8i input_array1{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                input_array0[j] = random8u() & 0x1;
+                input_array1[j] = random8u();
+            }
+
+            mask16x8i input0{input_array0};
+            vec16x8i input1{input_array1};
+
+            auto results = negate(input0, input1);
+
+            arr16x8i results_array{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                results_array[j] = negate(input_array0[j], input_array1[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec16x8i{results_array}));
+        }
+    }
+
     TEST(Vec16x8i, Abs_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1691,7 +1711,7 @@ namespace avel_tests {
 
             auto results = abs(input0);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = abs(input_array0[j]);
             }
@@ -1702,7 +1722,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Neg_abs_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1711,7 +1731,7 @@ namespace avel_tests {
 
             auto results = neg_abs(input0);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = neg_abs(input_array0[j]);
             }
@@ -1722,7 +1742,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Load_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1735,7 +1755,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Aligned_load_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            alignas(alignof(vec16x8i)) std::array<std::int8_t, 16> input_array0{};
+            alignas(alignof(vec16x8i)) arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1748,7 +1768,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Store_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1766,7 +1786,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Aligned_store_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1788,8 +1808,8 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Div_random) {
         for (unsigned i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> numerators{};
-            std::array<std::int8_t, 16> denominators{};
+            arr16x8i numerators{};
+            arr16x8i denominators{};
 
             for (std::size_t j = 0; j < numerators.size(); ++j) {
                 numerators[j] = random8u();
@@ -1799,8 +1819,8 @@ namespace avel_tests {
                 }
             }
 
-            std::array<std::int8_t, 16> quotients{};
-            std::array<std::int8_t, 16> remainders{};
+            arr16x8i quotients{};
+            arr16x8i remainders{};
 
             for (std::size_t j = 0; j < quotients.size(); ++j) {
                 quotients[j]  = (numerators[j] / denominators[j]);
@@ -1830,7 +1850,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Popcount_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1839,7 +1859,7 @@ namespace avel_tests {
 
             auto results = popcount(input0);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = popcount(input_array0[j]);
             }
@@ -1850,7 +1870,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Byteswap_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1859,7 +1879,7 @@ namespace avel_tests {
 
             auto results = byteswap(input0);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = input_array0[j];
             }
@@ -1870,7 +1890,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Countl_zero_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1879,7 +1899,7 @@ namespace avel_tests {
 
             auto results = countl_zero(input0);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = countl_zero(input_array0[j]);
             }
@@ -1890,7 +1910,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Countl_one_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1899,7 +1919,7 @@ namespace avel_tests {
 
             auto results = countl_one(input0);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = countl_one(input_array0[j]);
             }
@@ -1910,7 +1930,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Countr_zero_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1919,7 +1939,7 @@ namespace avel_tests {
 
             auto results = countr_zero(input0);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = countr_zero(input_array0[j]);
             }
@@ -1930,7 +1950,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Countr_one_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::array<std::int8_t, 16> input_array0{};
+            arr16x8i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 input_array0[j] = random8u();
             }
@@ -1939,7 +1959,7 @@ namespace avel_tests {
 
             auto results = countr_one(input0);
 
-            std::array<std::int8_t, 16> results_array{};
+            arr16x8i results_array{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
                 results_array[j] = countr_one(input_array0[j]);
             }

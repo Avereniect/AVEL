@@ -1,7 +1,3 @@
-//
-// Created by avereniect on 2/27/22.
-//
-
 #ifndef AVEL_SCALAR64I_HPP
 #define AVEL_SCALAR64I_HPP
 
@@ -13,7 +9,7 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    AVEL_FINL std::int64_t broadcast_bits<std::int64_t>(bool x) {
+    AVEL_FINL std::int64_t broadcast_mask<std::int64_t>(bool x) {
         return -std::int64_t(x);
     }
 
@@ -34,7 +30,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::int64_t countl_one(std::int64_t x) {
-        return std::int64_t(countl_zero(std::uint64_t(x)));
+        return std::int64_t(countl_zero(std::uint64_t(~x)));
     }
 
     [[nodiscard]]
@@ -48,18 +44,35 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL std::int64_t rotl(std::int64_t x, std::int64_t y) {
-        return std::int64_t(rotl(std::uint64_t(x), std::uint64_t(y)));
+    AVEL_FINL bool has_single_bit(std::int64_t v) {
+        return has_single_bit(std::uint64_t(v));
     }
 
     [[nodiscard]]
-    AVEL_FINL std::int64_t rotr(std::int64_t x, std::int64_t y) {
-        return std::int64_t(rotr(std::uint64_t(x), std::uint64_t(y)));
+    AVEL_FINL std::int64_t rotl(std::int64_t x, long long s) {
+        return std::int64_t(rotl(std::uint64_t(x), std::uint64_t(s)));
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::int64_t rotr(std::int64_t x, long long s) {
+        return std::int64_t(rotr(std::uint64_t(x), std::uint64_t(s)));
     }
 
     //=====================================================
     // General operations
     //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL std::int64_t negate(bool m, std::int64_t x) {
+        std::int64_t mask = -m;
+        return (x ^ mask) - mask;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::int64_t abs(std::int64_t x) {
+        auto y = x >> 63;
+        return (x ^ y) - y;
+    }
 
     [[nodiscard]]
     AVEL_FINL std::int64_t neg_abs(std::int64_t x) {
@@ -68,9 +81,12 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL std::int64_t blend(std::int64_t a, std::int64_t b, bool m) {
-        std::int64_t mask = -m;
-        return (a & ~mask) | (b & mask);
+    AVEL_FINL std::int64_t blend(bool m, std::int64_t a, std::int64_t b) {
+        if (m) {
+            return a;
+        } else {
+            return b;
+        }
     }
 
     [[nodiscard]]
@@ -92,26 +108,30 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL std::array<std::int64_t, 2> minmax(std::int64_t a, std::int64_t b) {
+        if (a < b) {
+            return {a, b};
+        } else {
+            return {b, a};
+        }
+    }
+
+    [[nodiscard]]
     AVEL_FINL std::int64_t clamp(std::int64_t x, std::int64_t lo, std::int64_t hi) {
         return min(max(x, lo), hi);
     }
 
     [[nodiscard]]
     AVEL_FINL std::int64_t midpoint(std::int64_t a, std::int64_t b) {
-        std::int64_t mask = 0x8000000000000000ull;
-        a ^= mask;
-        b ^= mask;
+        std::int64_t avg = ((a ^ b) >> 1) + (a & b);
+        std::int64_t bias = (b < a) & (a ^ b) & 0x1;
 
-        return std::int64_t(midpoint(std::uint64_t(a), std::uint64_t(b)));
+        return avg + bias;
     }
 
     [[nodiscard]]
     AVEL_FINL std::int64_t average(std::int64_t a, std::int64_t b) {
-        std::int64_t mask = 0x8000000000000000ull;
-        a ^= mask;
-        b ^= mask;
-
-        return std::int64_t(average(std::uint64_t(a), std::uint64_t(b)));
+        return ((a ^ b) >> 1) + (a & b);
     }
 
 }

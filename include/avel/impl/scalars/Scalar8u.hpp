@@ -1,7 +1,3 @@
-//
-// Created by avereniect on 6/11/22.
-//
-
 #ifndef AVEL_SCALAR8U_HPP
 #define AVEL_SCALAR8U_HPP
 
@@ -13,13 +9,15 @@ namespace avel {
 
     std::uint8_t countl_one(std::uint8_t x);
 
+    std::uint8_t min(std::uint8_t a, std::uint8_t b);
+
     //=====================================================
     // Bit manipulation
     //=====================================================
 
     template<>
     [[nodiscard]]
-    AVEL_FINL std::uint8_t broadcast_bits<std::uint8_t>(bool x) {
+    AVEL_FINL std::uint8_t broadcast_mask<std::uint8_t>(bool x) {
         return -std::uint8_t(x);
     }
 
@@ -28,17 +26,18 @@ namespace avel {
         #if defined(AVEL_POPCNT)
         return _popcnt32(std::uint32_t{x});
         #else
+        // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
         x = x - ((x >> 1) & 0x55);
         x = (x & 0x33) + ((x >> 2) & 0x33);
         x = (x + (x >> 4)) & 0x0F;
-        x = x * 0x01u;
+        //x = (x * 0x01u) >> 0;
         return x;
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL std::uint8_t countl_zero(std::uint8_t x) {
-        #if defined(AVEL_BMI)
+        #if defined(AVEL_LZCNT)
         return static_cast<uint8_t>(_lzcnt_u32(x) - 24);
         #elif defined(AVEL_X86)
         if (x) {
@@ -47,24 +46,47 @@ namespace avel {
             return 8;
         }
         #else
-        return countl_one(~x);
+        alignas(16) static constexpr std::uint8_t table0[16] {
+            8, 3, 2, 2,
+            1, 1, 1, 1,
+            0, 0, 0, 0,
+            0, 0, 0, 0
+        };
+
+        alignas(16) static constexpr std::uint8_t table1[16] {
+            8, 7, 6, 6,
+            5, 5, 5, 5,
+            4, 4, 4, 4,
+            4, 4, 4, 4
+        };
+
+        auto lo_nibble = x & 0x0F;
+        auto hi_nibble = x >> 4;
+
+        auto lo = table0[hi_nibble];
+        auto hi = table1[lo_nibble];
+
+        return min(lo, hi);
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL std::uint8_t countl_one(std::uint8_t x) {
         return countl_zero(std::uint8_t(~x));
+
+        //TODO: Implement solution for no architecture specified
     }
 
     [[nodiscard]]
     AVEL_FINL std::uint8_t countr_zero(std::uint8_t x) {
         #if defined(AVEL_BMI)
         return __tzcnt_u32(x | 0xFFFFFF00);
+
         #elif defined(AVEL_X86)
         if (x) {
             return _bit_scan_forward(x);
         } else {
-            return 32;
+            return 8;
         }
         #else
         std::uint8_t ret = 0x00;
@@ -84,6 +106,7 @@ namespace avel {
         ret |= (b << 2);
 
         return ret;
+
         #endif
     }
 
@@ -95,7 +118,12 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::uint8_t bit_width(std::uint8_t x) {
         #if defined(AVEL_X86)
-        return _bit_scan_reverse(x);
+        if (x == 0) {
+            return 0;
+        } else {
+            return _bit_scan_reverse(x) + 1;
+        }
+
         #else
         if (x == 0) {
             return 0;
@@ -115,16 +143,17 @@ namespace avel {
         ret += b2 * 1;
 
         return ret + 1;
+
         #endif
     }
 
     [[nodiscard]]
-    AVEL_FINL std::uint32_t bit_floor(std::uint8_t x) {
+    AVEL_FINL std::uint8_t bit_floor(std::uint8_t x) {
         #if defined(AVEL_X86)
         if (x == 0) {
             return 0;
         }
-        return 1 << bit_width(x);
+        return 1 << _bit_scan_reverse(x);
         #else
         x = x | (x >> 1);
         x = x | (x >> 2);
@@ -134,12 +163,21 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL std::uint32_t bit_ceil(std::uint8_t x) {
+    AVEL_FINL std::uint8_t bit_ceil(std::uint8_t x) {
         #if defined(AVEL_X86)
-        auto width = bit_width(x);
-        auto tmp = (x != 0) << width;
+        if (x == 0) {
+            return 1;
+        }
+
+        auto width = _bit_scan_reverse(x);
+        auto tmp = 1 << width;
         return tmp << (tmp != x);
+
         #else
+        if (x == 0) {
+            return 1;
+        }
+
         --x;
         x |= x >> 1;
         x |= x >> 2;
@@ -159,23 +197,23 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL std::uint8_t rotl(std::uint8_t x, std::uint8_t y) {
-        y &= 0x7;
-        if (y == 0) {
+    AVEL_FINL std::uint8_t rotl(std::uint8_t x, long long s) {
+        s &= 0x7;
+        if (s == 0) {
             return x;
         }
 
-        return (x << y) | (x >> (32 - y));
+        return (x << s) | (x >> (8 - s));
     }
 
     [[nodiscard]]
-    AVEL_FINL std::uint32_t rotr(std::uint8_t x, std::uint8_t y) {
-        y &= 0x7;
-        if (y == 0) {
+    AVEL_FINL std::uint8_t rotr(std::uint8_t x, long long s) {
+        s &= 0x7;
+        if (s == 0) {
             return x;
         }
 
-        return (x >> y) | (x << (8 - y));
+        return (x >> s) | (x << (8 - s));
     }
 
     //=====================================================
@@ -184,14 +222,21 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::int8_t neg_abs(std::uint8_t x) {
-        return -x;
+        std::int8_t y = x;
+        if (y < 0) {
+            return y;
+        } else {
+            return -y;
+        }
     }
 
-
     [[nodiscard]]
-    AVEL_FINL std::uint8_t blend(std::uint8_t a, std::uint8_t b, bool m) {
-        std::uint8_t mask = -m;
-        return (a & ~mask) | (b & mask);
+    AVEL_FINL std::uint8_t blend(bool m, std::uint8_t a, std::uint8_t b) {
+        if (m) {
+            return a;
+        } else {
+            return b;
+        }
     }
 
     [[nodiscard]]
@@ -213,21 +258,29 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL std::array<std::uint8_t, 2> minmax(std::uint8_t a, std::uint8_t b) {
+        if (a < b) {
+            return {a, b};
+        } else {
+            return {b, a};
+        }
+    }
+
+    [[nodiscard]]
     AVEL_FINL std::uint8_t clamp(std::uint8_t x, std::uint8_t lo, std::uint8_t hi) {
         return min(max(x, lo), hi);
     }
 
     [[nodiscard]]
-    AVEL_FINL std::uint8_t midpoint(std::uint8_t a, std::uint8_t b) {
-        std::uint8_t t0 = a & b & std::uint8_t{0x1};
-        std::uint8_t t1 = (a | b) & std::uint8_t{0x1} & avel::broadcast_bits<std::uint8_t>(a > b);
-        std::uint8_t t2 = t0 | t1;
-        return (a >> 1) + (b >> 1) + t2;
+    AVEL_FINL std::uint8_t average(std::uint8_t a, std::uint8_t b) {
+        return (std::uint32_t(a) + std::uint32_t(b)) >> 1;
     }
 
     [[nodiscard]]
-    AVEL_FINL std::uint8_t average(std::uint8_t a, std::uint8_t b) {
-        return (a >> 1) + (b >> 1) + (a & b & std::uint8_t{0x1});
+    AVEL_FINL std::uint8_t midpoint(std::uint8_t a, std::uint8_t b) {
+        std::int32_t average = (static_cast<std::int32_t>(a) + static_cast<std::int32_t>(b)) >> 1;
+        std::int32_t bias = (b < a) & (a ^ b) & 0x1;
+        return static_cast<std::uint8_t>(average + bias);
     }
 
 }

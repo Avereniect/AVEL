@@ -2,6 +2,7 @@
 #define AVEL_SCALAR_HPP
 
 #include <array>
+
 #include "avel/impl/Capabilities.hpp"
 
 namespace avel {
