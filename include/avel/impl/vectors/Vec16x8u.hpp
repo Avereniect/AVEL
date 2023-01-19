@@ -1345,6 +1345,9 @@ namespace avel {
             auto undef = _mm_undefined_si128();
             auto ones = _mm_cmpeq_epi8(undef, undef);
 
+            auto non_zero_mask = _mm_cmplt_epi8(decay(rhs), _mm_set1_epi8(8));
+            content = _mm_and_si128(content, non_zero_mask);
+
             auto m0 = _mm_set1_epi16(0xFF0F);
             auto c0 = _mm_cmpgt_epi8(_mm_slli_epi16(decay(rhs), 5), ones);
             auto shifted0 = _mm_srli_epi16(content, 4);
@@ -1359,9 +1362,6 @@ namespace avel {
             auto c2 = _mm_cmpgt_epi8(_mm_slli_epi16(decay(rhs), 7), ones);
             auto shifted2 = _mm_srli_epi16(content, 1);
             content = _mm_min_epu8(content, _mm_or_si128(c2, _mm_and_si128(shifted2, m2)));
-
-            auto non_zero_mask = _mm_cmplt_epi8(decay(rhs), _mm_set1_epi8(8));
-            content = _mm_and_si128(content, non_zero_mask);
 
             #endif
 
