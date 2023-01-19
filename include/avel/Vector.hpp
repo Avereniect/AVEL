@@ -11,9 +11,10 @@
 namespace avel {
 
     ///
-    /// A class representing a mask to be used
+    /// A class representing a mask corresponding to Vector<T, N>. Essentially a
+    /// vector of booleans in certain operations on vectors of type Vector<T, N>
     ///
-    /// \tparam T Integral or floating-point type
+    /// \tparam T A fundamental integral or floating-point type.
     /// \tparam N Vector width
     template<class T, std::uint32_t N>
     class Vector_mask;
@@ -28,6 +29,7 @@ namespace avel {
     /// Manipulations of
     ///
     /// \tparam T A fundamental integral or floating-point type.
+    /// \tparam N Vector width
     template<class T, std::uint32_t N>
     class Vector;
 
