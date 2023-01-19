@@ -1,31 +1,76 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.0)
 project(AVEL)
 
-set(CMAKE_CXX_STANDARD 11)
+# List of AVEL CMake options
+set(AVEL_OPTIONS
+    AVEL_POPCNT;
+    AVEL_LZCNT;
+    AVEL_BMI;
+    AVEL_BMI2;
+    AVEL_SSE2;
+    AVEL_SSE3;
+    AVEL_SSSE3;
+    AVEL_SSE41;
+    AVEL_SSE42;
+    AVEL_AVX;
+    AVEL_AVX2;
+    AVEL_FMA;
+    AVEL_AVX512F;
+    AVEL_AVX512CD;
+    AVEL_AVX512DQ;
+    AVEL_AVX512VL;
+    AVEL_AVX512BW;
+    AVEL_AVX512VPOPCNTSQ;
+    AVEL_AVX512BMI;
+    AVEL_AVX512BMI2;
+    AVEL_AVX512BITALG;
+    AVEL_AVX512GFNI;
+    AVEL_NEON;
+    AVEL_AARCH6464;
+)
 
 # AVEL
+
 add_library(AVEL INTERFACE)
-target_include_directories(AVEL INTERFACE include)
+target_compile_features(AVEL INTERFACE "cxx_std_11")
+target_include_directories(AVEL INTERFACE ./include/)
+
+##Create options
+foreach (extension IN LISTS AVEL_OPTIONS)
+    option(${extension} OFF)
+endforeach()
+
+## Define macros for requested features
+foreach(extension IN LISTS AVEL_OPTIONS)
+    if(${extension})
+        list(APPEND AVEL_REQUESTED_EXTENSIONS ${extension})
+    endif()
+endforeach()
+
+target_compile_definitions(AVEL INTERFACE ${AVEL_REQUESTED_EXTENSIONS})
+
 
 
 # AVEL tests
-#add_subdirectory(vendor/googletest)
-#add_executable(AVEL_TESTS tests/AVEL_tests.cpp)
-#target_link_libraries(AVEL_TESTS PUBLIC gtest gtest_main pthread)
+option(AVEL_BUILD_TESTS OFF)
 
-#target_include_directories(AVEL_TESTS PRIVATE
-#    ./include/
-#)
-#target_compile_options(AVEL_TESTS PRIVATE "-march=native")
+if (AVEL_BUILD_TESTS)
+    # Clear variables from cache for reuse of build-directory with different
+    # feature sets
+    foreach (extension IN LISTS AVEL_OPTIONS)
+        unset(${extension} CACHE)
+    endforeach()
+
+    add_executable(AVEL_TESTS tests/AVEL_tests.cpp)
+    target_link_libraries(AVEL_TESTS PUBLIC AVEL gtest pthread)
+    target_compile_features(AVEL_TESTS PRIVATE "cxx_std_11")
+
+    #TODO: Set compilation flags based on enabled features
+    target_compile_options(AVEL_TESTS PRIVATE "")
+    target_link_options(AVEL_TESTS PRIVATE)
+
+    target_include_directories(AVEL_TESTS PRIVATE ./include/)
+endif()
 
 
-# AVEL benchmarks
-#add_subdirectory(vendor/Celero)
-#add_executable(AVEL_BENCHMARKS benchmarks/AVEL_benchmarks.cpp)
-#target_link_libraries(AVEL_BENCHMARKS celero)
-#target_compile_options(AVEL_BENCHMARKS PRIVATE "-msse2" "-msse" "-mavx")
-
-#target_include_directories(AVEL_BENCHMARKS PRIVATE
-#    ./include/
-#    ./vendor/Celero/include
-#)
+add_subdirectory(support)
