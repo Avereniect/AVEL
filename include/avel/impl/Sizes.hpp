@@ -5,181 +5,185 @@
 // Vectors sizes
 //=========================================================
 
+namespace avel {
+
 #if defined(AVEL_AVX512BW)
-    #define AVEL_NATURAL_WIDTH_8U 64
-    #define AVEL_NATURAL_WIDTH_16U 32
-    #define AVEL_NATURAL_WIDTH_32U 16
-    #define AVEL_NATURAL_WIDTH_64U 8
+    constexpr std::uint32_t natural_width_8u  = 64;
+    constexpr std::uint32_t natural_width_16u = 32;
+    constexpr std::uint32_t natural_width_32u = 16;
+    constexpr std::uint32_t natural_width_64u = 8;
 
-    #define AVEL_NATURAL_WIDTH_8I 32
-    #define AVEL_NATURAL_WIDTH_16I 16
-    #define AVEL_NATURAL_WIDTH_32I 16
-    #define AVEL_NATURAL_WIDTH_64I 8
+    constexpr std::uint32_t natural_width_8i  = 64;
+    constexpr std::uint32_t natural_width_16i = 32;
+    constexpr std::uint32_t natural_width_32i = 16;
+    constexpr std::uint32_t natural_width_64i = 8;
 
-    #define AVEL_NATURAL_WIDTH_32F 16
-    #define AVEL_NATURAL_WIDTH_64F 8
+    constexpr std::uint32_t natural_width_32f = 16;
+    constexpr std::uint32_t natural_width_64f = 8;
 
 
 
-    #define AVEL_MAX_WIDTH_8U 64
-    #define AVEL_MAX_WIDTH_16U 32
-    #define AVEL_MAX_WIDTH_32U 16
-    #define AVEL_MAX_WIDTH_64U 8
+    constexpr std::uint32_t max_width_8u  = 64;
+    constexpr std::uint32_t max_width_16u = 32;
+    constexpr std::uint32_t max_width_32u = 16;
+    constexpr std::uint32_t max_width_64u = 8;
 
-    #define AVEL_MAX_WIDTH_8I 64
-    #define AVEL_MAX_WIDTH_16I 32
-    #define AVEL_MAX_WIDTH_32I 16
-    #define AVEL_MAX_WIDTH_64I 8
+    constexpr std::uint32_t max_width_8i  = 64;
+    constexpr std::uint32_t max_width_16i = 32;
+    constexpr std::uint32_t max_width_32i = 16;
+    constexpr std::uint32_t max_width_64i = 8;
 
-    #define AVEL_MAX_WIDTH_32F 16
-    #define AVEL_MAX_WIDTH_64F 8
+    constexpr std::uint32_t max_width_32f = 16;
+    constexpr std::uint32_t max_width_64f = 8;
 
 #elif defined(AVEL_AVX512F)
-    #define AVEL_NATURAL_WIDTH_8U 32
-    #define AVEL_NATURAL_WIDTH_16U 16
-    #define AVEL_NATURAL_WIDTH_32U 16
-    #define AVEL_NATURAL_WIDTH_64U 8
+    constexpr std::uint32_t natural_width_8u  = 32;
+    constexpr std::uint32_t natural_width_16u = 16;
+    constexpr std::uint32_t natural_width_32u = 16;
+    constexpr std::uint32_t natural_width_64u = 8;
 
-    #define AVEL_NATURAL_WIDTH_8I 32
-    #define AVEL_NATURAL_WIDTH_16I 16
-    #define AVEL_NATURAL_WIDTH_32I 16
-    #define AVEL_NATURAL_WIDTH_64I 8
+    constexpr std::uint32_t natural_width_8i  = 32;
+    constexpr std::uint32_t natural_width_16i = 16;
+    constexpr std::uint32_t natural_width_32i = 16;
+    constexpr std::uint32_t natural_width_64i = 8;
 
-    #define AVEL_NATURAL_WIDTH_32F 16
-    #define AVEL_NATURAL_WIDTH_64F 8
+    constexpr std::uint32_t natural_width_32f = 16;
+    constexpr std::uint32_t natural_width_64f = 8;
 
 
 
-    #define AVEL_MAX_WIDTH_8U 64
-    #define AVEL_MAX_WIDTH_16U 32
-    #define AVEL_MAX_WIDTH_32U 16
-    #define AVEL_MAX_WIDTH_64U 8
+    constexpr std::uint32_t max_width_8u  = 64;
+    constexpr std::uint32_t max_width_16u = 32;
+    constexpr std::uint32_t max_width_32u = 16;
+    constexpr std::uint32_t max_width_64u = 8;
 
-    #define AVEL_MAX_WIDTH_8I 64
-    #define AVEL_MAX_WIDTH_16I 32
-    #define AVEL_MAX_WIDTH_32I 16
-    #define AVEL_MAX_WIDTH_64I 8
+    constexpr std::uint32_t max_width_8i  = 64;
+    constexpr std::uint32_t max_width_16i = 32;
+    constexpr std::uint32_t max_width_32i = 16;
+    constexpr std::uint32_t max_width_64i = 8;
 
-    #define AVEL_MAX_WIDTH_32F 16
-    #define AVEL_MAX_WIDTH_64F 8
+    constexpr std::uint32_t max_width_32f = 16;
+    constexpr std::uint32_t max_width_64f = 8;
 
 #elif defined(AVEL_AVX2)
-    #define AVEL_NATURAL_WIDTH_8U 32
-    #define AVEL_NATURAL_WIDTH_16U 16
-    #define AVEL_NATURAL_WIDTH_32U 8
-    #define AVEL_NATURAL_WIDTH_64U 4
+    constexpr std::uint32_t natural_width_8u  = 32;
+    constexpr std::uint32_t natural_width_16u = 16;
+    constexpr std::uint32_t natural_width_32u = 8;
+    constexpr std::uint32_t natural_width_64u = 4;
 
-    #define AVEL_NATURAL_WIDTH_8I 32
-    #define AVEL_NATURAL_WIDTH_16I 16
-    #define AVEL_NATURAL_WIDTH_32I 8
-    #define AVEL_NATURAL_WIDTH_64I 4
+    constexpr std::uint32_t natural_width_8i  = 32;
+    constexpr std::uint32_t natural_width_16i = 16;
+    constexpr std::uint32_t natural_width_32i = 8;
+    constexpr std::uint32_t natural_width_64i = 4;
 
-    #define AVEL_NATURAL_WIDTH_32F 8
-    #define AVEL_NATURAL_WIDTH_64F 4
+    constexpr std::uint32_t natural_width_32f = 8;
+    constexpr std::uint32_t natural_width_64f = 4;
 
 
 
-    #define AVEL_MAX_WIDTH_8U 32
-    #define AVEL_MAX_WIDTH_16U 16
-    #define AVEL_MAX_WIDTH_32U 8
-    #define AVEL_MAX_WIDTH_64U 4
+    constexpr std::uint32_t max_width_8u  = 32;
+    constexpr std::uint32_t max_width_16u = 16;
+    constexpr std::uint32_t max_width_32u = 8;
+    constexpr std::uint32_t max_width_64u = 4;
 
-    #define AVEL_MAX_WIDTH_8I 32
-    #define AVEL_MAX_WIDTH_16I 16
-    #define AVEL_MAX_WIDTH_32I 8
-    #define AVEL_MAX_WIDTH_64I 4
+    constexpr std::uint32_t max_width_8i  = 32;
+    constexpr std::uint32_t max_width_16i = 16;
+    constexpr std::uint32_t max_width_32i = 8;
+    constexpr std::uint32_t max_width_64i = 4;
 
-    #define AVEL_MAX_WIDTH_32F 8
-    #define AVEL_MAX_WIDTH_64F 4
+    constexpr std::uint32_t max_width_32f = 8;
+    constexpr std::uint32_t max_width_64f = 4;
 
 #elif defined(AVEL_AVX)
-    #define AVEL_NATURAL_WIDTH_8U 16
-    #define AVEL_NATURAL_WIDTH_16U 8
-    #define AVEL_NATURAL_WIDTH_32U 4
-    #define AVEL_NATURAL_WIDTH_64U 2
+    constexpr std::uint32_t natural_width_8u = 16;
+    constexpr std::uint32_t natural_width_16u = 8;
+    constexpr std::uint32_t natural_width_32u = 4;
+    constexpr std::uint32_t natural_width_64u = 2;
 
-    #define AVEL_NATURAL_WIDTH_8I 16
-    #define AVEL_NATURAL_WIDTH_16I 8
-    #define AVEL_NATURAL_WIDTH_32I 4
-    #define AVEL_NATURAL_WIDTH_64I 2
+    constexpr std::uint32_t natural_width_8i = 16;
+    constexpr std::uint32_t natural_width_16i = 8;
+    constexpr std::uint32_t natural_width_32i = 4;
+    constexpr std::uint32_t natural_width_64i = 2;
 
-    #define AVEL_NATURAL_WIDTH_32F 4
-    #define AVEL_NATURAL_WIDTH_64F 2
+    constexpr std::uint32_t natural_width_32f = 8;
+    constexpr std::uint32_t natural_width_64f = 4;
 
 
 
-    #define AVEL_MAX_WIDTH_8U 32
-    #define AVEL_MAX_WIDTH_16U 16
-    #define AVEL_MAX_WIDTH_32U 8
-    #define AVEL_MAX_WIDTH_64U 4
+    constexpr std::uint32_t max_width_8u  = 32;
+    constexpr std::uint32_t max_width_16u = 16;
+    constexpr std::uint32_t max_width_32u = 8;
+    constexpr std::uint32_t max_width_64u = 4;
 
-    #define AVEL_MAX_WIDTH_8I 32
-    #define AVEL_MAX_WIDTH_16I 16
-    #define AVEL_MAX_WIDTH_32I 8
-    #define AVEL_MAX_WIDTH_64I 4
+    constexpr std::uint32_t max_width_8i  = 32;
+    constexpr std::uint32_t max_width_16i = 16;
+    constexpr std::uint32_t max_width_32i = 8;
+    constexpr std::uint32_t max_width_64i = 4;
 
-    #define AVEL_MAX_WIDTH_32F 8
-    #define AVEL_MAX_WIDTH_64F 4
+    constexpr std::uint32_t max_width_32f = 8;
+    constexpr std::uint32_t max_width_64f = 4;
 
 #elif defined(AVEL_SSE2) || defined(AVEL_NEON)
-    #define AVEL_NATURAL_WIDTH_8U 16
-    #define AVEL_NATURAL_WIDTH_16U 8
-    #define AVEL_NATURAL_WIDTH_32U 4
-    #define AVEL_NATURAL_WIDTH_64U 2
+    constexpr std::uint32_t natural_width_8u = 16;
+    constexpr std::uint32_t natural_width_16u = 8;
+    constexpr std::uint32_t natural_width_32u = 4;
+    constexpr std::uint32_t natural_width_64u = 2;
 
-    #define AVEL_NATURAL_WIDTH_8I 16
-    #define AVEL_NATURAL_WIDTH_16I 8
-    #define AVEL_NATURAL_WIDTH_32I 4
-    #define AVEL_NATURAL_WIDTH_64I 2
+    constexpr std::uint32_t natural_width_8i = 16;
+    constexpr std::uint32_t natural_width_16i = 8;
+    constexpr std::uint32_t natural_width_32i = 4;
+    constexpr std::uint32_t natural_width_64i = 2;
 
-    #define AVEL_NATURAL_WIDTH_32F 4
-    #define AVEL_NATURAL_WIDTH_64F 2
+    constexpr std::uint32_t natural_width_32f = 4;
+    constexpr std::uint32_t natural_width_64f = 2;
 
 
 
-    #define AVEL_MAX_WIDTH_8U 16
-    #define AVEL_MAX_WIDTH_16U 8
-    #define AVEL_MAX_WIDTH_32U 4
-    #define AVEL_MAX_WIDTH_64U 2
+    constexpr std::uint32_t max_width_8u = 16;
+    constexpr std::uint32_t max_width_16u = 8;
+    constexpr std::uint32_t max_width_32u = 4;
+    constexpr std::uint32_t max_width_64u = 2;
 
-    #define AVEL_MAX_WIDTH_8I 16
-    #define AVEL_MAX_WIDTH_16I 8
-    #define AVEL_MAX_WIDTH_32I 4
-    #define AVEL_MAX_WIDTH_64I 2
+    constexpr std::uint32_t max_width_8i = 16;
+    constexpr std::uint32_t max_width_16i = 8;
+    constexpr std::uint32_t max_width_32i = 4;
+    constexpr std::uint32_t max_width_64i = 2;
 
-    #define AVEL_MAX_WIDTH_32F 4
-    #define AVEL_MAX_WIDTH_64F 2
+    constexpr std::uint32_t max_width_32f = 4;
+    constexpr std::uint32_t max_width_64f = 2;
 
 #endif
 
 #if !defined(AVEL_SSE2) && !defined(AVEL_NEON)
-    #define AVEL_NATURAL_WIDTH_8U 1
-    #define AVEL_NATURAL_WIDTH_16U 1
-    #define AVEL_NATURAL_WIDTH_32U 1
-    #define AVEL_NATURAL_WIDTH_64U 1
+    constexpr std::uint32_t natural_width_8u = 1;
+    constexpr std::uint32_t natural_width_16u = 1;
+    constexpr std::uint32_t natural_width_32u = 1;
+    constexpr std::uint32_t natural_width_64u = 1;
 
-    #define AVEL_NATURAL_WIDTH_8I 1
-    #define AVEL_NATURAL_WIDTH_16I 1
-    #define AVEL_NATURAL_WIDTH_32I 1
-    #define AVEL_NATURAL_WIDTH_64I 1
+    constexpr std::uint32_t natural_width_8i = 1;
+    constexpr std::uint32_t natural_width_16i = 1;
+    constexpr std::uint32_t natural_width_32i = 1;
+    constexpr std::uint32_t natural_width_64i = 1;
 
-    #define AVEL_NATURAL_WIDTH_32F 1
-    #define AVEL_NATURAL_WIDTH_64F 1
+    constexpr std::uint32_t natural_width_32f = 1;
+    constexpr std::uint32_t natural_width_64f = 1;
 
 
 
-    #define AVEL_MAX_WIDTH_8U 1
-    #define AVEL_MAX_WIDTH_16U 1
-    #define AVEL_MAX_WIDTH_32U 1
-    #define AVEL_MAX_WIDTH_64U 1
+    constexpr std::uint32_t max_width_8u = 1;
+    constexpr std::uint32_t max_width_16u = 1;
+    constexpr std::uint32_t max_width_32u = 1;
+    constexpr std::uint32_t max_width_64u = 1;
 
-    #define AVEL_MAX_WIDTH_8I 1
-    #define AVEL_MAX_WIDTH_16I 1
-    #define AVEL_MAX_WIDTH_32I 1
-    #define AVEL_MAX_WIDTH_64I 1
+    constexpr std::uint32_t max_width_8i = 1;
+    constexpr std::uint32_t max_width_16i = 1;
+    constexpr std::uint32_t max_width_32i = 1;
+    constexpr std::uint32_t max_width_64i = 1;
 
-    #define AVEL_MAX_WIDTH_32F 1
-    #define AVEL_MAX_WIDTH_64F 1
+    constexpr std::uint32_t max_width_32f = 1;
+    constexpr std::uint32_t max_width_64f = 1;
 #endif
+
+}
 
 #endif //AVEL_SIZES_HPP
