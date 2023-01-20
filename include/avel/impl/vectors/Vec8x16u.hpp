@@ -1134,19 +1134,36 @@ namespace avel {
 
             content = _mm_and_si128(content, zero_mask);
 
+            //TODO: Consider implementation using pshufb and 32-bit
+            // multiplication
+
+
+
             #elif defined(AVEL_SSE2)
-            auto zero_mask = _mm_cmplt_epi16(decay(rhs), _mm_set1_epi16(16));
+            auto zeros = _mm_setzero_si128();
 
-            for (unsigned i = 0; i < 4; ++i) {
-                auto t0 = _mm_and_si128(decay(rhs), _mm_set1_epi16(1u << i));
-                auto m = _mm_cmplt_epi16(_mm_setzero_si128(), t0);
+            auto non_zero_mask = _mm_cmplt_epi16(decay(rhs), _mm_set1_epi16(16));
+            content = _mm_and_si128(content, non_zero_mask);
 
-                auto a = _mm_andnot_si128(m, content);
-                auto b = _mm_and_si128(m, _mm_srl_epi16(content, _mm_cvtsi64_si128(1u << i)));
-                content = _mm_or_si128(a, b);
-            }
+            auto m0 = _mm_cmplt_epi16(_mm_slli_epi16(decay(rhs), 15), zeros);
+            auto a0 = _mm_andnot_si128(m0, content);
+            auto b0 = _mm_and_si128(m0, _mm_srli_epi16(content, 1));
+            content = _mm_or_si128(a0, b0);
 
-            content = _mm_and_si128(content, zero_mask);
+            auto m1 = _mm_cmplt_epi16(_mm_slli_epi16(decay(rhs), 14), zeros);
+            auto a1 = _mm_andnot_si128(m1, content);
+            auto b1 = _mm_and_si128(m1, _mm_srli_epi16(content, 2));
+            content = _mm_or_si128(a1, b1);
+
+            auto m2 = _mm_cmplt_epi16(_mm_slli_epi16(decay(rhs), 13), zeros);
+            auto a2 = _mm_andnot_si128(m2, content);
+            auto b2 = _mm_and_si128(m2, _mm_srli_epi16(content, 4));
+            content = _mm_or_si128(a2, b2);
+
+            auto m3 = _mm_cmplt_epi16(_mm_slli_epi16(decay(rhs), 12), zeros);
+            auto a3 = _mm_andnot_si128(m3, content);
+            auto b3 = _mm_and_si128(m3, _mm_srli_epi16(content, 8));
+            content = _mm_or_si128(a3, b3);
 
             #endif
 

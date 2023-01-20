@@ -1090,7 +1090,7 @@ namespace avel {
         }
 
         [[nodiscard]]
-       AVEL_FINL friend Vector operator*(Vector lhs, Vector rhs) {
+        AVEL_FINL friend Vector operator*(Vector lhs, Vector rhs) {
             lhs *= rhs;
             return lhs;
         }
@@ -1360,10 +1360,38 @@ namespace avel {
             content = _mm_xor_si128(content, flip_mask);
             content = _mm_and_si128(content, _mm_or_si128(non_zero_mask, neg_mask));
 
-            #elif defined(AVEL_SSE2)
-            auto undef = _mm_undefined_si128();
+            #elif defined(AVEL_SSSE3)
+            alignas(16) static constexpr std::uint8_t table_data[16] {
+                0x80, 0x40, 0x20, 0x10,
+                0x08, 0x04, 0x02, 0x01,
+                0x01, 0x01, 0x01, 0x01,
+                0x01, 0x01, 0x01, 0x01
+            };
+
+            auto lo = _mm_unpacklo_epi8(content, content);
+            auto hi = _mm_unpackhi_epi8(content, content);
+
+            lo = _mm_srai_epi16(lo, 8);
+            hi = _mm_srai_epi16(hi, 8);
+
+            auto table = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data));
+            auto shift_factors = _mm_shuffle_epi8(table, decay(rhs));
+
             auto zeros = _mm_setzero_si128();
-            auto ones = _mm_cmpeq_epi8(undef, undef);
+            auto shift_factors_lo = _mm_unpacklo_epi8(shift_factors, zeros);
+            auto shift_factors_hi = _mm_unpackhi_epi8(shift_factors, zeros);
+
+            lo = _mm_mullo_epi16(lo, shift_factors_lo);
+            hi = _mm_mullo_epi16(hi, shift_factors_hi);
+
+            lo = _mm_srai_epi16(lo, 0x7);
+            hi = _mm_srai_epi16(hi, 0x7);
+
+            content = _mm_packs_epi16(lo, hi);
+
+            #elif defined(AVEL_SSE2)
+            auto zeros = _mm_setzero_si128();
+
 
             auto negative_mask = _mm_cmplt_epi8(content, zeros);
             content = _mm_xor_si128(content, negative_mask);
@@ -1371,56 +1399,20 @@ namespace avel {
             auto non_zero_mask = _mm_cmplt_epi8(decay(rhs), _mm_set1_epi8(8));
             content = _mm_and_si128(content, non_zero_mask);
 
+
             auto m0 = _mm_set1_epi16(0xFF0F);
-            auto c0 = _mm_cmpgt_epi8(_mm_slli_epi16(decay(rhs), 5), ones);
-            auto shifted0 = _mm_srli_epi16(content, 4);
-            content = _mm_min_epu8(content, _mm_or_si128(c0, _mm_and_si128(shifted0, m0)));
+            auto c0 = _mm_cmplt_epi8(_mm_slli_epi16(decay(rhs), 5), zeros);
+            content = _mm_max_epu8(_mm_andnot_si128(c0, content), _mm_and_si128(_mm_srli_epi16(content, 4), m0));
 
             auto m1 = _mm_set1_epi16(0xFF3F);
-            auto c1 = _mm_cmpgt_epi8(_mm_slli_epi16(decay(rhs), 6), ones);
-            auto shifted1 = _mm_srli_epi16(content, 2);
-            content = _mm_min_epu8(content, _mm_or_si128(c1, _mm_and_si128(shifted1, m1)));
+            auto c1 = _mm_cmplt_epi8(_mm_slli_epi16(decay(rhs), 6), zeros);
+            content = _mm_max_epu8(_mm_andnot_si128(c1, content), _mm_and_si128(_mm_srli_epi16(content, 2), m1));
 
             auto m2 = _mm_set1_epi16(0xFF7F);
-            auto c2 = _mm_cmpgt_epi8(_mm_slli_epi16(decay(rhs), 7), ones);
-            auto shifted2 = _mm_srli_epi16(content, 1);
-            content = _mm_min_epu8(content, _mm_or_si128(c2, _mm_and_si128(shifted2, m2)));
+            auto c2 = _mm_cmplt_epi8(_mm_slli_epi16(decay(rhs), 7), zeros);
+            content = _mm_max_epu8(_mm_andnot_si128(c2, content), _mm_and_si128(_mm_srli_epi16(content, 1), m2));
 
             content = _mm_xor_si128(content, negative_mask);
-
-            /*
-            auto zeros = _mm_setzero_si128();
-            auto non_zero_mask = _mm_cmplt_epi8(decay(rhs), _mm_set1_epi8(8));
-            auto neg_mask = _mm_cmplt_epi8(content, zeros);
-            auto preserve_mask = _mm_set1_epi16(0x00FF);
-
-            for (unsigned i = 0; i < 3; ++i) {
-                auto t0 = _mm_and_si128(decay(rhs), _mm_set1_epi8(1u << i));
-                auto m = _mm_cmplt_epi8(zeros, t0);
-
-                auto s = _mm_cvtsi64_si128(1u << i);
-
-                preserve_mask = _mm_or_si128(
-                    _mm_andnot_si128(m, preserve_mask),
-                    _mm_and_si128(m, _mm_sra_epi16(preserve_mask, s))
-                );
-                //TODO:Could the above blend emulation be simplified?
-
-                content = _mm_or_si128(
-                    _mm_andnot_si128(m, content),
-                    _mm_and_si128(m, _mm_sra_epi16(content, s))
-                );
-            }
-
-            preserve_mask = _mm_or_si128(preserve_mask, _mm_set1_epi16(0xFF00));
-            preserve_mask = _mm_and_si128(non_zero_mask, preserve_mask);
-
-            auto invert_mask = _mm_xor_si128(content, neg_mask);
-            auto flip_mask = _mm_andnot_si128(preserve_mask, invert_mask);
-
-            content = _mm_xor_si128(content, flip_mask);
-            content = _mm_and_si128(content, _mm_or_si128(non_zero_mask, neg_mask));
-            */
 
             #endif
 
