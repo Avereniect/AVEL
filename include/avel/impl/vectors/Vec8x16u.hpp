@@ -1945,6 +1945,52 @@ namespace avel {
         #endif
     }
 
+    //=====================================================
+    // Bit Manipulation Operations
+    //=====================================================
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec8x16u bit_shift_left(vec8x16u v) {
+        static_assert(S <= 16, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE2)
+        return vec8x16u{_mm_slli_epi16(decay(v), S)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec8x16u{vshlq_n_u16(decay(v), S)};
+        #endif
+    }
+
+    template<>
+    vec8x16u bit_shift_left<0>(vec8x16u v) {
+        return v;
+    }
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec8x16u bit_shift_right(vec8x16u v) {
+        static_assert(S <= 16, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE2)
+        return vec8x16u{_mm_srli_epi16(decay(v), S)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec8x16u{vshrq_n_u16(decay(v), S)};
+        #endif
+    }
+
+    template<>
+    vec8x16u bit_shift_right<0>(vec8x16u v) {
+        return v;
+    }
+
+
+
     [[nodiscard]]
     AVEL_FINL vec8x16u rotl(vec8x16u v, std::uint16_t s) {
         return (v << s) | (v >> (16 - s));
