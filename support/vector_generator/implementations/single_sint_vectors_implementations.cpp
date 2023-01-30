@@ -6,7 +6,7 @@ content = (decay(rhs) >= $<SCALAR_WIDTH>) ? (content >> ($<SCALAR_WIDTH> - 1)) :
 
 
 @operator-(uvec)
-return $<VECTOR_ALIAS>{-decay(v)};
+return -$<VECTOR_ALIAS>{v};
 
 @negate(mask, vec)
 if (decay(m)) {
@@ -87,4 +87,3 @@ ptr[decay(indices)] = decay(v);
 if (n) {
     ptr[decay(indices)] = decay(v);
 }
-t

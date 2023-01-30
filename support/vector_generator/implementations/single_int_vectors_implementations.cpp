@@ -59,7 +59,7 @@ return Vector{static_cast<primitive>(~content)};
 return mask{static_cast<mask::primitive>(bool(content))};
 
 @broadcast_mask(mask)
-return $<VECTOR_ALIAS>{decay(m)};
+return $<VECTOR_ALIAS>{static_cast<$<VECTOR_ALIAS>::scalar>(-decay(m))};
 
 @blend(mask, vec, vec)
 return $<VECTOR_ALIAS>{blend(decay(m), decay(a), decay(b))};

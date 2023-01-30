@@ -124,15 +124,15 @@ def generate_single_integer_to_integer_vector_conversion(source: VectorType, tar
     template<>
     [[nodiscard]]
     AVEL_FINL std::array<{to}, {size}> convert<{to}, {from}>({from} m) {
-        return std::array<{to}, {size}>{{to}{static_cast<{to}::scalar>(decay(m) & {mask})}};
+        return std::array<{to}, {size}>{{to}{static_cast<{to}::scalar>(decay(m))}};
     }
 """
 
     size = 1
     ret = conversion_template
     ret = ret.replace('{size}', str(size))
-    ret = ret.replace('{from}', source.mask_alias)
-    ret = ret.replace('{to}', target.mask_alias)
+    ret = ret.replace('{from}', source.vector_alias)
+    ret = ret.replace('{to}', target.vector_alias)
 
     return ret
 

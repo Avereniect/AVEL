@@ -780,28 +780,28 @@ $END
     }
 
     [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> popcount($<VECTOR_ALIAS> x) {
-        return $<MASK_ALIAS>{popcount($<UVECTOR_ALIAS>{v})};
+    AVEL_FINL $<VECTOR_ALIAS> popcount($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{popcount($<UVECTOR_ALIAS>{v})};
     }
 
     [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> countl_zero($<VECTOR_ALIAS> x) {
-        return $<MASK_ALIAS>{countl_zero($<UVECTOR_ALIAS>{v})};
+    AVEL_FINL $<VECTOR_ALIAS> countl_zero($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{countl_zero($<UVECTOR_ALIAS>{v})};
     }
 
     [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> countl_one($<VECTOR_ALIAS> x) {
-        return $<MASK_ALIAS>{countl_one($<UVECTOR_ALIAS>{v})};
+    AVEL_FINL $<VECTOR_ALIAS> countl_one($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{countl_one($<UVECTOR_ALIAS>{v})};
     }
 
     [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> countr_zero($<VECTOR_ALIAS> x) {
-        return $<MASK_ALIAS>{countr_zero($<UVECTOR_ALIAS>{v})};
+    AVEL_FINL $<VECTOR_ALIAS> countr_zero($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{countr_zero($<UVECTOR_ALIAS>{v})};
     }
 
     [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> countr_one($<VECTOR_ALIAS> x) {
-        return $<MASK_ALIAS>{countr_one($<UVECTOR_ALIAS>{v})};
+    AVEL_FINL $<VECTOR_ALIAS> countr_one($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{countr_one($<UVECTOR_ALIAS>{v})};
     }
 
     [[nodiscard]]
@@ -872,7 +872,7 @@ $END
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL $<ARRAY_ALIAS> to_array($<VECTOR_ALIAS> x) {
+    AVEL_FINL $<ARRAY_ALIAS> to_array($<VECTOR_ALIAS> v) {
         alignas($<VECTOR_ALIGNMENT>) $<ARRAY_ALIAS> ret;
         aligned_store(ret.data(), v);
         return ret;
