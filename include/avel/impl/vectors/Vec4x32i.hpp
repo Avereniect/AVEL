@@ -1624,12 +1624,19 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x32i average(vec4x32i x, vec4x32i y) {
         #if defined(AVEL_SSE2)
-        return ((x ^ y) >> 1) + (x & y);
+        auto avg = (x & y) + ((x ^ y) >> 1);
+        auto c = broadcast_mask((x < -y) | (y == vec4x32i{std::int32_t(1 << 31)})) & (x ^ y) & vec4x32i{1};
+
+        return avg + c;
 
         #endif
 
         #if defined(AVEL_NEON)
-        return vec4x32i{vhaddq_s32(decay(x), decay(y))};
+        auto avg = vec4x32i{vhaddq_s32(decay(x), decay(y))};
+        auto c = broadcast_mask((x < -y) | (y == vec4x32i{std::int32_t(1 << 31)})) & (x ^ y) & vec4x32i{1};
+
+        return avg + c;
+
         #endif
     }
 
@@ -1912,6 +1919,46 @@ namespace avel {
     AVEL_FINL mask4x32i has_single_bit(vec4x32i x) {
         return mask4x32i(has_single_bit(vec4x32u(x)));
     }
+
+    //=====================================================
+    // Bit Manipulation Operations
+    //=====================================================
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec4x32i bit_shift_left(vec4x32i v) {
+        static_assert(S <= 32, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 32, int>::type dummy_variable = 0;
+
+        return vec4x32i{bit_shift_left<S>(vec4x32u{v})};
+    }
+
+    template<>
+    vec4x32i bit_shift_left<0>(vec4x32i v) {
+        return v;
+    }
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec4x32i bit_shift_right(vec4x32i v) {
+        static_assert(S <= 32, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 32, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE2)
+        return vec4x32i{_mm_srai_epi32(decay(v), S)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec4x32i{vshrq_n_s32(decay(v), S)};
+        #endif
+    }
+
+    template<>
+    vec4x32i bit_shift_right<0>(vec4x32i v) {
+        return v;
+    }
+
+
 
     [[nodiscard]]
     AVEL_FINL vec4x32i rotl(vec4x32i v, std::uint32_t s) {

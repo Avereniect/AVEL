@@ -263,7 +263,6 @@ namespace avel {
 
             #if defined(AVEL_NEON)
             return Vector_mask{vmvnq_u32(content)};
-
             #endif
         }
 
@@ -1014,7 +1013,6 @@ namespace avel {
             Vector(vdupq_n_u32(x)) {}
         #endif
 
-
         AVEL_FINL explicit Vector(const arr4x32u& array):
         #if defined(AVEL_SSE2)
             content(_mm_loadu_si128(reinterpret_cast<const __m128i*>(array.data()))) {}
@@ -1494,7 +1492,7 @@ namespace avel {
     };
 
     //=====================================================
-    // Arrangment operations
+    // Arrangement operations
     //=====================================================
 
     template<std::uint32_t N>
@@ -1502,7 +1500,7 @@ namespace avel {
         static_assert(N <= vec4x32u::width, "Specified index does not exist");
         typename std::enable_if<N <= vec4x32u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SS41)
+        #if defined(AVEL_SSE41)
         return _mm_extract_epi32(decay(v), N);
 
         #elif defined(AVEL_SSE2)
@@ -2274,8 +2272,10 @@ namespace avel {
         return v;
     }
 
+
+
     [[nodiscard]]
-    AVEL_FINL vec4x32u rotl(vec4x32u v, std::uint32_t s) {
+    AVEL_FINL vec4x32u rotl(vec4x32u v, long long s) {
         #if defined(AVEL_AVX512VL)
         return vec4x32u{_mm_rolv_epi32(decay(v), decay(vec4x32u{s}))};
 
@@ -2308,8 +2308,10 @@ namespace avel {
         #endif
     }
 
+
+
     [[nodiscard]]
-    AVEL_FINL vec4x32u rotr(vec4x32u v, std::uint32_t s) {
+    AVEL_FINL vec4x32u rotr(vec4x32u v, long long s) {
         #if defined(AVEL_AVX512VL)
         return vec4x32u{_mm_rorv_epi32(decay(v), decay(vec4x32u{s}))};
 

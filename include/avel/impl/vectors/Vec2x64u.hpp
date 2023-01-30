@@ -1701,7 +1701,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        return vec4x32u{vshlq_n_u64(decay(v), S)};
+        return vec2x64u{vshlq_n_u64(decay(v), S)};
         #endif
     }
 
@@ -1733,7 +1733,7 @@ namespace avel {
 
 
     [[nodiscard]]
-    AVEL_FINL vec2x64u rotl(vec2x64u v, vec2x64u::scalar s) {
+    AVEL_FINL vec2x64u rotl(vec2x64u v, long long s) {
         #if defined(AVEL_AVX512VL)
         return vec2x64u{_mm_rolv_epi64(decay(v), decay(vec2x64u{s}))};
 
@@ -1762,6 +1762,8 @@ namespace avel {
         return (v << s) | (v >> (vec2x64u{64} - s));
         #endif
     }
+
+
 
     [[nodiscard]]
     AVEL_FINL vec2x64u rotr(vec2x64u v, long long s) {

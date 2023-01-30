@@ -1399,26 +1399,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16i average(vec8x16i x, vec8x16i y) {
-        #if defined(AVEL_AVX512VL)
-        return ((x ^ y) >> 1) + (x & y);
+        #if defined(AVEL_SSE2)
+        auto avg = (x & y) + ((x ^ y) >> 1);
+        auto c = broadcast_mask((x < -y) | (y == vec8x16i{std::int16_t(1 << 15)})) & (x ^ y) & vec8x16i{1};
 
-        #elif defined(AVEL_SSE2)
-        auto offset = _mm_set1_epi16(0x8000);
-
-        auto a_offset = _mm_xor_si128(decay(x), offset);
-        auto b_offset = _mm_xor_si128(decay(y), offset);
-
-        auto average_offset = _mm_avg_epu16(a_offset, b_offset);
-        auto average = _mm_xor_si128(average_offset, offset);
-
-        auto bias = _mm_and_si128(_mm_xor_si128(decay(x), decay(y)), _mm_set1_epi16(0x01));
-
-        return vec8x16i{_mm_sub_epi16(average, bias)};
+        return avg + c;
 
         #endif
 
         #if defined(AVEL_NEON)
-        return vec8x16i{vhaddq_s16(decay(x), decay(y))};
+        auto avg = vec8x16i{vhaddq_s16(decay(x), decay(y))};
+        auto c = broadcast_mask((x < -y) | (y == vec8x16i{std::int16_t(1 << 15)})) & (x ^ y) & vec8x16i{1};
+
+        return avg + c;
+
         #endif
     }
 
@@ -1618,6 +1612,40 @@ namespace avel {
     AVEL_FINL mask8x16i has_single_bit(vec8x16i x) {
         return mask8x16i{has_single_bit(vec8x16u(x))};
     }
+
+    //=====================================================
+    // Bit Manipulation Operations
+    //=====================================================
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec8x16i bit_shift_left(vec8x16i v) {
+        static_assert(S <= 16, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
+
+        return vec8x16i{bit_shift_left<S>(vec8x16u{v})};
+    }
+
+    template<std::uint32_t S>
+    vec8x16i bit_shift_right(vec8x16i v) {
+        static_assert(S <= 16, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE2)
+        return vec8x16i{_mm_srai_epi16(decay(v), S)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec8x16i{vshrq_n_s16(decay(v), S)};
+        #endif
+    }
+
+    template<>
+    vec8x16i bit_shift_right<0>(vec8x16i v) {
+        return v;
+    }
+
+
 
     [[nodiscard]]
     AVEL_FINL vec8x16i rotl(vec8x16i x, long long s) {

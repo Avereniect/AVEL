@@ -1418,8 +1418,8 @@ namespace avel {
             content = _mm_sra_epi64(content, _mm_cvtsi64_si128(rhs));
 
             #elif defined(AVEL_SSE2)
-            std::int64_t lo = _mm_extract_epi64(content, 0x0);
-            std::int64_t hi = _mm_extract_epi64(content, 0x1);
+            std::int64_t lo = _mm_cvtsi128_si64(content);
+            std::int64_t hi = _mm_cvtsi128_si64(_mm_srli_si128(content, 8));
 
             rhs = min(rhs, 63ul);
 
@@ -1462,11 +1462,11 @@ namespace avel {
             content = _mm_srav_epi64(content, decay(rhs));
 
             #elif defined(AVEL_SSE2)
-            std::int64_t lhs_lo = _mm_extract_epi64(content, 0x0);
-            std::int64_t lhs_hi = _mm_extract_epi64(content, 0x1);
+            std::int64_t lhs_lo = _mm_cvtsi128_si64(content);
+            std::int64_t lhs_hi = _mm_cvtsi128_si64(_mm_srli_si128(content, 0x8));
 
-            std::uint64_t rhs_lo = _mm_extract_epi64(decay(rhs), 0x0);
-            std::uint64_t rhs_hi = _mm_extract_epi64(decay(rhs), 0x1);
+            std::uint64_t rhs_lo = _mm_cvtsi128_si64(decay(rhs));
+            std::uint64_t rhs_hi =_mm_cvtsi128_si64(_mm_srli_si128(decay(rhs), 0x8));
 
             lhs_lo >>= min(rhs_lo, 63ul);
             lhs_hi >>= min(rhs_hi, 63ul);
@@ -1725,8 +1725,22 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec2x64i average(vec2x64i a, vec2x64i b) {
-        return ((a ^ b) >> 1) + (a & b);
+    AVEL_FINL vec2x64i average(vec2x64i x, vec2x64i y) {
+        #if defined(AVEL_SSE2)
+        auto avg = (x & y) + ((x ^ y) >> 1);
+        auto c = broadcast_mask((x < -y) | (y == vec2x64i{std::int64_t(1ll << 63)})) & (x ^ y) & vec2x64i{1};
+
+        return avg + c;
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto avg = (x & y) + ((x ^ y) >> 1);
+        auto c = broadcast_mask((x < -y) | (y == vec2x64i{std::int64_t(1 << 63)})) & (x ^ y) & vec2x64i{1};
+
+        return avg + c;
+
+        #endif
     }
 
     [[nodiscard]]
@@ -1907,24 +1921,90 @@ namespace avel {
         return mask2x64i{has_single_bit(vec2x64u{v})};
     }
 
+    //=====================================================
+    // Bit Manipulation Operations
+    //=====================================================
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec2x64i bit_shift_left(vec2x64i v) {
+        static_assert(S <= 32, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 32, int>::type dummy_variable = 0;
+
+        return vec2x64i{bit_shift_left<S>(vec2x64u{v})};
+    }
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec2x64i bit_shift_right(vec2x64i v) {
+        static_assert(S <= 64, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 64, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512VL)
+        return vec2x64i{_mm_srai_epi64(decay(v), S)};
+
+        #elif defined(AVEL_SSE4_1)
+        auto lo = _mm_extract_epi64(decay(v), 0x0);
+        auto hi = _mm_extract_epi64(decay(v), 0x1);
+
+        lo >>= S;
+        hi >>= S;
+
+        auto ret = _mm_undefined_si128();
+        ret = _mm_insert_epi64(ret, 0x0, lo);
+        ret = _mm_insert_epi64(ret, 0x0, hi);
+        return vec2x64i{ret};
+
+        #elif defined(AVEL_SSE2)
+        auto lo = _mm_cvtsi128_si64(decay(v));
+        auto hi = _mm_cvtsi128_si64(_mm_srli_si128(decay(v), 8));
+
+        lo >>= S;
+        hi >>= S;
+
+        return vec2x64i{_mm_set_epi64x(hi, lo)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec2x64i{vshrq_n_s64(decay(v), S)};
+        #endif
+    }
+
+    #if defined(AVEL_SSE2)
+    template<>
+    vec2x64i bit_shift_right<64>(vec2x64i v) {
+        auto zeros = _mm_setzero_si128();
+        auto shifted = _mm_srli_epi64(decay(v), 63);
+        auto ret = _mm_sub_epi64(zeros, shifted);
+        return vec2x64i{ret};
+    }
+    #endif
+
+    template<>
+    vec2x64i bit_shift_right<0>(vec2x64i v) {
+        return v;
+    }
+
+
+
     [[nodiscard]]
     AVEL_FINL vec2x64i rotl(vec2x64i v, long long s) {
-        //TODO: Implement
+        return vec2x64i{rotl(vec2x64u{v}, s)};
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64i rotl(vec2x64i v, vec2x64i s) {
-        //TODO: Implement
+        return vec2x64i{rotl(vec2x64u{v}, vec2x64u{s})};
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64i rotr(vec2x64i v, long long s) {
-        //TODO: Implement
+        return vec2x64i{rotr(vec2x64u{v}, s)};
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64i rotr(vec2x64i v, vec2x64i s) {
-        //TODO: Implement
+        return vec2x64i{rotr(vec2x64u{v}, vec2x64u{s})};
     }
 
     //=====================================================

@@ -1990,24 +1990,41 @@ namespace avel {
     }
 
 
+    template<std::uint32_t S, typename std::enable_if<S < 8, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotl(vec8x16u v) {
+
+    }
+
+    template<std::uint32_t S, typename std::enable_if<8 <= S, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotl(vec8x16u v) {
+        return rotl<S % 8>(v);
+    }
+
+
 
     [[nodiscard]]
-    AVEL_FINL vec8x16u rotl(vec8x16u v, std::uint16_t s) {
+    AVEL_FINL vec8x16u rotl(vec8x16u v, long long s) {
+        s &= 15;
         return (v << s) | (v >> (16 - s));
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x16u rotl(vec8x16u v, vec8x16u s) {
+        s &= vec8x16u{15};
         return (v << s) | (v >> (vec8x16u{16} - s));
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16u rotr(vec8x16u v, std::uint16_t s) {
+    AVEL_FINL vec8x16u rotr(vec8x16u v, long long s) {
+        s &= 15;
         return (v >> s) | (v << (16 - s));
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x16u rotr(vec8x16u v, vec8x16u s) {
+        s &= vec8x16u{15};
         return (v >> s) | (v << (vec8x16u{16} - s));
     }
 
