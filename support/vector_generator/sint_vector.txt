@@ -1,0 +1,883 @@
+#ifndef $<HEADER_GUARD>
+#define $<HEADER_GUARD>
+
+namespace avel {
+
+    //=====================================================
+    // Type aliases
+    //=====================================================
+
+    using $<VECTOR_ALIAS> = Vector<$<SCALAR_NAME>, $<VECTOR_WIDTH>>;
+    using $<ARRAY_ALIAS> = std::array<$<SCALAR_NAME>, $<VECTOR_WIDTH>>;
+    using $<MASK_ALIAS> = Vector_mask<$<SCALAR_NAME>, $<VECTOR_WIDTH>>;
+
+    //=====================================================
+    // Forward declarations
+    //=====================================================
+
+    div_type<$<VECTOR_ALIAS>> div($<VECTOR_ALIAS> numerator, $<VECTOR_ALIAS> denominator);
+    $<VECTOR_ALIAS> broadcast_mask($<MASK_ALIAS> m);
+    $<VECTOR_ALIAS> blend($<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b, $<MASK_ALIAS> m);
+    $<VECTOR_ALIAS> negate($<VECTOR_ALIAS> m, $<VECTOR_ALIAS> x);
+
+
+
+
+
+    template<>
+    class Vector_mask<$<SCALAR_NAME>, $<VECTOR_WIDTH>> {
+    public:
+
+        //=================================================
+        // Static constants
+        //=================================================
+
+        constexpr static std::uint32_t width = $<VECTOR_WIDTH>;
+
+        //=================================================
+        // Type aliases
+        //=================================================
+
+        using primitive = $<mask::primitive>;
+
+    private:
+
+        //=================================================
+        // Instance members
+        //=================================================
+
+        primitive content;
+
+    public:
+
+        //=================================================
+        // -ctors
+        //=================================================
+
+        template<class U>
+        AVEL_FINL explicit Vector_mask(Vector_mask<U, width> m):
+            Vector_mask(convert<Vector_mask>(m)[0]) {}
+
+        AVEL_FINL explicit Vector_mask(primitive p):
+            content(p) {}
+
+        AVEL_FINL explicit Vector_mask(bool b):
+        $<mask::mask(bool)>
+
+        AVEL_FINL explicit Vector_mask(const arr$<VECTOR_WIDTH>xb& arr) {
+            static_assert(
+                sizeof(bool) == 1,
+                "Implementation assumes bool occupy a single byte"
+            );
+
+            $<mask::mask(const arr&)>
+        }
+
+        Vector_mask() = default;
+        Vector_mask(const Vector_mask&) = default;
+        Vector_mask(Vector_mask&&) = default;
+        ~Vector_mask() = default;
+
+        //=================================================
+        // Assignment operators
+        //=================================================
+
+        AVEL_FINL Vector_mask& operator=(bool b) {
+            $<mask::operator=(bool)>
+            return *this;
+        }
+
+        AVEL_FINL Vector_mask& operator=(primitive p) {
+            content = p;
+            return *this;
+        }
+
+        Vector_mask& operator=(const Vector_mask&) = default;
+        Vector_mask& operator=(Vector_mask&&) = default;
+
+        //=================================================
+        // Comparison operators
+        //=================================================
+
+        [[nodiscard]]
+        AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
+            $<mask::operator==(vec, vec)>
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) noexcept {
+            $<mask::operator!=(vec, vec)>
+        }
+
+        //=================================================
+        // Bitwise assignment operators
+        //=================================================
+
+        AVEL_FINL Vector_mask& operator&=(Vector_mask rhs) {
+            $<mask::operator&=(vec)>
+            return *this;
+        }
+
+        AVEL_FINL Vector_mask& operator|=(Vector_mask rhs) {
+            $<mask::operator|=(vec)>
+            return *this;
+        }
+
+        AVEL_FINL Vector_mask& operator^=(Vector_mask rhs) {
+            $<mask::operator^=(vec)>
+            return *this;
+        }
+
+        //=================================================
+        // Bitwise operators
+        //=================================================
+
+        [[nodiscard]]
+        AVEL_FINL Vector_mask operator!() const {
+            $<mask::operator!()>
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector_mask operator&(Vector_mask lhs, Vector_mask rhs) {
+            lhs &= rhs;
+            return lhs;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector_mask operator&&(Vector_mask lhs, Vector_mask rhs) {
+            return lhs & rhs;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector_mask operator|(Vector_mask lhs, Vector_mask rhs) {
+            lhs |= rhs;
+            return lhs;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector_mask operator||(Vector_mask lhs, Vector_mask rhs) {
+            return lhs | rhs;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector_mask operator^(Vector_mask lhs, Vector_mask rhs) {
+            lhs ^= rhs;
+            return lhs;
+        }
+
+        //=================================================
+        // Conversion operators
+        //=================================================
+
+        [[nodiscard]]
+        AVEL_FINL explicit operator primitive() const {
+            return content;
+        }
+
+    };
+
+    //=====================================================
+    // Mask functions
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t count($<MASK_ALIAS> m) {
+        return count($<UMASK_ALIAS>{m});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool any($<MASK_ALIAS> m) {
+        return any($<UMASK_ALIAS>{m});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool all($<MASK_ALIAS> m) {
+        return all($<UMASK_ALIAS>{m});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool none($<MASK_ALIAS> m) {
+        return none($<UMASK_ALIAS>{m});
+    }
+
+    //=====================================================
+    // Mask conversions
+    //=====================================================
+    $<MASK_CONVERSIONS>
+
+
+
+
+    template<>
+    class Vector<$<SCALAR_NAME>, $<VECTOR_WIDTH>> {
+    public:
+
+        //=================================================
+        // Static constants
+        //=================================================
+
+        constexpr static std::uint32_t width = $<VECTOR_WIDTH>;
+
+        //=================================================
+        // Type aliases
+        //=================================================
+
+        using scalar = $<SCALAR_NAME>;
+
+        using primitive = $<vector::primitive>;
+
+        using mask = Vector_mask<scalar, width>;
+
+        template<class U>
+        using rebind_type = Vector<U, width>;
+
+        template<std::uint32_t M>
+        using rebind_width = Vector<scalar, M>;
+
+    private:
+
+        //=================================================
+        // Instance members
+        //=================================================
+
+        primitive content;
+
+    public:
+
+        //=================================================
+        // -ctors
+        //=================================================
+
+        template<class U>
+        AVEL_FINL explicit Vector(Vector<U, width> x):
+            Vector(convert<Vector>(x)[0]) {}
+
+        AVEL_FINL explicit Vector(mask m):
+            $<vector::vector(mask)>
+
+        AVEL_FINL Vector(primitive content):
+            content(content) {}
+$BEGIN<MULTIPLE>$
+        AVEL_FINL explicit Vector(scalar x):
+            $<vector::vector(scalar)>
+$END
+        AVEL_FINL explicit Vector(const $<ARRAY_ALIAS>& arr) {
+            $<vector::vector(const arr&)>
+        }
+
+        Vector() = default;
+        Vector(const Vector&) = default;
+        Vector(Vector&&) = default;
+        ~Vector() = default;
+
+        //=================================================
+        // Assignment operators
+        //=================================================
+$BEGIN<MULTIPLE>$
+        AVEL_FINL Vector& operator=(scalar x) {
+            //TODO: Implement
+            return *this;
+        }
+$END
+        AVEL_FINL Vector& operator=(primitive p) {
+            content = p;
+            return *this;
+        }
+
+        Vector& operator=(const Vector&) = default;
+        Vector& operator=(Vector&&) noexcept = default;
+
+        //=================================================
+        // Comparison operators
+        //=================================================
+
+        [[nodiscard]]
+        AVEL_FINL friend mask operator==(Vector lhs, Vector rhs) {
+            $<vector::operator==(vec, vec)>
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend mask operator!=(Vector lhs, Vector rhs) {
+            $<vector::operator!=(vec, vec)>
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend mask operator<(Vector lhs, Vector rhs) {
+            $<vector::operator<(vec, vec)>
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend mask operator<=(Vector lhs, Vector rhs) {
+            $<vector::operator<=(vec, vec)>
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend mask operator>(Vector lhs, Vector rhs) {
+            $<vector::operator>(vec, vec)>
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend mask operator>=(Vector lhs, Vector rhs) {
+            $<vector::operator>=(vec, vec)>
+        }
+
+        //=================================================
+        // Unary arithmetic operators
+        //=================================================
+
+        [[nodiscard]]
+        AVEL_FINL Vector operator+() const {
+            return *this;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL Vector operator-() const {
+            return Vector{0x00} - *this;
+        }
+
+        //=================================================
+        // Arithmetic assignment operators
+        //=================================================
+
+        AVEL_FINL Vector& operator+=(Vector rhs) {
+            $<vector::operator+=(vec)>
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator-=(Vector rhs) {
+            $<vector::operator-=(vec)>
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator*=(Vector rhs) {
+            $<vector::operator*=(vec)>
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator/=(Vector rhs) {
+            auto results = div(*this, rhs);
+            content = results.quot.content;
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator%=(Vector rhs) {
+            auto results = div(*this, rhs);
+            content = results.rem.content;
+            return *this;
+        }
+
+        //=================================================
+        // Arithmetic operators
+        //=================================================
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector operator+(Vector lhs, Vector rhs) {
+            lhs += rhs;
+            return lhs;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector operator-(Vector lhs, Vector rhs) {
+            lhs -= rhs;
+            return lhs;
+        }
+
+        [[nodiscard]]
+       AVEL_FINL friend Vector operator*(Vector lhs, Vector rhs) {
+            lhs *= rhs;
+            return lhs;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector operator/(Vector lhs, Vector rhs) {
+            lhs /= rhs;
+            return lhs;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector operator%(Vector lhs, Vector rhs) {
+            lhs %= rhs;
+            return lhs;
+        }
+
+        //=================================================
+        // Increment/Decrement operators
+        //=================================================
+
+        AVEL_FINL Vector& operator++() {
+            *this += Vector{primitive(1)};
+            return *this;
+        }
+
+        AVEL_FINL Vector operator++(int) {
+            auto temp = *this;
+            *this += Vector{primitive(1)};
+            return temp;
+        }
+
+        AVEL_FINL Vector& operator--() {
+            *this -= Vector{primitive(1)};
+            return *this;
+        }
+
+        AVEL_FINL Vector operator--(int) {
+            auto temp = *this;
+            *this -= Vector{primitive(1)};
+            return temp;
+        }
+
+        //=================================================
+        // Bitwise assignment operators
+        //=================================================
+
+        AVEL_FINL Vector& operator&=(Vector rhs) {
+            $<vector::operator&=(vec)>
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator|=(Vector rhs) {
+            $<vector::operator|=(vec)>
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator^=(Vector rhs) {
+            $<vector::operator^=(vec)>
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator<<=(long long rhs) {
+            $<vector::operator<<=(long long)>
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator>>=(long long rhs) {
+            $<vector::operator>>=(long long)>
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator<<=(Vector rhs) {
+            $<vector::operator<<=(vec)>
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator>>=(Vector rhs) {
+            $<vector::operator>>=(vec)>
+            return *this;
+        }
+
+        //=================================================
+        // Bitwise operators
+        //=================================================
+
+        [[nodiscard]]
+        AVEL_FINL Vector operator~() const {
+            $<vector::operator~()>
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector operator&(Vector lhs, Vector rhs) {
+            lhs &= rhs;
+            return lhs;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector operator|(Vector lhs, Vector rhs) {
+            lhs |= rhs;
+            return lhs;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector operator^(Vector lhs, Vector rhs) {
+            lhs ^= rhs;
+            return lhs;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector operator<<(Vector lhs, long long rhs) {
+            lhs <<= rhs;
+            return lhs;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector operator>>(Vector lhs, long long rhs) {
+            lhs >>= rhs;
+            return lhs;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector operator<<(Vector lhs, Vector rhs) {
+            lhs <<= rhs;
+            return lhs;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend Vector operator>>(Vector lhs, Vector rhs) {
+            lhs >>= rhs;
+            return lhs;
+        }
+
+        //=================================================
+        // Conversion operators
+        //=================================================
+
+        [[nodiscard]]
+        AVEL_FINL explicit operator primitive() const {
+            return content;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL explicit operator mask() const {
+            $<vector::operator mask()>
+        }
+
+    };
+
+    //=====================================================
+    // Delayed definitions
+    //=====================================================
+
+    AVEL_FINL $<VECTOR_ALIAS> operator-($<UVECTOR_ALIAS> v) {
+        $<operator-(uvec)>
+    }
+
+    //=====================================================
+    // General vector operations
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> broadcast_mask($<MASK_ALIAS> m) {
+        $<broadcast_mask(mask)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> blend($<MASK_ALIAS> m, $<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b) {
+        $<blend(mask, vec, vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> byteswap($<VECTOR_ALIAS> v) {
+        $<byteswap(vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> max($<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b) {
+        $<max(vec, vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> min($<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b) {
+        $<min(vec, vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::array<$<VECTOR_ALIAS>, 2> minmax($<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b) {
+        $<minmax(vec, vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> clamp($<VECTOR_ALIAS> x, $<VECTOR_ALIAS> lo, $<VECTOR_ALIAS> hi) {
+        $<clamp(vec, vec, vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> midpoint($<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b) {
+        $<midpoint(vec, vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> average($<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b) {
+        $<average(vec, vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> negate($<VECTOR_ALIAS> m, $<VECTOR_ALIAS> v) {
+        $<negate(mask, vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> abs($<VECTOR_ALIAS> v) {
+        $<abs(vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> neg_abs($<VECTOR_ALIAS> v) {
+        $<neg_abs(vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> neg_abs($<UVECTOR_ALIAS> v) {
+        $<neg_abs(uvec)>
+    }
+
+    //=====================================================
+    // Load/Store operations
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> load<$<VECTOR_ALIAS>>(const $<SCALAR_NAME>* ptr, std::uint32_t n) {
+        $<load(const scalar*, std::uint32_t)>
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> load<$<VECTOR_ALIAS>, $<VECTOR_ALIAS>::width>(const $<SCALAR_NAME>* ptr) {
+        $<load<width>(const scalar*)>
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> aligned_load<$<VECTOR_ALIAS>>(const $<SCALAR_NAME>* ptr, std::uint32_t n) {
+        $<aligned_load(const scalar*, std::uint32_t)>
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> aligned_load<$<VECTOR_ALIAS>, $<VECTOR_ALIAS>::width>(const $<SCALAR_NAME>* ptr) {
+        $<aligned_load<width>(const scalar*)>
+    }
+
+
+$BEGIN<HAS_GATHER>$
+    template<std::uint32_t N = $<VECTOR_ALIAS>::width>
+    AVEL_FINL $<VECTOR_ALIAS> gather($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> indices) {
+        $<gather(scalar*, vec)>
+    }
+
+    template<>
+    AVEL_FINL $<VECTOR_ALIAS> gather<0>($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> indices) {
+        return $<VECTOR_ALIAS>{0x00};
+    }
+
+    template<>
+    AVEL_FINL $<VECTOR_ALIAS> gather<$<VECTOR_ALIAS>::width>($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> indices) {
+        $<gather<width>(scalar*, vec)>
+    }
+
+    AVEL_FINL $<VECTOR_ALIAS> gather($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> indices, std::uint32_t n) {
+        $<gather(scalar*, vec, std::uint32_t n)>
+    }
+
+
+
+    template<std::uint32_t N = $<UVECTOR_ALIAS>::width>
+    AVEL_FINL $<UVECTOR_ALIAS> gather($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> indices) {
+        $<gather(uscalar*, uvec)>
+    }
+
+    template<>
+    AVEL_FINL $<UVECTOR_ALIAS> gather<0>($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> indices) {
+        return $<UVECTOR_ALIAS>{0x00};
+    }
+
+    template<>
+    AVEL_FINL $<UVECTOR_ALIAS> gather<$<UVECTOR_ALIAS>::width>($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> indices) {
+        $<gather<width>(uscalar*, uvec)>
+    }
+
+    AVEL_FINL $<UVECTOR_ALIAS> gather($<USCALAR_NAME>* ptr, $<VECTOR_ALIAS> indices, std::uint32_t n) {
+        $<gather(uscalar*, uvec, std::uint32_t n)>
+    }
+$END
+
+
+
+    template<std::uint32_t N = $<VECTOR_ALIAS>::width>
+    AVEL_FINL void store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v) {
+        $<store<std::uint32_t>(scalar*, vec)>
+    }
+
+    template<>
+    AVEL_FINL void store<$<VECTOR_ALIAS>::width>($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v) {
+        $<store<VECTOR_WIDTH>(scalar*, vec)>
+    }
+
+    AVEL_FINL void store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, std::uint32_t n) {
+        $<store(scalar*, vec, std::uint32_t)>
+    }
+
+
+
+    template<std::uint32_t N = $<VECTOR_ALIAS>::width>
+    AVEL_FINL void aligned_store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v) {
+        $<aligned_store<std::uint32_t>(scalar*, vec)>
+    }
+
+    template<>
+    AVEL_FINL void aligned_store<$<VECTOR_ALIAS>::width>($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v) {
+        $<aligned_store<VECTOR_WIDTH>(scalar*, vec)>
+    }
+
+    AVEL_FINL void aligned_store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, std::uint32_t n) {
+        $<aligned_store(scalar*, vec, std::uint32_t)>
+    }
+
+
+$BEGIN<HAS_SCATTER>$
+    template<std::uint32_t N = $<VECTOR_ALIAS>::width>
+    AVEL_FINL void scatter(const $<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, $<VECTOR_ALIAS> indices) {
+        $<scatter(const scalar*, vec, vec)>
+    }
+
+    AVEL_FINL void scatter<0>(const $<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, $<VECTOR_ALIAS> indices) {
+        // Don't have to do anything
+    }
+
+    AVEL_FINL void scatter<$<VECTOR_ALIAS>::width>(const $<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, $<VECTOR_ALIAS> indices) {
+        $<scatter<width>(const scalar*, vec, vec)>
+    }
+
+    AVEL_FINL void scatter(const $<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, $<VECTOR_ALIAS> indices, std::uint32_t n {
+        $<scatter(const scalar*, vec, vec, std::uint32_t)>
+    }
+
+
+
+    template<std::uint32_t N = $<VECTOR_ALIAS>::width>
+    AVEL_FINL void scatter(const $<USCALAR_NAME>* ptr, $<UVECTOR_ALIAS> v, $<VECTOR_ALIAS> indices) {
+        $<scatter(const uscalar*, uvec, vec)>
+    }
+
+    AVEL_FINL void scatter<0>(const $<USCALAR_NAME>* ptr, $<UVECTOR_ALIAS> v, $<VECTOR_ALIAS> indices) {
+        // Don't have to do anything
+    }
+
+    AVEL_FINL void scatter<$<VECTOR_ALIAS>::width>(const $<USCALAR_NAME>* ptr, $<UVECTOR_ALIAS> v, $<VECTOR_ALIAS> indices) {
+        $<scatter<width>(const uscalar*, uvec, vec)>
+    }
+
+    AVEL_FINL void scatter(const $<USCALAR_NAME>* ptr, $<UVECTOR_ALIAS> v, $<VECTOR_ALIAS> indices, std::uint32_t n {
+        $<scatter(const uscalar*, uvec, vec, std::uint32_t)>
+    }
+$END
+    //=====================================================
+    // Arrangement Instructions
+    //=====================================================
+
+    template<std::uint32_t N>
+    AVEL_FINL $<SCALAR_NAME> extract($<VECTOR_ALIAS> v) {
+        static_assert(N <= $<VECTOR_WIDTH>, "Specified index does not exist");
+        typename std::enable_if<N <= $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
+
+        $<extract(vec)>
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL $<VECTOR_ALIAS> insert($<VECTOR_ALIAS> v, $<SCALAR_NAME> x) {
+        static_assert(N <= $<VECTOR_WIDTH>, "Specified index does not exist");
+        typename std::enable_if<N <= $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
+
+        $<insert(vec, scalar)>
+    }
+
+    //=====================================================
+    // Integer vector operations
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL div_type<$<VECTOR_ALIAS>> div($<VECTOR_ALIAS> x, $<VECTOR_ALIAS> y) {
+        $<div(vec, vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> popcount($<VECTOR_ALIAS> x) {
+        return $<MASK_ALIAS>{popcount($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> countl_zero($<VECTOR_ALIAS> x) {
+        return $<MASK_ALIAS>{countl_zero($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> countl_one($<VECTOR_ALIAS> x) {
+        return $<MASK_ALIAS>{countl_one($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> countr_zero($<VECTOR_ALIAS> x) {
+        return $<MASK_ALIAS>{countr_zero($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> countr_one($<VECTOR_ALIAS> x) {
+        return $<MASK_ALIAS>{countr_one($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<MASK_ALIAS> has_single_bit($<VECTOR_ALIAS> v) {
+        return $<MASK_ALIAS>{has_single_bit($<UVECTOR_ALIAS>{v})};
+    }
+
+    //=====================================================
+    // Bit Manipulation Operations
+    //=====================================================
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    $<VECTOR_ALIAS> bit_shift_left($<VECTOR_ALIAS> v) {
+        static_assert(S <= $<SCALAR_WIDTH>, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= $<SCALAR_WIDTH>, int>::type dummy_variable = 0;
+
+        return $<VECTOR_ALIAS>{bit_shift_left<S>($<UVECTOR_ALIAS>{v})};
+    }
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    $<VECTOR_ALIAS> bit_shift_right($<VECTOR_ALIAS> v) {
+        static_assert(S <= $<SCALAR_WIDTH>, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= $<SCALAR_WIDTH>, int>::type dummy_variable = 0;
+
+        return $<VECTOR_ALIAS>{bit_shift_right<S>($<UVECTOR_ALIAS>{v})};
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> rotl($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{rotl<S>($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> rotl($<VECTOR_ALIAS> v, long long s) {
+        return $<VECTOR_ALIAS>{rotl($<UVECTOR_ALIAS>{v}, s)};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> rotl($<VECTOR_ALIAS> v, $<VECTOR_ALIAS> s) {
+        return $<VECTOR_ALIAS>{rotl($<UVECTOR_ALIAS>{v}, $<UVECTOR_ALIAS>{s})};
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> rotr($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{rotr<S>($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> rotr($<VECTOR_ALIAS> v, long long s) {
+        return $<VECTOR_ALIAS>{rotr($<UVECTOR_ALIAS>{v}, s)};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> rotr($<VECTOR_ALIAS> v, $<VECTOR_ALIAS> s) {
+        return $<VECTOR_ALIAS>{rotr($<UVECTOR_ALIAS>{v}, $<UVECTOR_ALIAS>{s})};
+    }
+
+    //=====================================================
+    // Vector conversions
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL $<ARRAY_ALIAS> to_array($<VECTOR_ALIAS> x) {
+        alignas($<VECTOR_ALIGNMENT>) $<ARRAY_ALIAS> ret;
+        aligned_store(ret.data(), v);
+        return ret;
+    }
+    $<VECTOR_CONVERSIONS>
+}
+
+#endif //$<HEADER_GUARD>
