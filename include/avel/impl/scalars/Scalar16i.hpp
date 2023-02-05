@@ -130,7 +130,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::int16_t average(std::int16_t a, std::int16_t b) {
-        return (std::int32_t(a) + std::int32_t(b)) >> 1;
+        return (std::int32_t(a) + std::int32_t(b)) / 2;
     }
 
 }

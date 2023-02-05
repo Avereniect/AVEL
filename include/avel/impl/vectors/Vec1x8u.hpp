@@ -83,12 +83,12 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator=(bool b) {
-            content = -b;
+            *this = Vector_mask{b};
             return *this;
         }
 
         AVEL_FINL Vector_mask& operator=(primitive p) {
-            content = p;
+            *this = Vector_mask{p};
             return *this;
         }
 
@@ -199,17 +199,6 @@ namespace avel {
     AVEL_FINL bool none(mask1x8u m) {
         return !decay(m);
     }
-
-    //=====================================================
-    // Mask conversions
-    //=====================================================
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x8u, 1> convert<mask1x8u, mask1x8u>(mask1x8u m) {
-        return std::array<mask1x8u, 1>{m};
-    }
-
 
 
 
@@ -527,13 +516,18 @@ namespace avel {
 
     };
 
+    static_assert(
+        1 * sizeof(std::uint8_t) == sizeof(vec1x8u),
+        "Vector was not of the expected size!"
+    );
+
     //=====================================================
     // General vector operations
     //=====================================================
 
     [[nodiscard]]
     AVEL_FINL vec1x8u broadcast_mask(mask1x8u m) {
-        return vec1x8u{decay(m)};
+        return vec1x8u{static_cast<vec1x8u::scalar>(-decay(m))};
     }
 
     [[nodiscard]]
@@ -567,13 +561,13 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x8u midpoint(vec1x8u a, vec1x8u b) {
-        return vec1x8u{midpoint(decay(a), decay(b))};
+    AVEL_FINL vec1x8u average(vec1x8u a, vec1x8u b) {
+        return vec1x8u{average(decay(a), decay(b))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x8u average(vec1x8u a, vec1x8u b) {
-        return vec1x8u{average(decay(a), decay(b))};
+    AVEL_FINL vec1x8u midpoint(vec1x8u a, vec1x8u b) {
+        return vec1x8u{midpoint(decay(a), decay(b))};
     }
 
     //Definition of neg_abs delayed until later
@@ -616,9 +610,11 @@ namespace avel {
 
 
 
-
     template<std::uint32_t N = vec1x8u::width>
     AVEL_FINL void store(std::uint8_t* ptr, vec1x8u v) {
+        static_assert(N <= vec1x8u::width, "Cannot store more elements than width of vector");
+        typename std::enable_if<N <= vec1x8u::width, int>::type dummy_variable = 0;
+
         *ptr = decay(v);
     }
 
@@ -637,6 +633,9 @@ namespace avel {
 
     template<std::uint32_t N = vec1x8u::width>
     AVEL_FINL void aligned_store(std::uint8_t* ptr, vec1x8u v) {
+        static_assert(N <= vec1x8u::width, "Cannot store more elements than width of vector");
+        typename std::enable_if<N <= vec1x8u::width, int>::type dummy_variable = 0;
+
         *ptr = decay(v);
     }
 
@@ -649,6 +648,13 @@ namespace avel {
         if (n) {
             *ptr = decay(v);
         }
+    }
+
+    [[nodiscard]]
+    AVEL_FINL arr1x8u to_array(vec1x8u x) {
+        alignas(1) arr1x8u ret;
+        aligned_store(ret.data(), x);
+        return ret;
     }
 
     //=====================================================
@@ -835,23 +841,6 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec1x8u rotr(vec1x8u v, vec1x8u s) {
         return vec1x8u{rotr(decay(v), decay(s))};
-    }
-
-    //=====================================================
-    // Vector conversions
-    //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL arr1x8u to_array(vec1x8u x) {
-        alignas(1) arr1x8u ret;
-        aligned_store(ret.data(), x);
-        return ret;
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec1x8u, 1> convert<vec1x8u, vec1x8u>(vec1x8u m) {
-        return std::array<vec1x8u, 1>{m};
     }
 
 }

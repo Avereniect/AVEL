@@ -49,6 +49,19 @@ endforeach()
 
 target_compile_definitions(AVEL INTERFACE ${AVEL_REQUESTED_EXTENSIONS})
 
+## Define macros for cache line sizes
+if(AVEL_L1_CACHE_LINE_SIZE)
+    target_compile_definitions(AVEL INTERFACE AVEL_L1_CACHE_LINE_SIZE=${AVEL_L1_CACHE_LINE_SIZE})
+endif()
+
+if(AVEL_L2_CACHE_LINE_SIZE)
+    target_compile_definitions(AVEL INTERFACE AVEL_L2_CACHE_LINE_SIZE=${AVEL_L2_CACHE_LINE_SIZE})
+endif()
+
+if(AVEL_L3_CACHE_LINE_SIZE)
+    target_compile_definitions(AVEL INTERFACE AVEL_L3_CACHE_LINE_SIZE=${AVEL_L3_CACHE_LINE_SIZE})
+endif()
+
 
 
 # AVEL tests
@@ -67,10 +80,10 @@ if (AVEL_BUILD_TESTS)
 
     #TODO: Set compilation flags based on enabled features
     target_compile_options(AVEL_TESTS PRIVATE "")
-    target_link_options(AVEL_TESTS PRIVATE)
+    target_link_options(AVEL_TESTS PRIVATE "")
 
     target_include_directories(AVEL_TESTS PRIVATE ./include/)
 endif()
 
 
-add_subdirectory(support)
+#add_subdirectory(support)

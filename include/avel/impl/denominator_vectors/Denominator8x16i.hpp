@@ -1,0 +1,8 @@
+//
+// Created by avereniect on 10/30/22.
+//
+
+#ifndef AVEL_DENOMINATOR8X16I_HPP
+#define AVEL_DENOMINATOR8X16I_HPP
+
+#endif //AVEL_DENOMINATOR8X16I_HPP

@@ -19,6 +19,11 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL std::int8_t byteswap(std::int8_t x) {
+        return x;
+    }
+
+    [[nodiscard]]
     AVEL_FINL std::int8_t countl_zero(std::int8_t x) {
         return countl_zero(std::uint8_t(x));
     }
@@ -126,7 +131,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::int8_t average(std::int8_t a, std::int8_t b) {
-        return (std::int16_t(a) + std::int16_t(b)) >> 1;
+        return (std::int16_t(a) + std::int16_t(b)) / 2;
     }
 
 }

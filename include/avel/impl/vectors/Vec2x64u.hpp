@@ -8,9 +8,7 @@ namespace avel {
     //=====================================================
 
     using vec2x64u = Vector<std::uint64_t, 2>;
-
     using arr2x64u = std::array<std::uint64_t, 2>;
-
     using mask2x64u = Vector_mask<std::uint64_t, 2>;
 
     //=====================================================
@@ -356,6 +354,16 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool none(mask2x64u m) {
         return !any(m);
+    }
+
+    //=====================================================
+    // Mask conversions
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<mask2x64u, 1> convert<mask2x64u, mask2x64u>(mask2x64u m) {
+        return std::array<mask2x64u, 1>{m};
     }
 
 
@@ -949,13 +957,13 @@ namespace avel {
         }
 
         [[nodiscard]]
-        AVEL_FINL friend Vector operator<<(Vector lhs, std::uint32_t rhs) {
+        AVEL_FINL friend Vector operator<<(Vector lhs, long long rhs) {
             lhs <<= rhs;
             return lhs;
         }
 
         [[nodiscard]]
-        AVEL_FINL friend Vector operator>>(Vector lhs, std::uint32_t rhs) {
+        AVEL_FINL friend Vector operator>>(Vector lhs, long long rhs) {
             lhs >>= rhs;
             return lhs;
         }
@@ -1735,9 +1743,10 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec2x64u rotl(vec2x64u v, long long s) {
         #if defined(AVEL_AVX512VL)
-        return vec2x64u{_mm_rolv_epi64(decay(v), decay(vec2x64u{s}))};
+        return vec2x64u{_mm_rolv_epi64(decay(v), _mm_set1_epi64x(s))};
 
         #elif defined(AVEL_SSE2)
+        s &= 0x3F;
         return (v << s) | (v >> (64 - s));
 
         #endif
@@ -1753,7 +1762,9 @@ namespace avel {
     AVEL_FINL vec2x64u rotl(vec2x64u v, vec2x64u s) {
         #if defined(AVEL_AVX512VL)
         return vec2x64u{_mm_rolv_epi64(decay(v), decay(s))};
+
         #elif defined(AVEL_SSE2)
+        s &= vec2x64u{0x3F};
         return (v << s) | (v >> (vec2x64u{64} - s));
         #endif
 
@@ -1768,12 +1779,15 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec2x64u rotr(vec2x64u v, long long s) {
         #if defined(AVEL_AVX512VL)
-        return vec2x64u{_mm_rorv_epi64(decay(v), decay(vec2x64u{static_cast<std::uint64_t>(s)}))};
+        return vec2x64u{_mm_rorv_epi64(decay(v), _mm_set1_epi64x(s))};
+
         #elif defined(AVEL_SSE2)
+        s &= 0x3F;
         return (v >> s) | (v << (64 - s));
         #endif
 
         #if defined(AVEL_NEON)
+        s &= 0x3F;
         return (v >> s) | (v << (64 - s));
         #endif
     }
@@ -1783,10 +1797,12 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         return vec2x64u{_mm_rorv_epi64(decay(v), decay(s))};
         #elif defined(AVEL_SSE2)
+        s &= vec2x64u{0x3F};
         return (v >> s) | (v << (vec2x64u {64} - s));
         #endif
 
         #if defined(AVEL_NEON)
+        s &= vec2x64u{0x3F};
         return (v >> s) | (v << (vec2x64u {64} - s));
         #endif
     }
@@ -1802,7 +1818,11 @@ namespace avel {
         return array;
     }
 
-    //TODO: Add conversions
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<vec2x64u, 1> convert<vec2x64u, vec2x64u>(vec2x64u m) {
+        return std::array<vec2x64u, 1>{m};
+    }
 
 }
 

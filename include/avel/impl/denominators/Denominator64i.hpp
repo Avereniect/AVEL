@@ -6,7 +6,7 @@ namespace avel {
     using Denom64i = Denominator<std::int64_t>;
 
     template<>
-    class alignas(16) Denominator<std::int64_t> {
+    class alignas(32) Denominator<std::int64_t> {
     public:
 
         template<class U>
@@ -69,12 +69,13 @@ namespace avel {
 
         [[nodiscard]]
         static AVEL_FINL std::int64_t mulhi(std::int64_t x, std::int64_t y) {
-            #if defined(AVEL_GCC) || defined(AVEL_CLANG)
+            #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX)
             //Should compile down to single imul instruction on X86 or a single
             //smulh instruction on ARM aarach64
             return static_cast<std::int64_t>((__int128_t(x) * __int128_t(y)) >> 64);
 
             #else
+            //This code contained a bug
             std::uint64_t a_lo = x & 0x00000000FFFFFFFFull;
             std::uint64_t a_hi = x >> 32;
             std::uint64_t b_lo = y & 0x00000000FFFFFFFFull;
@@ -98,10 +99,13 @@ namespace avel {
 
         [[nodiscard]]
         static AVEL_FINL std::int64_t compute_mp(std::int64_t l, std::int64_t d) {
-            #if defined(AVEL_GCC) || defined(AVEL_CLANG)
+            #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX)
             return (__int128_t{1} << (63 + l)) / abs(d) + 1 - (__int128_t{1} << 64);
-            #endif
+            #else
+
+            static_assert(false, "Implementation required");
             //TODO: Implementation that doesn't rely on __int128_t
+            #endif
         }
 
     };

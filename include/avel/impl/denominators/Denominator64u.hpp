@@ -35,7 +35,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend avel::div_type<std::uint64_t> div(std::uint64_t n, Denominator denom) {
-            #if defined(AVEL_X86) & (defined(AVEL_GCC) | defined(AVEL_CLANG))
+            #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
             //This compiles down to an x86 mul instruction when optimized
             __uint128_t t0 = __uint128_t(denom.m) * __uint128_t(n);
             std::uint64_t t1 = static_cast<std::uint64_t>(t0 >> 64);
@@ -117,7 +117,7 @@ namespace avel {
 
         [[nodiscard]]
         static AVEL_FINL std::uint64_t compute_m(std::uint64_t l, std::uint64_t d) {
-            #if defined(AVEL_GCC) | defined(AVEL_CLANG)
+            #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX)
             auto tmp0 = __uint128_t(1) << 64;
             auto tmp1 = __uint128_t(1) << l;
             auto tmp2 = tmp1 - d;
@@ -128,8 +128,11 @@ namespace avel {
             return tmp6;
 
             //return (__uint128_t((1 << l) - d) << 64) / __uint128_t(d) + 1;
-            #endif
+            #else
+
+            static_assert(false, "Implementation required");
             //TODO: More generic implementation
+            #endif
         }
 
     };

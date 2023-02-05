@@ -1,15 +1,23 @@
-//
-// Created by avereniect on 3/24/22.
-//
-
 #ifndef AVEL_IMPL_CONSTANTS_HPP
 #define AVEL_IMPL_CONSTANTS_HPP
 
-#include "Utils.hpp"
+#include "Capabilities.hpp"
+#include "../Misc.hpp"
 
 #include <cstdint>
+#include <array>
 
 namespace avel {
+
+    //=====================================================
+    // Cache line constants
+    //=====================================================
+
+    constexpr std::array<std::size_t, 3> cache_line_sizes {
+        AVEL_L1_CACHE_LINE_SIZE,
+        AVEL_L2_CACHE_LINE_SIZE,
+        AVEL_L3_CACHE_LINE_SIZE
+    };
 
     //=====================================================
     // Floating-point constants
@@ -19,14 +27,32 @@ namespace avel {
     // for underestimates
     //=====================================================
 
-    const std::uint32_t float_bit_mask_bits = 0x80000000;
-    const auto float_bit_mask = avel::bit_cast<float>(float_bit_mask_bits);
+    // Float-component masks
+
+    const std::uint32_t float_sign_bit_mask_bits = 0x80000000;
+    const auto float_sign_bit_mask = avel::bit_cast<float>(float_sign_bit_mask_bits);
 
     const std::uint32_t float_exponent_mask_bits = 0x7f800000;
     const auto float_exponent_mask = avel::bit_cast<float>(float_exponent_mask_bits);
 
     const std::uint32_t float_mantissa_mask_bits = 0x007fffff;
     const auto float_mantissa_mask = avel::bit_cast<float>(float_mantissa_mask_bits);
+
+    // Notable floating-point values
+
+    const std::uint32_t float_subnormal_range_begin_bits = 0x00000000;
+    const auto float_subnormal_range_begin = avel::bit_cast<float>(float_subnormal_range_begin_bits);
+
+    const std::uint32_t float_subnormal_range_end_bits = 0x800000;
+    const auto float_subnormal_range_end = avel::bit_cast<float>(float_subnormal_range_end_bits);
+
+    const std::uint32_t float_normal_range_begin_bits = 0x800000;
+    const auto float_normal_range_begin = avel::bit_cast<float>(float_normal_range_begin_bits);
+
+    const std::uint32_t float_normal_range_end_bits = 0x7f800000;
+    const auto float_normal_range_end = avel::bit_cast<float>(float_normal_range_end_bits);
+
+    // Trigonometric constants
 
     const std::uint32_t quarter_pi_bits = 0x3f490fdb;
     const auto quarter_pi = avel::bit_cast<float>(quarter_pi_bits);

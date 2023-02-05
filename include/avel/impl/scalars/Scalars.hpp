@@ -25,7 +25,7 @@ namespace avel {
 #include "Scalar64u.hpp"
 #include "Scalar64i.hpp"
 
-#include "Scalar32f.hpp"
-#include "Scalar64f.hpp"
+//#include "Scalar32f.hpp"
+//#include "Scalar64f.hpp"
 
 #endif //AVEL_SCALARS_HPP

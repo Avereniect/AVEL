@@ -36,6 +36,11 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL std::uint8_t byteswap(std::uint8_t x) {
+        return x;
+    }
+
+    [[nodiscard]]
     AVEL_FINL std::uint8_t countl_zero(std::uint8_t x) {
         #if defined(AVEL_LZCNT)
         return static_cast<uint8_t>(_lzcnt_u32(x) - 24);

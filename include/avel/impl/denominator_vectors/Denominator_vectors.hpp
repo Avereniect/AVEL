@@ -1,17 +1,45 @@
-//
-// Created by avereniect on 7/27/22.
-//
+#ifndef AVEL_DENOMINATOR_VECTORS_HPP
+#define AVEL_DENOMINATOR_VECTORS_HPP
 
-#ifndef AVEL_VECTOR_RECIPROCALS_HPP
-#define AVEL_VECTOR_RECIPROCALS_HPP
+// Native Denominators
 
-#if defined(AVEL_SSE2) || defined(AVEL_ARM)
-    #include "Reciprocal4x32u.hpp"
-    #include "Reciprocal4x32i.hpp"
+#include "Denominator1x8u.hpp"
+#include "Denominator1x8i.hpp"
 
-    #include "Reciprocal8x16u.hpp"
+#include "Denominator1x16u.hpp"
+#include "Denominator1x16i.hpp"
 
-    #include "Reciprocal16x8u.hpp"
+#include "Denominator1x32u.hpp"
+#include "Denominator1x32i.hpp"
+
+#include "Denominator1x64u.hpp"
+#include "Denominator1x64i.hpp"
+
+// 128-bit Denominators
+
+#if defined(AVEL_SSE2) || defined(AVEL_NEON)
+    #include "Denominator4x32u.hpp"
+    #include "Denominator4x32i.hpp"
+
+    #include "Denominator8x16u.hpp"
+
+    #include "Denominator16x8u.hpp"
 #endif
 
-#endif //AVEL_VECTOR_RECIPROCALS_HPP
+/*
+// 256-bit Denominators
+
+#if defined(AVEL_AVX2)
+    #include "Denominator8x32u.hpp"
+#endif
+*/
+
+/*
+// 512-bit Denominators
+
+#if defined(AVEL_AVX512F)
+    #include "Denominator16x32u.hpp"
+#endif
+*/
+
+#endif //AVEL_DENOMINATOR_VECTORS_HPP

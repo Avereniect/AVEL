@@ -1,34 +1,33 @@
-//
-// Created by avereniect on 7/27/22.
-//
-
-#ifndef AVEL_RECIPROCAL4X32U_HPP
-#define AVEL_RECIPROCAL4X32U_HPP
+#ifndef AVEL_DENOMINATOR4X32U_HPP
+#define AVEL_DENOMINATOR4X32U_HPP
 
 namespace avel {
 
-    using Recip4x32u = Reciprocal<vec4x32u>;
+    using Denom4x32u = Denominator<vec4x32u>;
 
     template<>
-    class Reciprocal<vec4x32u> {
+    class alignas(64) Denominator<vec4x32u> {
     public:
+
+        template<class U>
+        friend class Denominator;
 
         //=================================================
         // -ctors
         //=================================================
 
-        explicit Reciprocal(Recip32u recip):
-            m(recip.m),
-            sh1(recip.sh1),
-            sh2(recip.sh2),
-            d(recip.d) {}
+        explicit Denominator(Denom32u denom):
+            m(denom.m),
+            sh1(denom.sh1),
+            sh2(denom.sh2),
+            d(denom.d) {}
 
-        explicit Reciprocal(vec4x32u d):
-            Reciprocal(d, vec4x32u{32} - countl_zero(d - vec4x32u{1})) {}
+        explicit Denominator(vec4x32u d):
+            Denominator(d, vec4x32u{32} - countl_zero(d - vec4x32u{1})) {}
 
     private:
 
-        explicit Reciprocal(vec4x32u d, vec4x32u l):
+        explicit Denominator(vec4x32u d, vec4x32u l):
             m(compute_m(l, d)),
             sh1(min(l, vec4x32u{1})),
             sh2(l - vec4x32u{sh1}),
@@ -40,22 +39,37 @@ namespace avel {
         // Arithmetic Operators
         //=================================================
 
-        friend vec4x32u operator*(Reciprocal lhs, vec4x32u n) {
-            auto t1 = mulhi(lhs.m, n);
-
-            n -= t1;
-
+        [[nodiscard]]
+        AVEL_FINL friend avel::div_type<vec4x32u> div(vec4x32u n, Denominator denom) {
+            vec4x32u t1 = mulhi(denom.m, n);
             #if defined(AVEL_AVX2)
-            vec4x32u tmp = n >> lhs.sh1;
-            #else
-            vec4x32u tmp = blend(n, n >> 1, lhs.sh1);
+            vec4x32u q = (t1 + ((n - t1) >> denom.sh1)) >> denom.sh2;
+
+            #elif defined(AVEL_SSE2)
+            vec4x32u t0 = (n - t1);
+            t0 = blend(denom.sh1, t0 >> 1, t0);
+            vec4x32u q = (t1 + t0) >> denom.sh2;
+
             #endif
 
-            return (t1 + tmp) >> lhs.sh2;
+            #if defined(AVEL_NEON)
+            vec4x32u t0 = (n - t1);
+            t0 = blend(denom.sh1, t0 >> 1, t0);
+            vec4x32u q = (t1 + t0) >> denom.sh2;
+            #endif
+
+            vec4x32u r = n - (q * denom.d);
+            return {q, r};
         }
 
-        friend vec4x32u operator*(vec4x32u lhs, Reciprocal rhs) {
-            return rhs * lhs;
+        [[nodiscard]]
+        AVEL_FINL friend vec4x32u operator/(vec4x32u lhs, Denominator rhs) {
+            return div(lhs, rhs).quot;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL friend vec4x32u operator%(vec4x32u lhs, Denominator rhs) {
+            return div(lhs, rhs).rem;
         }
 
     private:
@@ -80,18 +94,37 @@ namespace avel {
         //=================================================
 
         static vec4x32u mulhi(vec4x32u x, vec4x32u y) {
+            #if defined(AVEL_SSE2)
             vec4x32u lo{_mm_srli_si128(_mm_mul_epu32(decay(x), decay(y)), 4)};
             vec4x32u hi{_mm_mul_epu32(_mm_srli_si128(decay(x), 4), _mm_srli_si128(decay(y), 4))};
 
             mask4x32u m{{false, true, false, true}};
-            return blend(lo, hi, m);
+            return blend(m, hi, lo);
+            #endif
+
+            #if defined(AVEL_NEON)
+            auto x_half0 = vget_low_u32(decay(x));
+            auto x_half1 = vget_high_u32(decay(x));
+
+            auto y_half0 = vget_low_u32(decay(y));
+            auto y_half1 = vget_high_u32(decay(y));
+
+            auto prod_half0 = vreinterpretq_u32_u64(vmull_u32(x_half0, y_half0));
+            auto prod_half1 = vreinterpretq_u32_u64(vmull_u32(x_half1, y_half1));
+
+            auto prod = vuzpq_u32(prod_half0, prod_half1).val[1];
+
+            return vec4x32u{prod};
+
+            #endif
         }
 
         static vec4x32u compute_m(vec4x32u l, vec4x32u d) {
-            vec2x64u l_lo = bit_cast<vec2x64u>(l) & vec2x64u{0x00000000FFFFFFFF};
+            //TODO: Optimize for case where vec4x64u is available
+            vec2x64u l_lo = bit_cast<vec2x64u>(l) & vec2x64u{0x00000000FFFFFFFFull};
             vec2x64u l_hi = bit_cast<vec2x64u>(l) >> 32;
 
-            vec2x64u d_lo = bit_cast<vec2x64u>(d) & vec2x64u{0x00000000FFFFFFFF};
+            vec2x64u d_lo = bit_cast<vec2x64u>(d) & vec2x64u{0x00000000FFFFFFFFull};
             vec2x64u d_hi = bit_cast<vec2x64u>(d) >> 32;
 
             vec2x64u lo_part = (vec2x64u{0x100000000ul} << l_lo) / d_lo;
@@ -105,17 +138,22 @@ namespace avel {
             vec4x32u y = bit_cast<vec4x32u>(hi_part);
             mask4x32u m{{false, true, false, true}};
 
-            vec4x32u ret = blend(x, y, m);
+            vec4x32u ret = blend(m, y, x);
             return ret;
         }
 
     };
 
-    AVEL_FINL vec4x32u& operator*=(vec4x32u& lhs, Reciprocal<vec4x32u> rhs) {
-        lhs = lhs * rhs;
+    AVEL_FINL vec4x32u& operator/=(vec4x32u& lhs, Denom4x32u rhs) {
+        lhs = lhs / rhs;
+        return lhs;
+    }
+
+    AVEL_FINL vec4x32u& operator%=(vec4x32u& lhs, Denom4x32u rhs) {
+        lhs = lhs % rhs;
         return lhs;
     }
 
 }
 
-#endif //AVEL_RECIPROCAL4X32U_HPP
+#endif //AVEL_DENOMINATOR4X32U_HPP

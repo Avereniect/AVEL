@@ -1,37 +1,33 @@
-//
-// Created by avereniect on 9/8/22.
-//
-
-#ifndef AVEL_RECIPROCAL4X32I_HPP
-#define AVEL_RECIPROCAL4X32I_HPP
+#ifndef AVEL_DENOMINATOR4X32I_HPP
+#define AVEL_DENOMINATOR4X32I_HPP
 
 namespace avel {
 
-    using Recip4x32i = Reciprocal<vec4x32i>;
+    using Denom4x32i = Denominator<vec4x32i>;
 
     template<>
-    class alignas(16) Reciprocal<vec4x32i> {
+    class alignas(16) Denominator<vec4x32i> {
     public:
 
         template<class U>
-        friend class Reciprocal;
+        friend class Denominator;
 
         //=================================================
         // -ctors
         //=================================================
 
-        explicit Reciprocal(Recip32i recip):
+        explicit Denominator(Denom32i recip):
             mp(recip.mp),
             d_sign(recip.d_sign),
             sh(recip.sh),
             d(recip.d) {}
 
-        explicit Reciprocal(vec4x32i d):
-            Reciprocal(d, max(vec4x32i{32} - vec4x32i{countl_zero(abs(d) - vec4x32i{1})}, vec4x32i{1})) {}
+        explicit Denominator(vec4x32i d):
+            Denominator(d, max(vec4x32i{32} - vec4x32i{countl_zero(abs(d) - vec4x32i{1})}, vec4x32i{1})) {}
 
     private:
 
-        explicit Reciprocal(vec4x32i d, vec4x32i l):
+        explicit Denominator(vec4x32i d, vec4x32i l):
             mp(compute_mp(d, l)),
             d_sign(d >> 31),
             sh(l - vec4x32i{1}),
@@ -70,11 +66,11 @@ namespace avel {
             vec4x32i y = bit_cast<vec4x32i>(hi_part);
             mask4x32i m{{false, true, false, true}};
 
-            return blend(x, y, m);
+            return blend(m, y, x);
         }
 
     };
 
 }
 
-#endif //AVEL_RECIPROCAL4X32I_HPP
+#endif //AVEL_DENOMINATOR4X32I_HPP

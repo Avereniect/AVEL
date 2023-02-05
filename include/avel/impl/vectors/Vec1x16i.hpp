@@ -83,12 +83,12 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator=(bool b) {
-            content = -b;
+            *this = Vector_mask{b};
             return *this;
         }
 
         AVEL_FINL Vector_mask& operator=(primitive p) {
-            content = p;
+            *this = Vector_mask{p};
             return *this;
         }
 
@@ -177,6 +177,22 @@ namespace avel {
     };
 
     //=====================================================
+    // Mask conversions
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<mask1x16u, 1> convert(mask1x16i v) {
+        return {mask1x16u{decay(v)}};
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<mask1x16i, 1> convert(mask1x16u v) {
+        return {mask1x16i{decay(v)}};
+    }
+
+    //=====================================================
     // Mask functions
     //=====================================================
 
@@ -199,53 +215,6 @@ namespace avel {
     AVEL_FINL bool none(mask1x16i m) {
         return none(mask1x16u{m});
     }
-
-    //=====================================================
-    // Mask conversions
-    //=====================================================
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x8u, 1> convert<mask1x8u, mask1x16i>(mask1x16i m) {
-        return std::array<mask1x8u, 1>{mask1x8u{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x8i, 1> convert<mask1x8i, mask1x16i>(mask1x16i m) {
-        return std::array<mask1x8i, 1>{mask1x8i{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x16u, 1> convert<mask1x16u, mask1x16i>(mask1x16i m) {
-        return std::array<mask1x16u, 1>{mask1x16u{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x16i, 1> convert<mask1x16i, mask1x16i>(mask1x16i m) {
-        return std::array<mask1x16i, 1>{mask1x16i{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x16i, 1> convert<mask1x16i, mask1x8u>(mask1x8u m) {
-        return std::array<mask1x16i, 1>{mask1x16i{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x16i, 1> convert<mask1x16i, mask1x8i>(mask1x8i m) {
-        return std::array<mask1x16i, 1>{mask1x16i{decay(m)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask1x16i, 1> convert<mask1x16i, mask1x16u>(mask1x16u m) {
-        return std::array<mask1x16i, 1>{mask1x16i{decay(m)}};
-    }
-
 
 
 
@@ -566,6 +535,27 @@ namespace avel {
 
     };
 
+    static_assert(
+        1 * sizeof(std::int16_t) == sizeof(vec1x16i),
+        "Vector was not of the expected size!"
+    );
+
+    //=====================================================
+    // Vector conversions
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<vec1x16u, 1> convert(vec1x16i v) {
+        return {vec1x16u{static_cast<std::uint16_t>(decay(v))}};
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<vec1x16i, 1> convert(vec1x16u v) {
+        return {vec1x16i{static_cast<std::int16_t>(decay(v))}};
+    }
+
     //=====================================================
     // Delayed definitions
     //=====================================================
@@ -614,13 +604,13 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x16i midpoint(vec1x16i a, vec1x16i b) {
-        return vec1x16i{midpoint(decay(a), decay(b))};
+    AVEL_FINL vec1x16i average(vec1x16i a, vec1x16i b) {
+        return vec1x16i{average(decay(a), decay(b))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x16i average(vec1x16i a, vec1x16i b) {
-        return vec1x16i{average(decay(a), decay(b))};
+    AVEL_FINL vec1x16i midpoint(vec1x16i a, vec1x16i b) {
+        return vec1x16i{midpoint(decay(a), decay(b))};
     }
 
     [[nodiscard]]
@@ -731,6 +721,13 @@ namespace avel {
     }
 
 
+
+    [[nodiscard]]
+    AVEL_FINL arr1x16i to_array(vec1x16i v) {
+        alignas(2) arr1x16i ret;
+        aligned_store(ret.data(), v);
+        return ret;
+    }
 
     //=====================================================
     // Arrangement Instructions
@@ -850,59 +847,6 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec1x16i rotr(vec1x16i v, vec1x16i s) {
         return vec1x16i{rotr(vec1x16u{v}, vec1x16u{s})};
-    }
-
-    //=====================================================
-    // Vector conversions
-    //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL arr1x16i to_array(vec1x16i v) {
-        alignas(2) arr1x16i ret;
-        aligned_store(ret.data(), v);
-        return ret;
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec1x8u, 1> convert<vec1x8u, vec1x16i>(vec1x16i m) {
-        return std::array<vec1x8u, 1>{vec1x8u{static_cast<vec1x8u::scalar>(decay(m))}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec1x8i, 1> convert<vec1x8i, vec1x16i>(vec1x16i m) {
-        return std::array<vec1x8i, 1>{vec1x8i{static_cast<vec1x8i::scalar>(decay(m))}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec1x16u, 1> convert<vec1x16u, vec1x16i>(vec1x16i m) {
-        return std::array<vec1x16u, 1>{vec1x16u{static_cast<vec1x16u::scalar>(decay(m))}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec1x16i, 1> convert<vec1x16i, vec1x16i>(vec1x16i m) {
-        return std::array<vec1x16i, 1>{vec1x16i{static_cast<vec1x16i::scalar>(decay(m))}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec1x16i, 1> convert<vec1x16i, vec1x8u>(vec1x8u m) {
-        return std::array<vec1x16i, 1>{vec1x16i{static_cast<vec1x16i::scalar>(decay(m))}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec1x16i, 1> convert<vec1x16i, vec1x8i>(vec1x8i m) {
-        return std::array<vec1x16i, 1>{vec1x16i{static_cast<vec1x16i::scalar>(decay(m))}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec1x16i, 1> convert<vec1x16i, vec1x16u>(vec1x16u m) {
-        return std::array<vec1x16i, 1>{vec1x16i{static_cast<vec1x16i::scalar>(decay(m))}};
     }
 
 }

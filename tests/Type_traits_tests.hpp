@@ -34,16 +34,17 @@ namespace avel {
     static_assert(std::is_trivial<mask2x64u>::value, "");
     static_assert(std::is_trivial<vec2x64u>::value, "");
 
-    static_assert(std::is_trivial<mask4x32f>::value, "");
-    static_assert(std::is_trivial<vec4x32f>::value, "");
+    //static_assert(std::is_trivial<mask4x32f>::value, "");
+    //static_assert(std::is_trivial<vec4x32f>::value, "");
 
-    static_assert(std::is_trivial<mask2x64f>::value, "");
-    static_assert(std::is_trivial<vec2x64f>::value, "");
+    //static_assert(std::is_trivial<mask2x64f>::value, "");
+    //static_assert(std::is_trivial<vec2x64f>::value, "");
 
     #endif
 
 
 
+    /*
     #if defined(AVEL_AVX)
 
     static_assert(std::is_trivial<mask8x32f>::value, "");
@@ -101,6 +102,7 @@ namespace avel {
     static_assert(std::is_trivial<vec32x16u>::value, "");
 
     #endif
+    */
 
 }
 

@@ -217,6 +217,20 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
 #endif
 
 //=========================================================
+// Cache constants
+//=========================================================
+
+#ifndef AVEL_L1_CACHE_LINE_SIZE
+    #define AVEL_L1_CACHE_LINE_SIZE 64
+#endif
+#ifndef AVEL_L2_CACHE_LINE_SIZE
+    #define AVEL_L2_CACHE_LINE_SIZE 64
+#endif
+#ifndef AVEL_L3_CACHE_LINE_SIZE
+    #define AVEL_L3_CACHE_LINE_SIZE 64
+#endif
+
+//=========================================================
 // Intrinsic headers
 //=========================================================
 

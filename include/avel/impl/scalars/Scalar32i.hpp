@@ -132,8 +132,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::int32_t average(std::int32_t a, std::int32_t b) {
-        //TODO: Add 32-bit ARM version
-        return (std::int64_t(a) + std::int64_t(b)) >> 1;
+        return (std::int64_t(a) + std::int64_t(b)) / 2;
     }
 
 }

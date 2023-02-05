@@ -131,7 +131,15 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::int64_t average(std::int64_t a, std::int64_t b) {
-        return ((a ^ b) >> 1) + (a & b);
+        #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX)
+        return (__int128(a) + __int128(b)) / 2;
+
+        #else
+        std::int64_t avg = (a & b) + ((a ^ b) >> 1);
+        std::int64_t c = (a < -b) & (a ^ b);
+
+        return avg + c;
+        #endif
     }
 
 }
