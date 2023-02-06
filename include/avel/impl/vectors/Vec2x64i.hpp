@@ -1296,7 +1296,7 @@ namespace avel {
     AVEL_FINL vec2x64i average(vec2x64i x, vec2x64i y) {
         #if defined(AVEL_SSE2)
         auto avg = (x & y) + ((x ^ y) >> 1);
-        auto c = broadcast_mask((x < -y) | (y == vec2x64i{std::int64_t(1ll << 63)})) & (x ^ y) & vec2x64i{1};
+        auto c = broadcast_mask((x < -y) | (y == vec2x64i{std::int64_t(1) << 63)})) & (x ^ y) & vec2x64i{1};
 
         return avg + c;
 
@@ -1304,7 +1304,7 @@ namespace avel {
 
         #if defined(AVEL_NEON)
         auto avg = (x & y) + ((x ^ y) >> 1);
-        auto c = broadcast_mask((x < -y) | (y == vec2x64i{std::int64_t(1 << 63)})) & (x ^ y) & vec2x64i{1};
+        auto c = broadcast_mask((x < -y) | (y == vec2x64i{std::int64_t(1) << 63})) & (x ^ y) & vec2x64i{1};
 
         return avg + c;
 

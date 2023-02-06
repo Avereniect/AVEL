@@ -1912,7 +1912,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        return {vec16x8u{vreinterpretq_u8_s8(decay(x))};
+        return {vec16x8u{vreinterpretq_u8_s8(decay(x))}};
         #endif
     }
 
@@ -1924,7 +1924,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        return {vec16x8u{vreinterpretq_s8_u8(decay(x))};
+        return {vec16x8i{vreinterpretq_s8_u8(decay(x))}};
         #endif
     }
 

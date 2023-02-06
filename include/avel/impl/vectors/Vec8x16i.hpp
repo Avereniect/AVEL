@@ -1370,7 +1370,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        return {vec8x16u{vreinterpretq_u16_s16};
+        return {vec8x16u{vreinterpretq_u16_s16(decay(x))}};
         #endif
     }
 
