@@ -99,7 +99,7 @@
 
 // ARM capabilities
 
-#ifdef __ARM_ARCH_ISA_A64__
+#ifdef __ARM_ARCH_ISA_A64
     #define AVEL_AARCH64
 #endif
 

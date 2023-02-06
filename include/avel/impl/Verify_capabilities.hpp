@@ -99,7 +99,7 @@ static_assert(false, "POPCNT feature flag was not passed to compiler");
 
 // ARM capabilities
 
-#if defined(AVEL_AARCH64) && !defined(__ARM_ARCH_ISA_A64__)
+#if defined(AVEL_AARCH64) && !defined(__ARM_ARCH_ISA_A64)
 static_assert(false, "Compiler not targetting Aarch64");
 #endif
 

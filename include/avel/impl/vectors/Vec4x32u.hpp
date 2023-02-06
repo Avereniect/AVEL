@@ -1704,6 +1704,11 @@ namespace avel {
         return v;
     }
 
+    template<>
+    vec4x32u bit_shift_left<32>(vec4x32u v) {
+        return vec4x32u{0x00};
+    }
+
     template<std::uint32_t S>
     [[nodiscard]]
     vec4x32u bit_shift_right(vec4x32u v) {

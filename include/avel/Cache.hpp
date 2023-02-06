@@ -1,76 +1,132 @@
-//
-// Created by avereniect on 2/26/22.
-//
-
 #ifndef AVEL_CACHE_HPP
 #define AVEL_CACHE_HPP
 
 #include "impl/Capabilities.hpp"
-#include "impl/Utils.hpp"
+#include "impl/Constants.hpp"
+
+#include "Misc.hpp"
 
 namespace avel {
 
-    ///
-    /// Prefetches the cache line to which corresponds to the memory address
-    /// specified by the pointer passed in
-    ///
-    /// \param ptr Arbitrary pointer
-    /// \param level Cache level to prefetch into
-    AVEL_FINL void prefetch(const void* ptr, unsigned level);
+    enum Cache_level : std::uint8_t {
+        L1_CACHE = 0,
+        L2_CACHE = 1,
+        L3_CACHE = 2
+    };
+
+    //=====================================================
+    // Prefetching
+    //=====================================================
 
     ///
-    /// Prefetches all the cache lines which correspond to the n bytes pointed
-    /// to by the specified pointer
+    /// Prefetch data with the anticipation that the specified data will be read
+    /// in the near future.
     ///
-    /// \param ptr Arbitrary pointer
+    /// May not do anything if the target hardware does not support the
+    /// specified operation.
+    ///
+    /// \tparam level Enum indicating cache level to prefetch into
+    /// \param ptr Pointer to location in cache line to prefetch
     /// \param n Number of bytes to prefetch
-    /// \param level Cache level to prefetch into
-    AVEL_FINL void prefetch(const void* ptr, std::size_t n, unsigned level);
+    template<Cache_level level = L1_CACHE>
+    void prefetch_read(const void* ptr, std::size_t n = 1) {
+        #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX)
 
-}
+        constexpr static int READ = 0;
+        constexpr auto increment = cache_line_sizes[static_cast<std::uint8_t>(level)];
+        constexpr int locality_hint = 3 - static_cast<std::uint8_t>(level);
 
-namespace avel::impl {
+        for (std::size_t i = 0; i < n; i += increment) {
+            __builtin_prefetch(reinterpret_cast<const char*>(ptr) + i, READ, locality_hint);
+        }
+        #elif
 
-    template<std::size_t Object_size, std::size_t Object_alignment, bool C = (Object_size > Object_alignment)>
-    AVEL_FINL void prefetch_(const void* ptr, std::size_t n, unsigned level);
+        #if defined(AVEL_SSE)
+        static constexpr int table[3] = {
+            static_cast<int>(_MM_HINT_T0),
+            static_cast<int>(_MM_HINT_T1),
+            static_cast<int>(_MM_HINT_T2)
+        };
 
-    template<std::size_t Object_size, std::size_t Object_alignment>
-    AVEL_FINL void prefetch_crossing(const void* ptr, std::size_t n, unsigned level) {
+        constexpr auto increment = cache_line_sizes[static_cast<std::uint8_t>(level)];
+        constexpr auto native_enum = static_cast<int>(level);
 
+        for (std::size_t i = 0; i < n; i += increment) {
+            _mm_prefetch(reinterpret_cast<const char*>(ptr) + i, native_enum);
+        }
+        #endif
+
+        #if defined(AVEL_ARM)
+        //TODO: Implement
+        #endif
+        #endif
+    }
+
+    ///
+    /// Prefetch data with the anticipation that the specified data will be read
+    /// in the near future
+    ///
+    /// May not do anything if the target hardware does not support the
+    /// specified operation.
+    ///
+    /// \tparam level Enum indicating cache level to prefetch into
+    /// \tparam T Type of object to prefetch
+    /// \param ptr Pointer to location in cache line to prefetch
+    /// \param n Number of objects to prefetch
+    template<Cache_level level, class T>
+    void prefetch_read(const T* ptr, std::size_t n = 1) {
+        prefetch_read<level>(reinterpret_cast<const void*>(ptr), sizeof(T) * n);
+    }
+
+    ///
+    /// Prefetch data with the anticipation that the specified data will be
+    /// written in the near future
+    ///
+    /// May not do anything if the target hardware does not support the
+    /// specified operation.
+    ///
+    /// \tparam level Enum indicating cache level to prefetch into
+    /// \param ptr Pointer to location in cache line to prefetch
+    /// \param n Number of bytes to prefetch
+    template<Cache_level level = L1_CACHE>
+    void prefetch_write(const void* ptr, std::size_t n = 1) {
+        #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX)
+
+        constexpr static int WRITE = 1;
+        constexpr auto increment = cache_line_sizes[static_cast<std::uint8_t>(level)];
+        constexpr int locality_hint = 3 - static_cast<std::uint8_t>(level);
+
+        for (std::size_t i = 0; i < n; i += increment) {
+            __builtin_prefetch(reinterpret_cast<const char*>(ptr) + i, WRITE, locality_hint);
+        }
+        #elif
+
+        #if defined(AVEL_SSE)
+        //TODO: Implement using _m_prefetchw?
+        #endif
+
+        #if defined(AVEL_ARM)
+        //TODO: Implement
+        #endif
+        #endif
+    }
+
+    ///
+    /// Prefetch data with the anticipation that the specified data will be
+    /// written in the near future
+    ///
+    /// May not do anything if the target hardware does not support the
+    /// specified operation.
+    ///
+    /// \tparam level Enum indicating cache level to prefetch into
+    /// \tparam T Type of object to prefetch
+    /// \param ptr Pointer to location in cache line to prefetch
+    /// \param n Number of objects to prefetch
+    template<Cache_level level, class T>
+    void prefetch_write(const T* ptr, std::size_t n = 1) {
+        prefetch_write<level>(reinterpret_cast<const void*>(ptr), sizeof(T) * n);
     }
 
 }
-
-namespace avel {
-
-    ///
-    /// Prefetches all the cache lines which are occupied by the pointed to
-    /// object
-    ///
-    /// \tparam T Object type
-    /// \param ptr Pointer to object
-    /// \param level Cache level to prefetch into
-    template<class T>
-    void prefetch(const T* ptr, unsigned level) {
-        impl::prefetch<sizeof(T), alignof(T), sizeof(T) > alignof(T)>(ptr, level);
-        //prefetch(reinterpret_cast<const void*>(ptr), sizeof(T), level);
-    }
-
-    ///
-    /// Prefetches all the cache lines which are occupied by the pointed to
-    /// objects
-    ///
-    /// \tparam T Object type
-    /// \param ptr Pointer to object
-    /// \param n Number of objects in array
-    /// \param level Cache level to prefetch into
-    template<class T>
-    void prefetch(const T* ptr, std::size_t n, unsigned level) {
-        //prefetch(reinterpret_cast<const void*>(ptr), sizeof(T), level);
-    }
-
-}
-
-#include "impl/cache/Cache.hpp"
 
 #endif //AVEL_CACHE_HPP

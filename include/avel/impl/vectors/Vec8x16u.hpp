@@ -1659,6 +1659,11 @@ namespace avel {
         return v;
     }
 
+    template<>
+    vec8x16u bit_shift_left<16>(vec8x16u v) {
+        return vec8x16u{0x00};
+    }
+
     template<std::uint32_t S>
     [[nodiscard]]
     vec8x16u bit_shift_right(vec8x16u v) {
