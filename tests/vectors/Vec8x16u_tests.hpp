@@ -1853,23 +1853,23 @@ namespace avel_tests {
 
             vec8x16u input0{input_array0};
 
-            EXPECT_TRUE(all(bit_shift_left<0>(input0) == (input0 << 0)));
-            EXPECT_TRUE(all(bit_shift_left<1>(input0) == (input0 << 1)));
-            EXPECT_TRUE(all(bit_shift_left<2>(input0) == (input0 << 2)));
-            EXPECT_TRUE(all(bit_shift_left<3>(input0) == (input0 << 3)));
-            EXPECT_TRUE(all(bit_shift_left<4>(input0) == (input0 << 4)));
-            EXPECT_TRUE(all(bit_shift_left<5>(input0) == (input0 << 5)));
-            EXPECT_TRUE(all(bit_shift_left<6>(input0) == (input0 << 6)));
-            EXPECT_TRUE(all(bit_shift_left<7>(input0) == (input0 << 7)));
-            EXPECT_TRUE(all(bit_shift_left<8>(input0) == (input0 << 8)));
-            EXPECT_TRUE(all(bit_shift_left<9>(input0) == (input0 << 9)));
-            EXPECT_TRUE(all(bit_shift_left<10>(input0) == (input0 << 10)));
-            EXPECT_TRUE(all(bit_shift_left<11>(input0) == (input0 << 11)));
-            EXPECT_TRUE(all(bit_shift_left<12>(input0) == (input0 << 12)));
-            EXPECT_TRUE(all(bit_shift_left<13>(input0) == (input0 << 13)));
-            EXPECT_TRUE(all(bit_shift_left<14>(input0) == (input0 << 14)));
-            EXPECT_TRUE(all(bit_shift_left<15>(input0) == (input0 << 15)));
-            EXPECT_TRUE(all(bit_shift_left<16>(input0) == (input0 << 16)));
+            EXPECT_TRUE(all(bit_shift_left<0x00>(input0) == (input0 << 0x00)));
+            EXPECT_TRUE(all(bit_shift_left<0x01>(input0) == (input0 << 0x01)));
+            EXPECT_TRUE(all(bit_shift_left<0x02>(input0) == (input0 << 0x02)));
+            EXPECT_TRUE(all(bit_shift_left<0x03>(input0) == (input0 << 0x03)));
+            EXPECT_TRUE(all(bit_shift_left<0x04>(input0) == (input0 << 0x04)));
+            EXPECT_TRUE(all(bit_shift_left<0x05>(input0) == (input0 << 0x05)));
+            EXPECT_TRUE(all(bit_shift_left<0x06>(input0) == (input0 << 0x06)));
+            EXPECT_TRUE(all(bit_shift_left<0x07>(input0) == (input0 << 0x07)));
+            EXPECT_TRUE(all(bit_shift_left<0x08>(input0) == (input0 << 0x08)));
+            EXPECT_TRUE(all(bit_shift_left<0x09>(input0) == (input0 << 0x09)));
+            EXPECT_TRUE(all(bit_shift_left<0x0a>(input0) == (input0 << 0x0a)));
+            EXPECT_TRUE(all(bit_shift_left<0x0b>(input0) == (input0 << 0x0b)));
+            EXPECT_TRUE(all(bit_shift_left<0x0c>(input0) == (input0 << 0x0c)));
+            EXPECT_TRUE(all(bit_shift_left<0x0d>(input0) == (input0 << 0x0d)));
+            EXPECT_TRUE(all(bit_shift_left<0x0e>(input0) == (input0 << 0x0e)));
+            EXPECT_TRUE(all(bit_shift_left<0x0f>(input0) == (input0 << 0x0f)));
+            EXPECT_TRUE(all(bit_shift_left<0x10>(input0) == vec8x16u{0x00}));
         }
     }
 
@@ -1882,23 +1882,51 @@ namespace avel_tests {
 
             vec8x16u input0{input_array0};
 
-            EXPECT_TRUE(all(bit_shift_right<0>(input0) == (input0 >> 0)));
-            EXPECT_TRUE(all(bit_shift_right<1>(input0) == (input0 >> 1)));
-            EXPECT_TRUE(all(bit_shift_right<2>(input0) == (input0 >> 2)));
-            EXPECT_TRUE(all(bit_shift_right<3>(input0) == (input0 >> 3)));
-            EXPECT_TRUE(all(bit_shift_right<4>(input0) == (input0 >> 4)));
-            EXPECT_TRUE(all(bit_shift_right<5>(input0) == (input0 >> 5)));
-            EXPECT_TRUE(all(bit_shift_right<6>(input0) == (input0 >> 6)));
-            EXPECT_TRUE(all(bit_shift_right<7>(input0) == (input0 >> 7)));
-            EXPECT_TRUE(all(bit_shift_right<8>(input0) == (input0 >> 8)));
-            EXPECT_TRUE(all(bit_shift_right<9>(input0) == (input0 >> 9)));
-            EXPECT_TRUE(all(bit_shift_right<10>(input0) == (input0 >> 10)));
-            EXPECT_TRUE(all(bit_shift_right<11>(input0) == (input0 >> 11)));
-            EXPECT_TRUE(all(bit_shift_right<12>(input0) == (input0 >> 12)));
-            EXPECT_TRUE(all(bit_shift_right<13>(input0) == (input0 >> 13)));
-            EXPECT_TRUE(all(bit_shift_right<14>(input0) == (input0 >> 14)));
-            EXPECT_TRUE(all(bit_shift_right<15>(input0) == (input0 >> 15)));
-            EXPECT_TRUE(all(bit_shift_right<16>(input0) == (input0 >> 16)));
+            EXPECT_TRUE(all(bit_shift_right<0x00>(input0) == (input0 >> 0x00)));
+            EXPECT_TRUE(all(bit_shift_right<0x01>(input0) == (input0 >> 0x01)));
+            EXPECT_TRUE(all(bit_shift_right<0x02>(input0) == (input0 >> 0x02)));
+            EXPECT_TRUE(all(bit_shift_right<0x03>(input0) == (input0 >> 0x03)));
+            EXPECT_TRUE(all(bit_shift_right<0x04>(input0) == (input0 >> 0x04)));
+            EXPECT_TRUE(all(bit_shift_right<0x05>(input0) == (input0 >> 0x05)));
+            EXPECT_TRUE(all(bit_shift_right<0x06>(input0) == (input0 >> 0x06)));
+            EXPECT_TRUE(all(bit_shift_right<0x07>(input0) == (input0 >> 0x07)));
+            EXPECT_TRUE(all(bit_shift_right<0x08>(input0) == (input0 >> 0x08)));
+            EXPECT_TRUE(all(bit_shift_right<0x09>(input0) == (input0 >> 0x09)));
+            EXPECT_TRUE(all(bit_shift_right<0x0a>(input0) == (input0 >> 0x0a)));
+            EXPECT_TRUE(all(bit_shift_right<0x0b>(input0) == (input0 >> 0x0b)));
+            EXPECT_TRUE(all(bit_shift_right<0x0c>(input0) == (input0 >> 0x0c)));
+            EXPECT_TRUE(all(bit_shift_right<0x0d>(input0) == (input0 >> 0x0d)));
+            EXPECT_TRUE(all(bit_shift_right<0x0e>(input0) == (input0 >> 0x0e)));
+            EXPECT_TRUE(all(bit_shift_right<0x0f>(input0) == (input0 >> 0x0f)));
+            EXPECT_TRUE(all(bit_shift_right<0x10>(input0) == vec8x16u{0x00}));
+        }
+    }
+
+    TEST(Vec8x16u, Rotl) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr8x16u input_array0{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                input_array0[j] = random16u();
+            }
+
+            vec8x16u input0{input_array0};
+
+            EXPECT_TRUE(all(rotl<0x0>(input0) == (rotl(input0, 0x0))));
+            EXPECT_TRUE(all(rotl<0x1>(input0) == (rotl(input0, 0x1))));
+            EXPECT_TRUE(all(rotl<0x2>(input0) == (rotl(input0, 0x2))));
+            EXPECT_TRUE(all(rotl<0x3>(input0) == (rotl(input0, 0x3))));
+            EXPECT_TRUE(all(rotl<0x4>(input0) == (rotl(input0, 0x4))));
+            EXPECT_TRUE(all(rotl<0x5>(input0) == (rotl(input0, 0x5))));
+            EXPECT_TRUE(all(rotl<0x6>(input0) == (rotl(input0, 0x6))));
+            EXPECT_TRUE(all(rotl<0x7>(input0) == (rotl(input0, 0x7))));
+            EXPECT_TRUE(all(rotl<0x8>(input0) == (rotl(input0, 0x8))));
+            EXPECT_TRUE(all(rotl<0x9>(input0) == (rotl(input0, 0x9))));
+            EXPECT_TRUE(all(rotl<0xa>(input0) == (rotl(input0, 0xa))));
+            EXPECT_TRUE(all(rotl<0xb>(input0) == (rotl(input0, 0xb))));
+            EXPECT_TRUE(all(rotl<0xc>(input0) == (rotl(input0, 0xc))));
+            EXPECT_TRUE(all(rotl<0xd>(input0) == (rotl(input0, 0xd))));
+            EXPECT_TRUE(all(rotl<0xe>(input0) == (rotl(input0, 0xe))));
+            EXPECT_TRUE(all(rotl<0xf>(input0) == (rotl(input0, 0xf))));
         }
     }
 
@@ -1909,7 +1937,7 @@ namespace avel_tests {
                 input_array0[j] = random16u();
             }
 
-            std::uint32_t input1 = random16u() % 17;
+            long long input1 = random64u();
 
             vec8x16u input0{input_array0};
 
@@ -1933,7 +1961,7 @@ namespace avel_tests {
 
             arr8x16u input_array1{};
             for (std::size_t j = 0; j < input_array1.size(); ++j) {
-                input_array1[j] = random16u() % 17;
+                input_array1[j] = random16u();
             }
 
             vec8x16u input0{input_array0};
@@ -1950,6 +1978,34 @@ namespace avel_tests {
         }
     }
 
+    TEST(Vec8x16u, Rotr) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr8x16u input_array0{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                input_array0[j] = random16u();
+            }
+
+            vec8x16u input0{input_array0};
+
+            EXPECT_TRUE(all(rotr<0x0>(input0) == (rotr(input0, 0x0))));
+            EXPECT_TRUE(all(rotr<0x1>(input0) == (rotr(input0, 0x1))));
+            EXPECT_TRUE(all(rotr<0x2>(input0) == (rotr(input0, 0x2))));
+            EXPECT_TRUE(all(rotr<0x3>(input0) == (rotr(input0, 0x3))));
+            EXPECT_TRUE(all(rotr<0x4>(input0) == (rotr(input0, 0x4))));
+            EXPECT_TRUE(all(rotr<0x5>(input0) == (rotr(input0, 0x5))));
+            EXPECT_TRUE(all(rotr<0x6>(input0) == (rotr(input0, 0x6))));
+            EXPECT_TRUE(all(rotr<0x7>(input0) == (rotr(input0, 0x7))));
+            EXPECT_TRUE(all(rotr<0x8>(input0) == (rotr(input0, 0x8))));
+            EXPECT_TRUE(all(rotr<0x9>(input0) == (rotr(input0, 0x9))));
+            EXPECT_TRUE(all(rotr<0xa>(input0) == (rotr(input0, 0xa))));
+            EXPECT_TRUE(all(rotr<0xb>(input0) == (rotr(input0, 0xb))));
+            EXPECT_TRUE(all(rotr<0xc>(input0) == (rotr(input0, 0xc))));
+            EXPECT_TRUE(all(rotr<0xd>(input0) == (rotr(input0, 0xd))));
+            EXPECT_TRUE(all(rotr<0xe>(input0) == (rotr(input0, 0xe))));
+            EXPECT_TRUE(all(rotr<0xf>(input0) == (rotr(input0, 0xf))));
+        }
+    }
+
     TEST(Vec8x16u, Rotr_scalar_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             arr8x16u input_array0{};
@@ -1957,7 +2013,7 @@ namespace avel_tests {
                 input_array0[j] = random16u();
             }
 
-            std::uint32_t input1 = random16u() % 16;
+            long long input1 = random64u();
 
             vec8x16u input0{input_array0};
 
@@ -1981,7 +2037,7 @@ namespace avel_tests {
 
             arr8x16u input_array1{};
             for (std::size_t j = 0; j < input_array1.size(); ++j) {
-                input_array1[j] = random16u() % 17;
+                input_array1[j] = random16u();
             }
 
             vec8x16u input0{input_array0};

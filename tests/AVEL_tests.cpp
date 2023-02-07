@@ -5,6 +5,8 @@
 //#define AVEL_FORCE_INLINE
 //#define AVEL_AUTO_DETECT
 //#define AVEL_GFNI
+//#define AVEL_AVX512VBMI2
+//#define AVEL_AVX512VBMI
 //#define AVEL_AVX512VPOPCNTDQ
 //#define AVEL_AVX512BITALG
 //#define AVEL_AVX512BW
@@ -30,7 +32,8 @@
 //#define AVEL_NEON
 
 #include <avel/Avel.hpp>
-//#include <avel/Cache.hpp>
+#include <avel/Aligned_allocator.hpp>
+#include <avel/Cache.hpp>
 #include <avel/Scalar.hpp>
 #include <avel/Vector.hpp>
 #include <avel/Scalar_denominator.hpp>
@@ -85,6 +88,10 @@ namespace avel_tests {
 
 }
 
+#include "Aligned_allocator_tests.hpp"
+
+
+
 #include "scalars/Scalar8u_tests.hpp"
 #include "scalars/Scalar8i_tests.hpp"
 
@@ -130,6 +137,8 @@ namespace avel_tests {
 
     //#include "vectors/Vec4x32f_tests.hpp"
     //#include "vectors/Vec2x64f_tests.hpp"
+
+
 
     #include "denominator_vectors/Denom16x8u_tests.hpp"
     #include "denominator_vectors/Denom16x8i_tests.hpp"

@@ -964,6 +964,10 @@ namespace avel {
         return _mm_cvtsi128_si32(_mm_srli_si128(decay(v), 4 * N));
 
         #endif
+
+        #if defined(AVEL_NEON)
+        return vgetq_lane_s32(decay(v), N);
+        #endif
     }
 
     //=====================================================
@@ -1412,6 +1416,12 @@ namespace avel {
 
 
 
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec4x32i rotl(vec4x32i v) {
+        return vec4x32i{rotl<S>(vec4x32u{v})};
+    }
+
     [[nodiscard]]
     AVEL_FINL vec4x32i rotl(vec4x32i v, std::uint32_t s) {
         return vec4x32i(rotl(vec4x32u(v), s));
@@ -1420,6 +1430,14 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x32i rotl(vec4x32i v, vec4x32u s) {
         return vec4x32i(rotl(vec4x32u(v), vec4x32u(s)));
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec4x32i rotr(vec4x32i v) {
+        return vec4x32i{rotr<S>(vec4x32u{v})};
     }
 
     [[nodiscard]]

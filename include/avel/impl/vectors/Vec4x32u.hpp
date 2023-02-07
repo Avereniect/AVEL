@@ -1178,7 +1178,42 @@ namespace avel {
 
         #elif defined(AVEL_NEON)
         //TODO: Implement properly
+        switch (n) {
+            case 0: {
+                return vec4x32u{vdupq_n_u32(0x00)};
+            };
+            case 1: {
+                std::uint32_t x0;
 
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint32_t));
+
+                auto ret0 = vsetq_lane_u32(x0, vdupq_n_u32(0x00), 0);
+                return vec4x32u{ret0};
+            }
+            case 2: {
+                std::uint64_t x0;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
+
+                auto ret0 = vsetq_lane_u64(x0, vdupq_n_u64(0x00), 0);
+                auto ret1 = vreinterpretq_u32_u64(ret0);
+                return vec4x32u{ret1};
+            }
+            case 3: {
+                std::uint64_t x0;
+                std::uint32_t x1;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
+                std::memcpy(&x0, ptr + 2, sizeof(std::uint32_t));
+
+                auto ret0 = vsetq_lane_u64(x0, vdupq_n_u64(0x00), 0);
+                auto ret1 = vsetq_lane_u32(x1, vreinterpretq_u32_u64(ret0), 2);
+                return vec4x32u{ret1};
+            }
+            default: {
+                return vec4x32u{vld1q_u32(ptr)};
+            }
+        }
         #endif
     }
 
@@ -1700,14 +1735,18 @@ namespace avel {
     }
 
     template<>
+    [[nodiscard]]
     vec4x32u bit_shift_left<0>(vec4x32u v) {
         return v;
     }
 
     template<>
+    [[nodiscard]]
     vec4x32u bit_shift_left<32>(vec4x32u v) {
         return vec4x32u{0x00};
     }
+
+
 
     template<std::uint32_t S>
     [[nodiscard]]
@@ -1725,16 +1764,57 @@ namespace avel {
     }
 
     template<>
+    [[nodiscard]]
     vec4x32u bit_shift_right<0>(vec4x32u v) {
         return v;
     }
 
+    template<>
+    [[nodiscard]]
+    vec4x32u bit_shift_right<32>(vec4x32u v) {
+        (void)v;
+        return vec4x32u{0x00};
+    }
 
+
+
+    template<std::uint32_t S, typename std::enable_if<S < 32, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec4x32u rotl(vec4x32u v) {
+        #if defined(AVEL_AVX512VL)
+        return vec4x32u{_mm_rol_epi32(decay(v), S)};
+
+        #elif defined(AVEL_SSE2)
+        auto left_shifted  = _mm_slli_epi32(decay(v), S);
+        auto right_shifted = _mm_srli_epi32(decay(v), 32 - S);
+
+        auto ret = _mm_or_si128(left_shifted, right_shifted);
+        return vec4x32u{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto left_shifted  = vshlq_n_u32(decay(v), S);
+        auto right_shifted = vshrq_n_u32(decay(v), 32 - S);
+
+        return vec4x32u{vorrq_u32(left_shifted, right_shifted)};
+        #endif
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec4x32u rotl<0>(vec4x32u v) {
+        return v;
+    }
+
+    template<std::uint32_t S, typename std::enable_if<32 <= S, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec4x32u rotl(vec4x32u v) {
+        return rotl<S % 32>(v);
+    }
 
     [[nodiscard]]
     AVEL_FINL vec4x32u rotl(vec4x32u v, long long s) {
         #if defined(AVEL_AVX512VL)
-        s &= 0x1F;
         return vec4x32u{_mm_rolv_epi32(decay(v), _mm_set1_epi32(s))};
 
         #elif defined(AVEL_SSE2)
@@ -1768,10 +1848,45 @@ namespace avel {
 
 
 
+    template<std::uint32_t S, typename std::enable_if<S < 32, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec4x32u rotr(vec4x32u v) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        return vec4x32u{_mm_ror_epi32(decay(v), S)};
+
+        #elif defined(AVEL_SSE2)
+        auto left_shifted  = _mm_slli_epi32(decay(v), 32 - S);
+        auto right_shifted = _mm_srli_epi32(decay(v), S);
+
+        auto ret = _mm_or_si128(left_shifted, right_shifted);
+        return vec4x32u{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto left_shifted  = vshlq_n_u32(decay(v), 32 - S);
+        auto right_shifted = vshrq_n_u32(decay(v), S);
+
+        return vec4x32u{vorrq_u32(left_shifted, right_shifted)};
+
+        #endif
+    }
+
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec4x32u rotr<0>(vec4x32u v) {
+        return v;
+    }
+
+    template<std::uint32_t S, typename std::enable_if<32 <= S, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec4x32u rotr(vec4x32u v) {
+        return rotr<S % 32>(v);
+    }
+
     [[nodiscard]]
     AVEL_FINL vec4x32u rotr(vec4x32u v, long long s) {
         #if defined(AVEL_AVX512VL)
-        s &= 0x1F;
         return vec4x32u{_mm_rorv_epi32(decay(v), _mm_set1_epi32(s))};
 
         #elif defined(AVEL_SSE2)

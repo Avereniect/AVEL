@@ -1247,6 +1247,93 @@ namespace avel {
             }
         }
         #endif
+
+        #if defined(AVEL_NEON)
+        switch (n) {
+            case 0: {
+                return vec8x16u{vdupq_n_u16(0x00)};
+            }
+            case 1: {
+                std::uint16_t x0;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint16_t));
+
+                auto ret0 = vsetq_lane_u16(x0, vdupq_n_u16(0x00), 0);
+                return vec8x16u{ret0};
+            }
+            case 2: {
+                std::uint32_t x0;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint32_t));
+
+                auto ret0 = vsetq_lane_u32(x0, vdupq_n_u32(0x00), 0);
+                auto ret1 = vreinterpretq_u16_u32(ret0);
+                return vec8x16u{ret1};
+            }
+            case 3: {
+                std::uint32_t x0;
+                std::uint16_t x1;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint32_t));
+                std::memcpy(&x1, ptr + 2, sizeof(std::uint16_t));
+
+                auto ret0 = vsetq_lane_u32(x0, vdupq_n_u32(0x00), 0);
+                auto ret1 = vsetq_lane_u16(x1, vreinterpretq_u16_u32(ret0), 2);
+                return vec8x16u{ret1};
+            }
+            case 4: {
+                std::uint64_t x0;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
+
+                auto ret0 = vsetq_lane_u64(x0, vdupq_n_u64(0x00), 0);
+                auto ret1 = vreinterpretq_u16_u64(ret0);
+                return vec8x16u{ret1};
+            }
+
+            case 5: {
+                std::uint64_t x0;
+                std::uint16_t x1;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
+                std::memcpy(&x1, ptr + 4, sizeof(std::uint16_t));
+
+                auto ret0 = vsetq_lane_u64(x0, vdupq_n_u64(0x00), 0);
+                auto ret1 = vsetq_lane_u16(x1, vreinterpretq_u16_u64(ret0), 4);
+                return vec8x16u{ret1};
+            }
+            case 6: {
+                std::uint64_t x0;
+                std::uint32_t x1;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
+                std::memcpy(&x1, ptr + 4, sizeof(std::uint32_t));
+
+                auto ret0 = vsetq_lane_u64(x0, vdupq_n_u64(0x00), 0);
+                auto ret1 = vsetq_lane_u32(x1, vreinterpretq_u32_u64(ret0), 2);
+                auto ret2 = vreinterpretq_u16_u32(ret1);
+                return vec8x16u{ret2};
+            }
+            case 7: {
+                std::uint64_t x0;
+                std::uint32_t x1;
+                std::uint16_t x2;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
+                std::memcpy(&x1, ptr + 4, sizeof(std::uint32_t));
+                std::memcpy(&x2, ptr + 6, sizeof(std::uint16_t));
+
+                auto ret0 = vsetq_lane_u64(x0, vdupq_n_u64(0x00), 0);
+                auto ret1 = vsetq_lane_u32(x1, vreinterpretq_u32_u64(ret0), 2);
+                auto ret2 = vsetq_lane_u16(x2, vreinterpretq_u16_u32(ret1), 6);
+                return vec8x16u{ret2};
+            }
+
+            default: {
+                return vec8x16u{vld1q_u16(ptr)};
+            }
+        }
+        #endif
     }
 
     template<>
@@ -1265,15 +1352,7 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec8x16u aligned_load<vec8x16u>(const std::uint16_t* ptr, std::uint32_t n) {
-        #if defined(AVEL_AVX512VL)
         return load<vec8x16u>(ptr, n);
-        #elif defined(AVEL_SSE2)
-        return load<vec8x16u>(ptr, n);
-        #endif
-
-        #if defined(AVEL_NEON)
-        //TODO: Implement
-        #endif
     }
 
     template<>
@@ -1334,6 +1413,26 @@ namespace avel {
         auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(h - std::min(h, n)));
         auto mask = _mm_unpacklo_epi64(lo, hi);
         _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
+        #endif
+
+        #if defined(AVEL_NEON)
+
+        //TODO: Implement
+        switch (n) {
+            case 0: {} break;
+            case 1: {} break;
+            case 2: {} break;
+            case 3: {} break;
+
+            case 4: {} break;
+            case 5: {} break;
+            case 6: {} break;
+            case 7: {} break;
+
+            default: {
+                vst1q_u16(ptr, decay(x));
+            }
+        }
         #endif
     }
 
@@ -1664,6 +1763,8 @@ namespace avel {
         return vec8x16u{0x00};
     }
 
+
+
     template<std::uint32_t S>
     [[nodiscard]]
     vec8x16u bit_shift_right(vec8x16u v) {
@@ -1680,47 +1781,163 @@ namespace avel {
     }
 
     template<>
+    [[nodiscard]]
     vec8x16u bit_shift_right<0>(vec8x16u v) {
         return v;
     }
 
-
-    template<std::uint32_t S, typename std::enable_if<S < 8, bool>::type = true>
+    template<>
     [[nodiscard]]
-    AVEL_FINL vec8x16u rotl(vec8x16u v) {
-
-    }
-
-    template<std::uint32_t S, typename std::enable_if<8 <= S, bool>::type = true>
-    [[nodiscard]]
-    AVEL_FINL vec8x16u rotl(vec8x16u v) {
-        return rotl<S % 8>(v);
+    vec8x16u bit_shift_right<16>(vec8x16u v) {
+        (void)v;
+        return vec8x16u{0x00};
     }
 
 
+
+    template<std::uint32_t S, typename std::enable_if<S < 16, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotl(vec8x16u v) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        return vec8x16u{_mm_shldi_epi16(decay(v), decay(v), S)};
+
+        #elif defined(AVEL_SSE2)
+        auto lo = _mm_unpacklo_epi16(decay(v), decay(v));
+        auto hi = _mm_unpackhi_epi16(decay(v), decay(v));
+
+        lo = _mm_slli_epi32(lo, S);
+        hi = _mm_slli_epi32(hi, S);
+
+        lo = _mm_srli_epi32(lo, 16);
+        hi = _mm_srli_epi32(hi, 16);
+
+        auto ret = _mm_packus_epi32(lo, hi);
+        return vec8x16u{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto left_shifted  = vshlq_n_u16(decay(v), S);
+        auto right_shifted = vshrq_n_u16(decay(v), 16 - S);
+
+        return vec8x16u{vorrq_u16(left_shifted, right_shifted)};
+        #endif
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotl<0>(vec8x16u v) {
+        return v;
+    }
+
+    template<std::uint32_t S, typename std::enable_if<16 <= S, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotl(vec8x16u v) {
+        return rotl<S % 16>(v);
+    }
 
     [[nodiscard]]
     AVEL_FINL vec8x16u rotl(vec8x16u v, long long s) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        s &= 15;
+        return vec8x16u{_mm_shldv_epi16(decay(v), decay(v), _mm_set1_epi16(s))};
+
+        #elif defined(AVEL_SSE2)
         s &= 15;
         return (v << s) | (v >> (16 - s));
+        #endif
+
+        #if defined(AVEL_NEON)
+        s &= 15;
+        return (v << s) | (v >> (16 - s));
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x16u rotl(vec8x16u v, vec8x16u s) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        s &= vec8x16u{15};
+        return vec8x16u{_mm_shldv_epi16(decay(v), decay(v), decay(s))};
+
+        #elif defined(AVEL_SSE2)
         s &= vec8x16u{15};
         return (v << s) | (v >> (vec8x16u{16} - s));
+        #endif
+
+        #if defined(AVEL_NEON)
+        s &= vec8x16u{15};
+        return (v << s) | (v >> (vec8x16u{16} - s));
+        #endif
+    }
+
+
+
+    template<std::uint32_t S, typename std::enable_if<S < 16, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotr(vec8x16u v) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        return vec8x16u{_mm_shrdi_epi16(decay(v), decay(v), S)};
+
+        #elif defined(AVEL_SSE2)
+        auto left_shifted  = _mm_slli_epi16(decay(v), 16 - S);
+        auto right_shifted = _mm_srli_epi16(decay(v), S);
+
+        auto ret = _mm_or_si128(left_shifted, right_shifted);
+        return vec8x16u{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto left_shifted  = vshlq_n_u16(decay(v), 16 - S);
+        auto right_shifted = vshrq_n_u16(decay(v), S);
+
+        return vec8x16u{vorrq_u16(left_shifted, right_shifted)};
+
+        #endif
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotr<0>(vec8x16u v) {
+        return v;
+    }
+
+    template<std::uint32_t S, typename std::enable_if<16 <= S, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotr(vec8x16u v) {
+        return rotr<S % 16>(v);
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x16u rotr(vec8x16u v, long long s) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        s &= 15;
+        return vec8x16u{_mm_shrdv_epi16(decay(v), decay(v), _mm_set1_epi16(s))};
+
+        #elif defined(AVEL_SSE2)
         s &= 15;
         return (v >> s) | (v << (16 - s));
+        #endif
+
+        #if defined(AVEL_NEON)
+        s &= 15;
+        return (v >> s) | (v << (16 - s));
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x16u rotr(vec8x16u v, vec8x16u s) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        s &= vec8x16u{15};
+        return vec8x16u{_mm_shrdv_epi16(decay(v), decay(v), decay(s))};
+
+        #elif defined(AVEL_SSE2)
         s &= vec8x16u{15};
         return (v >> s) | (v << (vec8x16u{16} - s));
+        #endif
+
+        #if defined(AVEL_NEON)
+        s &= vec8x16u{15};
+        return (v >> s) | (v << (vec8x16u{16} - s));
+        #endif
     }
 
     //=====================================================

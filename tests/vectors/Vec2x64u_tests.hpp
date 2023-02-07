@@ -1876,71 +1876,71 @@ namespace avel_tests {
 
             vec2x64u input0{input_array0};
 
-            EXPECT_TRUE(all(bit_shift_left<0>(input0) == (input0 << 0)));
-            EXPECT_TRUE(all(bit_shift_left<1>(input0) == (input0 << 1)));
-            EXPECT_TRUE(all(bit_shift_left<2>(input0) == (input0 << 2)));
-            EXPECT_TRUE(all(bit_shift_left<3>(input0) == (input0 << 3)));
-            EXPECT_TRUE(all(bit_shift_left<4>(input0) == (input0 << 4)));
-            EXPECT_TRUE(all(bit_shift_left<5>(input0) == (input0 << 5)));
-            EXPECT_TRUE(all(bit_shift_left<6>(input0) == (input0 << 6)));
-            EXPECT_TRUE(all(bit_shift_left<7>(input0) == (input0 << 7)));
-            EXPECT_TRUE(all(bit_shift_left<8>(input0) == (input0 << 8)));
-            EXPECT_TRUE(all(bit_shift_left<9>(input0) == (input0 << 9)));
-            EXPECT_TRUE(all(bit_shift_left<10>(input0) == (input0 << 10)));
-            EXPECT_TRUE(all(bit_shift_left<11>(input0) == (input0 << 11)));
-            EXPECT_TRUE(all(bit_shift_left<12>(input0) == (input0 << 12)));
-            EXPECT_TRUE(all(bit_shift_left<13>(input0) == (input0 << 13)));
-            EXPECT_TRUE(all(bit_shift_left<14>(input0) == (input0 << 14)));
-            EXPECT_TRUE(all(bit_shift_left<15>(input0) == (input0 << 15)));
-            EXPECT_TRUE(all(bit_shift_left<16>(input0) == (input0 << 16)));
-            EXPECT_TRUE(all(bit_shift_left<17>(input0) == (input0 << 17)));
-            EXPECT_TRUE(all(bit_shift_left<18>(input0) == (input0 << 18)));
-            EXPECT_TRUE(all(bit_shift_left<19>(input0) == (input0 << 19)));
-            EXPECT_TRUE(all(bit_shift_left<20>(input0) == (input0 << 20)));
-            EXPECT_TRUE(all(bit_shift_left<21>(input0) == (input0 << 21)));
-            EXPECT_TRUE(all(bit_shift_left<22>(input0) == (input0 << 22)));
-            EXPECT_TRUE(all(bit_shift_left<23>(input0) == (input0 << 23)));
-            EXPECT_TRUE(all(bit_shift_left<24>(input0) == (input0 << 24)));
-            EXPECT_TRUE(all(bit_shift_left<25>(input0) == (input0 << 25)));
-            EXPECT_TRUE(all(bit_shift_left<26>(input0) == (input0 << 26)));
-            EXPECT_TRUE(all(bit_shift_left<27>(input0) == (input0 << 27)));
-            EXPECT_TRUE(all(bit_shift_left<28>(input0) == (input0 << 28)));
-            EXPECT_TRUE(all(bit_shift_left<29>(input0) == (input0 << 29)));
-            EXPECT_TRUE(all(bit_shift_left<30>(input0) == (input0 << 30)));
-            EXPECT_TRUE(all(bit_shift_left<31>(input0) == (input0 << 31)));
-            EXPECT_TRUE(all(bit_shift_left<32>(input0) == (input0 << 32)));
-            EXPECT_TRUE(all(bit_shift_left<33>(input0) == (input0 << 33)));
-            EXPECT_TRUE(all(bit_shift_left<34>(input0) == (input0 << 34)));
-            EXPECT_TRUE(all(bit_shift_left<35>(input0) == (input0 << 35)));
-            EXPECT_TRUE(all(bit_shift_left<36>(input0) == (input0 << 36)));
-            EXPECT_TRUE(all(bit_shift_left<37>(input0) == (input0 << 37)));
-            EXPECT_TRUE(all(bit_shift_left<38>(input0) == (input0 << 38)));
-            EXPECT_TRUE(all(bit_shift_left<39>(input0) == (input0 << 39)));
-            EXPECT_TRUE(all(bit_shift_left<40>(input0) == (input0 << 40)));
-            EXPECT_TRUE(all(bit_shift_left<41>(input0) == (input0 << 41)));
-            EXPECT_TRUE(all(bit_shift_left<42>(input0) == (input0 << 42)));
-            EXPECT_TRUE(all(bit_shift_left<43>(input0) == (input0 << 43)));
-            EXPECT_TRUE(all(bit_shift_left<44>(input0) == (input0 << 44)));
-            EXPECT_TRUE(all(bit_shift_left<45>(input0) == (input0 << 45)));
-            EXPECT_TRUE(all(bit_shift_left<46>(input0) == (input0 << 46)));
-            EXPECT_TRUE(all(bit_shift_left<47>(input0) == (input0 << 47)));
-            EXPECT_TRUE(all(bit_shift_left<48>(input0) == (input0 << 48)));
-            EXPECT_TRUE(all(bit_shift_left<49>(input0) == (input0 << 49)));
-            EXPECT_TRUE(all(bit_shift_left<50>(input0) == (input0 << 50)));
-            EXPECT_TRUE(all(bit_shift_left<51>(input0) == (input0 << 51)));
-            EXPECT_TRUE(all(bit_shift_left<52>(input0) == (input0 << 52)));
-            EXPECT_TRUE(all(bit_shift_left<53>(input0) == (input0 << 53)));
-            EXPECT_TRUE(all(bit_shift_left<54>(input0) == (input0 << 54)));
-            EXPECT_TRUE(all(bit_shift_left<55>(input0) == (input0 << 55)));
-            EXPECT_TRUE(all(bit_shift_left<56>(input0) == (input0 << 56)));
-            EXPECT_TRUE(all(bit_shift_left<57>(input0) == (input0 << 57)));
-            EXPECT_TRUE(all(bit_shift_left<58>(input0) == (input0 << 58)));
-            EXPECT_TRUE(all(bit_shift_left<59>(input0) == (input0 << 59)));
-            EXPECT_TRUE(all(bit_shift_left<60>(input0) == (input0 << 60)));
-            EXPECT_TRUE(all(bit_shift_left<61>(input0) == (input0 << 61)));
-            EXPECT_TRUE(all(bit_shift_left<62>(input0) == (input0 << 62)));
-            EXPECT_TRUE(all(bit_shift_left<63>(input0) == (input0 << 63)));
-            EXPECT_TRUE(all(bit_shift_left<64>(input0) == (input0 << 64)));
+            EXPECT_TRUE(all(bit_shift_left<0x00>(input0) == (input0 << 0x00)));
+            EXPECT_TRUE(all(bit_shift_left<0x01>(input0) == (input0 << 0x01)));
+            EXPECT_TRUE(all(bit_shift_left<0x02>(input0) == (input0 << 0x02)));
+            EXPECT_TRUE(all(bit_shift_left<0x03>(input0) == (input0 << 0x03)));
+            EXPECT_TRUE(all(bit_shift_left<0x04>(input0) == (input0 << 0x04)));
+            EXPECT_TRUE(all(bit_shift_left<0x05>(input0) == (input0 << 0x05)));
+            EXPECT_TRUE(all(bit_shift_left<0x06>(input0) == (input0 << 0x06)));
+            EXPECT_TRUE(all(bit_shift_left<0x07>(input0) == (input0 << 0x07)));
+            EXPECT_TRUE(all(bit_shift_left<0x08>(input0) == (input0 << 0x08)));
+            EXPECT_TRUE(all(bit_shift_left<0x09>(input0) == (input0 << 0x09)));
+            EXPECT_TRUE(all(bit_shift_left<0x0a>(input0) == (input0 << 0x0a)));
+            EXPECT_TRUE(all(bit_shift_left<0x0b>(input0) == (input0 << 0x0b)));
+            EXPECT_TRUE(all(bit_shift_left<0x0c>(input0) == (input0 << 0x0c)));
+            EXPECT_TRUE(all(bit_shift_left<0x0d>(input0) == (input0 << 0x0d)));
+            EXPECT_TRUE(all(bit_shift_left<0x0e>(input0) == (input0 << 0x0e)));
+            EXPECT_TRUE(all(bit_shift_left<0x0f>(input0) == (input0 << 0x0f)));
+            EXPECT_TRUE(all(bit_shift_left<0x10>(input0) == (input0 << 0x10)));
+            EXPECT_TRUE(all(bit_shift_left<0x11>(input0) == (input0 << 0x11)));
+            EXPECT_TRUE(all(bit_shift_left<0x12>(input0) == (input0 << 0x12)));
+            EXPECT_TRUE(all(bit_shift_left<0x13>(input0) == (input0 << 0x13)));
+            EXPECT_TRUE(all(bit_shift_left<0x14>(input0) == (input0 << 0x14)));
+            EXPECT_TRUE(all(bit_shift_left<0x15>(input0) == (input0 << 0x15)));
+            EXPECT_TRUE(all(bit_shift_left<0x16>(input0) == (input0 << 0x16)));
+            EXPECT_TRUE(all(bit_shift_left<0x17>(input0) == (input0 << 0x17)));
+            EXPECT_TRUE(all(bit_shift_left<0x18>(input0) == (input0 << 0x18)));
+            EXPECT_TRUE(all(bit_shift_left<0x19>(input0) == (input0 << 0x19)));
+            EXPECT_TRUE(all(bit_shift_left<0x1a>(input0) == (input0 << 0x1a)));
+            EXPECT_TRUE(all(bit_shift_left<0x1b>(input0) == (input0 << 0x1b)));
+            EXPECT_TRUE(all(bit_shift_left<0x1c>(input0) == (input0 << 0x1c)));
+            EXPECT_TRUE(all(bit_shift_left<0x1d>(input0) == (input0 << 0x1d)));
+            EXPECT_TRUE(all(bit_shift_left<0x1e>(input0) == (input0 << 0x1e)));
+            EXPECT_TRUE(all(bit_shift_left<0x1f>(input0) == (input0 << 0x1f)));
+            EXPECT_TRUE(all(bit_shift_left<0x20>(input0) == (input0 << 0x20)));
+            EXPECT_TRUE(all(bit_shift_left<0x21>(input0) == (input0 << 0x21)));
+            EXPECT_TRUE(all(bit_shift_left<0x22>(input0) == (input0 << 0x22)));
+            EXPECT_TRUE(all(bit_shift_left<0x23>(input0) == (input0 << 0x23)));
+            EXPECT_TRUE(all(bit_shift_left<0x24>(input0) == (input0 << 0x24)));
+            EXPECT_TRUE(all(bit_shift_left<0x25>(input0) == (input0 << 0x25)));
+            EXPECT_TRUE(all(bit_shift_left<0x26>(input0) == (input0 << 0x26)));
+            EXPECT_TRUE(all(bit_shift_left<0x27>(input0) == (input0 << 0x27)));
+            EXPECT_TRUE(all(bit_shift_left<0x28>(input0) == (input0 << 0x28)));
+            EXPECT_TRUE(all(bit_shift_left<0x29>(input0) == (input0 << 0x29)));
+            EXPECT_TRUE(all(bit_shift_left<0x2a>(input0) == (input0 << 0x2a)));
+            EXPECT_TRUE(all(bit_shift_left<0x2b>(input0) == (input0 << 0x2b)));
+            EXPECT_TRUE(all(bit_shift_left<0x2c>(input0) == (input0 << 0x2c)));
+            EXPECT_TRUE(all(bit_shift_left<0x2d>(input0) == (input0 << 0x2d)));
+            EXPECT_TRUE(all(bit_shift_left<0x2e>(input0) == (input0 << 0x2e)));
+            EXPECT_TRUE(all(bit_shift_left<0x2f>(input0) == (input0 << 0x2f)));
+            EXPECT_TRUE(all(bit_shift_left<0x30>(input0) == (input0 << 0x30)));
+            EXPECT_TRUE(all(bit_shift_left<0x31>(input0) == (input0 << 0x31)));
+            EXPECT_TRUE(all(bit_shift_left<0x32>(input0) == (input0 << 0x32)));
+            EXPECT_TRUE(all(bit_shift_left<0x33>(input0) == (input0 << 0x33)));
+            EXPECT_TRUE(all(bit_shift_left<0x34>(input0) == (input0 << 0x34)));
+            EXPECT_TRUE(all(bit_shift_left<0x35>(input0) == (input0 << 0x35)));
+            EXPECT_TRUE(all(bit_shift_left<0x36>(input0) == (input0 << 0x36)));
+            EXPECT_TRUE(all(bit_shift_left<0x37>(input0) == (input0 << 0x37)));
+            EXPECT_TRUE(all(bit_shift_left<0x38>(input0) == (input0 << 0x38)));
+            EXPECT_TRUE(all(bit_shift_left<0x39>(input0) == (input0 << 0x39)));
+            EXPECT_TRUE(all(bit_shift_left<0x3a>(input0) == (input0 << 0x3a)));
+            EXPECT_TRUE(all(bit_shift_left<0x3b>(input0) == (input0 << 0x3b)));
+            EXPECT_TRUE(all(bit_shift_left<0x3c>(input0) == (input0 << 0x3c)));
+            EXPECT_TRUE(all(bit_shift_left<0x3d>(input0) == (input0 << 0x3d)));
+            EXPECT_TRUE(all(bit_shift_left<0x3e>(input0) == (input0 << 0x3e)));
+            EXPECT_TRUE(all(bit_shift_left<0x3f>(input0) == (input0 << 0x3f)));
+            EXPECT_TRUE(all(bit_shift_left<0x40>(input0) == vec2x64u{0x00}));
         }
     }
 
@@ -1953,71 +1953,71 @@ namespace avel_tests {
 
             vec2x64u input0{input_array0};
 
-            EXPECT_TRUE(all(bit_shift_right<0>(input0) == (input0 >> 0)));
-            EXPECT_TRUE(all(bit_shift_right<1>(input0) == (input0 >> 1)));
-            EXPECT_TRUE(all(bit_shift_right<2>(input0) == (input0 >> 2)));
-            EXPECT_TRUE(all(bit_shift_right<3>(input0) == (input0 >> 3)));
-            EXPECT_TRUE(all(bit_shift_right<4>(input0) == (input0 >> 4)));
-            EXPECT_TRUE(all(bit_shift_right<5>(input0) == (input0 >> 5)));
-            EXPECT_TRUE(all(bit_shift_right<6>(input0) == (input0 >> 6)));
-            EXPECT_TRUE(all(bit_shift_right<7>(input0) == (input0 >> 7)));
-            EXPECT_TRUE(all(bit_shift_right<8>(input0) == (input0 >> 8)));
-            EXPECT_TRUE(all(bit_shift_right<9>(input0) == (input0 >> 9)));
-            EXPECT_TRUE(all(bit_shift_right<10>(input0) == (input0 >> 10)));
-            EXPECT_TRUE(all(bit_shift_right<11>(input0) == (input0 >> 11)));
-            EXPECT_TRUE(all(bit_shift_right<12>(input0) == (input0 >> 12)));
-            EXPECT_TRUE(all(bit_shift_right<13>(input0) == (input0 >> 13)));
-            EXPECT_TRUE(all(bit_shift_right<14>(input0) == (input0 >> 14)));
-            EXPECT_TRUE(all(bit_shift_right<15>(input0) == (input0 >> 15)));
-            EXPECT_TRUE(all(bit_shift_right<16>(input0) == (input0 >> 16)));
-            EXPECT_TRUE(all(bit_shift_right<17>(input0) == (input0 >> 17)));
-            EXPECT_TRUE(all(bit_shift_right<18>(input0) == (input0 >> 18)));
-            EXPECT_TRUE(all(bit_shift_right<19>(input0) == (input0 >> 19)));
-            EXPECT_TRUE(all(bit_shift_right<20>(input0) == (input0 >> 20)));
-            EXPECT_TRUE(all(bit_shift_right<21>(input0) == (input0 >> 21)));
-            EXPECT_TRUE(all(bit_shift_right<22>(input0) == (input0 >> 22)));
-            EXPECT_TRUE(all(bit_shift_right<23>(input0) == (input0 >> 23)));
-            EXPECT_TRUE(all(bit_shift_right<24>(input0) == (input0 >> 24)));
-            EXPECT_TRUE(all(bit_shift_right<25>(input0) == (input0 >> 25)));
-            EXPECT_TRUE(all(bit_shift_right<26>(input0) == (input0 >> 26)));
-            EXPECT_TRUE(all(bit_shift_right<27>(input0) == (input0 >> 27)));
-            EXPECT_TRUE(all(bit_shift_right<28>(input0) == (input0 >> 28)));
-            EXPECT_TRUE(all(bit_shift_right<29>(input0) == (input0 >> 29)));
-            EXPECT_TRUE(all(bit_shift_right<30>(input0) == (input0 >> 30)));
-            EXPECT_TRUE(all(bit_shift_right<31>(input0) == (input0 >> 31)));
-            EXPECT_TRUE(all(bit_shift_right<32>(input0) == (input0 >> 32)));
-            EXPECT_TRUE(all(bit_shift_right<33>(input0) == (input0 >> 33)));
-            EXPECT_TRUE(all(bit_shift_right<34>(input0) == (input0 >> 34)));
-            EXPECT_TRUE(all(bit_shift_right<35>(input0) == (input0 >> 35)));
-            EXPECT_TRUE(all(bit_shift_right<36>(input0) == (input0 >> 36)));
-            EXPECT_TRUE(all(bit_shift_right<37>(input0) == (input0 >> 37)));
-            EXPECT_TRUE(all(bit_shift_right<38>(input0) == (input0 >> 38)));
-            EXPECT_TRUE(all(bit_shift_right<39>(input0) == (input0 >> 39)));
-            EXPECT_TRUE(all(bit_shift_right<40>(input0) == (input0 >> 40)));
-            EXPECT_TRUE(all(bit_shift_right<41>(input0) == (input0 >> 41)));
-            EXPECT_TRUE(all(bit_shift_right<42>(input0) == (input0 >> 42)));
-            EXPECT_TRUE(all(bit_shift_right<43>(input0) == (input0 >> 43)));
-            EXPECT_TRUE(all(bit_shift_right<44>(input0) == (input0 >> 44)));
-            EXPECT_TRUE(all(bit_shift_right<45>(input0) == (input0 >> 45)));
-            EXPECT_TRUE(all(bit_shift_right<46>(input0) == (input0 >> 46)));
-            EXPECT_TRUE(all(bit_shift_right<47>(input0) == (input0 >> 47)));
-            EXPECT_TRUE(all(bit_shift_right<48>(input0) == (input0 >> 48)));
-            EXPECT_TRUE(all(bit_shift_right<49>(input0) == (input0 >> 49)));
-            EXPECT_TRUE(all(bit_shift_right<50>(input0) == (input0 >> 50)));
-            EXPECT_TRUE(all(bit_shift_right<51>(input0) == (input0 >> 51)));
-            EXPECT_TRUE(all(bit_shift_right<52>(input0) == (input0 >> 52)));
-            EXPECT_TRUE(all(bit_shift_right<53>(input0) == (input0 >> 53)));
-            EXPECT_TRUE(all(bit_shift_right<54>(input0) == (input0 >> 54)));
-            EXPECT_TRUE(all(bit_shift_right<55>(input0) == (input0 >> 55)));
-            EXPECT_TRUE(all(bit_shift_right<56>(input0) == (input0 >> 56)));
-            EXPECT_TRUE(all(bit_shift_right<57>(input0) == (input0 >> 57)));
-            EXPECT_TRUE(all(bit_shift_right<58>(input0) == (input0 >> 58)));
-            EXPECT_TRUE(all(bit_shift_right<59>(input0) == (input0 >> 59)));
-            EXPECT_TRUE(all(bit_shift_right<60>(input0) == (input0 >> 60)));
-            EXPECT_TRUE(all(bit_shift_right<61>(input0) == (input0 >> 61)));
-            EXPECT_TRUE(all(bit_shift_right<62>(input0) == (input0 >> 62)));
-            EXPECT_TRUE(all(bit_shift_right<63>(input0) == (input0 >> 63)));
-            EXPECT_TRUE(all(bit_shift_right<64>(input0) == (input0 >> 64)));
+            EXPECT_TRUE(all(bit_shift_right<0x00>(input0) == (input0 >> 0x00)));
+            EXPECT_TRUE(all(bit_shift_right<0x01>(input0) == (input0 >> 0x01)));
+            EXPECT_TRUE(all(bit_shift_right<0x02>(input0) == (input0 >> 0x02)));
+            EXPECT_TRUE(all(bit_shift_right<0x03>(input0) == (input0 >> 0x03)));
+            EXPECT_TRUE(all(bit_shift_right<0x04>(input0) == (input0 >> 0x04)));
+            EXPECT_TRUE(all(bit_shift_right<0x05>(input0) == (input0 >> 0x05)));
+            EXPECT_TRUE(all(bit_shift_right<0x06>(input0) == (input0 >> 0x06)));
+            EXPECT_TRUE(all(bit_shift_right<0x07>(input0) == (input0 >> 0x07)));
+            EXPECT_TRUE(all(bit_shift_right<0x08>(input0) == (input0 >> 0x08)));
+            EXPECT_TRUE(all(bit_shift_right<0x09>(input0) == (input0 >> 0x09)));
+            EXPECT_TRUE(all(bit_shift_right<0x0a>(input0) == (input0 >> 0x0a)));
+            EXPECT_TRUE(all(bit_shift_right<0x0b>(input0) == (input0 >> 0x0b)));
+            EXPECT_TRUE(all(bit_shift_right<0x0c>(input0) == (input0 >> 0x0c)));
+            EXPECT_TRUE(all(bit_shift_right<0x0d>(input0) == (input0 >> 0x0d)));
+            EXPECT_TRUE(all(bit_shift_right<0x0e>(input0) == (input0 >> 0x0e)));
+            EXPECT_TRUE(all(bit_shift_right<0x0f>(input0) == (input0 >> 0x0f)));
+            EXPECT_TRUE(all(bit_shift_right<0x10>(input0) == (input0 >> 0x10)));
+            EXPECT_TRUE(all(bit_shift_right<0x11>(input0) == (input0 >> 0x11)));
+            EXPECT_TRUE(all(bit_shift_right<0x12>(input0) == (input0 >> 0x12)));
+            EXPECT_TRUE(all(bit_shift_right<0x13>(input0) == (input0 >> 0x13)));
+            EXPECT_TRUE(all(bit_shift_right<0x14>(input0) == (input0 >> 0x14)));
+            EXPECT_TRUE(all(bit_shift_right<0x15>(input0) == (input0 >> 0x15)));
+            EXPECT_TRUE(all(bit_shift_right<0x16>(input0) == (input0 >> 0x16)));
+            EXPECT_TRUE(all(bit_shift_right<0x17>(input0) == (input0 >> 0x17)));
+            EXPECT_TRUE(all(bit_shift_right<0x18>(input0) == (input0 >> 0x18)));
+            EXPECT_TRUE(all(bit_shift_right<0x19>(input0) == (input0 >> 0x19)));
+            EXPECT_TRUE(all(bit_shift_right<0x1a>(input0) == (input0 >> 0x1a)));
+            EXPECT_TRUE(all(bit_shift_right<0x1b>(input0) == (input0 >> 0x1b)));
+            EXPECT_TRUE(all(bit_shift_right<0x1c>(input0) == (input0 >> 0x1c)));
+            EXPECT_TRUE(all(bit_shift_right<0x1d>(input0) == (input0 >> 0x1d)));
+            EXPECT_TRUE(all(bit_shift_right<0x1e>(input0) == (input0 >> 0x1e)));
+            EXPECT_TRUE(all(bit_shift_right<0x1f>(input0) == (input0 >> 0x1f)));
+            EXPECT_TRUE(all(bit_shift_right<0x20>(input0) == (input0 >> 0x20)));
+            EXPECT_TRUE(all(bit_shift_right<0x21>(input0) == (input0 >> 0x21)));
+            EXPECT_TRUE(all(bit_shift_right<0x22>(input0) == (input0 >> 0x22)));
+            EXPECT_TRUE(all(bit_shift_right<0x23>(input0) == (input0 >> 0x23)));
+            EXPECT_TRUE(all(bit_shift_right<0x24>(input0) == (input0 >> 0x24)));
+            EXPECT_TRUE(all(bit_shift_right<0x25>(input0) == (input0 >> 0x25)));
+            EXPECT_TRUE(all(bit_shift_right<0x26>(input0) == (input0 >> 0x26)));
+            EXPECT_TRUE(all(bit_shift_right<0x27>(input0) == (input0 >> 0x27)));
+            EXPECT_TRUE(all(bit_shift_right<0x28>(input0) == (input0 >> 0x28)));
+            EXPECT_TRUE(all(bit_shift_right<0x29>(input0) == (input0 >> 0x29)));
+            EXPECT_TRUE(all(bit_shift_right<0x2a>(input0) == (input0 >> 0x2a)));
+            EXPECT_TRUE(all(bit_shift_right<0x2b>(input0) == (input0 >> 0x2b)));
+            EXPECT_TRUE(all(bit_shift_right<0x2c>(input0) == (input0 >> 0x2c)));
+            EXPECT_TRUE(all(bit_shift_right<0x2d>(input0) == (input0 >> 0x2d)));
+            EXPECT_TRUE(all(bit_shift_right<0x2e>(input0) == (input0 >> 0x2e)));
+            EXPECT_TRUE(all(bit_shift_right<0x2f>(input0) == (input0 >> 0x2f)));
+            EXPECT_TRUE(all(bit_shift_right<0x30>(input0) == (input0 >> 0x30)));
+            EXPECT_TRUE(all(bit_shift_right<0x31>(input0) == (input0 >> 0x31)));
+            EXPECT_TRUE(all(bit_shift_right<0x32>(input0) == (input0 >> 0x32)));
+            EXPECT_TRUE(all(bit_shift_right<0x33>(input0) == (input0 >> 0x33)));
+            EXPECT_TRUE(all(bit_shift_right<0x34>(input0) == (input0 >> 0x34)));
+            EXPECT_TRUE(all(bit_shift_right<0x35>(input0) == (input0 >> 0x35)));
+            EXPECT_TRUE(all(bit_shift_right<0x36>(input0) == (input0 >> 0x36)));
+            EXPECT_TRUE(all(bit_shift_right<0x37>(input0) == (input0 >> 0x37)));
+            EXPECT_TRUE(all(bit_shift_right<0x38>(input0) == (input0 >> 0x38)));
+            EXPECT_TRUE(all(bit_shift_right<0x39>(input0) == (input0 >> 0x39)));
+            EXPECT_TRUE(all(bit_shift_right<0x3a>(input0) == (input0 >> 0x3a)));
+            EXPECT_TRUE(all(bit_shift_right<0x3b>(input0) == (input0 >> 0x3b)));
+            EXPECT_TRUE(all(bit_shift_right<0x3c>(input0) == (input0 >> 0x3c)));
+            EXPECT_TRUE(all(bit_shift_right<0x3d>(input0) == (input0 >> 0x3d)));
+            EXPECT_TRUE(all(bit_shift_right<0x3e>(input0) == (input0 >> 0x3e)));
+            EXPECT_TRUE(all(bit_shift_right<0x3f>(input0) == (input0 >> 0x3f)));
+            EXPECT_TRUE(all(bit_shift_right<0x40>(input0) == vec2x64u{0x00}));
         }
     }
 
@@ -2028,7 +2028,7 @@ namespace avel_tests {
                 input_array0[j] = random64u();
             }
 
-            std::uint64_t input1 = random64u() % 65;
+            long long input1 = random64u();
 
             vec2x64u input0{input_array0};
 
@@ -2052,7 +2052,7 @@ namespace avel_tests {
 
             arr2x64u input_array1{};
             for (std::size_t j = 0; j < input_array1.size(); ++j) {
-                input_array1[j] = random64u() % 65;
+                input_array1[j] = random64u();
             }
 
             vec2x64u input0{input_array0};
@@ -2069,6 +2069,82 @@ namespace avel_tests {
         }
     }
 
+    TEST(Vec2x64u, Rotr) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr2x64u input_array0{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                input_array0[j] = random64u();
+            }
+
+            vec2x64u input0{input_array0};
+
+            EXPECT_TRUE(all(rotr<0x00>(input0) == rotr(input0, 0x00)));
+            EXPECT_TRUE(all(rotr<0x01>(input0) == rotr(input0, 0x01)));
+            EXPECT_TRUE(all(rotr<0x02>(input0) == rotr(input0, 0x02)));
+            EXPECT_TRUE(all(rotr<0x03>(input0) == rotr(input0, 0x03)));
+            EXPECT_TRUE(all(rotr<0x04>(input0) == rotr(input0, 0x04)));
+            EXPECT_TRUE(all(rotr<0x05>(input0) == rotr(input0, 0x05)));
+            EXPECT_TRUE(all(rotr<0x06>(input0) == rotr(input0, 0x06)));
+            EXPECT_TRUE(all(rotr<0x07>(input0) == rotr(input0, 0x07)));
+            EXPECT_TRUE(all(rotr<0x08>(input0) == rotr(input0, 0x08)));
+            EXPECT_TRUE(all(rotr<0x09>(input0) == rotr(input0, 0x09)));
+            EXPECT_TRUE(all(rotr<0x0a>(input0) == rotr(input0, 0x0a)));
+            EXPECT_TRUE(all(rotr<0x0b>(input0) == rotr(input0, 0x0b)));
+            EXPECT_TRUE(all(rotr<0x0c>(input0) == rotr(input0, 0x0c)));
+            EXPECT_TRUE(all(rotr<0x0d>(input0) == rotr(input0, 0x0d)));
+            EXPECT_TRUE(all(rotr<0x0e>(input0) == rotr(input0, 0x0e)));
+            EXPECT_TRUE(all(rotr<0x0f>(input0) == rotr(input0, 0x0f)));
+            EXPECT_TRUE(all(rotr<0x10>(input0) == rotr(input0, 0x10)));
+            EXPECT_TRUE(all(rotr<0x11>(input0) == rotr(input0, 0x11)));
+            EXPECT_TRUE(all(rotr<0x12>(input0) == rotr(input0, 0x12)));
+            EXPECT_TRUE(all(rotr<0x13>(input0) == rotr(input0, 0x13)));
+            EXPECT_TRUE(all(rotr<0x14>(input0) == rotr(input0, 0x14)));
+            EXPECT_TRUE(all(rotr<0x15>(input0) == rotr(input0, 0x15)));
+            EXPECT_TRUE(all(rotr<0x16>(input0) == rotr(input0, 0x16)));
+            EXPECT_TRUE(all(rotr<0x17>(input0) == rotr(input0, 0x17)));
+            EXPECT_TRUE(all(rotr<0x18>(input0) == rotr(input0, 0x18)));
+            EXPECT_TRUE(all(rotr<0x19>(input0) == rotr(input0, 0x19)));
+            EXPECT_TRUE(all(rotr<0x1a>(input0) == rotr(input0, 0x1a)));
+            EXPECT_TRUE(all(rotr<0x1b>(input0) == rotr(input0, 0x1b)));
+            EXPECT_TRUE(all(rotr<0x1c>(input0) == rotr(input0, 0x1c)));
+            EXPECT_TRUE(all(rotr<0x1d>(input0) == rotr(input0, 0x1d)));
+            EXPECT_TRUE(all(rotr<0x1e>(input0) == rotr(input0, 0x1e)));
+            EXPECT_TRUE(all(rotr<0x1f>(input0) == rotr(input0, 0x1f)));
+            EXPECT_TRUE(all(rotr<0x20>(input0) == rotr(input0, 0x20)));
+            EXPECT_TRUE(all(rotr<0x21>(input0) == rotr(input0, 0x21)));
+            EXPECT_TRUE(all(rotr<0x22>(input0) == rotr(input0, 0x22)));
+            EXPECT_TRUE(all(rotr<0x23>(input0) == rotr(input0, 0x23)));
+            EXPECT_TRUE(all(rotr<0x24>(input0) == rotr(input0, 0x24)));
+            EXPECT_TRUE(all(rotr<0x25>(input0) == rotr(input0, 0x25)));
+            EXPECT_TRUE(all(rotr<0x26>(input0) == rotr(input0, 0x26)));
+            EXPECT_TRUE(all(rotr<0x27>(input0) == rotr(input0, 0x27)));
+            EXPECT_TRUE(all(rotr<0x28>(input0) == rotr(input0, 0x28)));
+            EXPECT_TRUE(all(rotr<0x29>(input0) == rotr(input0, 0x29)));
+            EXPECT_TRUE(all(rotr<0x2a>(input0) == rotr(input0, 0x2a)));
+            EXPECT_TRUE(all(rotr<0x2b>(input0) == rotr(input0, 0x2b)));
+            EXPECT_TRUE(all(rotr<0x2c>(input0) == rotr(input0, 0x2c)));
+            EXPECT_TRUE(all(rotr<0x2d>(input0) == rotr(input0, 0x2d)));
+            EXPECT_TRUE(all(rotr<0x2e>(input0) == rotr(input0, 0x2e)));
+            EXPECT_TRUE(all(rotr<0x2f>(input0) == rotr(input0, 0x2f)));
+            EXPECT_TRUE(all(rotr<0x30>(input0) == rotr(input0, 0x30)));
+            EXPECT_TRUE(all(rotr<0x31>(input0) == rotr(input0, 0x31)));
+            EXPECT_TRUE(all(rotr<0x32>(input0) == rotr(input0, 0x32)));
+            EXPECT_TRUE(all(rotr<0x33>(input0) == rotr(input0, 0x33)));
+            EXPECT_TRUE(all(rotr<0x34>(input0) == rotr(input0, 0x34)));
+            EXPECT_TRUE(all(rotr<0x35>(input0) == rotr(input0, 0x35)));
+            EXPECT_TRUE(all(rotr<0x36>(input0) == rotr(input0, 0x36)));
+            EXPECT_TRUE(all(rotr<0x37>(input0) == rotr(input0, 0x37)));
+            EXPECT_TRUE(all(rotr<0x38>(input0) == rotr(input0, 0x38)));
+            EXPECT_TRUE(all(rotr<0x39>(input0) == rotr(input0, 0x39)));
+            EXPECT_TRUE(all(rotr<0x3a>(input0) == rotr(input0, 0x3a)));
+            EXPECT_TRUE(all(rotr<0x3b>(input0) == rotr(input0, 0x3b)));
+            EXPECT_TRUE(all(rotr<0x3c>(input0) == rotr(input0, 0x3c)));
+            EXPECT_TRUE(all(rotr<0x3d>(input0) == rotr(input0, 0x3d)));
+            EXPECT_TRUE(all(rotr<0x3e>(input0) == rotr(input0, 0x3e)));
+            EXPECT_TRUE(all(rotr<0x3f>(input0) == rotr(input0, 0x3f)));
+        }
+    }
+
     TEST(Vec2x64u, Rotr_scalar_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             arr2x64u input_array0{};
@@ -2076,7 +2152,7 @@ namespace avel_tests {
                 input_array0[j] = random64u();
             }
 
-            std::uint64_t input1 = random64u() % 65;
+            long long input1 = random64u();
 
             vec2x64u input0{input_array0};
 
@@ -2100,7 +2176,7 @@ namespace avel_tests {
 
             arr2x64u input_array1{};
             for (std::size_t j = 0; j < input_array1.size(); ++j) {
-                input_array1[j] = random64u() % 65;
+                input_array1[j] = random64u();
             }
 
             vec2x64u input0{input_array0};

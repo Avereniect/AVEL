@@ -1,7 +1,7 @@
 #ifndef AVEL_DENOM4X32U_TESTS_HPP
 #define AVEL_DENOM4X32U_TESTS_HPP
 
-namespace avel::tests {
+namespace avel_tests {
 
     /*
     TEST(Recip4x32u, Identity) {

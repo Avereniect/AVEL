@@ -1206,7 +1206,17 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        return vec2x64u{vld1q_u64(ptr)};
+        switch (n) {
+            case 0: {
+                return vec2x64u{vdupq_n_u64(0x00)};
+            }
+            case 1: {
+                return vec2x64u{vsetq_lane_u64(ptr[0], vdupq_n_u64(0x00), 0)};
+            }
+            default: {
+                return vec2x64u{vld1q_u64(ptr)};
+            }
+        }
         #endif
     }
 
@@ -1233,6 +1243,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         return load<vec2x64u>(ptr, n);
         #endif
+
+        #if defined(AVEL_NEON)
+        return load<vec2x64u>(ptr, n);
+        #endif
     }
 
     template<>
@@ -1251,35 +1265,6 @@ namespace avel {
     //Definition of gather deferred until vec2x64i defined
 
 
-    template<std::uint32_t N = vec2x64u::width>
-    AVEL_FINL void store(std::uint64_t* ptr, vec2x64u x) {
-        static_assert(N <= vec2x64u::width, "Cannot store more elements than width of vector");
-        typename std::enable_if<N <= vec2x64u::width, int>::type dummy_variable = 0;
-
-        #if defined(AVEL_AVX512VL)
-        auto mask = (1 << N) - 1;
-        _mm_mask_storeu_epi64(ptr, mask, decay(x));
-
-        #elif defined(AVEL_SSE2)
-        auto undef = _mm_undefined_si128();
-        auto full = _mm_cmpeq_epi8(undef, undef);
-
-        auto mask = _mm_srli_si128(full, sizeof(vec2x64u::scalar) * (vec2x64u::width - N));
-        _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
-
-        #endif
-    }
-
-    template<>
-    AVEL_FINL void store<vec2x64u::width>(std::uint64_t* ptr, vec2x64u v) {
-        #if defined(AVEL_SSE2)
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
-        #endif
-
-        #if defined(AVEL_NEON)
-        vst1q_u64(ptr, decay(v));
-        #endif
-    }
 
     AVEL_FINL void store(std::uint64_t* ptr, vec2x64u v, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
@@ -1300,25 +1285,47 @@ namespace avel {
             }
         }
         #endif
+
+        #if defined(AVEL_NEON)
+        switch (n) {
+            case 0: {
+
+            } break;
+            case 1: {
+                vst1_u64(ptr, vget_low_u64(decay(v)));
+            } break;
+            default: {
+                vst1q_u64(ptr, decay(v));
+            }
+        }
+        #endif
     }
 
-
     template<std::uint32_t N = vec2x64u::width>
-    AVEL_FINL void aligned_store(std::uint64_t* ptr, vec2x64u v) {
+    AVEL_FINL void store(std::uint64_t* ptr, vec2x64u x) {
         static_assert(N <= vec2x64u::width, "Cannot store more elements than width of vector");
         typename std::enable_if<N <= vec2x64u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE2)
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
+        #if defined(AVEL_AVX512VL)
+        auto mask = (1 << N) - 1;
+        _mm_mask_storeu_epi64(ptr, mask, decay(x));
+
+        #elif defined(AVEL_SSE2)
+        auto undef = _mm_undefined_si128();
+        auto full = _mm_cmpeq_epi8(undef, undef);
+
+        auto mask = _mm_srli_si128(full, sizeof(vec2x64u::scalar) * (vec2x64u::width - N));
+        _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
+
         #endif
 
         #if defined(AVEL_NEON)
-        vst1q_u64(ptr, decay(v));
+        store(ptr, decay(x), N);
         #endif
     }
 
     template<>
-    AVEL_FINL void aligned_store<vec2x64u::width>(std::uint64_t* ptr, vec2x64u v) {
+    AVEL_FINL void store<vec2x64u::width>(std::uint64_t* ptr, vec2x64u v) {
         #if defined(AVEL_SSE2)
         _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
         #endif
@@ -1327,6 +1334,8 @@ namespace avel {
         vst1q_u64(ptr, decay(v));
         #endif
     }
+
+
 
     AVEL_FINL void aligned_store(std::uint64_t* ptr, vec2x64u v, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
@@ -1345,6 +1354,31 @@ namespace avel {
                 _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
             }
         }
+        #endif
+
+        #if defined(AVEL_NEON)
+        vst1q_u64(ptr, decay(v));
+        #endif
+    }
+
+    template<std::uint32_t N = vec2x64u::width>
+    AVEL_FINL void aligned_store(std::uint64_t* ptr, vec2x64u v) {
+        static_assert(N <= vec2x64u::width, "Cannot store more elements than width of vector");
+        typename std::enable_if<N <= vec2x64u::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE2)
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
+        #endif
+
+        #if defined(AVEL_NEON)
+        aligned_store(ptr, decay(v), N);
+        #endif
+    }
+
+    template<>
+    AVEL_FINL void aligned_store<vec2x64u::width>(std::uint64_t* ptr, vec2x64u v) {
+        #if defined(AVEL_SSE2)
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
         #endif
 
         #if defined(AVEL_NEON)
@@ -1723,6 +1757,8 @@ namespace avel {
         return vec2x64u{0x00};
     }
 
+
+
     template<std::uint32_t S>
     [[nodiscard]]
     vec2x64u bit_shift_right(vec2x64u v) {
@@ -1743,7 +1779,47 @@ namespace avel {
         return v;
     }
 
+    template<>
+    [[nodiscard]]
+    vec2x64u bit_shift_right<64>(vec2x64u v) {
+        (void)v;
+        return vec2x64u{0x00};
+    }
 
+
+
+    template<std::uint32_t S, typename std::enable_if<S < 64, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec2x64u rotl(vec2x64u v) {
+        #if defined(AVEL_AVX512VL)
+        return vec2x64u{_mm_rol_epi64(decay(v), S)};
+
+        #elif defined(AVEL_SSE2)
+        auto left_shifted  = _mm_slli_epi64(decay(v), S);
+        auto right_shifted = _mm_srli_epi64(decay(v), 64 - S);
+
+        auto ret = _mm_or_si128(left_shifted, right_shifted);
+        return vec2x64u{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto left_shifted  = vshlq_n_u64(decay(v), S - 64);
+        auto right_shifted = vshlq_n_u64(decay(v), S);
+
+        return vec2x64u{vorrq_u64(left_shifted, right_shifted)};
+        #endif
+    }
+
+    template<>
+    AVEL_FINL vec2x64u rotl<0>(vec2x64u v) {
+        return v;
+    }
+
+    template<std::uint32_t S, typename std::enable_if<64 <= S, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec2x64u rotl(vec2x64u v) {
+        return rotl<S % 64>(v);
+    }
 
     [[nodiscard]]
     AVEL_FINL vec2x64u rotl(vec2x64u v, long long s) {
@@ -1781,6 +1857,40 @@ namespace avel {
 
 
 
+    template<std::uint32_t S, typename std::enable_if<S < 64, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec2x64u rotr(vec2x64u v) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        return vec2x64u{_mm_ror_epi64(decay(v), S)};
+
+        #elif defined(AVEL_SSE2)
+        auto left_shifted  = _mm_slli_epi64(decay(v), 64 - S);
+        auto right_shifted = _mm_srli_epi64(decay(v), S);
+
+        auto ret = _mm_or_si128(left_shifted, right_shifted);
+        return vec2x64u{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto left_shifted  = vshlq_n_u64(decay(v), 64 - S);
+        auto right_shifted = vshrq_n_u64(decay(v), S);
+
+        return vec2x64u{vorrq_u64(left_shifted, right_shifted)};
+
+        #endif
+    }
+
+    template<>
+    AVEL_FINL vec2x64u rotr<0>(vec2x64u v) {
+        return v;
+    }
+
+    template<std::uint32_t S, typename std::enable_if<64 <= S, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec2x64u rotr(vec2x64u v) {
+        return rotr<S % 64>(v);
+    }
+
     [[nodiscard]]
     AVEL_FINL vec2x64u rotr(vec2x64u v, long long s) {
         #if defined(AVEL_AVX512VL)
@@ -1801,6 +1911,7 @@ namespace avel {
     AVEL_FINL vec2x64u rotr(vec2x64u v, vec2x64u s) {
         #if defined(AVEL_AVX512VL)
         return vec2x64u{_mm_rorv_epi64(decay(v), decay(s))};
+
         #elif defined(AVEL_SSE2)
         s &= vec2x64u{0x3F};
         return (v >> s) | (v << (vec2x64u {64} - s));

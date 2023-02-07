@@ -1144,7 +1144,7 @@ namespace avel {
     }
 
     //=====================================================
-    // Arrangment operations
+    // Arrangement operations
     //=====================================================
 
     template<std::uint32_t N>
@@ -1158,6 +1158,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         return _mm_cvtsi128_si64(_mm_srli_si128(decay(v), 8 * N));
 
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vgetq_lane_s64(decay(v), N);
         #endif
     }
 
@@ -1296,7 +1300,7 @@ namespace avel {
     AVEL_FINL vec2x64i average(vec2x64i x, vec2x64i y) {
         #if defined(AVEL_SSE2)
         auto avg = (x & y) + ((x ^ y) >> 1);
-        auto c = broadcast_mask((x < -y) | (y == vec2x64i{std::int64_t(1) << 63)})) & (x ^ y) & vec2x64i{1};
+        auto c = broadcast_mask((x < -y) | (y == vec2x64i{std::int64_t(1) << 63})) & (x ^ y) & vec2x64i{1};
 
         return avg + c;
 
@@ -1555,6 +1559,12 @@ namespace avel {
 
 
 
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec2x64i rotl(vec2x64i v) {
+        return vec2x64i{rotl<S>(vec2x64u{v})};
+    }
+
     [[nodiscard]]
     AVEL_FINL vec2x64i rotl(vec2x64i v, long long s) {
         return vec2x64i{rotl(vec2x64u{v}, s)};
@@ -1563,6 +1573,14 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec2x64i rotl(vec2x64i v, vec2x64i s) {
         return vec2x64i{rotl(vec2x64u{v}, vec2x64u{s})};
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec2x64i rotr(vec2x64i v) {
+        return vec2x64i{rotr<S>(vec2x64u{v})};
     }
 
     [[nodiscard]]
