@@ -21,11 +21,11 @@ set(AVEL_OPTIONS
     AVEL_AVX512DQ;
     AVEL_AVX512VL;
     AVEL_AVX512BW;
-    AVEL_AVX512VPOPCNTSQ;
+    AVEL_AVX512VPOPCNTDQ;
     AVEL_AVX512VBMI;
     AVEL_AVX512VBMI2;
     AVEL_AVX512BITALG;
-    AVEL_AVX512GFNI;
+    AVEL_GFNI;
     AVEL_ARM
     AVEL_NEON;
     AVEL_AARCH64;
@@ -70,18 +70,12 @@ endif()
 option(AVEL_BUILD_TESTS OFF)
 
 if (AVEL_BUILD_TESTS)
-    # Clear variables from cache for reuse of build-directory with different
-    # feature sets
-    foreach (extension IN LISTS AVEL_OPTIONS)
-        unset(${extension} CACHE)
-    endforeach()
-
     add_executable(AVEL_TESTS tests/AVEL_tests.cpp)
     target_link_libraries(AVEL_TESTS PUBLIC AVEL gtest pthread)
     target_compile_features(AVEL_TESTS PRIVATE "cxx_std_11")
 
     #TODO: Set compilation flags based on enabled features
-    target_compile_options(AVEL_TESTS PRIVATE "")
+    target_compile_options(AVEL_TESTS PRIVATE "-march=native")
     target_link_options(AVEL_TESTS PRIVATE "")
 
     target_include_directories(AVEL_TESTS PRIVATE ./include/)

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os
+import os, shutil
 
 # Path to compilers and names used for their build directories
 compilers = [
@@ -78,7 +78,7 @@ feature_combinations_x86 = [
     ['AVEL_AVX512VPOPCNTDQ'],
     ['AVEL_AVX512BITALG'],
     ['AVEL_AVX512VBMI'],
-    ['AVEL_AVX512VBM2'],
+    ['AVEL_AVX512VBMI2'],
     ['AVEL_GFNI'],
     ['AVEL_AVX512VL', 'AVEL_AVX512BW'],
     ['AVEL_AVX512VL', 'AVEL_AVX512DQ'],
@@ -115,15 +115,17 @@ def test_on_compiler(compiler_path, build_dir_name):
             if feature != '':
                 cmake_variables += ' ' + "-D" + feature + ":BOOL=ON"
 
+        build_path = "./test_build_dirs/" + build_dir_name
+
         cmake_command_format_string = \
             'cmake ' \
             '-S"./" ' \
-            '-B"./test_build_dirs/{}" ' \
+            '-B{} ' \
             '-G"CodeBlocks - Unix Makefiles" ' \
             '-DCMAKE_CXX_COMPILER={} ' \
             '-DAVEL_BUILD_TESTS:BOOL=ON{} ' \
             '-DCMAKE_CXX_FLAGS="{}"'
-        cmake_command = cmake_command_format_string.format(build_dir_name, compiler_path, cmake_variables, flags)
+        cmake_command = cmake_command_format_string.format(build_path, compiler_path, cmake_variables, flags)
         print(cmake_command)
 
         ret = os.system(cmake_command)
@@ -160,6 +162,8 @@ def test_on_compiler(compiler_path, build_dir_name):
             print("CMake Variables:", cmake_variables)
             failed = True
             return failed
+
+        shutil.rmtree(build_path)
 
     return failed
 

@@ -1,18 +1,15 @@
 #ifndef AVEL_SCALAR32U_TESTS_HPP
 #define AVEL_SCALAR32U_TESTS_HPP
 
-#include <gtest/gtest.h>
-#include <bit>
-
 namespace avel_tests {
 
     using namespace avel;
 
-    TEST(Scalar32u_broadcast_mask, False) {
+    TEST(Scalar32u, Broadcast_mask_false) {
         EXPECT_EQ(broadcast_mask<std::uint32_t>(false), 0x00000000);
     }
 
-    TEST(Scalar32u_broadcast_mask, True) {
+    TEST(Scalar32u, Broadcast_mask_true) {
         EXPECT_EQ(broadcast_mask<std::uint32_t>(true), 0xFFFFFFFF);
     }
 
@@ -133,11 +130,11 @@ namespace avel_tests {
         EXPECT_EQ(popcount(0x11110000u), 0x04);
     }
 
-    TEST(Scalar32u_byteswap, Lo_byte) {
+    TEST(Scalar32u, Byteswap_lo_byte) {
         EXPECT_EQ(byteswap(0x000000FFu), 0xFF000000);
     }
 
-    TEST(Scalar32u_countl_zero, Contiguous_set_bits) {
+    TEST(Scalar32u, countl_zero_contiguous_set_bits) {
         EXPECT_EQ(countl_zero(0xFFFFFFFFu), 0x0000000000);
         EXPECT_EQ(countl_zero(0x7FFFFFFFu), 0x0000000001);
         EXPECT_EQ(countl_zero(0x3FFFFFFFu), 0x0000000002);
@@ -183,7 +180,7 @@ namespace avel_tests {
         EXPECT_EQ(countl_zero(0x00000000u), 0x0000000020);
     }
 
-    TEST(Scalar32u_countr_zero, Contiguous_set_bits) {
+    TEST(Scalar32u, Countr_zero_contiguous_set_bits) {
         EXPECT_EQ(countr_zero(0x00000000u), 32);
         EXPECT_EQ(countr_zero(0x80000000u), 31);
         EXPECT_EQ(countr_zero(0xC0000000u), 30);
@@ -219,7 +216,7 @@ namespace avel_tests {
         EXPECT_EQ(countr_zero(0xFFFFFFFFu), 0);
     }
 
-    TEST(Scalar32u_countr_zero, Discontiguous_set_bits) {
+    TEST(Scalar32u, Countrr_zero_discontiguous_set_bits) {
         EXPECT_EQ(countr_zero(0x00000001u), 0);
     }
 
@@ -293,6 +290,41 @@ namespace avel_tests {
         }
     }
     */
+
+    //=====================================================
+    // bit_ceil
+    //=====================================================
+
+    TEST(Scalar32u, Bit_ceil_edge_cases) {
+        EXPECT_EQ(1, bit_ceil(std::uint32_t{0}));
+        EXPECT_EQ(1, bit_ceil(std::uint32_t{1}));
+    }
+
+    TEST(Scalar32u, Bit_ceil_powers_of_two) {
+        for (std::int32_t i = 0; i < 31; ++i) {
+            std::uint32_t x = std::uint32_t{1} << i;
+
+            EXPECT_EQ(x, bit_ceil(x));
+        }
+    }
+
+    TEST(Scalar32u, Bit_ceil_powers_of_two_minus_one) {
+        for (std::int32_t i = 2; i < 32; ++i) {
+            std::uint32_t x = (std::uint32_t{1} << i);
+            std::uint32_t y = x - 1;
+
+            EXPECT_EQ(x, bit_ceil(y));
+        }
+    }
+
+    TEST(Scalar32u, Bit_ceil_powers_of_two_plus_one) {
+        for (std::int32_t i = 0; i < 31; ++i) {
+            std::uint32_t x = (std::uint32_t{1} << i);
+            std::uint32_t y = x + 1;
+
+            EXPECT_EQ(x << 1, bit_ceil(y));
+        }
+    }
 
 }
 
