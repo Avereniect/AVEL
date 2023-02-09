@@ -49,9 +49,9 @@ feature_flag_combinations_x86 = [
 
 feature_flag_combinations_arm = [
     [''],
-    [''],
-    [''],
     ['', ''],
+    ['', ''],
+    ['', '', ''],
 ]
 
 feature_flag_combinations = feature_flag_combinations_x86
@@ -90,10 +90,10 @@ feature_combinations_x86 = [
 ]
 
 feature_combinations_arm = [
-    [''],
-    ['AVEL_NEON'],
-    ['AVEL_AARCH64'],
-    ['AVEL_NEON', 'AVEL_AARCH64']
+    ['AVEL_ARM'],
+    ['AVEL_ARM', 'AVEL_NEON'],
+    ['AVEL_ARM', 'AVEL_AARCH64'],
+    ['AVEL_ARM', 'AVEL_NEON', 'AVEL_AARCH64']
 ]
 
 feature_combinations = feature_combinations_x86
@@ -112,8 +112,8 @@ def test_on_compiler(compiler_path, build_dir_name):
             flags += ' ' + flag
 
         for feature in feature_combination:
-            cmake_variables += ' ' + "-D" + feature + ":BOOL=ON"
-            pass
+            if feature != '':
+                cmake_variables += ' ' + "-D" + feature + ":BOOL=ON"
 
         cmake_command_format_string = \
             'cmake ' \
