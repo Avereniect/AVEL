@@ -1591,7 +1591,7 @@ namespace avel {
     AVEL_FINL void store(std::int64_t* ptr, vec2x64i x, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
         auto mask = (1 << n) - 1;
-        _mm_mask_storeu_epi64(ptr, mask, decay(v));
+        _mm_mask_storeu_epi64(ptr, mask, decay(x));
 
         #elif defined(AVEL_SSE2)
         switch (n) {

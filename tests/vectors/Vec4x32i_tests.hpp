@@ -1855,9 +1855,6 @@ namespace avel_tests {
                 for (std::size_t k = 0; k < input_array0.size(); ++k) {
                     if (k < j) {
                         EXPECT_EQ(input_array0[k], test_data[index_array[k]]);
-                        if (input_array0[k] != test_data[index_array[k]]) {
-                            int breakpoint_dummy = 345;
-                        }
                     }
                 }
             }
