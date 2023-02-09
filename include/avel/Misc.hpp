@@ -7,6 +7,7 @@
 
 #include <type_traits>
 #include <cstdint>
+#include <cstring>
 
 #include "avel/impl/Capabilities.hpp"
 
@@ -40,20 +41,23 @@ namespace avel {
         #if __cplusplus >= 202002L
         return std::bit_cast<T>(u);
 
-        //TODO: Consider using unions if using GCC
+        #elif defined(AVEL_GCC)
+        //GCC offers type punning via unions as implementation-defined behavior
+        constexpr auto alignment = std::max(alignof(T), alignof(U));
+        union Helper{
+            alignas(alignment) T t;
+            alignas(alignment) U u;
+        };
+
+        Helper helper;
+        helper.u = u;
+        return helper.t;
 
         #else
-
         T ret;
-
-        auto* src = reinterpret_cast<const unsigned char*>(&u);
-        auto* dst = reinterpret_cast<unsigned char*>(&ret);
-
-        for (std::size_t i = 0; i < sizeof(T); ++i) {
-            dst[i] = src[i];
-        }
-
+        std::memcpy(&ret, &u, sizeof(T));
         return ret;
+
         #endif
     }
 

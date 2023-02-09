@@ -1308,8 +1308,8 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec16x8u load<vec16x8u>(const std::uint8_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        n = min(16u, n);
-        auto mask = 0xFFFF >> (16 - n);
+        n = min(vec16x8u::width, n);
+        auto mask = (1 << n) - 1;
         return vec16x8u{_mm_maskz_loadu_epi8(mask, ptr)};
 
         #elif defined(AVEL_SSE2)
@@ -1593,8 +1593,9 @@ namespace avel {
         }
         #endif
 
-        #if defined(AVEL_NEON)// While ARM neon doesn't provide partial load instructions, however,
-        // the following code compiles down to reasonable ideal machine code
+        #if defined(AVEL_NEON)
+        // While ARM neon doesn't provide partial load instructions, however,
+        // the following code compiles down to reasonable machine code
         switch (n) {
             case 0: {
                 return vec16x8u{vdupq_n_u8(0x00)};
@@ -1624,7 +1625,7 @@ namespace avel {
                 std::memcpy(&x1, ptr + 2, sizeof(std::uint8_t ));
 
                 auto ret0 = vsetq_lane_u16(x0, vdupq_n_u16(0x00), 0);
-                auto ret1 = vsetq_lane_u8(x1, vreinterpretq_u8_u16(ret0), 3);
+                auto ret1 = vsetq_lane_u8(x1, vreinterpretq_u8_u16(ret0), 2);
                 return vec16x8u{ret1};
             }
 
@@ -1714,11 +1715,11 @@ namespace avel {
 
                 std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
                 std::memcpy(&x1, ptr + 8, sizeof(std::uint16_t));
-                std::memcpy(&x2, ptr + 9, sizeof(std::uint8_t ));
+                std::memcpy(&x2, ptr + 10, sizeof(std::uint8_t ));
 
                 auto ret0 = vsetq_lane_u64(x0, vdupq_n_u64(0x00), 0);
                 auto ret1 = vsetq_lane_u16(x1, vreinterpretq_u16_u64(ret0), 4);
-                auto ret2 = vsetq_lane_u8(x1, vreinterpretq_u8_u16(ret1), 9);
+                auto ret2 = vsetq_lane_u8(x2, vreinterpretq_u8_u16(ret1), 10);
                 return vec16x8u{ret2};
             }
 
@@ -1727,7 +1728,7 @@ namespace avel {
                 std::uint32_t x1 = 0;
 
                 std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
-                std::memcpy(&x1, ptr + 4, sizeof(std::uint32_t));
+                std::memcpy(&x1, ptr + 8, sizeof(std::uint32_t));
 
                 auto ret0 = vsetq_lane_u64(x0, vdupq_n_u64(0x00), 0);
                 auto ret1 = vsetq_lane_u32(x1, vreinterpretq_u32_u64(ret0), 2);
@@ -1739,9 +1740,9 @@ namespace avel {
                 std::uint32_t x1 = 0;
                 std::uint8_t  x2 = 0;
 
-                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
-                std::memcpy(&x1, ptr + 4, sizeof(std::uint32_t));
-                std::memcpy(&x2, ptr + 6, sizeof(std::uint8_t ));
+                std::memcpy(&x0, ptr +  0, sizeof(std::uint64_t));
+                std::memcpy(&x1, ptr +  8, sizeof(std::uint32_t));
+                std::memcpy(&x2, ptr + 12, sizeof(std::uint8_t ));
 
                 auto ret0 = vsetq_lane_u64(x0, vdupq_n_u64(0x00), 0);
                 auto ret1 = vsetq_lane_u32(x1, vreinterpretq_u32_u64(ret0), 2);
@@ -1753,13 +1754,13 @@ namespace avel {
                 std::uint32_t x1 = 0;
                 std::uint16_t x2 = 0;
 
-                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
-                std::memcpy(&x1, ptr + 4, sizeof(std::uint32_t));
-                std::memcpy(&x2, ptr + 6, sizeof(std::uint16_t));
+                std::memcpy(&x0, ptr +  0, sizeof(std::uint64_t));
+                std::memcpy(&x1, ptr +  8, sizeof(std::uint32_t));
+                std::memcpy(&x2, ptr + 12, sizeof(std::uint16_t));
 
                 auto ret0 = vsetq_lane_u64(x0, vdupq_n_u64(0x00), 0);
                 auto ret1 = vsetq_lane_u32(x1, vreinterpretq_u32_u64(ret0), 2);
-                auto ret2 = vsetq_lane_u16(x1, vreinterpretq_u16_u32(ret1), 6);
+                auto ret2 = vsetq_lane_u16(x2, vreinterpretq_u16_u32(ret1), 6);
                 auto ret3 = vreinterpretq_u8_u16(ret2);
                 return vec16x8u{ret3};
             }
@@ -1769,15 +1770,15 @@ namespace avel {
                 std::uint16_t x2 = 0;
                 std::uint8_t  x3 = 0;
 
-                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
-                std::memcpy(&x1, ptr + 4, sizeof(std::uint32_t));
-                std::memcpy(&x2, ptr + 6, sizeof(std::uint16_t));
-                std::memcpy(&x3, ptr + 7, sizeof(std::uint8_t ));
+                std::memcpy(&x0, ptr +  0, sizeof(std::uint64_t));
+                std::memcpy(&x1, ptr +  8, sizeof(std::uint32_t));
+                std::memcpy(&x2, ptr + 12, sizeof(std::uint16_t));
+                std::memcpy(&x3, ptr + 14, sizeof(std::uint8_t ));
 
                 auto ret0 = vsetq_lane_u64(x0, vdupq_n_u64(0x00), 0);
                 auto ret1 = vsetq_lane_u32(x1, vreinterpretq_u32_u64(ret0), 2);
-                auto ret2 = vsetq_lane_u16(x1, vreinterpretq_u16_u32(ret1), 6);
-                auto ret3 = vsetq_lane_u8 (x2, vreinterpretq_u8_u16 (ret2), 14);
+                auto ret2 = vsetq_lane_u16(x2, vreinterpretq_u16_u32(ret1), 6);
+                auto ret3 = vsetq_lane_u8 (x3, vreinterpretq_u8_u16 (ret2), 14);
                 return vec16x8u{ret3};
             }
 
@@ -1824,7 +1825,8 @@ namespace avel {
 
     AVEL_FINL void store(std::uint8_t* ptr, vec16x8u x, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        auto mask = 0xFFFF >> std::min(vec16x8u::width, n);
+        n = min(n, vec16x8u::width);
+        auto mask = (1 << n) - 1;
         _mm_mask_storeu_epi8(ptr, mask, decay(x));
 
         #elif defined(AVEL_SSE2)
@@ -1834,8 +1836,8 @@ namespace avel {
         auto w = vec16x8u::width;
         auto h = vec16x8u::width / 2;
 
-        auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(w - std::min(w, n)));
-        auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(h - std::min(h, n)));
+        auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(8 * (h - min(h, n))));
+        auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(8 * (w - min(w, n))));
         auto mask = _mm_unpacklo_epi64(lo, hi);
         _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
 
@@ -1888,7 +1890,7 @@ namespace avel {
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint32_t));
                 std::memcpy(ptr + 4, &x1, sizeof(std::uint16_t));
-                std::memcpy(ptr + 2, &x2, sizeof(std::uint8_t ));
+                std::memcpy(ptr + 6, &x2, sizeof(std::uint8_t ));
             } break;
 
             case 8: {
@@ -1913,7 +1915,7 @@ namespace avel {
             case 11: {
                 std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(x)), 0);
                 std::uint16_t x1 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(x)), 4);
-                std::uint8_t  x2 = vgetq_lane_u8(decay(x), 4);
+                std::uint8_t  x2 = vgetq_lane_u8(decay(x), 10);
 
                 std::memcpy(ptr + 0,  &x0, sizeof(std::uint64_t));
                 std::memcpy(ptr + 8,  &x1, sizeof(std::uint16_t));
@@ -2000,13 +2002,7 @@ namespace avel {
 
 
     AVEL_FINL void aligned_store(std::uint8_t* ptr, vec16x8u x, std::uint32_t n) {
-        #if defined(AVEL_SSE2)
         store(ptr, x, n);
-        #endif
-
-        #if defined(AVEL_NEON)
-        store(ptr, x, n);
-        #endif
     }
 
     template<std::uint32_t N = vec16x8u::width>
@@ -2014,13 +2010,7 @@ namespace avel {
         static_assert(N <= vec16x8u::width, "Cannot store more elements than width of vector");
         typename std::enable_if<N <= vec16x8u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE2)
-        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
-        #endif
-
-        #if defined(AVEL_NEON)
         aligned_store(ptr, x, N);
-        #endif
     }
 
     template<>

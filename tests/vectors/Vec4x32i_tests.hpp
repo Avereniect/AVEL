@@ -1608,6 +1608,32 @@ namespace avel_tests {
         }
     }
 
+    //=====================================================
+    // Load/Store operations
+    //=====================================================
+
+    TEST(Vec4x32i, Load_n_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr4x32i input_array{};
+            for (std::size_t j = 0; j < input_array.size(); ++j) {
+                input_array[j] = random32u();
+            }
+
+            for (std::uint32_t j = 0; j <= vec4x32i::width; ++j) {
+                auto results = load<vec4x32i>(input_array.data(), j);
+
+                auto loaded_data = to_array(results);
+                for (std::uint32_t k = 0; k < vec4x32i::width; k++) {
+                    if (k < j) {
+                        EXPECT_EQ(input_array[k], loaded_data[k]);
+                    } else {
+                        EXPECT_EQ(0x0, loaded_data[k]);
+                    }
+                }
+            }
+        }
+    }
+
     TEST(Vec4x32i, Load_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             arr4x32i input_array0{};
@@ -1615,9 +1641,33 @@ namespace avel_tests {
                 input_array0[j] = random32u();
             }
 
-            auto results = load<vec4x32i>(input_array0.data());
+            EXPECT_TRUE(all(load<vec4x32i, 0x0>(input_array0.data()) == load<vec4x32i>(input_array0.data(), 0x0)));
+            EXPECT_TRUE(all(load<vec4x32i, 0x1>(input_array0.data()) == load<vec4x32i>(input_array0.data(), 0x1)));
+            EXPECT_TRUE(all(load<vec4x32i, 0x2>(input_array0.data()) == load<vec4x32i>(input_array0.data(), 0x2)));
+            EXPECT_TRUE(all(load<vec4x32i, 0x3>(input_array0.data()) == load<vec4x32i>(input_array0.data(), 0x3)));
+            EXPECT_TRUE(all(load<vec4x32i, 0x4>(input_array0.data()) == load<vec4x32i>(input_array0.data(), 0x4)));
+        }
+    }
 
-            EXPECT_TRUE(all(results == vec4x32i{input_array0}));
+    TEST(Vec4x32i, Aligned_load_n_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            alignas(alignof(vec4x32i)) arr4x32i input_array{};
+            for (std::size_t j = 0; j < input_array.size(); ++j) {
+                input_array[j] = random32u();
+            }
+
+            for (std::uint32_t j = 0; j <= vec4x32i::width; ++j) {
+                auto results = aligned_load<vec4x32i>(input_array.data(), j);
+
+                auto loaded_data = to_array(results);
+                for (std::uint32_t k = 0; k < vec4x32i::width; k++) {
+                    if (k < j) {
+                        EXPECT_EQ(input_array[k], loaded_data[k]);
+                    } else {
+                        EXPECT_EQ(0x0, loaded_data[k]);
+                    }
+                }
+            }
         }
     }
 
@@ -1628,9 +1678,90 @@ namespace avel_tests {
                 input_array0[j] = random32u();
             }
 
-            auto results = aligned_load<vec4x32i>(input_array0.data());
+            EXPECT_TRUE(all(aligned_load<vec4x32i, 0x0>(input_array0.data()) == aligned_load<vec4x32i>(input_array0.data(), 0x0)));
+            EXPECT_TRUE(all(aligned_load<vec4x32i, 0x1>(input_array0.data()) == aligned_load<vec4x32i>(input_array0.data(), 0x1)));
+            EXPECT_TRUE(all(aligned_load<vec4x32i, 0x2>(input_array0.data()) == aligned_load<vec4x32i>(input_array0.data(), 0x2)));
+            EXPECT_TRUE(all(aligned_load<vec4x32i, 0x3>(input_array0.data()) == aligned_load<vec4x32i>(input_array0.data(), 0x3)));
+            EXPECT_TRUE(all(aligned_load<vec4x32i, 0x4>(input_array0.data()) == aligned_load<vec4x32i>(input_array0.data(), 0x4)));
+        }
+    }
 
-            EXPECT_TRUE(all(results == vec4x32i{input_array0}));
+    TEST(Vec4x32i, Gather_n_random) {
+        static constexpr std::size_t test_data_size = 16 * 1024;
+
+        std::vector<std::int32_t> test_data{};
+        test_data.resize(test_data_size);
+        for (auto& x : test_data) {
+            x = random32u();
+        }
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr4x32i index_array{};
+            for (std::size_t j = 0; j < index_array.size(); ++j) {
+                index_array[j] = random32u() % test_data_size;
+            }
+            auto indices = load<vec4x32i>(index_array.data());
+
+            for (std::uint32_t j = 0; j <= vec4x32i::width; ++j) {
+                auto results = gather<vec4x32i>(test_data.data(), indices, j);
+
+                auto loaded_data = to_array(results);
+                for (std::uint32_t k = 0; k < vec4x32i::width; k++) {
+                    if (k < j) {
+                        EXPECT_EQ(test_data[index_array[k]], loaded_data[k]);
+                    } else {
+                        EXPECT_EQ(0x0, loaded_data[k]);
+                    }
+                }
+            }
+        }
+    }
+
+    TEST(Vec4x32i, Gather_random) {
+        static constexpr std::size_t test_data_size = 16 * 1024;
+
+        std::vector<std::int32_t> test_data{};
+        test_data.resize(test_data_size);
+        for (auto& x : test_data) {
+            x = random32u();
+        }
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr4x32i index_array{};
+            for (std::size_t j = 0; j < index_array.size(); ++j) {
+                index_array[j] = random32u() % test_data_size;
+            }
+            auto indices = load<vec4x32i>(index_array.data());
+
+            EXPECT_TRUE(all(gather<vec4x32i, 0x00>(test_data.data(), indices) == gather<vec4x32i>(test_data.data(), indices, 0x00)));
+            EXPECT_TRUE(all(gather<vec4x32i, 0x01>(test_data.data(), indices) == gather<vec4x32i>(test_data.data(), indices, 0x01)));
+            EXPECT_TRUE(all(gather<vec4x32i, 0x02>(test_data.data(), indices) == gather<vec4x32i>(test_data.data(), indices, 0x02)));
+            EXPECT_TRUE(all(gather<vec4x32i, 0x03>(test_data.data(), indices) == gather<vec4x32i>(test_data.data(), indices, 0x03)));
+            EXPECT_TRUE(all(gather<vec4x32i, 0x04>(test_data.data(), indices) == gather<vec4x32i>(test_data.data(), indices, 0x04)));
+        }
+    }
+
+    TEST(Vec4x32i, Store_n_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr4x32i input_array0{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                input_array0[j] = random32u();
+            }
+
+            vec4x32i input0{input_array0};
+
+            for (std::size_t j = 0; j <= vec4x32i::width; ++j) {
+                std::int32_t arr[4]{};
+                store(arr, input0, j);
+
+                for (std::size_t k = 0; k < input_array0.size(); ++k) {
+                    if (k < j) {
+                        EXPECT_EQ(input_array0[k], arr[k]);
+                    } else {
+                        EXPECT_EQ(0x00, arr[k]);
+                    }
+                }
+            }
         }
     }
 
@@ -1644,10 +1775,35 @@ namespace avel_tests {
             vec4x32i input0{input_array0};
 
             std::int32_t arr[4]{};
-            store(arr, input0);
 
+            store<0x0>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x0));
+            store<0x1>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x1));
+            store<0x2>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x2));
+            store<0x3>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x3));
+            store<0x4>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x4));
+        }
+    }
+
+    TEST(Vec4x32i, Aligned_store_n_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr4x32i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
-                EXPECT_EQ(input_array0[j], arr[j]);
+                input_array0[j] = random32u();
+            }
+
+            vec4x32i input0{input_array0};
+
+            for (std::size_t j = 0; j <= vec4x32i::width; ++j) {
+                alignas(alignof(vec4x32i)) std::int32_t arr[4]{};
+                aligned_store(arr, input0, j);
+
+                for (std::size_t k = 0; k < input_array0.size(); ++k) {
+                    if (k < j) {
+                        EXPECT_EQ(input_array0[k], arr[k]);
+                    } else {
+                        EXPECT_EQ(0x00, arr[k]);
+                    }
+                }
             }
         }
     }
@@ -1662,11 +1818,79 @@ namespace avel_tests {
             vec4x32i input0{input_array0};
 
             alignas(alignof(vec4x32i)) std::int32_t arr[4]{};
-            aligned_store(arr, input0);
 
+            aligned_store<0x0>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x0));
+            aligned_store<0x1>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x1));
+            aligned_store<0x2>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x2));
+            aligned_store<0x3>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x3));
+            aligned_store<0x4>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x4));
+        }
+    }
+
+    TEST(Vec4x32i, Scatter_n_random) {
+        static constexpr std::size_t test_data_size = 16 * 1024;
+        static constexpr std::size_t block_size = test_data_size / vec4x32i::width;
+
+        std::vector<std::int32_t> test_data{};
+        test_data.resize(test_data_size);
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr4x32i input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
-                EXPECT_EQ(arr[j], input_array0[j]);
+                input_array0[j] = random32u();
             }
+
+            vec4x32i input0{input_array0};
+
+            arr4x32i index_array{};
+            for (std::size_t j = 0; j < index_array.size(); ++j) {
+                index_array[j] = (random32u() % block_size) + (j * block_size);
+            }
+
+            vec4x32i indices{index_array};
+
+            for (std::size_t j = 0; j <= vec4x32i::width; ++j) {
+                scatter(test_data.data(), input0, indices, j);
+
+                for (std::size_t k = 0; k < input_array0.size(); ++k) {
+                    if (k < j) {
+                        EXPECT_EQ(input_array0[k], test_data[index_array[k]]);
+                        if (input_array0[k] != test_data[index_array[k]]) {
+                            int breakpoint_dummy = 345;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    TEST(Vec4x32i, Scatter_random) {
+        static constexpr std::size_t test_data_size = 16 * 1024;
+        static constexpr std::size_t block_size = test_data_size / vec4x32i::width;
+
+        std::vector<std::int32_t> test_data{};
+        test_data.resize(test_data_size);
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr4x32i input_array0{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                input_array0[j] = random32u();
+            }
+
+            vec4x32i input0{input_array0};
+
+            arr4x32i index_array{};
+            for (std::size_t j = 0; j < index_array.size(); ++j) {
+                index_array[j] = (random32u() % block_size) + (j * block_size);
+            }
+
+            vec4x32i indices{index_array};
+
+            scatter<0x0>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x00));
+            scatter<0x1>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x01));
+            scatter<0x2>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x02));
+            scatter<0x3>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x03));
+            scatter<0x4>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x04));
         }
     }
 

@@ -1188,7 +1188,188 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    AVEL_FINL vec8x16i load<vec8x16i>(const std::int16_t* ptr) {
+    AVEL_FINL vec8x16i load<vec8x16i>(const std::int16_t* ptr, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        n = std::min(8u, n);
+        auto mask = 0xFF >> (8 - n);
+        return vec8x16i{_mm_maskz_loadu_epi16(mask, ptr)};
+
+        #elif defined(AVEL_SSE2)
+        // GCC 9 doesn't have _mm_loadu_si16(), _mm_loadu_si32(), or
+        // _mm_loadu_si64() but the following code is optimized down to
+        // reasonable machine code.
+        switch (n) {
+            case 0: {
+                return vec8x16i{_mm_setzero_si128()};
+            }
+            case 1: {
+                std::uint16_t one_s;
+                std::memcpy(&one_s, ptr + 0, sizeof(std::uint16_t));
+                return vec8x16i{_mm_cvtsi32_si128(one_s)};
+            }
+            case 2: {
+                std::uint32_t two_s;
+                std::memcpy(&two_s, ptr + 0, sizeof(std::uint32_t));
+                return vec8x16i{_mm_cvtsi32_si128(two_s)};
+            }
+            case 3: {
+                std::uint32_t two_s;
+                std::memcpy(&two_s, ptr + 0, sizeof(std::uint32_t));
+
+                std::uint16_t one_s;
+                std::memcpy(&one_s, ptr + 2, sizeof(std::uint16_t));
+
+                auto two_v = _mm_cvtsi32_si128(two_s);
+                auto one_v = _mm_cvtsi32_si128(one_s);
+
+                return vec8x16i{_mm_unpacklo_epi32(two_v, one_v)};
+            }
+
+            case 4: {
+                std::uint64_t four_s;
+                std::memcpy(&four_s, ptr + 0, sizeof(std::uint64_t));
+
+                auto four_v = _mm_cvtsi64_si128(four_s);
+                return vec8x16i{four_v};
+            }
+            case 5: {
+                std::uint64_t four_s;
+                std::memcpy(&four_s, ptr + 0, sizeof(std::uint64_t));
+
+                std::uint16_t one_s;
+                std::memcpy(&one_s, ptr + 4, sizeof(std::uint16_t));
+
+                auto four_v = _mm_cvtsi64_si128(four_s);
+                auto one_v = _mm_cvtsi32_si128(one_s);
+
+                return vec8x16i{_mm_unpacklo_epi64(four_v, one_v)};
+            }
+            case 6: {
+                std::uint64_t four_s;
+                std::memcpy(&four_s, ptr + 0, sizeof(std::uint64_t));
+
+                std::uint32_t two_s;
+                std::memcpy(&two_s, ptr + 4, sizeof(std::uint32_t));
+
+                auto four_v = _mm_cvtsi64_si128(four_s);
+                auto two_v = _mm_cvtsi32_si128(two_s);
+
+                return vec8x16i{_mm_unpacklo_epi64(four_v, two_v)};
+            }
+            case 7: {
+                std::uint64_t four_s ;
+                std::memcpy(&four_s, ptr + 0, sizeof(std::uint64_t));
+
+                std::uint32_t two_s;
+                std::memcpy(&two_s, ptr + 4, sizeof(std::uint32_t));
+
+                std::uint16_t one_s;
+                std::memcpy(&one_s, ptr + 6, sizeof(std::uint16_t));
+
+                auto four_v = _mm_cvtsi64_si128(four_s);
+                auto two_v = _mm_cvtsi32_si128(two_s);
+                auto one_v = _mm_cvtsi32_si128(one_s);
+
+                return vec8x16i{_mm_unpacklo_epi64(four_v, _mm_unpacklo_epi32(two_v, one_v))};
+            }
+
+            default: {
+                return vec8x16i{_mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr))};
+            }
+        }
+        #endif
+
+        #if defined(AVEL_NEON)
+        switch (n) {
+            case 0: {
+                return vec8x16i{vdupq_n_s16(0x00)};
+            }
+            case 1: {
+                std::uint16_t x0;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint16_t));
+
+                auto ret0 = vsetq_lane_s16(x0, vdupq_n_s16(0x00), 0);
+                return vec8x16i{ret0};
+            }
+            case 2: {
+                std::uint32_t x0;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint32_t));
+
+                auto ret0 = vsetq_lane_s32(x0, vdupq_n_s32(0x00), 0);
+                auto ret1 = vreinterpretq_s16_s32(ret0);
+                return vec8x16i{ret1};
+            }
+            case 3: {
+                std::uint32_t x0;
+                std::uint16_t x1;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint32_t));
+                std::memcpy(&x1, ptr + 2, sizeof(std::uint16_t));
+
+                auto ret0 = vsetq_lane_s32(x0, vdupq_n_s32(0x00), 0);
+                auto ret1 = vsetq_lane_s16(x1, vreinterpretq_s16_s32(ret0), 2);
+                return vec8x16i{ret1};
+            }
+            case 4: {
+                std::uint64_t x0;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
+
+                auto ret0 = vsetq_lane_s64(x0, vdupq_n_s64(0x00), 0);
+                auto ret1 = vreinterpretq_s16_s64(ret0);
+                return vec8x16i{ret1};
+            }
+
+            case 5: {
+                std::uint64_t x0;
+                std::uint16_t x1;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
+                std::memcpy(&x1, ptr + 4, sizeof(std::uint16_t));
+
+                auto ret0 = vsetq_lane_s64(x0, vdupq_n_s64(0x00), 0);
+                auto ret1 = vsetq_lane_s16(x1, vreinterpretq_s16_s64(ret0), 4);
+                return vec8x16i{ret1};
+            }
+            case 6: {
+                std::uint64_t x0;
+                std::uint32_t x1;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
+                std::memcpy(&x1, ptr + 4, sizeof(std::uint32_t));
+
+                auto ret0 = vsetq_lane_s64(x0, vdupq_n_s64(0x00), 0);
+                auto ret1 = vsetq_lane_s32(x1, vreinterpretq_s32_s64(ret0), 2);
+                auto ret2 = vreinterpretq_s16_s32(ret1);
+                return vec8x16i{ret2};
+            }
+            case 7: {
+                std::uint64_t x0;
+                std::uint32_t x1;
+                std::uint16_t x2;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
+                std::memcpy(&x1, ptr + 4, sizeof(std::uint32_t));
+                std::memcpy(&x2, ptr + 6, sizeof(std::uint16_t));
+
+                auto ret0 = vsetq_lane_s64(x0, vdupq_n_s64(0x00), 0);
+                auto ret1 = vsetq_lane_s32(x1, vreinterpretq_s32_s64(ret0), 2);
+                auto ret2 = vsetq_lane_s16(x2, vreinterpretq_s16_s32(ret1), 6);
+                return vec8x16i{ret2};
+            }
+
+            default: {
+                return vec8x16i{vld1q_s16(ptr)};
+            }
+        }
+        #endif
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec8x16i load<vec8x16i, vec8x16i::width>(const std::int16_t* ptr) {
         #if defined(AVEL_SSE2)
         return vec8x16i{_mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr))};
         #endif
@@ -1196,6 +1377,13 @@ namespace avel {
         #if defined(AVEL_NEON)
         return vec8x16i{vld1q_s16(ptr)};
         #endif
+    }
+
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec8x16i aligned_load<vec8x16i>(const std::int16_t* ptr, std::uint32_t n) {
+        return load<vec8x16i>(ptr, n);
     }
 
     template<>
@@ -1210,7 +1398,93 @@ namespace avel {
         #endif
     }
 
+
+
+    AVEL_FINL void store(std::int16_t* ptr, vec8x16i x, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        n = min(n, vec8x16i::width);
+        auto mask = (1 << n) - 1;
+        _mm_mask_storeu_epi16(ptr, mask, decay(x));
+
+        #elif defined(AVEL_SSE2)
+        auto undef = _mm_undefined_si128();
+        auto full = _mm_cmpeq_epi8(undef, undef);
+
+        auto w = vec8x16u::width;
+        auto h = vec8x16u::width / 2;
+
+        auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(16 * (h - min(h, n))));
+        auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(16 * (w - min(w, n))));
+        auto mask = _mm_unpacklo_epi64(lo, hi);
+        _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
+        #endif
+
+        #if defined(AVEL_NEON)
+        switch (n) {
+            case 0: {} break;
+            case 1: {
+                std::int16_t x0 = vgetq_lane_s16(decay(x), 0);
+
+                std::memcpy(ptr + 0, &x0, sizeof(std::int16_t));
+            } break;
+            case 2: {
+                std::int32_t x0 = vgetq_lane_s32(vreinterpretq_s32_s16(decay(x)), 0);
+
+                std::memcpy(ptr + 0, &x0, sizeof(std::int32_t));
+            } break;
+            case 3: {
+                std::int32_t x0 = vgetq_lane_s32(vreinterpretq_s32_s16(decay(x)), 0);
+                std::int16_t x1 = vgetq_lane_s16(decay(x), 2);
+
+                std::memcpy(ptr + 0, &x0, sizeof(std::int32_t));
+                std::memcpy(ptr + 2, &x1, sizeof(std::int16_t));
+            } break;
+
+            case 4: {
+                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s16(decay(x)), 0);
+
+                std::memcpy(ptr + 0, &x0, sizeof(std::int64_t));
+            } break;
+            case 5: {
+                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s16(decay(x)), 0);
+                std::int16_t x1 = vgetq_lane_s16(decay(x), 4);
+
+                std::memcpy(ptr + 0, &x0, sizeof(std::int64_t));
+                std::memcpy(ptr + 4, &x1, sizeof(std::int16_t));
+            } break;
+            case 6: {
+                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s16(decay(x)), 0);
+                std::int32_t x1 = vgetq_lane_s32(vreinterpretq_s32_s16(decay(x)), 2);
+
+                std::memcpy(ptr + 0, &x0, sizeof(std::int64_t));
+                std::memcpy(ptr + 4, &x1, sizeof(std::int32_t));
+            } break;
+            case 7: {
+                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s16(decay(x)), 0);
+                std::int32_t x1 = vgetq_lane_s32(vreinterpretq_s32_s16(decay(x)), 2);
+                std::int16_t x2 = vgetq_lane_s16(decay(x), 6);
+
+                std::memcpy(ptr + 0, &x0, sizeof(std::int64_t));
+                std::memcpy(ptr + 4, &x1, sizeof(std::int32_t));
+                std::memcpy(ptr + 6, &x2, sizeof(std::int16_t));
+            } break;
+            default: {
+                vst1q_s16(ptr, decay(x));
+            }
+        }
+        #endif
+    }
+
+    template<std::uint32_t N = vec8x16i::width>
     AVEL_FINL void store(std::int16_t* ptr, vec8x16i x) {
+        static_assert(N <= vec8x16i::width, "Cannot store more elements than width of vector");
+        typename std::enable_if<N <= vec8x16i::width, int>::type dummy_variable = 0;
+
+        store(ptr, x, N);
+    }
+
+    template<>
+    AVEL_FINL void store<vec8x16i::width>(std::int16_t* ptr, vec8x16i x) {
         #if defined(AVEL_SSE2)
         _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
         #endif
@@ -1220,7 +1494,21 @@ namespace avel {
         #endif
     }
 
+
+    AVEL_FINL void aligned_store(std::int16_t* ptr, vec8x16i x, std::uint32_t n) {
+        store(ptr, x, n);
+    }
+
+    template<std::uint32_t N = vec8x16i::width>
     AVEL_FINL void aligned_store(std::int16_t* ptr, vec8x16i x) {
+        static_assert(N <= vec8x16i::width, "Cannot store more elements than width of vector");
+        typename std::enable_if<N <= vec8x16i::width, int>::type dummy_variable = 0;
+
+        aligned_store(ptr, x, N);
+    }
+
+    template<>
+    AVEL_FINL void aligned_store<vec8x16i::width>(std::int16_t* ptr, vec8x16i x) {
         #if defined(AVEL_SSE2)
         _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
         #endif

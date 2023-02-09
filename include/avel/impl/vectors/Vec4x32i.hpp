@@ -1152,9 +1152,97 @@ namespace avel {
         #endif
     }
 
+    [[nodiscard]]
+    AVEL_FINL vec4x32i neg_abs(vec4x32u x) {
+        return neg_abs(vec4x32i{x});
+    }
+
     //=====================================================
     // Load/Store operations
     //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec4x32i load<vec4x32i>(const std::int32_t* ptr, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        n = std::min(4u, n);
+        auto mask = (1 << n) - 1;
+        return vec4x32i{_mm_maskz_load_epi32(mask, ptr)};
+
+        #elif defined(AVEL_SSE2)
+        switch (n) {
+            case 0: {
+                return vec4x32i{_mm_setzero_si128()};
+            }
+            case 1: {
+                return vec4x32i{_mm_cvtsi32_si128(ptr[0])};
+            }
+            case 2: {
+                std::int64_t two_s = 0x00;
+
+                std::memcpy(&two_s, ptr + 0, sizeof(std::int64_t));
+
+                return vec4x32i{_mm_cvtsi64_si128(two_s)};
+            }
+            case 3: {
+                std::int64_t two_s;
+
+                std::memcpy(&two_s, ptr + 0, sizeof(std::int64_t));
+
+
+                std::int32_t one_s = 0x00;
+
+                std::memcpy(&one_s, ptr + 2, sizeof(std::int32_t));
+
+                auto two_v = _mm_cvtsi64_si128(two_s);
+                auto one_v = _mm_cvtsi32_si128(one_s);
+
+                return vec4x32i{_mm_unpacklo_epi64(two_v, one_v)};
+            }
+            default: {
+                return vec4x32i{_mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr))};
+            }
+        }
+
+        #elif defined(AVEL_NEON)
+        switch (n) {
+            case 0: {
+                return vec4x32i{vdupq_n_s32(0x00)};
+            };
+            case 1: {
+                std::uint32_t x0;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint32_t));
+
+                auto ret0 = vsetq_lane_s32(x0, vdupq_n_s32(0x00), 0);
+                return vec4x32i{ret0};
+            }
+            case 2: {
+                std::uint64_t x0;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
+
+                auto ret0 = vsetq_lane_s64(x0, vdupq_n_s64(0x00), 0);
+                auto ret1 = vreinterpretq_s32_s64(ret0);
+                return vec4x32i{ret1};
+            }
+            case 3: {
+                std::uint64_t x0;
+                std::uint32_t x1;
+
+                std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
+                std::memcpy(&x1, ptr + 2, sizeof(std::uint32_t));
+
+                auto ret0 = vsetq_lane_s64(x0, vdupq_n_s64(0x00), 0);
+                auto ret1 = vsetq_lane_s32(x1, vreinterpretq_s32_s64(ret0), 2);
+                return vec4x32i{ret1};
+            }
+            default: {
+                return vec4x32i{vld1q_s32(ptr)};
+            }
+        }
+        #endif
+    }
 
     template<>
     [[nodiscard]]
@@ -1166,6 +1254,13 @@ namespace avel {
         #if defined(AVEL_NEON)
         return vec4x32i{vld1q_s32(ptr)};
         #endif
+    }
+
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec4x32i aligned_load<vec4x32i>(const std::int32_t* ptr, std::uint32_t n) {
+        return load<vec4x32i>(ptr, n);
     }
 
     template<>
@@ -1180,6 +1275,74 @@ namespace avel {
         #endif
     }
 
+
+    template<>
+    AVEL_FINL vec4x32u gather<vec4x32u>(const std::uint32_t* ptr, vec4x32i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        n = min(n, vec4x32u::width);
+        auto mask = (1 << n) - 1;
+
+        return vec4x32u{_mm_mmask_i32gather_epi32(_mm_setzero_si128(), mask, decay(indices), ptr, sizeof(std::uint32_t))};
+
+        #elif defined(AVEL_AVX2)
+        n = min(n, vec4x32u::width);
+
+        auto undef = _mm_undefined_si128();
+        auto full = _mm_cmpeq_epi8(undef, undef);
+
+        auto w = vec4x32u::width;
+        auto h = vec4x32u::width / 2;
+
+        auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(32 * (h - min(h, n))));
+        auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(32 * (w - min(w, n))));
+        auto mask = _mm_unpacklo_epi64(lo, hi);
+
+        auto ret = _mm_mask_i32gather_epi32(
+            _mm_setzero_si128(),
+            ptr,
+            decay(indices),
+            mask,
+            sizeof(std::int32_t)
+        );
+
+        return vec4x32u{ret};
+
+        #elif defined(AVEL_SSE)
+        auto a = _mm_setzero_si128();
+        auto b = _mm_setzero_si128();
+        auto c = _mm_setzero_si128();
+        auto d = _mm_setzero_si128();
+
+        switch (n) {
+            default: d = _mm_cvtsi32_si128(ptr[extract<3>(indices)]);
+            case 3:  c = _mm_cvtsi32_si128(ptr[extract<2>(indices)]);
+            case 2:  b = _mm_cvtsi32_si128(ptr[extract<1>(indices)]);
+            case 1:  a = _mm_cvtsi32_si128(ptr[extract<0>(indices)]);
+            case 0:  ; //Do nothing
+        }
+
+        auto abab = _mm_unpacklo_epi32(a, b);
+        auto cdcd = _mm_unpacklo_epi32(c, d);
+
+        auto abcd = _mm_unpacklo_epi64(abab, cdcd);
+
+        return vec4x32u{abcd};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto ret = vdupq_n_u32(0x00);
+        switch (n) {
+            default: ret = vsetq_lane_u32(ptr[extract<3>(indices)], ret, 0x3);
+            case 3:  ret = vsetq_lane_u32(ptr[extract<2>(indices)], ret, 0x2);
+            case 2:  ret = vsetq_lane_u32(ptr[extract<1>(indices)], ret, 0x1);
+            case 1:  ret = vsetq_lane_u32(ptr[extract<0>(indices)], ret, 0x0);
+            case 0:  ; //Do nothing
+        }
+
+        return vec4x32u{ret};
+        #endif
+    }
+
     template<>
     [[nodiscard]]
     AVEL_FINL vec4x32u gather<vec4x32u>(const std::uint32_t* ptr, vec4x32i indices) {
@@ -1187,12 +1350,10 @@ namespace avel {
         return vec4x32u{_mm_i32gather_epi32(reinterpret_cast<const int*>(ptr), decay(indices), sizeof(std::uint32_t))};
 
         #elif defined(AVEL_SSE2)
-        auto i = to_array(indices);
-
-        auto a = _mm_cvtsi32_si128(ptr[i[0]]);
-        auto b = _mm_cvtsi32_si128(ptr[i[1]]);
-        auto c = _mm_cvtsi32_si128(ptr[i[2]]);
-        auto d = _mm_cvtsi32_si128(ptr[i[3]]);
+        auto a = _mm_cvtsi32_si128(ptr[extract<0>(indices)]);
+        auto b = _mm_cvtsi32_si128(ptr[extract<1>(indices)]);
+        auto c = _mm_cvtsi32_si128(ptr[extract<2>(indices)]);
+        auto d = _mm_cvtsi32_si128(ptr[extract<3>(indices)]);
 
         auto abab = _mm_unpacklo_epi32(a, b);
         auto cdcd = _mm_unpacklo_epi32(c, d);
@@ -1210,6 +1371,75 @@ namespace avel {
 
         return vec4x32u{read_data};
 
+        #endif
+    }
+
+
+
+    template<>
+    AVEL_FINL vec4x32i gather<vec4x32i>(const std::int32_t* ptr, vec4x32i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        n = min(n, vec4x32i::width);
+        auto mask = (1 << n) - 1;
+
+        return vec4x32i{_mm_mmask_i32gather_epi32(_mm_setzero_si128(), mask, decay(indices), ptr, sizeof(std::uint32_t))};
+
+        #elif defined(AVEL_AVX2)
+        n = min(n, vec4x32i::width);
+
+        auto undef = _mm_undefined_si128();
+        auto full = _mm_cmpeq_epi8(undef, undef);
+
+        auto w = vec4x32i::width;
+        auto h = vec4x32i::width / 2;
+
+        auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(32 * (h - min(h, n))));
+        auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(32 * (w - min(w, n))));
+        auto mask = _mm_unpacklo_epi64(lo, hi);
+
+        auto ret = _mm_mask_i32gather_epi32(
+            _mm_setzero_si128(),
+            ptr,
+            decay(indices),
+            mask,
+            sizeof(std::int32_t)
+        );
+
+        return vec4x32i{ret};
+
+        #elif defined(AVEL_SSE2)
+        auto a = _mm_setzero_si128();
+        auto b = _mm_setzero_si128();
+        auto c = _mm_setzero_si128();
+        auto d = _mm_setzero_si128();
+
+        switch (n) {
+            default: d = _mm_cvtsi32_si128(ptr[extract<3>(indices)]);
+            case 3:  c = _mm_cvtsi32_si128(ptr[extract<2>(indices)]);
+            case 2:  b = _mm_cvtsi32_si128(ptr[extract<1>(indices)]);
+            case 1:  a = _mm_cvtsi32_si128(ptr[extract<0>(indices)]);
+            case 0: ; //Do nothing
+        }
+
+        auto abab = _mm_unpacklo_epi32(a, b);
+        auto cdcd = _mm_unpacklo_epi32(c, d);
+
+        auto abcd = _mm_unpacklo_epi64(abab, cdcd);
+
+        return vec4x32i{abcd};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto ret = vdupq_n_s32(0x00);
+        switch (n) {
+            default: ret = vsetq_lane_s32(ptr[extract<3>(indices)], ret, 0x3);
+            case 3:  ret = vsetq_lane_s32(ptr[extract<2>(indices)], ret, 0x2);
+            case 2:  ret = vsetq_lane_s32(ptr[extract<1>(indices)], ret, 0x1);
+            case 1:  ret = vsetq_lane_s32(ptr[extract<0>(indices)], ret, 0x0);
+            case 0:  ; //Do nothing
+        }
+
+        return vec4x32i{ret};
         #endif
     }
 
@@ -1245,7 +1475,68 @@ namespace avel {
         #endif
     }
 
+
+
+    AVEL_FINL void store(std::int32_t* ptr, vec4x32i x, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        n = min(n, vec4x32i::width);
+        auto mask = (1 << n) - 1;
+        _mm_mask_storeu_epi32(ptr, mask, decay(x));
+
+        #elif defined(AVEL_SSE2)
+        n = min(n, vec4x32i::width);
+        auto undef = _mm_undefined_si128();
+        auto full = _mm_cmpeq_epi8(undef, undef);
+
+        auto w = vec4x32i::width;
+        auto h = vec4x32i::width / 2;
+
+        auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(32 * (h - min(h, n))));
+        auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(32 * (w - min(w, n))));
+        auto mask = _mm_unpacklo_epi64(lo, hi);
+        _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        switch (n) {
+            case 0: {
+
+            } break;
+            case 1: {
+                std::int32_t x0 = vgetq_lane_s32(decay(x), 0);
+
+                std::memcpy(ptr + 0, &x0, sizeof(std::int32_t));
+            } break;
+            case 2: {
+                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s32(decay(x)), 0);
+
+                std::memcpy(ptr + 0, &x0, sizeof(std::int64_t));
+            } break;
+            case 3: {
+                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s32(decay(x)), 0);
+                std::int32_t x1 = vgetq_lane_s32(decay(x), 2);
+
+                std::memcpy(ptr + 0, &x0, sizeof(std::int64_t));
+                std::memcpy(ptr + 2, &x1, sizeof(std::int32_t));
+            } break;
+            default: {
+                vst1q_s32(ptr, decay(x));
+            }
+        }
+        #endif
+    }
+
+    template<std::uint32_t N = vec4x32i::width>
     AVEL_FINL void store(std::int32_t* ptr, vec4x32i x) {
+        static_assert(N <= vec4x32i::width, "Cannot store more elements than width of vector");
+        typename std::enable_if<N <= vec4x32i::width, int>::type dummy_variable = 0;
+
+        store(ptr, x, N);
+    }
+
+    template<>
+    AVEL_FINL void store<vec4x32i::width>(std::int32_t* ptr, vec4x32i x) {
         #if defined(AVEL_SSE2)
         _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
         #endif
@@ -1255,7 +1546,22 @@ namespace avel {
         #endif
     }
 
+
+
+    AVEL_FINL void aligned_store(std::int32_t* ptr, vec4x32i x, std::uint32_t n) {
+        store(ptr, x, n);
+    }
+
+    template<std::uint32_t N = vec4x32i::width>
     AVEL_FINL void aligned_store(std::int32_t* ptr, vec4x32i x) {
+        static_assert(N <= vec4x32i::width, "Cannot store more elements than width of vector");
+        typename std::enable_if<N <= vec4x32i::width, int>::type dummy_variable = 0;
+
+        aligned_store(ptr, x, N);
+    }
+
+    template<>
+    AVEL_FINL void aligned_store<vec4x32i::width>(std::int32_t* ptr, vec4x32i x) {
         #if defined(AVEL_SSE2)
         _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
         #endif
@@ -1265,43 +1571,119 @@ namespace avel {
         #endif
     }
 
-    AVEL_FINL void scatter(std::uint32_t* ptr, vec4x32i indices, vec4x32u x) {
-        #if defined(AVEL_AVX512VL)
-        _mm_i32scatter_epi32(ptr, indices, x, sizeof(std::int32_t));
-        #elif defined(AVEL_SSE2)
-        auto i = to_array(indices);
 
-        ptr[i[0]] = _mm_cvtsi128_si32(decay(x));
-        ptr[i[1]] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x4));
-        ptr[i[2]] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x8));
-        ptr[i[3]] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0xC));
+
+    AVEL_FINL void scatter(std::uint32_t* ptr, vec4x32u x, vec4x32i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        n = min(n, vec4x32u::width);
+        auto mask = (1 << n) - 1;
+        _mm_mask_i32scatter_epi32(ptr, mask, decay(indices), decay(x), sizeof(std::uint32_t));
+
+        #elif defined(AVEL_SSE2)
+        switch (n) {
+            default: ptr[extract<3>(indices)] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0xC));
+            case 3:  ptr[extract<2>(indices)] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x8));
+            case 2:  ptr[extract<1>(indices)] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x4));
+            case 1:  ptr[extract<0>(indices)] = _mm_cvtsi128_si32(decay(x));
+            case 0: ; //Do nothing
+        }
+
         #endif
 
         #if defined(AVEL_NEON)
-        vst1q_lane_u32(ptr + vgetq_lane_s32(decay(indices), 0x0), decay(x), 0x0);
-        vst1q_lane_u32(ptr + vgetq_lane_s32(decay(indices), 0x1), decay(x), 0x1);
-        vst1q_lane_u32(ptr + vgetq_lane_s32(decay(indices), 0x2), decay(x), 0x2);
-        vst1q_lane_u32(ptr + vgetq_lane_s32(decay(indices), 0x3), decay(x), 0x3);
+        switch (n) {
+            default: ptr[extract<3>(indices)] = vgetq_lane_u32(decay(x), 0x3);
+            case 3:  ptr[extract<2>(indices)] = vgetq_lane_u32(decay(x), 0x2);
+            case 2:  ptr[extract<1>(indices)] = vgetq_lane_u32(decay(x), 0x1);
+            case 1:  ptr[extract<0>(indices)] = vgetq_lane_u32(decay(x), 0x0);
+            case 0: ; //Do nothing
+        }
+
         #endif
     }
 
-    AVEL_FINL void scatter(std::int32_t* ptr, vec4x32i indices, vec4x32i x) {
-        #if defined(AVEL_AVX512VL)
-        _mm_i32scatter_epi32(ptr, indices, x, sizeof(std::int32_t));
-        #elif defined(AVEL_SSE2)
-        auto i = to_array(indices);
+    template<std::uint32_t N = vec4x32u::width>
+    AVEL_FINL void scatter(std::uint32_t* ptr, vec4x32u x, vec4x32i indices) {
+        scatter(ptr, x, indices, N);
+    }
 
-        ptr[i[0]] = _mm_cvtsi128_si32(decay(x));
-        ptr[i[1]] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x4));
-        ptr[i[2]] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x8));
-        ptr[i[3]] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0xC));
+    template<>
+    AVEL_FINL void scatter<vec4x32u::width>(std::uint32_t* ptr, vec4x32u x, vec4x32i indices) {
+        #if defined(AVEL_AVX512VL)
+        _mm_i32scatter_epi32(ptr, indices, x, sizeof(std::uint32_t));
+
+        #elif defined(AVEL_SSE2)
+        ptr[extract<0>(indices)] = _mm_cvtsi128_si32(decay(x));
+        ptr[extract<1>(indices)] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x4));
+        ptr[extract<2>(indices)] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x8));
+        ptr[extract<3>(indices)] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0xC));
+
         #endif
 
         #if defined(AVEL_NEON)
-        vst1q_lane_s32(ptr + vgetq_lane_s32(decay(indices), 0x0), decay(x), 0x0);
-        vst1q_lane_s32(ptr + vgetq_lane_s32(decay(indices), 0x1), decay(x), 0x1);
-        vst1q_lane_s32(ptr + vgetq_lane_s32(decay(indices), 0x2), decay(x), 0x2);
-        vst1q_lane_s32(ptr + vgetq_lane_s32(decay(indices), 0x3), decay(x), 0x3);
+        ptr[extract<0>(indices)] = vgetq_lane_u32(decay(x), 0x0);
+        ptr[extract<1>(indices)] = vgetq_lane_u32(decay(x), 0x1);
+        ptr[extract<2>(indices)] = vgetq_lane_u32(decay(x), 0x2);
+        ptr[extract<3>(indices)] = vgetq_lane_u32(decay(x), 0x3);
+
+        #endif
+    }
+
+
+
+    AVEL_FINL void scatter(std::int32_t* ptr, vec4x32i x, vec4x32i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        n = min(n, vec4x32i::width);
+        auto mask = (1 << n) - 1;
+        _mm_mask_i32scatter_epi32(ptr, mask, decay(indices), decay(x), sizeof(std::int32_t));
+
+        #elif defined(AVEL_SSE2)
+        switch (n) {
+            default: ptr[extract<3>(indices)] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0xC));
+            case 3:  ptr[extract<2>(indices)] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x8));
+            case 2:  ptr[extract<1>(indices)] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x4));
+            case 1:  ptr[extract<0>(indices)] = _mm_cvtsi128_si32(decay(x));
+            case 0: ; //Do nothing
+        }
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        switch (n) {
+            default: ptr[extract<3>(indices)] = vgetq_lane_s32(decay(x), 0x3);
+            case 3:  ptr[extract<2>(indices)] = vgetq_lane_s32(decay(x), 0x2);
+            case 2:  ptr[extract<1>(indices)] = vgetq_lane_s32(decay(x), 0x1);
+            case 1:  ptr[extract<0>(indices)] = vgetq_lane_s32(decay(x), 0x0);
+            case 0: ; //Do nothing
+        }
+
+        #endif
+    }
+
+    template<std::uint32_t N = vec4x32i::width>
+    AVEL_FINL void scatter(std::int32_t* ptr, vec4x32i x, vec4x32i indices) {
+        scatter(ptr, x, indices, N);
+    }
+
+    template<>
+    AVEL_FINL void scatter<vec4x32i::width>(std::int32_t* ptr, vec4x32i x, vec4x32i indices) {
+        #if defined(AVEL_AVX512VL)
+        _mm_i32scatter_epi32(ptr, indices, x, sizeof(std::int32_t));
+
+        #elif defined(AVEL_SSE2)
+        ptr[extract<0>(indices)] = _mm_cvtsi128_si32(decay(x));
+        ptr[extract<1>(indices)] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x4));
+        ptr[extract<2>(indices)] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0x8));
+        ptr[extract<3>(indices)] = _mm_cvtsi128_si32(_mm_bsrli_si128(decay(x), 0xC));
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        ptr[extract<0>(indices)] = vgetq_lane_s32(decay(x), 0x0);
+        ptr[extract<1>(indices)] = vgetq_lane_s32(decay(x), 0x1);
+        ptr[extract<2>(indices)] = vgetq_lane_s32(decay(x), 0x2);
+        ptr[extract<3>(indices)] = vgetq_lane_s32(decay(x), 0x3);
+
         #endif
     }
 

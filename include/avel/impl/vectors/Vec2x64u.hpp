@@ -420,7 +420,7 @@ namespace avel {
             content(vreinterpretq_u64_s64(vnegq_s64(vreinterpretq_s64_u64(decay(m))))) {}
         #endif
 
-        AVEL_FINL Vector(primitive content):
+        AVEL_FINL explicit Vector(primitive content):
             content(content) {}
 
         AVEL_FINL explicit Vector(scalar x):
@@ -1189,18 +1189,16 @@ namespace avel {
         auto mask = (1 << n) - 1;
         return vec2x64u{_mm_maskz_loadu_epi64(mask, ptr)};
 
-        //TODO: Consider AVX2 version
-
         #elif defined(AVEL_SSE2)
         switch (n) {
             case 0: {
-                return _mm_setzero_si128();
+                return vec2x64u{_mm_setzero_si128()};
             }
             case 1: {
-                return _mm_cvtsi64_si128(*ptr);
+                return vec2x64u{_mm_cvtsi64_si128(*ptr)};
             }
             default: {
-                return _mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr));
+                return vec2x64u{_mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr))};
             }
         }
         #endif
@@ -1275,11 +1273,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         switch (n) {
             case 0: {
-                return;
-            }
+            } break;
             case 1: {
                 ptr[0] = _mm_cvtsi128_si64(decay(v));
-            }
+            } break;
             default: {
                 _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
             }
@@ -1306,22 +1303,7 @@ namespace avel {
         static_assert(N <= vec2x64u::width, "Cannot store more elements than width of vector");
         typename std::enable_if<N <= vec2x64u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_AVX512VL)
-        auto mask = (1 << N) - 1;
-        _mm_mask_storeu_epi64(ptr, mask, decay(x));
-
-        #elif defined(AVEL_SSE2)
-        auto undef = _mm_undefined_si128();
-        auto full = _mm_cmpeq_epi8(undef, undef);
-
-        auto mask = _mm_srli_si128(full, sizeof(vec2x64u::scalar) * (vec2x64u::width - N));
-        _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
-
-        #endif
-
-        #if defined(AVEL_NEON)
-        store(ptr, decay(x), N);
-        #endif
+        store(ptr, x, N);
     }
 
     template<>
@@ -1344,20 +1326,19 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
         switch (n) {
-            case 0: {
-                return;
-            }
-            case 1: {
-                ptr[0] = _mm_cvtsi128_si64(decay(v));
-            }
-            default: {
-                _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
-            }
+            default: _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
+            case 1: ptr[0] = _mm_cvtsi128_si64(decay(v));
+            case 0: ; //Do nothing
         }
         #endif
 
         #if defined(AVEL_NEON)
-        vst1q_u64(ptr, decay(v));
+        switch (n) {
+            default: vst1q_u64(ptr, decay(v));
+            case 1: ptr[0] = vgetq_lane_u64(decay(v), 0x0);
+            case 0: ; //Do nothing
+        }
+
         #endif
     }
 
@@ -1366,13 +1347,7 @@ namespace avel {
         static_assert(N <= vec2x64u::width, "Cannot store more elements than width of vector");
         typename std::enable_if<N <= vec2x64u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE2)
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
-        #endif
-
-        #if defined(AVEL_NEON)
-        aligned_store(ptr, decay(v), N);
-        #endif
+        aligned_store(ptr, v, N);
     }
 
     template<>
@@ -1484,7 +1459,7 @@ namespace avel {
         auto t5 = vshlq_n_u64(t4, 8);
         auto t6 = vaddq_u64(t4, t5);
         auto t7 = vshrq_n_u64(t6, 56);
-        return t7;
+        return vec2x64u{t7};
         #endif
     }
 

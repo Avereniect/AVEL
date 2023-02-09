@@ -1141,7 +1141,7 @@ namespace avel {
     AVEL_FINL vec4x32u load<vec4x32u>(const std::uint32_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
         n = std::min(4u, n);
-        auto mask = 0xF >> (4 - n);
+        auto mask = (1 << n) - 1;
         return vec4x32u{_mm_maskz_load_epi32(mask, ptr)};
 
         #elif defined(AVEL_SSE2)
@@ -1164,20 +1164,19 @@ namespace avel {
                 two_s |= static_cast<std::int64_t>(ptr[1]) << 0x20;
 
                 std::int32_t one_s = 0x00;
-                one_s |= ptr[3] << 0x00;
+                one_s |= ptr[2] << 0x00;
 
                 auto two_v = _mm_cvtsi64_si128(two_s);
                 auto one_v = _mm_cvtsi32_si128(one_s);
 
                 return vec4x32u{_mm_unpacklo_epi64(two_v, one_v)};
             }
-            case 4: {
+            default: {
                 return vec4x32u{_mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr))};
             }
         }
 
         #elif defined(AVEL_NEON)
-        //TODO: Implement properly
         switch (n) {
             case 0: {
                 return vec4x32u{vdupq_n_u32(0x00)};
@@ -1204,7 +1203,7 @@ namespace avel {
                 std::uint32_t x1;
 
                 std::memcpy(&x0, ptr + 0, sizeof(std::uint64_t));
-                std::memcpy(&x0, ptr + 2, sizeof(std::uint32_t));
+                std::memcpy(&x1, ptr + 2, sizeof(std::uint32_t));
 
                 auto ret0 = vsetq_lane_u64(x0, vdupq_n_u64(0x00), 0);
                 auto ret1 = vsetq_lane_u32(x1, vreinterpretq_u32_u64(ret0), 2);
@@ -1252,22 +1251,63 @@ namespace avel {
     //Definition of gather deferred until vec4x32i is defined
 
 
+
+    AVEL_FINL void store(std::uint32_t* ptr, vec4x32u x, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        n = min(n, vec4x32u::width);
+        auto mask = (1 << n) - 1;
+        _mm_mask_storeu_epi32(ptr, mask, decay(x));
+
+        #elif defined(AVEL_SSE2)
+        n = min(n, vec4x32u::width);
+        auto undef = _mm_undefined_si128();
+        auto full = _mm_cmpeq_epi8(undef, undef);
+
+        auto w = vec4x32u::width;
+        auto h = vec4x32u::width / 2;
+
+        auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(32 * (h - min(h, n))));
+        auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(32 * (w - min(w, n))));
+        auto mask = _mm_unpacklo_epi64(lo, hi);
+        _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        switch (n) {
+            case 0: {
+
+            } break;
+            case 1: {
+                std::uint32_t x0 = vgetq_lane_u32(decay(x), 0);
+
+                std::memcpy(ptr + 0, &x0, sizeof(std::uint32_t));
+            } break;
+            case 2: {
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u32(decay(x)), 0);
+
+                std::memcpy(ptr + 0, &x0, sizeof(std::uint64_t));
+            } break;
+            case 3: {
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u32(decay(x)), 0);
+                std::uint32_t x1 = vgetq_lane_u32(decay(x), 2);
+
+                std::memcpy(ptr + 0, &x0, sizeof(std::uint64_t));
+                std::memcpy(ptr + 2, &x1, sizeof(std::uint32_t));
+            } break;
+            default: {
+                vst1q_u32(ptr, decay(x));
+            }
+        }
+        #endif
+    }
+
     template<std::uint32_t N = vec4x32u::width>
     AVEL_FINL void store(std::uint32_t* ptr, vec4x32u x) {
         static_assert(N <= vec4x32u::width, "Cannot store more elements than width of vector");
         typename std::enable_if<N <= vec4x32u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEVL_AVX512VL)
-        auto mask = 0xF >> N;
-        _mm_mask_storeu_epi32(ptr, mask, decay(x));
-
-        #elif defined(AVEL_SSE2)
-        auto undef = _mm_undefined_si128();
-        auto full = _mm_cmpeq_epi8(undef, undef);
-
-        auto mask = _mm_srli_si128(full, sizeof(vec4x32u::scalar) * (vec4x32u::width - N));
-        _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
-        #endif
+        store(ptr, x, N);
     }
 
     template<>
@@ -1281,51 +1321,24 @@ namespace avel {
         #endif
     }
 
-    AVEL_FINL void store(std::uint32_t* ptr, vec4x32u x, std::uint32_t n) {
-        #if defined(AVEL_AVX512VL)
-        auto mask = 0xF >> std::min(vec4x32u::width, n);
-        _mm_mask_storeu_epi32(ptr, mask, decay(x));
 
-        #elif defined(AVEL_SSE2)
-        auto undef = _mm_undefined_si128();
-        auto full = _mm_cmpeq_epi8(undef, undef);
 
-        auto w = vec4x32u::width;
-        auto h = vec4x32u::width / 2;
-
-        auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(w - std::min(w, n)));
-        auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(h - std::min(h, n)));
-        auto mask = _mm_unpacklo_epi64(lo, hi);
-        _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
-
-        #endif
+    AVEL_FINL void aligned_store(std::uint32_t* ptr, vec4x32u x, std::uint32_t n) {
+        store(ptr, x, n);
     }
-
 
     template<std::uint32_t N = vec4x32u::width>
     AVEL_FINL void aligned_store(std::uint32_t* ptr, vec4x32u x) {
         static_assert(N <= vec4x32u::width, "Cannot store more elements than width of vector");
         typename std::enable_if<N <= vec4x32u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE2)
-        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
-        #endif
+        aligned_store(ptr, x, N);
     }
 
     template<>
     AVEL_FINL void aligned_store<vec4x32u::width>(std::uint32_t* ptr, vec4x32u x) {
         #if defined(AVEL_SSE2)
         _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
-        #endif
-
-        #if defined(AVEL_NEON)
-        vst1q_u32(ptr, decay(x));
-        #endif
-    }
-
-    AVEL_FINL void aligned_store(std::uint32_t* ptr, vec4x32u x, std::uint32_t n) {
-        #if defined(AVEL_SSE2)
-        store(ptr, x, n);
         #endif
 
         #if defined(AVEL_NEON)

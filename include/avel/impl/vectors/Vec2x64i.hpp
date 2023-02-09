@@ -1365,23 +1365,49 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64i neg_abs(vec2x64u x) {
-        #if defined(AVEL_SSE2)
-        auto y = ~(x >> 63);
-        return vec2x64i{(x ^ y) - y};
-        #endif
-
-        #if defined(AVEL_NEON)
-        auto y = vshrq_n_u64(decay(x), 63);
-        y = vreinterpretq_u64_u32(vmvnq_u32(vreinterpretq_u32_u64(y)));
-        auto z = vsubq_u64(veorq_u64(decay(x), y), y);
-        return vec2x64i{vreinterpretq_s64_u64(z)};
-
-        #endif
+        return neg_abs(vec2x64i{x});
     }
 
     //=====================================================
     // Load/Store operations
     //=====================================================
+
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec2x64i load<vec2x64i>(const std::int64_t* ptr, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        auto mask = (1 << n) - 1;
+        return vec2x64i{_mm_maskz_loadu_epi64(mask, ptr)};
+
+        #elif defined(AVEL_SSE2)
+        switch (n) {
+            case 0: {
+                return vec2x64i{_mm_setzero_si128()};
+            }
+            case 1: {
+                return vec2x64i{_mm_cvtsi64_si128(*ptr)};
+            }
+            default: {
+                return vec2x64i{_mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr))};
+            }
+        }
+        #endif
+
+        #if defined(AVEL_NEON)
+        switch (n) {
+            case 0: {
+                return vec2x64i{vdupq_n_s64(0x00)};
+            }
+            case 1: {
+                return vec2x64i{vsetq_lane_s64(ptr[0], vdupq_n_s64(0x00), 0)};
+            }
+            default: {
+                return vec2x64i{vld1q_s64(ptr)};
+            }
+        }
+        #endif
+    }
 
     template<>
     [[nodiscard]]
@@ -1397,6 +1423,12 @@ namespace avel {
 
     template<>
     [[nodiscard]]
+    AVEL_FINL vec2x64i aligned_load<vec2x64i>(const std::int64_t* ptr, std::uint32_t n) {
+        return load<vec2x64i>(ptr, n);
+    }
+
+    template<>
+    [[nodiscard]]
     AVEL_FINL vec2x64i aligned_load<vec2x64i>(const std::int64_t* ptr) {
         #if defined(AVEL_SSE2)
         return vec2x64i{_mm_load_si128(reinterpret_cast<const __m128i*>(ptr))};
@@ -1407,7 +1439,195 @@ namespace avel {
         #endif
     }
 
+
+
+    template<>
+    AVEL_FINL vec2x64u gather<vec2x64u>(const std::uint64_t* ptr, vec2x64i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        n = min(n, vec2x64u::width);
+        auto mask = (1 << n) - 1;
+
+        return vec2x64u{_mm_mmask_i64gather_epi64(_mm_setzero_si128(), mask, decay(indices), ptr, sizeof(std::uint64_t))};
+
+        #elif defined(AVEL_AVX2)
+        n = min(n, vec4x32u::width);
+
+        auto undef = _mm_undefined_si128();
+        auto full = _mm_cmpeq_epi8(undef, undef);
+
+        auto w = vec2x64u::width;
+        auto h = vec2x64u::width / 2;
+
+        auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(64 * (h - min(h, n))));
+        auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(64 * (w - min(w, n))));
+        auto mask = _mm_unpacklo_epi64(lo, hi);
+
+        auto ret = _mm_mask_i64gather_epi64(
+            _mm_setzero_si128(),
+            ptr,
+            decay(indices),
+            mask,
+            sizeof(std::int64_t)
+        );
+
+        return vec2x64u{ret};
+
+        #elif defined(AVEL_SSE)
+        auto a = _mm_setzero_si128();
+        auto b = _mm_setzero_si128();
+
+        if (n > 0) {
+            a = _mm_cvtsi64_si128(ptr[extract<0>(indices)]);
+        }
+
+        if (n > 1) {
+            b = _mm_cvtsi64_si128(ptr[extract<1>(indices)]);
+        }
+
+        auto ab = _mm_unpacklo_epi64(a, b);
+
+        return vec2x64u{ab};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto ret = vdupq_n_u64(0x00);
+        switch (n) {
+            default: ret = vsetq_lane_u64(ptr[extract<1>(indices)], ret, 0x1);
+            case 1:  ret = vsetq_lane_u64(ptr[extract<0>(indices)], ret, 0x0);
+            case 0:  ; //Do nothing
+        }
+
+        return vec2x64u{ret};
+        #endif
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec2x64u gather<vec2x64u>(const std::uint64_t* ptr, vec2x64i indices) {
+        #if defined(AVEL_AVX2)
+        return vec2x64u{_mm_i64gather_epi64(reinterpret_cast<const std::int64_t*>(ptr), decay(indices), sizeof(std::uint64_t))};
+
+        #elif defined(AVEL_SSE2)
+        auto a = _mm_cvtsi64_si128(ptr[extract<0>(indices)]);
+        auto b = _mm_cvtsi64_si128(ptr[extract<1>(indices)]);
+
+        auto abcd = _mm_unpacklo_epi64(a, b);
+        return vec2x64u{abcd};
+        #endif
+
+        #if defined(AVEL_NEON)
+        vec2x64u::primitive read_data;
+        read_data = vsetq_lane_u64(ptr[extract<0>(indices)], read_data, 0x0);
+        read_data = vsetq_lane_u64(ptr[extract<1>(indices)], read_data, 0x1);
+
+        return vec2x64u{read_data};
+
+        #endif
+    }
+
+
+    template<>
+    AVEL_FINL vec2x64i gather<vec2x64i>(const std::int64_t* ptr, vec2x64i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        n = min(n, vec2x64i::width);
+        auto mask = (1 << n) - 1;
+
+        return vec2x64i{_mm_mmask_i64gather_epi64(_mm_setzero_si128(), mask, decay(indices), ptr, sizeof(std::int64_t))};
+
+        #elif defined(AVEL_SSE2)
+        auto a = _mm_setzero_si128();
+        auto b = _mm_setzero_si128();
+
+        switch (n) {
+            default: b = _mm_cvtsi64_si128(ptr[extract<1>(indices)]);
+            case 1:  a = _mm_cvtsi64_si128(ptr[extract<0>(indices)]);
+            case 0: ; //Do nothing
+        }
+
+        auto ab = _mm_unpacklo_epi64(a, b);
+
+        return vec2x64i{ab};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto ret = vdupq_n_s64(0x00);
+        switch (n) {
+            default: ret = vsetq_lane_s64(ptr[extract<1>(indices)], ret, 0x1);
+            case 1:  ret = vsetq_lane_s64(ptr[extract<0>(indices)], ret, 0x0);
+            case 0:  ; //Do nothing
+        }
+
+        return vec2x64i{ret};
+
+        #endif
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec2x64i gather<vec2x64i>(const std::int64_t* ptr, vec2x64i indices) {
+        #if defined(AVEL_AVX2)
+        return vec2x64i{_mm_i64gather_epi64(ptr, decay(indices), sizeof(std::int64_t))};
+
+        #elif defined(AVEL_SSE2)
+        auto a = _mm_cvtsi64_si128(ptr[extract<0>(indices)]);
+        auto b = _mm_cvtsi64_si128(ptr[extract<1>(indices)]);
+
+        auto abcd = _mm_unpacklo_epi64(a, b);
+        return vec2x64i{abcd};
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        vec2x64i::primitive read_data;
+        read_data = vsetq_lane_s64(ptr[extract<0x0>(indices)], read_data, 0x0);
+        read_data = vsetq_lane_s64(ptr[extract<0x1>(indices)], read_data, 0x1);
+
+        return vec2x64i{read_data};
+        #endif
+    }
+
+
+
+    AVEL_FINL void store(std::int64_t* ptr, vec2x64i x, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        auto mask = (1 << n) - 1;
+        _mm_mask_storeu_epi64(ptr, mask, decay(v));
+
+        #elif defined(AVEL_SSE2)
+        switch (n) {
+            case 0: {
+            } break;
+            case 1: {
+                ptr[0] = _mm_cvtsi128_si64(decay(x));
+            } break;
+            default: {
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
+            }
+        }
+        #endif
+
+        #if defined(AVEL_NEON)
+        switch (n) {
+            case 0: {
+
+            } break;
+            case 1: {
+                vst1_s64(ptr, vget_low_s64(decay(x)));
+            } break;
+            default: {
+                vst1q_s64(ptr, decay(x));
+            }
+        }
+        #endif
+    }
+
+    template<std::uint32_t N = vec2x64u::width>
     AVEL_FINL void store(std::int64_t* ptr, vec2x64i x) {
+        store(ptr, x, N);
+    }
+
+    template<>
+    AVEL_FINL void store<vec2x64i::width>(std::int64_t* ptr, vec2x64i x) {
         #if defined(AVEL_SSE2)
         _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
         #endif
@@ -1417,13 +1637,126 @@ namespace avel {
         #endif
     }
 
+
+
+
+    AVEL_FINL void aligned_store(std::int64_t* ptr, vec2x64i x, std::uint32_t n) {
+        store(ptr, x, n);
+    }
+
+    template<std::uint32_t N = vec2x64i::width>
     AVEL_FINL void aligned_store(std::int64_t* ptr, vec2x64i x) {
+        aligned_store(ptr, x, N);
+    }
+
+    template<>
+    AVEL_FINL void aligned_store<vec2x64i::width>(std::int64_t* ptr, vec2x64i x) {
         #if defined(AVEL_SSE2)
         _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
         #endif
 
         #if defined(AVEL_NEON)
         vst1q_s64(ptr, decay(x));
+        #endif
+    }
+
+
+
+    AVEL_FINL void scatter(std::uint64_t* ptr, vec2x64u x, vec2x64i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        n = min(n, vec2x64u::width);
+        auto mask = (1 << n) - 1;
+        _mm_mask_i64scatter_epi64(ptr, mask, decay(indices), decay(x), sizeof(std::int64_t));
+
+        #elif defined(AVEL_SSE2)
+        switch (n) {
+            default: ptr[extract<1>(indices)] = _mm_cvtsi128_si64(_mm_bsrli_si128(decay(x), 0x8));
+            case 1:  ptr[extract<0>(indices)] = _mm_cvtsi128_si64(decay(x));
+            case 0: ; //Do nothing
+        }
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        switch (n) {
+            default: ptr[extract<1>(indices)] = vgetq_lane_u64(decay(x), 0x1);
+            case 1:  ptr[extract<0>(indices)] = vgetq_lane_u64(decay(x), 0x0);
+            case 0: ; //Do nothing
+        }
+
+        #endif
+    }
+
+    template<std::uint32_t N = vec2x64u::width>
+    AVEL_FINL void scatter(std::uint64_t* ptr, vec2x64u x, vec2x64i indices) {
+        scatter(ptr, x, indices, N);
+    }
+
+    template<>
+    AVEL_FINL void scatter<vec2x64u::width>(std::uint64_t* ptr, vec2x64u x, vec2x64i indices) {
+        #if defined(AVEL_AVX512VL)
+        _mm_i64scatter_epi64(ptr, indices, x, sizeof(std::uint64_t));
+
+        #elif defined(AVEL_SSE2)
+        ptr[extract<0>(indices)] = _mm_cvtsi128_si64(decay(x));
+        ptr[extract<1>(indices)] = _mm_cvtsi128_si64(_mm_bsrli_si128(decay(x), 0x8));
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        ptr[extract<0>(indices)] = vgetq_lane_u64(decay(x), 0x0);
+        ptr[extract<1>(indices)] = vgetq_lane_u64(decay(x), 0x1);
+
+        #endif
+    }
+
+
+
+    AVEL_FINL void scatter(std::int64_t* ptr, vec2x64i x, vec2x64i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        n = min(n, vec2x64i::width);
+        auto mask = (1 << n) - 1;
+        _mm_mask_i64scatter_epi64(ptr, mask, decay(indices), decay(x), sizeof(std::int64_t));
+
+        #elif defined(AVEL_SSE2)
+        switch (n) {
+            default: ptr[extract<1>(indices)] = _mm_cvtsi128_si64(_mm_bsrli_si128(decay(x), 0x8));
+            case 1:  ptr[extract<0>(indices)] = _mm_cvtsi128_si64(decay(x));
+            case 0: ; //Do nothing
+        }
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        switch (n) {
+            default: ptr[extract<1>(indices)] = vgetq_lane_s64(decay(x), 0x1);
+            case 1:  ptr[extract<0>(indices)] = vgetq_lane_s64(decay(x), 0x0);
+            case 0: ; //Do nothing
+        }
+
+        #endif
+    }
+
+    template<std::uint32_t N = vec2x64i::width>
+    AVEL_FINL void scatter(std::int64_t* ptr, vec2x64i x, vec2x64i indices) {
+        scatter(ptr, x, indices, N);
+    }
+
+    template<>
+    AVEL_FINL void scatter<vec2x64i::width>(std::int64_t* ptr, vec2x64i x, vec2x64i indices) {
+        #if defined(AVEL_AVX512VL)
+        _mm_i64scatter_epi64(ptr, indices, x, sizeof(std::int64_t));
+
+        #elif defined(AVEL_SSE2)
+        ptr[extract<0>(indices)] = _mm_cvtsi128_si64(decay(x));
+        ptr[extract<1>(indices)] = _mm_cvtsi128_si64(_mm_bsrli_si128(decay(x), 0x8));
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        ptr[extract<0>(indices)] = vgetq_lane_s64(decay(x), 0x0);
+        ptr[extract<1>(indices)] = vgetq_lane_s64(decay(x), 0x1);
+
         #endif
     }
 

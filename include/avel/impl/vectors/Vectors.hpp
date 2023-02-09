@@ -5,6 +5,8 @@
 #include <array>
 
 #include "avel/Misc.hpp"
+
+#include "../Traits.hpp"
 #include "../Constants.hpp"
 
 namespace avel {
@@ -222,8 +224,9 @@ namespace avel {
     }
 
 
+
     template<class V>
-    V aligned_load(const typename V::scalar* p, std::uint32_t);
+    V aligned_load(const typename V::scalar* p, std::uint32_t n);
 
     template<class V, std::uint32_t N = V::width>
     V aligned_load(const typename V::scalar* ptr) {
@@ -235,24 +238,22 @@ namespace avel {
     }
 
 
+
     template<class V>
-    V gather(const typename V::scalar* ptr, Vector<std::int32_t, V::width>, std::uint32_t n);
+    V gather(const typename V::scalar* ptr, Vector<typename to_index_type<typename V::scalar>::type, V::width> indices, std::uint32_t n);
 
     template<class V, std::uint32_t N = V::width>
-    V gather(const typename V::scalar* ptr, Vector<std::int32_t, V::width>) {
+    V gather(const typename V::scalar* ptr, Vector<typename to_index_type<typename V::scalar>::type, V::width> indices) {
         static_assert(N <= V::width, "Cannot load more elements than width of vector");
         typename std::enable_if<N <= V::width, int>::type dummy_variable = 0;
 
         //Relying on const folding, branch elimination to optimize this implementation
-        return gather<V>(ptr, N);
+        return gather<V>(ptr, indices, N);
     }
 
     //=====================================================
     // Misc. Functions
     //=====================================================
-
-    template<class V0, class V1>
-    std::array<V0, V1::width / V0::width> decompose(V1);
 
     template<class V>
     typename V::primitive decay(V v) {

@@ -1157,6 +1157,10 @@ namespace avel {
         return _mm_cvtsi128_si32(_mm_srli_si128(decay(v), N)) & 0xFF;
 
         #endif
+
+        #if defined(AVEL_NEON)
+        return vgetq_lane_s8(decay(v), N);
+        #endif
     }
 
     //=====================================================
@@ -1340,6 +1344,10 @@ namespace avel {
         return neg_abs(vec16x8i{x});
     }
 
+    //=====================================================
+    // Load/Store operations
+    //=====================================================
+
     template<>
     [[nodiscard]]
     AVEL_FINL vec16x8i load<vec16x8i>(const std::int8_t* ptr, std::uint32_t n) {
@@ -1357,45 +1365,41 @@ namespace avel {
                 return vec16x8i{_mm_setzero_si128()};
             }
             case 1: {
-                return vec16x8i{_mm_cvtsi32_si128(ptr[0])};
+                std::uint8_t one_s;
+                std::memcpy(&one_s, ptr + 0, sizeof(std::uint8_t));
+                return vec16x8i{_mm_cvtsi32_si128(one_s)};
             }
             case 2: {
-                std::int32_t two = 0x00;
-                two |= ptr[0] << 0x0;
-                two |= ptr[1] << 0x8;
-                return vec16x8i{_mm_cvtsi32_si128(two)};
+                std::uint16_t two_s;
+                std::memcpy(&two_s, ptr + 0, sizeof(std::uint16_t));
+
+                return vec16x8i{_mm_cvtsi32_si128(two_s)};
             }
             case 3: {
-                std::int32_t two_s = 0x00;
-                two_s |= ptr[0] << 0x00;
-                two_s |= ptr[1] << 0x08;
+                std::uint16_t two_s;
+                std::memcpy(&two_s, ptr + 0, sizeof(std::uint16_t));
 
-                std::int32_t one = 0x00;
-                one |= ptr[2] << 0x00;
+                std::uint8_t one_s;
+                std::memcpy(&one_s, ptr + 2, sizeof(std::uint8_t));
 
                 auto lo = _mm_cvtsi32_si128(two_s);
-                auto hi = _mm_cvtsi32_si128(one);
+                auto hi = _mm_cvtsi32_si128(one_s);
 
                 return vec16x8i{_mm_unpacklo_epi16(lo, hi)};
             }
 
             case 4: {
-                std::int32_t four_s = 0x00;
-                four_s |= ptr[0] << 0x00;
-                four_s |= ptr[1] << 0x08;
-                four_s |= ptr[2] << 0x10;
-                four_s |= ptr[3] << 0x18;
+                std::uint32_t four_s;
+                std::memcpy(&four_s, ptr + 0, sizeof(std::uint32_t));
+
                 return vec16x8i{_mm_cvtsi32_si128(four_s)};
             }
             case 5: {
-                std::int32_t four_s = 0x00;
-                four_s |= ptr[0] << 0x00;
-                four_s |= ptr[1] << 0x08;
-                four_s |= ptr[2] << 0x10;
-                four_s |= ptr[3] << 0x18;
+                std::uint32_t four_s = 0x00;
+                std::memcpy(&four_s, ptr + 0, sizeof(std::uint32_t));
 
-                std::int32_t one_s = 0x00;
-                one_s |= ptr[4] << 0x00;
+                std::uint8_t one_s = 0x00;
+                std::memcpy(&one_s, ptr + 4, sizeof(std::uint8_t));
 
                 auto four_v = _mm_cvtsi32_si128(four_s);
                 auto one_v  = _mm_cvtsi32_si128(one_s);
@@ -1403,15 +1407,11 @@ namespace avel {
                 return vec16x8i{_mm_unpacklo_epi32(four_v, one_v)};
             }
             case 6: {
-                std::int32_t four_s = 0x00;
-                four_s |= ptr[0] << 0x00;
-                four_s |= ptr[1] << 0x08;
-                four_s |= ptr[2] << 0x10;
-                four_s |= ptr[3] << 0x18;
+                std::uint32_t four_s;
+                std::memcpy(&four_s, ptr + 0, sizeof(std::uint32_t));
 
-                std::int32_t two_s = 0x00;
-                two_s |= ptr[4] << 0x00;
-                two_s |= ptr[5] << 0x08;
+                std::uint16_t two_s;
+                std::memcpy(&two_s, ptr + 4, sizeof(std::uint16_t));
 
                 auto four_v = _mm_cvtsi32_si128(four_s);
                 auto two_v  = _mm_cvtsi32_si128(two_s);
@@ -1419,18 +1419,14 @@ namespace avel {
                 return vec16x8i{_mm_unpacklo_epi32(four_v, two_v)};
             }
             case 7:{
-                std::int32_t four_s = 0x00;
-                four_s |= ptr[0] << 0x00;
-                four_s |= ptr[1] << 0x08;
-                four_s |= ptr[2] << 0x10;
-                four_s |= ptr[3] << 0x18;
+                std::uint32_t four_s;
+                std::memcpy(&four_s, ptr + 0, sizeof(std::uint32_t));
 
-                std::int32_t two_s = 0x00;
-                two_s |= ptr[4] << 0x00;
-                two_s |= ptr[5] << 0x08;
+                std::uint16_t two_s;
+                std::memcpy(&two_s, ptr + 4, sizeof(std::uint16_t));
 
-                std::int32_t one_s = 0x00;
-                one_s |= ptr[6] << 0x00;
+                std::uint8_t one_s;
+                std::memcpy(&one_s, ptr + 6, sizeof(std::uint8_t));
 
                 auto four_v = _mm_cvtsi32_si128(four_s);
                 auto two_v  = _mm_cvtsi32_si128(two_s);
@@ -1440,31 +1436,17 @@ namespace avel {
             }
 
             case 8: {
-                std::int64_t eight_s = 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[0]) << 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[1]) << 0x08;
-                eight_s |= static_cast<std::int64_t>(ptr[2]) << 0x10;
-                eight_s |= static_cast<std::int64_t>(ptr[3]) << 0x18;
-                eight_s |= static_cast<std::int64_t>(ptr[4]) << 0x20;
-                eight_s |= static_cast<std::int64_t>(ptr[5]) << 0x28;
-                eight_s |= static_cast<std::int64_t>(ptr[6]) << 0x30;
-                eight_s |= static_cast<std::int64_t>(ptr[7]) << 0x38;
+                std::uint64_t eight_s;
+                std::memcpy(&eight_s, ptr + 0, sizeof(std::int64_t));
 
                 return vec16x8i{_mm_cvtsi64_si128(eight_s)};
             }
             case 9: {
-                std::int64_t eight_s = 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[0]) << 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[1]) << 0x08;
-                eight_s |= static_cast<std::int64_t>(ptr[2]) << 0x10;
-                eight_s |= static_cast<std::int64_t>(ptr[3]) << 0x18;
-                eight_s |= static_cast<std::int64_t>(ptr[4]) << 0x20;
-                eight_s |= static_cast<std::int64_t>(ptr[5]) << 0x28;
-                eight_s |= static_cast<std::int64_t>(ptr[6]) << 0x30;
-                eight_s |= static_cast<std::int64_t>(ptr[7]) << 0x38;
+                std::uint64_t eight_s;
+                std::memcpy(&eight_s, ptr + 0, sizeof(std::uint64_t));
 
-                std::int32_t one_s = 0x00;
-                one_s |= ptr[8] << 0x00;
+                std::uint8_t one_s;
+                std::memcpy(&one_s, ptr + 8, sizeof(std::uint8_t));
 
                 auto eight_v = _mm_cvtsi64_si128(eight_s);
                 auto one_v = _mm_cvtsi32_si128(one_s);
@@ -1472,19 +1454,11 @@ namespace avel {
                 return vec16x8i{_mm_unpacklo_epi64(eight_v, one_v)};
             }
             case 10: {
-                std::int64_t eight_s = 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[0]) << 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[1]) << 0x08;
-                eight_s |= static_cast<std::int64_t>(ptr[2]) << 0x10;
-                eight_s |= static_cast<std::int64_t>(ptr[3]) << 0x18;
-                eight_s |= static_cast<std::int64_t>(ptr[4]) << 0x20;
-                eight_s |= static_cast<std::int64_t>(ptr[5]) << 0x28;
-                eight_s |= static_cast<std::int64_t>(ptr[6]) << 0x30;
-                eight_s |= static_cast<std::int64_t>(ptr[7]) << 0x38;
+                std::uint64_t eight_s;
+                std::memcpy(&eight_s, ptr + 0, sizeof(std::uint64_t));
 
-                std::int32_t two_s = 0x00;
-                two_s |= ptr[8] << 0x00;
-                two_s |= ptr[9] << 0x08;
+                std::uint16_t two_s;
+                std::memcpy(&two_s, ptr + 8, sizeof(std::uint16_t));
 
                 auto eight_v = _mm_cvtsi64_si128(eight_s);
                 auto two_v = _mm_cvtsi32_si128(two_s);
@@ -1492,22 +1466,14 @@ namespace avel {
                 return vec16x8i{_mm_unpacklo_epi64(eight_v, two_v)};
             }
             case 11: {
-                std::int64_t eight_s = 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[0]) << 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[1]) << 0x08;
-                eight_s |= static_cast<std::int64_t>(ptr[2]) << 0x10;
-                eight_s |= static_cast<std::int64_t>(ptr[3]) << 0x18;
-                eight_s |= static_cast<std::int64_t>(ptr[4]) << 0x20;
-                eight_s |= static_cast<std::int64_t>(ptr[5]) << 0x28;
-                eight_s |= static_cast<std::int64_t>(ptr[6]) << 0x30;
-                eight_s |= static_cast<std::int64_t>(ptr[7]) << 0x38;
+                std::uint64_t eight_s = 0x00;
+                std::memcpy(&eight_s, ptr + 0, sizeof(std::uint64_t));
 
-                std::int32_t two_s = 0x00;
-                two_s |= ptr[8] << 0x00;
-                two_s |= ptr[9] << 0x08;
+                std::uint16_t two_s = 0x00;
+                std::memcpy(&two_s, ptr + 8, sizeof(std::uint16_t));
 
-                std::int32_t one_s = 0x00;
-                one_s |= ptr[10] << 0x00;
+                std::uint8_t one_s = 0x00;
+                std::memcpy(&one_s, ptr + 10, sizeof(std::uint8_t));
 
                 auto eight_v = _mm_cvtsi64_si128(eight_s);
                 auto two_v = _mm_cvtsi32_si128(two_s);
@@ -1517,21 +1483,11 @@ namespace avel {
             }
 
             case 12: {
-                std::int64_t eight_s = 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[0]) << 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[1]) << 0x08;
-                eight_s |= static_cast<std::int64_t>(ptr[2]) << 0x10;
-                eight_s |= static_cast<std::int64_t>(ptr[3]) << 0x18;
-                eight_s |= static_cast<std::int64_t>(ptr[4]) << 0x20;
-                eight_s |= static_cast<std::int64_t>(ptr[5]) << 0x28;
-                eight_s |= static_cast<std::int64_t>(ptr[6]) << 0x30;
-                eight_s |= static_cast<std::int64_t>(ptr[7]) << 0x38;
+                std::uint64_t eight_s;
+                std::memcpy(&eight_s, ptr + 0, sizeof(std::uint64_t));
 
-                std::int32_t four_s = 0x00;
-                four_s |= ptr[8]  << 0x00;
-                four_s |= ptr[9]  << 0x08;
-                four_s |= ptr[10] << 0x10;
-                four_s |= ptr[11] << 0x18;
+                std::uint32_t four_s;
+                std::memcpy(&four_s, ptr + 8, sizeof(std::uint32_t));
 
                 auto eight_v = _mm_cvtsi64_si128(eight_s);
                 auto four_v = _mm_cvtsi32_si128(four_s);
@@ -1539,24 +1495,14 @@ namespace avel {
                 return vec16x8i{_mm_unpacklo_epi64(eight_v, four_v)};
             }
             case 13: {
-                std::int64_t eight_s = 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[0]) << 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[1]) << 0x08;
-                eight_s |= static_cast<std::int64_t>(ptr[2]) << 0x10;
-                eight_s |= static_cast<std::int64_t>(ptr[3]) << 0x18;
-                eight_s |= static_cast<std::int64_t>(ptr[4]) << 0x20;
-                eight_s |= static_cast<std::int64_t>(ptr[5]) << 0x28;
-                eight_s |= static_cast<std::int64_t>(ptr[6]) << 0x30;
-                eight_s |= static_cast<std::int64_t>(ptr[7]) << 0x38;
+                std::uint64_t eight_s = 0x00;
+                std::memcpy(&eight_s, ptr + 0, sizeof(std::uint64_t));
 
-                std::int32_t four_s = 0x00;
-                four_s |= ptr[8]  << 0x00;
-                four_s |= ptr[9]  << 0x08;
-                four_s |= ptr[10] << 0x10;
-                four_s |= ptr[11] << 0x18;
+                std::uint32_t four_s = 0x00;
+                std::memcpy(&four_s, ptr + 8, sizeof(std::uint32_t));
 
-                std::int32_t one_s = 0x00;
-                one_s |= ptr[12] << 0x00;
+                std::uint8_t one_s = 0x00;
+                std::memcpy(&one_s, ptr + 12, sizeof(std::uint8_t));
 
                 auto eight_v = _mm_cvtsi64_si128(eight_s);
                 auto four_v = _mm_cvtsi32_si128(four_s);
@@ -1565,25 +1511,14 @@ namespace avel {
                 return vec16x8i{_mm_unpacklo_epi64(eight_v, _mm_unpacklo_epi32(four_v, one_v))};
             }
             case 14: {
-                std::int64_t eight_s = 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[0]) << 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[1]) << 0x08;
-                eight_s |= static_cast<std::int64_t>(ptr[2]) << 0x10;
-                eight_s |= static_cast<std::int64_t>(ptr[3]) << 0x18;
-                eight_s |= static_cast<std::int64_t>(ptr[4]) << 0x20;
-                eight_s |= static_cast<std::int64_t>(ptr[5]) << 0x28;
-                eight_s |= static_cast<std::int64_t>(ptr[6]) << 0x30;
-                eight_s |= static_cast<std::int64_t>(ptr[7]) << 0x38;
+                std::uint64_t eight_s;
+                std::memcpy(&eight_s, ptr + 0, sizeof(std::uint64_t));
 
-                std::int32_t four_s = 0x00;
-                four_s |= ptr[8]  << 0x00;
-                four_s |= ptr[9]  << 0x08;
-                four_s |= ptr[10] << 0x10;
-                four_s |= ptr[11] << 0x18;
+                std::uint32_t four_s;
+                std::memcpy(&four_s, ptr + 8, sizeof(std::uint32_t));
 
-                std::int32_t two_s = 0x00;
-                two_s |= ptr[12] << 0x00;
-                two_s |= ptr[13] << 0x08;
+                std::uint16_t two_s;
+                std::memcpy(&two_s, ptr + 12, sizeof(std::uint16_t));
 
                 auto eight_v = _mm_cvtsi64_si128(eight_s);
                 auto four_v = _mm_cvtsi32_si128(four_s);
@@ -1592,28 +1527,17 @@ namespace avel {
                 return vec16x8i{_mm_unpacklo_epi64(eight_v, _mm_unpacklo_epi32(four_v, two_v))};
             }
             case 15: {
-                std::int64_t eight_s = 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[0]) << 0x00;
-                eight_s |= static_cast<std::int64_t>(ptr[1]) << 0x08;
-                eight_s |= static_cast<std::int64_t>(ptr[2]) << 0x10;
-                eight_s |= static_cast<std::int64_t>(ptr[3]) << 0x18;
-                eight_s |= static_cast<std::int64_t>(ptr[4]) << 0x20;
-                eight_s |= static_cast<std::int64_t>(ptr[5]) << 0x28;
-                eight_s |= static_cast<std::int64_t>(ptr[6]) << 0x30;
-                eight_s |= static_cast<std::int64_t>(ptr[7]) << 0x38;
+                std::uint64_t eight_s;
+                std::memcpy(&eight_s, ptr + 0, sizeof(std::uint64_t));
 
-                std::int32_t four_s = 0x00;
-                four_s |= ptr[8]  << 0x00;
-                four_s |= ptr[9]  << 0x08;
-                four_s |= ptr[10] << 0x10;
-                four_s |= ptr[11] << 0x18;
+                std::uint32_t four_s;
+                std::memcpy(&four_s, ptr + 8, sizeof(std::uint32_t));
 
-                std::int32_t two_s = 0x00;
-                two_s |= ptr[12] << 0x00;
-                two_s |= ptr[13] << 0x08;
+                std::uint16_t two_s;
+                std::memcpy(&two_s, ptr + 12, sizeof(std::uint16_t));
 
-                std::int32_t one_s = 0x00;
-                one_s |= ptr[14] << 0x00;
+                std::uint8_t one_s;
+                std::memcpy(&one_s, ptr + 14, sizeof(std::uint8_t));
 
                 auto eight_v = _mm_cvtsi64_si128(eight_s);
                 auto four_v = _mm_cvtsi32_si128(four_s);
@@ -1631,7 +1555,7 @@ namespace avel {
 
         #if defined(AVEL_NEON)
         // While ARM neon doesn't provide partial load instructions, however,
-        // the following code compiles down to reasonable ideal machine code
+        // the following code compiles down to reasonable machine code
         switch (n) {
             case 0: {
                 return vec16x8i{vdupq_n_s8(0x00)};
@@ -1661,7 +1585,7 @@ namespace avel {
                 std::memcpy(&x1, ptr + 2, sizeof(std::int8_t ));
 
                 auto ret0 = vsetq_lane_s16(x0, vdupq_n_s16(0x00), 0);
-                auto ret1 = vsetq_lane_s8(x1, vreinterpretq_s8_s16(ret0), 3);
+                auto ret1 = vsetq_lane_s8(x1, vreinterpretq_s8_s16(ret0), 2);
                 return vec16x8i{ret1};
             }
 
@@ -1670,8 +1594,8 @@ namespace avel {
 
                 std::memcpy(&x0, ptr, sizeof(std::int32_t));
 
-                auto ret0 = vsetq_lane_s32(x0, vdupq_n_s32(0x00), 0);
-                auto ret1 = vreinterpretq_s8_s32(ret0);
+                auto ret0 = vsetq_lane_u32(x0, vdupq_n_u32(0x00), 0);
+                auto ret1 = vreinterpretq_s8_u32(ret0);
                 return vec16x8i{ret1};
             }
             case 5: {
@@ -1681,8 +1605,8 @@ namespace avel {
                 std::memcpy(&x0, ptr + 0, sizeof(std::int32_t));
                 std::memcpy(&x1, ptr + 4, sizeof(std::int8_t));
 
-                auto ret0 = vsetq_lane_s32(x0, vdupq_n_s32(0x00), 0);
-                auto ret1 = vsetq_lane_s8 (x1, vreinterpretq_s8_s32(ret0), 4);
+                auto ret0 = vsetq_lane_u32(x0, vdupq_n_u32(0x00), 0);
+                auto ret1 = vsetq_lane_s8 (x1, vreinterpretq_s8_u32(ret0), 4);
                 return vec16x8i{ret1};
             }
             case 6: {
@@ -1692,8 +1616,8 @@ namespace avel {
                 std::memcpy(&x0, ptr + 0, sizeof(std::int32_t));
                 std::memcpy(&x1, ptr + 4, sizeof(std::int16_t));
 
-                auto ret0 = vsetq_lane_s32(x0, vdupq_n_s32(0x00), 0);
-                auto ret1 = vsetq_lane_s16(x1, vreinterpretq_s16_s32(ret0), 2);
+                auto ret0 = vsetq_lane_u32(x0, vdupq_n_u32(0x00), 0);
+                auto ret1 = vsetq_lane_s16(x1, vreinterpretq_s16_u32(ret0), 2);
                 auto ret2 = vreinterpretq_s8_s16(ret1);
                 return vec16x8i{ret2};
             }
@@ -1706,8 +1630,8 @@ namespace avel {
                 std::memcpy(&x1, ptr + 4, sizeof(std::int16_t));
                 std::memcpy(&x2, ptr + 6, sizeof(std::int8_t ));
 
-                auto ret0 = vsetq_lane_s32(x0, vdupq_n_s32(0x00), 0);
-                auto ret1 = vsetq_lane_s16(x1, vreinterpretq_s16_s32(ret0), 2);
+                auto ret0 = vsetq_lane_u32(x0, vdupq_n_u32(0x00), 0);
+                auto ret1 = vsetq_lane_s16(x1, vreinterpretq_s16_u32(ret0), 2);
                 auto ret2 = vsetq_lane_s8 (x2, vreinterpretq_s8_s16 (ret1), 6);
                 return vec16x8i{ret2};
             }
@@ -1751,11 +1675,11 @@ namespace avel {
 
                 std::memcpy(&x0, ptr + 0, sizeof(std::int64_t));
                 std::memcpy(&x1, ptr + 8, sizeof(std::int16_t));
-                std::memcpy(&x2, ptr + 9, sizeof(std::int8_t ));
+                std::memcpy(&x2, ptr + 10, sizeof(std::int8_t ));
 
                 auto ret0 = vsetq_lane_s64(x0, vdupq_n_s64(0x00), 0);
                 auto ret1 = vsetq_lane_s16(x1, vreinterpretq_s16_s64(ret0), 4);
-                auto ret2 = vsetq_lane_s8(x1, vreinterpretq_s8_s16(ret1), 9);
+                auto ret2 = vsetq_lane_s8 (x2, vreinterpretq_s8_s16(ret1), 10);
                 return vec16x8i{ret2};
             }
 
@@ -1764,7 +1688,7 @@ namespace avel {
                 std::int32_t x1 = 0;
 
                 std::memcpy(&x0, ptr + 0, sizeof(std::int64_t));
-                std::memcpy(&x1, ptr + 4, sizeof(std::int32_t));
+                std::memcpy(&x1, ptr + 8, sizeof(std::int32_t));
 
                 auto ret0 = vsetq_lane_s64(x0, vdupq_n_s64(0x00), 0);
                 auto ret1 = vsetq_lane_s32(x1, vreinterpretq_s32_s64(ret0), 2);
@@ -1776,9 +1700,9 @@ namespace avel {
                 std::int32_t x1 = 0;
                 std::int8_t  x2 = 0;
 
-                std::memcpy(&x0, ptr + 0, sizeof(std::int64_t));
-                std::memcpy(&x1, ptr + 4, sizeof(std::int32_t));
-                std::memcpy(&x2, ptr + 6, sizeof(std::int8_t ));
+                std::memcpy(&x0, ptr +  0, sizeof(std::int64_t));
+                std::memcpy(&x1, ptr +  8, sizeof(std::int32_t));
+                std::memcpy(&x2, ptr + 12, sizeof(std::int8_t ));
 
                 auto ret0 = vsetq_lane_s64(x0, vdupq_n_s64(0x00), 0);
                 auto ret1 = vsetq_lane_s32(x1, vreinterpretq_s32_s64(ret0), 2);
@@ -1790,13 +1714,13 @@ namespace avel {
                 std::int32_t x1 = 0;
                 std::int16_t x2 = 0;
 
-                std::memcpy(&x0, ptr + 0, sizeof(std::int64_t));
-                std::memcpy(&x1, ptr + 4, sizeof(std::int32_t));
-                std::memcpy(&x2, ptr + 6, sizeof(std::int16_t));
+                std::memcpy(&x0, ptr +  0, sizeof(std::int64_t));
+                std::memcpy(&x1, ptr +  8, sizeof(std::int32_t));
+                std::memcpy(&x2, ptr + 12, sizeof(std::int16_t));
 
                 auto ret0 = vsetq_lane_s64(x0, vdupq_n_s64(0x00), 0);
                 auto ret1 = vsetq_lane_s32(x1, vreinterpretq_s32_s64(ret0), 2);
-                auto ret2 = vsetq_lane_s16(x1, vreinterpretq_s16_s32(ret1), 6);
+                auto ret2 = vsetq_lane_s16(x2, vreinterpretq_s16_s32(ret1), 6);
                 auto ret3 = vreinterpretq_s8_s16(ret2);
                 return vec16x8i{ret3};
             }
@@ -1806,15 +1730,15 @@ namespace avel {
                 std::int16_t x2 = 0;
                 std::int8_t  x3 = 0;
 
-                std::memcpy(&x0, ptr + 0, sizeof(std::int64_t));
-                std::memcpy(&x1, ptr + 4, sizeof(std::int32_t));
-                std::memcpy(&x2, ptr + 6, sizeof(std::int16_t));
-                std::memcpy(&x3, ptr + 7, sizeof(std::int8_t ));
+                std::memcpy(&x0, ptr +  0, sizeof(std::int64_t));
+                std::memcpy(&x1, ptr +  8, sizeof(std::int32_t));
+                std::memcpy(&x2, ptr + 12, sizeof(std::int16_t));
+                std::memcpy(&x3, ptr + 14, sizeof(std::int8_t ));
 
                 auto ret0 = vsetq_lane_s64(x0, vdupq_n_s64(0x00), 0);
                 auto ret1 = vsetq_lane_s32(x1, vreinterpretq_s32_s64(ret0), 2);
-                auto ret2 = vsetq_lane_s16(x1, vreinterpretq_s16_s32(ret1), 6);
-                auto ret3 = vsetq_lane_s8 (x2, vreinterpretq_s8_s16 (ret2), 14);
+                auto ret2 = vsetq_lane_s16(x2, vreinterpretq_s16_s32(ret1), 6);
+                auto ret3 = vsetq_lane_s8 (x3, vreinterpretq_s8_s16 (ret2), 14);
                 return vec16x8i{ret3};
             }
 
@@ -1858,39 +1782,10 @@ namespace avel {
 
 
 
-
-    template<std::uint32_t N = vec16x8i::width>
-    AVEL_FINL void store(std::int8_t* ptr, vec16x8i x) {
-        static_assert(N <= vec16x8i::width, "Cannot load more elements than width of vector");
-        typename std::enable_if<N <= vec16x8i::width, int>::type dummy_variable = 0;
-
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        auto mask = 0xFFFF >> N;
-        _mm_mask_storeu_epi8(ptr, mask, decay(x));
-
-        #elif defined(AVEL_SSE2)
-        auto undef = _mm_undefined_si128();
-        auto full = _mm_cmpeq_epi8(undef, undef);
-
-        auto mask = _mm_srli_si128(full, vec16x8i::width - N);
-        _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
-        #endif
-    }
-
-    template<>
-    AVEL_FINL void store<vec16x8u::width>(std::int8_t* ptr, vec16x8i x) {
-        #if defined(AVEL_SSE2)
-        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
-        #endif
-
-        #if defined(AVEL_NEON)
-        vst1q_s8(ptr, decay(x));
-        #endif
-    }
-
     AVEL_FINL void store(std::int8_t* ptr, vec16x8i x, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        auto mask = 0xFFFF >> n; //TODO: Clamp
+        n = min(n, vec16x8i::width);
+        auto mask = (1 << n) - 1;
         _mm_mask_storeu_epi8(ptr, mask, decay(x));
 
         #elif defined(AVEL_SSE2)
@@ -1900,8 +1795,8 @@ namespace avel {
         auto w = vec16x8u::width;
         auto h = vec16x8u::width / 2;
 
-        auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(w - std::min(w, n)));
-        auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(h - std::min(h, n)));
+        auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(8 * (h - std::min(h, n))));
+        auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(8 * (w - std::min(w, n))));
         auto mask = _mm_unpacklo_epi64(lo, hi);
         _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
         #endif
@@ -1953,7 +1848,7 @@ namespace avel {
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::int32_t));
                 std::memcpy(ptr + 4, &x1, sizeof(std::int16_t));
-                std::memcpy(ptr + 2, &x2, sizeof(std::int8_t ));
+                std::memcpy(ptr + 6, &x2, sizeof(std::int8_t ));
             } break;
 
             case 8: {
@@ -1962,8 +1857,8 @@ namespace avel {
                 std::memcpy(ptr + 0, &x0, sizeof(std::int64_t));
             } break;
             case 9: {
-                std::uint64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s8(decay(x)), 0);
-                std::uint8_t  x1 = vgetq_lane_s8(decay(x), 8);
+                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s8(decay(x)), 0);
+                std::int8_t  x1 = vgetq_lane_s8(decay(x), 8);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::int64_t));
                 std::memcpy(ptr + 8, &x1, sizeof(std::int8_t ));
@@ -1978,7 +1873,7 @@ namespace avel {
             case 11: {
                 std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s8(decay(x)), 0);
                 std::int16_t x1 = vgetq_lane_s16(vreinterpretq_s16_s8(decay(x)), 4);
-                std::int8_t  x2 = vgetq_lane_s8(decay(x), 4);
+                std::int8_t  x2 = vgetq_lane_s8(decay(x), 10);
 
                 std::memcpy(ptr + 0,  &x0, sizeof(std::int64_t));
                 std::memcpy(ptr + 8,  &x1, sizeof(std::int16_t));
@@ -2029,12 +1924,16 @@ namespace avel {
         #endif
     }
 
-
     template<std::uint32_t N = vec16x8i::width>
-    AVEL_FINL void aligned_store(std::int8_t* ptr, vec16x8i x) {
-        static_assert(N <= vec16x8u::width, "Cannot load more elements than width of vector");
-        typename std::enable_if<N <= vec16x8u::width, int>::type dummy_variable = 0;
+    AVEL_FINL void store(std::int8_t* ptr, vec16x8i x) {
+        static_assert(N <= vec16x8i::width, "Cannot load more elements than width of vector");
+        typename std::enable_if<N <= vec16x8i::width, int>::type dummy_variable = 0;
 
+        store(ptr, x, N);
+    }
+
+    template<>
+    AVEL_FINL void store<vec16x8u::width>(std::int8_t* ptr, vec16x8i x) {
         #if defined(AVEL_SSE2)
         _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
         #endif
@@ -2042,6 +1941,19 @@ namespace avel {
         #if defined(AVEL_NEON)
         vst1q_s8(ptr, decay(x));
         #endif
+    }
+
+
+    AVEL_FINL void aligned_store(std::int8_t* ptr, vec16x8i x, std::uint32_t n) {
+        store(ptr, x, n);
+    }
+
+    template<std::uint32_t N = vec16x8i::width>
+    AVEL_FINL void aligned_store(std::int8_t* ptr, vec16x8i x) {
+        static_assert(N <= vec16x8u::width, "Cannot load more elements than width of vector");
+        typename std::enable_if<N <= vec16x8u::width, int>::type dummy_variable = 0;
+
+        aligned_store(ptr, x, N);
     }
 
     template<>
@@ -2052,16 +1964,6 @@ namespace avel {
 
         #if defined(AVEL_NEON)
         vst1q_s8(ptr, decay(x));
-        #endif
-    }
-
-    AVEL_FINL void aligned_store(std::int8_t* ptr, vec16x8i x, std::uint32_t n) {
-        #if defined(AVEL_SSE2)
-        store(ptr, x, n);
-        #endif
-
-        #if defined(AVEL_NEON)
-        store(ptr, x, n);
         #endif
     }
 

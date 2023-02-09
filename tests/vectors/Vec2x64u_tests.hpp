@@ -1473,6 +1473,52 @@ namespace avel_tests {
         }
     }
 
+    TEST(Vec2x64u, Neg_abs_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr2x64u input_array0{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                input_array0[j] = random64u();
+            }
+
+            vec2x64u input0{input_array0};
+
+            auto results = neg_abs(input0);
+
+            arr2x64i results_array{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                results_array[j] = neg_abs(input_array0[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec2x64i{results_array}));
+        }
+    }
+
+    //=====================================================
+    // Load/Store operations
+    //=====================================================
+
+    TEST(Vec2x64u, Load_n_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr2x64u input_array{};
+            for (std::size_t j = 0; j < input_array.size(); ++j) {
+                input_array[j] = random64u();
+            }
+
+            for (std::uint32_t j = 0; j <= vec2x64u::width; ++j) {
+                auto results = load<vec2x64u>(input_array.data(), j);
+
+                auto loaded_data = to_array(results);
+                for (std::uint32_t k = 0; k < vec2x64u::width; k++) {
+                    if (k < j) {
+                        EXPECT_EQ(input_array[k], loaded_data[k]);
+                    } else {
+                        EXPECT_EQ(0x0, loaded_data[k]);
+                    }
+                }
+            }
+        }
+    }
+
     TEST(Vec2x64u, Load_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             arr2x64u input_array0{};
@@ -1480,9 +1526,31 @@ namespace avel_tests {
                 input_array0[j] = random64u();
             }
 
-            auto results = load<vec2x64u>(input_array0.data());
+            EXPECT_TRUE(all(load<vec2x64u, 0x00>(input_array0.data()) == load<vec2x64u>(input_array0.data(), 0x00)));
+            EXPECT_TRUE(all(load<vec2x64u, 0x01>(input_array0.data()) == load<vec2x64u>(input_array0.data(), 0x01)));
+            EXPECT_TRUE(all(load<vec2x64u, 0x02>(input_array0.data()) == load<vec2x64u>(input_array0.data(), 0x02)));
+        }
+    }
 
-            EXPECT_TRUE(all(results == vec2x64u{input_array0}));
+    TEST(Vec2x64u, Aligned_load_n_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            alignas(alignof(vec2x64u)) arr2x64u input_array{};
+            for (std::size_t j = 0; j < input_array.size(); ++j) {
+                input_array[j] = random64u();
+            }
+
+            for (std::uint32_t j = 0; j <= vec2x64u::width; ++j) {
+                auto results = load<vec2x64u>(input_array.data(), j);
+
+                auto loaded_data = to_array(results);
+                for (std::uint32_t k = 0; k < vec2x64u::width; k++) {
+                    if (k < j) {
+                        EXPECT_EQ(input_array[k], loaded_data[k]);
+                    } else {
+                        EXPECT_EQ(0x0, loaded_data[k]);
+                    }
+                }
+            }
         }
     }
 
@@ -1493,9 +1561,86 @@ namespace avel_tests {
                 input_array0[j] = random64u();
             }
 
-            auto results = aligned_load<vec2x64u>(input_array0.data());
+            EXPECT_TRUE(all(aligned_load<vec2x64u, 0x00>(input_array0.data()) == aligned_load<vec2x64u>(input_array0.data(), 0x00)));
+            EXPECT_TRUE(all(aligned_load<vec2x64u, 0x01>(input_array0.data()) == aligned_load<vec2x64u>(input_array0.data(), 0x01)));
+            EXPECT_TRUE(all(aligned_load<vec2x64u, 0x02>(input_array0.data()) == aligned_load<vec2x64u>(input_array0.data(), 0x02)));
+        }
+    }
 
-            EXPECT_TRUE(all(results == vec2x64u{input_array0}));
+    TEST(Vec2x64u, Gather_n_random) {
+        static constexpr std::size_t test_data_size = 16 * 1024;
+
+        std::vector<std::uint64_t> test_data{};
+        test_data.resize(test_data_size);
+        for (auto& x : test_data) {
+            x = random64u();
+        }
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr2x64i index_array{};
+            for (std::size_t j = 0; j < index_array.size(); ++j) {
+                index_array[j] = random64u() % test_data_size;
+            }
+            auto indices = load<vec2x64i>(index_array.data());
+
+            for (std::uint32_t j = 0; j <= vec2x64u::width; ++j) {
+                auto results = gather<vec2x64u>(test_data.data(), indices, j);
+
+                auto loaded_data = to_array(results);
+                for (std::uint32_t k = 0; k < vec2x64u::width; k++) {
+                    if (k < j) {
+                        EXPECT_EQ(test_data[index_array[k]], loaded_data[k]);
+                    } else {
+                        EXPECT_EQ(0x0, loaded_data[k]);
+                    }
+                }
+            }
+        }
+    }
+
+    TEST(Vec2x64u, Gather_random) {
+        static constexpr std::size_t test_data_size = 16 * 1024;
+
+        std::vector<std::uint64_t> test_data{};
+        test_data.resize(test_data_size);
+        for (auto& x : test_data) {
+            x = random64u();
+        }
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr2x64i index_array{};
+            for (std::size_t j = 0; j < index_array.size(); ++j) {
+                index_array[j] = random64u() % test_data_size;
+            }
+            auto indices = load<vec2x64i>(index_array.data());
+
+            EXPECT_TRUE(all(gather<vec2x64u, 0x00>(test_data.data(), indices) == gather<vec2x64u>(test_data.data(), indices, 0x00)));
+            EXPECT_TRUE(all(gather<vec2x64u, 0x01>(test_data.data(), indices) == gather<vec2x64u>(test_data.data(), indices, 0x01)));
+            EXPECT_TRUE(all(gather<vec2x64u, 0x02>(test_data.data(), indices) == gather<vec2x64u>(test_data.data(), indices, 0x02)));
+        }
+    }
+
+    TEST(Vec2x64u, Store_n_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr2x64u input_array0{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                input_array0[j] = random16u();
+            }
+
+            vec2x64u input0{input_array0};
+
+            for (std::size_t j = 0; j <= vec4x32u::width; ++j) {
+                std::uint64_t arr[2]{};
+                store(arr, input0, j);
+
+                for (std::size_t k = 0; k < input_array0.size(); ++k) {
+                    if (k < j) {
+                        EXPECT_EQ(input_array0[k], arr[k]);
+                    } else {
+                        EXPECT_EQ(0x00, arr[k]);
+                    }
+                }
+            }
         }
     }
 
@@ -1508,11 +1653,34 @@ namespace avel_tests {
 
             vec2x64u input0{input_array0};
 
-            std::uint64_t arr[4]{};
-            store(arr, input0);
+            std::uint64_t arr[2]{};
 
+            store<0x00>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x00));
+            store<0x01>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x01));
+            store<0x02>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x02));
+        }
+    }
+
+    TEST(Vec2x64u, Algined_store_n_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr2x64u input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
-                EXPECT_EQ(input_array0[j], arr[j]);
+                input_array0[j] = random16u();
+            }
+
+            vec2x64u input0{input_array0};
+
+            for (std::size_t j = 0; j <= vec4x32u::width; ++j) {
+                alignas(alignof(vec2x64u)) std::uint64_t arr[2]{};
+                store(arr, input0, j);
+
+                for (std::size_t k = 0; k < input_array0.size(); ++k) {
+                    if (k < j) {
+                        EXPECT_EQ(input_array0[k], arr[k]);
+                    } else {
+                        EXPECT_EQ(0x00, arr[k]);
+                    }
+                }
             }
         }
     }
@@ -1526,12 +1694,73 @@ namespace avel_tests {
 
             vec2x64u input0{input_array0};
 
-            alignas(alignof(vec2x64u)) std::uint64_t arr[4]{};
-            aligned_store(arr, input0);
+            alignas(alignof(vec2x64u)) std::uint64_t arr[2]{};
 
+            aligned_store<0x00>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x00));
+            aligned_store<0x01>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x01));
+            aligned_store<0x02>(arr, input0); EXPECT_TRUE(compare_stored_data(arr, input0, 0x02));
+        }
+    }
+
+    TEST(Vec2x64u, Scatter_n_random) {
+        static constexpr std::size_t test_data_size = 16 * 1024;
+        static constexpr std::size_t block_size = test_data_size / vec2x64u::width;
+
+        std::vector<std::uint64_t> test_data{};
+        test_data.resize(test_data_size);
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr2x64u input_array0{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
-                EXPECT_EQ(arr[j], input_array0[j]);
+                input_array0[j] = random64u();
             }
+
+            vec2x64u input0{input_array0};
+
+            arr2x64i index_array{};
+            for (std::size_t j = 0; j < index_array.size(); ++j) {
+                index_array[j] = (random64u() % block_size) + (j * block_size);
+            }
+
+            vec2x64i indices{index_array};
+
+            for (std::size_t j = 0; j <= vec2x64u::width; ++j) {
+                scatter(test_data.data(), input0, indices, j);
+
+                for (std::size_t k = 0; k < input_array0.size(); ++k) {
+                    if (k < j) {
+                        EXPECT_EQ(input_array0[k], test_data[index_array[k]]);
+                    }
+                }
+            }
+        }
+    }
+
+    TEST(Vec2x64u, Scatter_random) {
+        static constexpr std::size_t test_data_size = 16 * 1024;
+        static constexpr std::size_t block_size = test_data_size / vec2x64u::width;
+
+        std::vector<std::uint64_t> test_data{};
+        test_data.resize(test_data_size);
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr2x64u input_array0{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                input_array0[j] = random64u();
+            }
+
+            vec2x64u input0{input_array0};
+
+            arr2x64i index_array{};
+            for (std::size_t j = 0; j < index_array.size(); ++j) {
+                index_array[j] = (random64u() % block_size) + (j * block_size);
+            }
+
+            vec2x64i indices{index_array};
+
+            scatter<0x0>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x00));
+            scatter<0x1>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x01));
+            scatter<0x2>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x02));
         }
     }
 

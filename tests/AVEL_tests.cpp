@@ -43,6 +43,8 @@
 //#include <avel/Vector_view.hpp>
 //#include <avel/Random.hpp>
 
+#include "Test_utils.hpp"
+
 #include "Type_traits_tests.hpp"
 
 namespace avel_tests {
@@ -155,7 +157,6 @@ namespace avel_tests {
 #endif
 
 using namespace avel;
-using namespace avel_impl;
 
 int main(int argc, char* argv[]) {
     ::testing::InitGoogleTest(&argc, argv);
