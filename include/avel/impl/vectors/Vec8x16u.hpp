@@ -1826,16 +1826,10 @@ namespace avel {
         return vec8x16u{_mm_shldi_epi16(decay(v), decay(v), S)};
 
         #elif defined(AVEL_SSE2)
-        auto lo = _mm_unpacklo_epi16(decay(v), decay(v));
-        auto hi = _mm_unpackhi_epi16(decay(v), decay(v));
+        auto left_shifted  = _mm_slli_epi16(decay(v), S);
+        auto right_shifted = _mm_srli_epi16(decay(v), 16 - S);
 
-        lo = _mm_slli_epi32(lo, S);
-        hi = _mm_slli_epi32(hi, S);
-
-        lo = _mm_srli_epi32(lo, 16);
-        hi = _mm_srli_epi32(hi, 16);
-
-        auto ret = _mm_packus_epi32(lo, hi);
+        auto ret = _mm_or_si128(left_shifted, right_shifted);
         return vec8x16u{ret};
         #endif
 
