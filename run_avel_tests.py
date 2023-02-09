@@ -15,7 +15,7 @@ compilers = [
     ['/opt/intel/oneapi/compiler/2023.0.0/linux/bin/icpx', 'icpx-2023.0.0']
 ]
 
-feature_flag_combinations = [
+feature_flag_combinations_x86 = [
     [''],
     ['-mpopcnt'],
     ['-mlzcnt'],
@@ -47,7 +47,16 @@ feature_flag_combinations = [
     ['-mavx512vl', '-mavx512cd', '-mgfni']
 ]
 
-feature_combinations = [
+feature_flag_combinations_arm = [
+    [''],
+    [''],
+    [''],
+    ['', ''],
+]
+
+feature_flag_combinations = feature_flag_combinations_x86
+
+feature_combinations_x86 = [
     ['AVEL_X86'],
     ['AVEL_POPCNT'],
     ['AVEL_LZCNT'],
@@ -79,6 +88,15 @@ feature_combinations = [
     ['AVEL_AVX512VL', 'AVEL_GFNI'],
     ['AVEL_AVX512VL', 'AVEL_AVX512CD', 'AVEL_GFNI']
 ]
+
+feature_combinations_arm = [
+    [''],
+    ['AVEL_NEON'],
+    ['AVEL_AARCH64'],
+    ['AVEL_NEON', 'AVEL_AARCH64']
+]
+
+feature_combinations = feature_combinations_x86
 
 
 def test_on_compiler(compiler_path, build_dir_name):

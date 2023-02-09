@@ -1353,7 +1353,7 @@ namespace avel {
     AVEL_FINL vec16x8i load<vec16x8i>(const std::int8_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         n = std::min(16u, n);
-        auto mask = 0xFFFF >> (16 - n);
+        auto mask = (1 << n) - 1;
         return vec16x8i{_mm_maskz_loadu_epi8(mask, ptr)};
 
         #elif defined(AVEL_SSE2)
