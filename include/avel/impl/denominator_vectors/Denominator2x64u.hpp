@@ -92,7 +92,7 @@ namespace avel {
         //=================================================
 
         static vec2x64u mulhi(vec2x64u x, vec2x64u y) {
-            #if defined(AVEL_SSE2)
+            #if defined(AVEL_SSE2) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX))
             std::uint64_t x_lo = extract<0>(x);
             std::uint64_t x_hi = extract<1>(x);
 
@@ -107,20 +107,22 @@ namespace avel {
 
             #endif
 
-            #if defined(AVEL_NEON)
-            //TODO: Implement
-            auto x_half0 = vget_low_u32(decay(x));
-            auto x_half1 = vget_high_u32(decay(x));
+            #if defined(AVEL_NEON) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX))
+            std::uint64_t x_lo = extract<0>(x);
+            std::uint64_t x_hi = extract<1>(x);
 
-            auto y_half0 = vget_low_u32(decay(y));
-            auto y_half1 = vget_high_u32(decay(y));
+            std::uint64_t y_lo = extract<0>(y);
+            std::uint64_t y_hi = extract<1>(y);
 
-            auto prod_half0 = vreinterpretq_u32_u64(vmull_u32(x_half0, y_half0));
-            auto prod_half1 = vreinterpretq_u32_u64(vmull_u32(x_half1, y_half1));
+            // Implementation should leverage ARM's Aarch64's smulh instruction
+            std::uint64_t ret_lo = (__uint128_t(x_lo) * __uint128_t(y_lo)) >> 64;
+            std::uint64_t ret_hi = (__uint128_t(x_hi) * __uint128_t(y_hi)) >> 64;
 
-            auto prod = vuzpq_u32(prod_half0, prod_half1).val[1];
+            vec2x64u::primitive ret;
+            ret = vsetq_lane_u64(ret_lo, ret, 0x0);
+            ret = vsetq_lane_u64(ret_hi, ret, 0x1);
 
-            return vec2x64u{prod};
+            return vec2x64u{ret};
 
             #endif
         }

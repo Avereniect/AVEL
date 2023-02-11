@@ -48,11 +48,6 @@ namespace avel_tests {
             vec4x32i quot{quotients};
             vec4x32i rem{remainders};
 
-            Denom32i d0{input_array1[0]};
-            Denom32i d1{input_array1[1]};
-            Denom32i d2{input_array1[2]};
-            Denom32i d3{input_array1[3]};
-
             Denom4x32i denom{input1};
             auto qr = div(input0, denom);
 

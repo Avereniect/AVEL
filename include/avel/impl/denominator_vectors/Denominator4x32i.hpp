@@ -105,19 +105,18 @@ namespace avel {
             #endif
 
             #if defined(AVEL_NEON)
-            //TODO: Adapt for 32-bit elements
-            auto x_half0 = vget_low_s16(decay(x));
-            auto x_half1 = vget_high_s16(decay(x));
+            auto x_half0 = vget_low_s32(decay(x));
+            auto x_half1 = vget_high_s32(decay(x));
 
-            auto y_half0 = vget_low_s16(decay(y));
-            auto y_half1 = vget_high_s16(decay(y));
+            auto y_half0 = vget_low_s32(decay(y));
+            auto y_half1 = vget_high_s32(decay(y));
 
-            auto prod_half0 = vreinterpretq_s16_s32(vmull_s16(x_half0, y_half0));
-            auto prod_half1 = vreinterpretq_s16_s32(vmull_s16(x_half1, y_half1));
+            auto prod_half0 = vreinterpretq_s32_s64(vmull_s32(x_half0, y_half0));
+            auto prod_half1 = vreinterpretq_s32_s64(vmull_s32(x_half1, y_half1));
 
-            auto prod = vuzpq_s16(prod_half0, prod_half1).val[1];
+            auto prod = vuzpq_s32(prod_half0, prod_half1).val[1];
 
-            return vec8x16i{prod};
+            return vec4x32i{prod};
             #endif
         }
 
