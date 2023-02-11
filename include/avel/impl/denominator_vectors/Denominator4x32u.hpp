@@ -36,7 +36,7 @@ namespace avel {
     public:
 
         //=================================================
-        // Arithmetic Operators
+        // Arithmetic Operations
         //=================================================
 
         [[nodiscard]]
@@ -121,25 +121,25 @@ namespace avel {
 
         static vec4x32u compute_m(vec4x32u l, vec4x32u d) {
             //TODO: Optimize for case where vec4x64u is available
+            //TODO: Use conversion functions once implemented instead
             vec2x64u l_lo = bit_cast<vec2x64u>(l) & vec2x64u{0x00000000FFFFFFFFull};
             vec2x64u l_hi = bit_cast<vec2x64u>(l) >> 32;
 
             vec2x64u d_lo = bit_cast<vec2x64u>(d) & vec2x64u{0x00000000FFFFFFFFull};
             vec2x64u d_hi = bit_cast<vec2x64u>(d) >> 32;
 
-            vec2x64u lo_part = (vec2x64u{0x100000000ul} << l_lo) / d_lo;
-            lo_part -= vec2x64u{0xFFFFFFFFull};
+            vec2x64u tmp0_lo = (vec2x64u{1} << l_lo) - d_lo;
+            vec2x64u tmp0_hi = (vec2x64u{1} << l_hi) - d_hi;
 
-            vec2x64u hi_part = (vec2x64u{0x100000000ul} << l_hi) / d_hi;
-            hi_part -= vec2x64u{0xFFFFFFFFull};
-            hi_part <<= 32;
+            vec2x64u tmp1_lo = (tmp0_lo << 32) / d_lo;
+            vec2x64u tmp1_hi = (tmp0_hi << 32) / d_hi;
 
-            vec4x32u x = bit_cast<vec4x32u>(lo_part);
-            vec4x32u y = bit_cast<vec4x32u>(hi_part);
-            mask4x32u m{{false, true, false, true}};
+            vec4x32u m_lo = bit_cast<vec4x32u>(tmp1_lo);
+            vec4x32u m_hi = bit_cast<vec4x32u>(tmp1_hi << 32);
 
-            vec4x32u ret = blend(m, y, x);
-            return ret;
+            vec4x32u m = m_lo | m_hi;
+            m += vec4x32u{1};
+            return m;
         }
 
     };

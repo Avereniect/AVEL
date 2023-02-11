@@ -5,10 +5,13 @@ namespace avel_tests {
 
     using namespace avel;
 
-    TEST(Denom64u, Division) {
+    TEST(Denom64u, Random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             std::uint64_t numerator = random64u();
-            std::uint64_t denominator = max(static_cast<std::uint64_t>(random64u()), static_cast<std::uint64_t>(1));
+            std::uint64_t denominator = random64u();
+            if (denominator == 0) {
+                denominator = 1;
+            }
 
             std::uint64_t baseline_quotient = numerator / denominator;
             std::uint64_t baseline_remainder = numerator % denominator;

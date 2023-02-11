@@ -5,7 +5,7 @@ namespace avel_tests {
 
     using namespace avel;
 
-    TEST(Denom8i, Division) {
+    TEST(Denom8i, Random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             std::int8_t numerator = random8u();
             std::int8_t denominator = random8u();
@@ -20,10 +20,6 @@ namespace avel_tests {
             auto qr = div(numerator, denom);
             EXPECT_EQ(baseline_quotient, qr.quot);
             EXPECT_EQ(baseline_remainder, qr.rem);
-
-            if (qr.quot != baseline_quotient) {
-                int breakpoint_dummy = 54;
-            }
         }
     }
 

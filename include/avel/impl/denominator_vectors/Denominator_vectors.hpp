@@ -1,6 +1,8 @@
 #ifndef AVEL_DENOMINATOR_VECTORS_HPP
 #define AVEL_DENOMINATOR_VECTORS_HPP
 
+#include "../denominators/Denominators.hpp"
+
 // Native Denominators
 
 #include "Denominator1x8u.hpp"
@@ -18,12 +20,18 @@
 // 128-bit Denominators
 
 #if defined(AVEL_SSE2) || defined(AVEL_NEON)
+    #include "Denominator16x8u.hpp"
+    #include "Denominator16x8i.hpp"
+
+    #include "Denominator8x16u.hpp"
+    #include "Denominator8x16i.hpp"
+
     #include "Denominator4x32u.hpp"
     #include "Denominator4x32i.hpp"
 
-    #include "Denominator8x16u.hpp"
+    #include "Denominator2x64u.hpp"
+    #include "Denominator2x64i.hpp"
 
-    #include "Denominator16x8u.hpp"
 #endif
 
 /*

@@ -22,7 +22,7 @@ namespace avel {
     private:
 
         explicit Denominator(std::uint8_t d, std::uint8_t l):
-            m((0x100u << l) / d - 0xffu),
+            m(std::uint32_t(0x0100u << l) / d - std::uint16_t{0xffu}),
             sh1(min(l, std::uint8_t(1))),
             sh2(l - sh1),
             d(d) {}
@@ -34,7 +34,7 @@ namespace avel {
         //=================================================
 
         [[nodiscard]]
-        AVEL_FINL friend avel::div_type<std::uint8_t> div(std::uint8_t n, Denominator denom) {
+        AVEL_FINL friend div_type<std::uint8_t> div(std::uint8_t n, Denominator denom) {
             std::uint8_t t1 = std::uint16_t(denom.m) * std::uint16_t(n) >> 8;
             std::uint8_t q = (t1 + ((n - t1) >> denom.sh1)) >> denom.sh2;
             std::uint8_t r = n - (q * denom.d);

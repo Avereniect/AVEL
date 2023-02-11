@@ -5,10 +5,13 @@ namespace avel_tests {
 
     using namespace avel;
 
-    TEST(Denom8u, Division) {
+    TEST(Denom8u, Random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             std::uint8_t numerator = random8u();
-            std::uint8_t denominator = max(static_cast<std::uint8_t>(random8u()), static_cast<std::uint8_t>(1));
+            std::uint8_t denominator = random8u();
+            if (denominator == 0) {
+                denominator = 1;
+            }
 
             std::uint8_t baseline_quotient = numerator / denominator;
             std::uint8_t baseline_remainder = numerator % denominator;

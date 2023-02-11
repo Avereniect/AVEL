@@ -30,11 +30,11 @@ namespace avel {
     public:
 
         //=================================================
-        // Arithmetic Operators
+        // Arithmetic Operations
         //=================================================
 
         [[nodiscard]]
-        AVEL_FINL friend avel::div_type<std::int16_t> div(std::int16_t n, Denominator denom) {
+        AVEL_FINL friend div_type<std::int16_t> div(std::int16_t n, Denominator denom) {
             std::int16_t q0 = n + (std::int32_t(denom.mp) * std::int32_t(n) >> 16);
             q0 = (q0 >> denom.sh) - (n >> 15);
             std::int16_t q = (q0 ^ denom.d_sign) - denom.d_sign;
@@ -60,8 +60,8 @@ namespace avel {
 
         std::int16_t mp = 0;
         std::int16_t d_sign = 0;
-        std::uint16_t sh = 0;
-        std::uint16_t d = 0;
+        std::int16_t sh = 0;
+        std::int16_t d = 0;
 
     };
 

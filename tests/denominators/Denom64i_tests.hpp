@@ -5,7 +5,7 @@ namespace avel_tests {
 
     using namespace avel;
 
-    TEST(Denom64i, Division) {
+    TEST(Denom64i, Random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             std::int64_t numerator = random8u();
             std::int64_t denominator = random8u();

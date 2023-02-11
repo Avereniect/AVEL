@@ -3,24 +3,54 @@
 
 namespace avel_tests {
 
-    /*
-    TEST(Recip4x32u, Identity) {
-        Reciprocal<vec4x32u> recip{vec4x32u{0x01}};
+    using namespace avel;
 
-        vec4x32u x{15};
+    TEST(Denom4x32u, One) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            Denom4x32u denom{vec4x32u{0x01}};
 
-        x *= recip;
+            arr4x32u input_array0{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                input_array0[j] = random32u();
+            }
 
-        EXPECT_TRUE(all(x == vec4x32u{15}));
-    }*/
+            vec4x32u input0{input_array0};
 
-    TEST(Denom4x32u, Two) {
-        Denom4x32u denom{vec4x32u{{0x02, 0x03, 0x05, 0x07}}};
+            auto qr = div(input0, denom);
 
-        vec4x32u x{210};
-        x /= denom;
+            EXPECT_TRUE(all(qr.quot == input0));
+            EXPECT_TRUE(all(qr.rem  == vec4x32u{0x00}));
+        }
+    }
 
-        EXPECT_TRUE(all(x == vec4x32u{{105, 70, 42, 30}}));
+    TEST(Denom4x32u, Random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr4x32u input_array0{};
+            arr4x32u input_array1{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                input_array0[j] = random32u();
+                input_array1[j] = max(random32u(), std::uint32_t{1});
+            }
+
+            vec4x32u input0{input_array0};
+            vec4x32u input1{input_array1};
+
+            arr4x32u quotients{};
+            arr4x32u remainders{};
+            for (std::size_t j = 0; j < quotients.size(); ++j) {
+                quotients[j]  = input_array0[j] / input_array1[j];
+                remainders[j] = input_array0[j] % input_array1[j];
+            }
+
+            vec4x32u quot{quotients};
+            vec4x32u rem{remainders};
+
+            Denom4x32u denom{input1};
+            auto qr = div(input0, denom);
+
+            EXPECT_TRUE(all(quot == qr.quot));
+            EXPECT_TRUE(all(rem  == qr.rem ));
+        }
     }
 
 }

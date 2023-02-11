@@ -34,7 +34,7 @@ namespace avel {
         //=================================================
 
         [[nodiscard]]
-        AVEL_FINL friend avel::div_type<std::uint64_t> div(std::uint64_t n, Denominator denom) {
+        AVEL_FINL friend div_type<std::uint64_t> div(std::uint64_t n, Denominator denom) {
             #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
             //This compiles down to an x86 mul instruction when optimized
             __uint128_t t0 = __uint128_t(denom.m) * __uint128_t(n);

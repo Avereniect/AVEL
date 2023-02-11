@@ -20,10 +20,6 @@ namespace avel_tests {
             auto qr = div(numerator, denom);
             EXPECT_EQ(baseline_quotient, qr.quot);
             EXPECT_EQ(baseline_remainder, qr.rem);
-
-            if (qr.quot != baseline_quotient) {
-                int breakpoint_dummy = 54;
-            }
         }
     }
 

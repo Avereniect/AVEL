@@ -34,7 +34,7 @@ namespace avel {
         //=================================================
 
         [[nodiscard]]
-        AVEL_FINL friend avel::div_type<std::uint16_t> div(std::uint16_t n, Denominator denom) {
+        AVEL_FINL friend div_type<std::uint16_t> div(std::uint16_t n, Denominator denom) {
             std::uint16_t t1 = std::uint32_t(denom.m) * std::uint32_t(n) >> 16;
             std::uint16_t q = (t1 + ((n - t1) >> denom.sh1)) >> denom.sh2;
             std::uint16_t r = n - (q * denom.d);

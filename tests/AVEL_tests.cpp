@@ -51,18 +51,38 @@ namespace avel_tests {
 
     static constexpr std::size_t iterations = 1024;
 
-    static auto random8u  = std::mt19937{0xDEADBEEF};
-    static auto random16u = std::mt19937{0xDEADBEEF};
-    static auto random32u = std::mt19937{0xDEADBEEF};
-    static auto random64u = std::mt19937_64{0xDEADBEEF};
+    static auto random8u  = [] () -> std::uint8_t {
+        static auto tmp = std::mt19937{0xDEADBEEF};
+        auto ret = tmp();
+        return static_cast<std::uint8_t>(ret);
+    };
 
-    auto random32f = [] () {
+    static auto random16u  = [] () -> std::uint16_t {
+        static auto tmp = std::mt19937{0xDEADBEEF};
+        auto ret = tmp();
+        return static_cast<std::uint16_t>(ret);
+    };
+
+    static auto random32u  = [] () -> std::uint32_t {
+        static auto tmp = std::mt19937{0xDEADBEEF};
+        auto ret = tmp();
+        return static_cast<std::uint32_t>(ret);
+    };
+
+    static auto random64u  = [] () -> std::uint64_t {
+        static auto tmp = std::mt19937_64{0xDEADBEEF};
+        auto ret = tmp();
+        return static_cast<std::uint64_t>(ret);
+    };
+
+    auto random32f = [] () -> float {
+        static auto rng = std::mt19937{0xDEADBEEF};
         static std::uniform_int_distribution<std::int32_t> distribution{
             0x0,
             static_cast<int>(2 * 0x7f7fffffu)
         };
 
-        std::int32_t bits = distribution(random32u);
+        std::int32_t bits = distribution(rng);
 
         if (bits > 0x7f7fffff) {
             bits -= 0x7f7fffff;
@@ -72,13 +92,14 @@ namespace avel_tests {
         return avel::bit_cast<float>(bits);
     };
 
-    auto random64f = [] () {
+    auto random64f = [] () -> double {
+        static auto rng = std::mt19937_64{0xDEADBEEF};
         static std::uniform_int_distribution<std::int64_t> distribution{
             0x0,
             static_cast<long>(2 * 0x7fefffffffffffffull)
         };
 
-        std::int64_t bits = distribution(random64u);
+        std::int64_t bits = distribution(rng);
 
         if (bits > 0x7fefffffffffffff) {
             bits -= 0x7fefffffffffffffull;
@@ -151,8 +172,8 @@ namespace avel_tests {
     #include "denominator_vectors/Denom4x32u_tests.hpp"
     #include "denominator_vectors/Denom4x32i_tests.hpp"
 
-    //#include "denominator_vectors/Denom2x64u_tests.hpp"
-    //#include "denominator_vectors/Denom2x64i_tests.hpp"
+    #include "denominator_vectors/Denom2x64u_tests.hpp"
+    #include "denominator_vectors/Denom2x64i_tests.hpp"
 
 #endif
 
