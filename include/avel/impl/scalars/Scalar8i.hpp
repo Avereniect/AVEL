@@ -70,15 +70,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::int8_t abs(std::int8_t x) {
-        auto y = x >> 7;
-        auto ret = (x ^ y) - y;
-        return ret;
+        if (x < 0) {
+            return -x;
+        } else {
+            return x;
+        }
     }
 
     [[nodiscard]]
     AVEL_FINL std::int8_t neg_abs(std::int8_t x) {
-        auto y = ~x >> 7;
-        return (x ^ y) - y;
+        if (x < 0) {
+            return x;
+        } else {
+            return -x;
+        }
     }
 
     [[nodiscard]]

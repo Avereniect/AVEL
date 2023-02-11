@@ -70,14 +70,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::int64_t abs(std::int64_t x) {
-        auto y = x >> 63;
-        return (x ^ y) - y;
+        if (x < 0) {
+            return -x;
+        } else {
+            return x;
+        }
     }
 
     [[nodiscard]]
     AVEL_FINL std::int64_t neg_abs(std::int64_t x) {
-        auto y = ~x >> 63;
-        return (x ^ y) - y;
+        if (x < 0) {
+            return x;
+        } else {
+            return -x;
+        }
     }
 
     [[nodiscard]]

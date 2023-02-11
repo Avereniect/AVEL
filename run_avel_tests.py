@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-import os, shutil
+import os
+import shutil
 
 # Path to compilers and names used for their build directories
 compilers = [

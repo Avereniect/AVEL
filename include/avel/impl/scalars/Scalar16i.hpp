@@ -70,14 +70,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::int16_t abs(std::int16_t x) {
-        auto y = x >> 15;
-        return (x ^ y) - y;
+        if (x < 0) {
+            return -x;
+        } else {
+            return x;
+        }
     }
 
     [[nodiscard]]
     AVEL_FINL std::int16_t neg_abs(std::int16_t x) {
-        auto y = ~x >> 15;
-        return (x ^ y) - y;
+        if (x < 0) {
+            return x;
+        } else {
+            return -x;
+        }
     }
 
     [[nodiscard]]

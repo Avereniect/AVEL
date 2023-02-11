@@ -82,8 +82,8 @@ namespace avel {
         std::uint64_t sum = (x == 0xFFFFFFFFFFFFFFFFul);
 
         bool b0 = (0xFFFFFFFF00000000u & x) == 0xFFFFFFFF00000000u;
-        sum += (b0 * 16);
-        x <<= (b0 * 16);
+        sum += (b0 * 32);
+        x <<= (b0 * 32);
 
         bool b1 = (0xFFFF000000000000u & x) == 0xFFFF000000000000u;
         sum += (b1 * 16);
