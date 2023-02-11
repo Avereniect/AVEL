@@ -75,7 +75,7 @@ if (AVEL_BUILD_TESTS)
     target_compile_features(AVEL_TESTS PRIVATE "cxx_std_11")
 
     #TODO: Set compilation flags based on enabled features
-    target_compile_options(AVEL_TESTS PRIVATE "-march=native")
+    target_compile_options(AVEL_TESTS PRIVATE "")
     target_link_options(AVEL_TESTS PRIVATE "")
 
     target_include_directories(AVEL_TESTS PRIVATE ./include/)
