@@ -13,6 +13,12 @@ namespace avel {
         friend class Denominator;
 
         //=================================================
+        // Type aliases
+        //=================================================
+
+        using backing_type = vec2x64u;
+
+        //=================================================
         // -ctors
         //=================================================
 
@@ -43,7 +49,10 @@ namespace avel {
         AVEL_FINL friend avel::div_type<vec2x64u> div(vec2x64u n, Denominator denom) {
             vec2x64u t1 = mulhi(denom.m, n);
 
-            #if defined(AVEL_SSE2)
+            #if defined(AVEL_AVX2)
+            vec2x64u q = (t1 + ((n - t1) >> denom.sh1)) >> denom.sh2;
+
+            #elif defined(AVEL_SSE2)
             vec2x64u t0 = (n - t1);
             t0 = blend(denom.sh1, t0 >> 1, t0);
             vec2x64u q = (t1 + t0) >> denom.sh2;
