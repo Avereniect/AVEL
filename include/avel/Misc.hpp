@@ -43,7 +43,7 @@ namespace avel {
 
         #elif defined(AVEL_GCC)
         //GCC offers type punning via unions as implementation-defined behavior
-        constexpr auto alignment = std::max(alignof(T), alignof(U));
+        constexpr auto alignment = alignof(T) > alignof(U) ? alignof(T) : alignof(U);
         union Helper{
             alignas(alignment) T t;
             alignas(alignment) U u;
@@ -59,27 +59,6 @@ namespace avel {
         return ret;
 
         #endif
-    }
-
-}
-
-namespace avel_impl {
-
-    template<class T, class U>
-    [[nodiscard]]
-    AVEL_FINL T compare_common_bytes(const T& t, const U& u) {
-        static_assert(std::is_trivial<T>::value, "Target type must be trivial");
-        static_assert(std::is_trivial<U>::value, "Source type must be trivial");
-
-        auto* p0 = reinterpret_cast<const unsigned char*>(&t);
-        auto* p1 = reinterpret_cast<const unsigned char*>(&u);
-
-        bool are_equal = true;
-        for (std::size_t i = 0; i < std::min(sizeof(T), sizeof(U)); ++i) {
-            are_equal &= (p0[i] == p1[i]);
-        }
-
-        return are_equal;
     }
 
 }
