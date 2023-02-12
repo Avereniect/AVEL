@@ -1244,6 +1244,8 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
+        //TODO: Utilize __builtin_assume_aligned on GCC and Clang
+        //TODO: Utilize assume_aligned if C++ 20 is available
         return vec4x32u{vld1q_u32(ptr)};
         #endif
     }
@@ -1603,21 +1605,11 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32u countr_zero(vec4x32u x) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD) && defined(AVEL_GFNI)
-        static constexpr std::uint8_t table_data[16] {
-            3, 2, 1, 0,
-            7, 6, 5, 4,
-            11, 10, 9, 8,
-            15, 14, 13, 12
-        };
-
-        auto table = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data));
-        auto reversed_bytes = _mm_shuffle_epi8(decay(x), table);
-
-        auto gf_table = _mm_set1_epi64x(0x8040201008040201ul);
-        auto reversed_bits = _mm_gf2p8affine_epi64_epi8(reversed_bytes, gf_table, 0x0);
-
-        return vec4x32u{_mm_lzcnt_epi32(reversed_bits)};
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
+        auto undef = _mm_undefined_si128();
+        auto neg_one = _mm_cmpeq_epi32(undef, undef);
+        auto tz_mask = _mm_andnot_si128(decay(x), _mm_add_epi32(decay(x), neg_one));
+        return vec4x32u{_mm_popcnt_epi32(tz_mask)};
 
         #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
         auto zero_mask = (x == vec4x32u{0x00});
@@ -1721,7 +1713,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask4x32u has_single_bit(vec4x32u v) {
-        #if defined(AVEL_AVX512VL) && (defined(AVEL_AVX512VPOPCNTDQ) || defined(AVEL_AVX512BITALG))
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
         return popcount(v) == vec4x32u{1};
         #elif defined(AVEL_SSE2) || defined(AVEL_NEON)
         return mask4x32u{v} & !mask4x32u{v & (v - vec4x32u{1})};

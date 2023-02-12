@@ -1324,8 +1324,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64i negate(mask2x64i m, vec2x64i x) {
+        #if defined(AVEL_AVX512VL)
+        return vec2x64i{_mm_mask_sub_epi64(decay(x), decay(m), _mm_setzero_si128(), decay(x))};
+
         auto mask = broadcast_mask(m);
         return (x ^ mask) - mask;
+        #endif
     }
 
     [[nodiscard]]
@@ -1429,12 +1433,14 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    AVEL_FINL vec2x64i aligned_load<vec2x64i>(const std::int64_t* ptr) {
+    AVEL_FINL vec2x64i aligned_load<vec2x64i, vec2x64u::width>(const std::int64_t* ptr) {
         #if defined(AVEL_SSE2)
         return vec2x64i{_mm_load_si128(reinterpret_cast<const __m128i*>(ptr))};
         #endif
 
         #if defined(AVEL_NEON)
+        //TODO: Utilize __builtin_assume_aligned on GCC and Clang
+        //TODO: Utilize assume_aligned if C++ 20 is available
         return vec2x64i{vld1q_s64(ptr)};
         #endif
     }
@@ -1766,34 +1772,18 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec2x64i> div(vec2x64i x, vec2x64i y) {
-        vec2x64i quotient{};
-
-        mask2x64i sign_mask0 = (x < vec2x64i{0x0});
-        mask2x64i sign_mask1 = (y < vec2x64i{0x0});
-
-        mask2x64i sign_mask2 = sign_mask0 ^ sign_mask1;
+        mask2x64i remainder_sign_mask = (x < vec2x64i{0x00});
+        mask2x64i quotient_sign_mask = remainder_sign_mask ^ (y < vec2x64i{0x00});
 
         vec2x64u numerator{abs(x)};
         vec2x64u denominator{abs(y)};
 
-        //TODO: Compute i more appropriately
-        //TODO: Otherwise optimize
+        auto results = div(numerator, denominator);
 
-        std::int32_t i = 64;
-
-        for (; (i-- > 0) && any(mask2x64u(numerator));) {
-            mask2x64u b = ((numerator >> i) >= denominator);
-            numerator -= (broadcast_mask(b) & (denominator << i));
-            quotient |= vec2x64i{vec2x64u{b} << i};
-        }
-
-        //Adjust quotient's sign. Should be xor of operands' signs
-        quotient = blend(sign_mask2, -quotient, quotient);
-
-        //Adjust numerator's sign. Should be same sign as it was originally
-        x = blend(sign_mask0, -vec2x64i{numerator}, vec2x64i{numerator});
-
-        return {quotient, x};
+        return {
+            negate(quotient_sign_mask,  vec2x64i{results.quot}),
+            negate(remainder_sign_mask, vec2x64i{results.rem})
+        };
     }
 
     [[nodiscard]]

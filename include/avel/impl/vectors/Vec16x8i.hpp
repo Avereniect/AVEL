@@ -1307,17 +1307,28 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x8i negate(mask16x8i m, vec16x8i x) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        return vec16x8i{_mm_mask_sub_epi8(decay(x), decay(m), _mm_setzero_si128(), decay(x))};
+
+        #elif defined(AVEL_SSSE3)
+        return vec16x8i{_mm_sign_epi8(decay(x), _mm_or_si128(decay(m), _mm_set1_epi8(0x01)))};
+        #endif
+
+        #if defined(AVEL_SSE2) || defined(AVEL_NEON)
         auto mask = broadcast_mask(m);
         return (x ^ mask) - mask;
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x8i abs(vec16x8i x) {
         #if defined(AVEL_SSSE3)
         return vec16x8i{_mm_abs_epi8(decay(x))};
+
         #elif defined(AVEL_SSE2)
-        auto y = x >> 7;
+        auto y = vec16x8i{_mm_cmplt_epi8(decay(x), _mm_setzero_si128())};
         return (x ^ y) - y;
+
         #endif
 
         #if defined(AVEL_NEON)
@@ -1329,7 +1340,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec16x8i neg_abs(vec16x8i x) {
         #if defined(AVEL_SSE2)
-        auto y = ~x >> 7;
+        auto y = vec16x8i{_mm_cmplt_epi8(_mm_setzero_si128(), decay(x))};
         return (x ^ y) - y;
         #endif
 
@@ -1776,6 +1787,8 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
+        //TODO: Utilize __builtin_assume_aligned on GCC and Clang
+        //TODO: Utilize assume_aligned if C++ 20 is available
         return vec16x8i{vld1q_s8(ptr)};
         #endif
     }
@@ -1973,33 +1986,18 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec16x8i> div(vec16x8i x, vec16x8i y) {
-        vec16x8i quotient{0x00};
-
-        mask16x8i sign_mask0 = (x < vec16x8i{});
-        mask16x8i sign_mask1 = (y < vec16x8i{});
-
-        mask16x8i sign_mask2 = sign_mask0 ^ sign_mask1;
+        mask16x8i remainder_sign_mask = (x < vec16x8i{0x00});
+        mask16x8i quotient_sign_mask = remainder_sign_mask ^ (y < vec16x8i{0x00});
 
         vec16x8u numerator{abs(x)};
         vec16x8u denominator{abs(y)};
 
-        //TODO: Compute i more appropriately?
-        std::int32_t i = 8;
+        auto results = div(numerator, denominator);
 
-        //TODO: Consider performing division with abs_neg values
-        for (; (i-- > 0) && any(mask16x8u(numerator));) {
-            mask16x8u b = ((numerator >> i) >= denominator);
-            numerator -= (broadcast_mask(b) & (denominator << i));
-            quotient |= vec16x8i(vec16x8u{b} << i);
-        }
-
-        //Adjust quotient's sign. Should be xor of operands' signs
-        quotient = blend(sign_mask2, -quotient, quotient);
-
-        //Adjust numerator's sign. Should be same sign as it was originally
-        x = blend(sign_mask0, -vec16x8i{numerator}, vec16x8i{numerator});
-
-        return {quotient, x};
+        return {
+            negate(quotient_sign_mask,  vec16x8i{results.quot}),
+            negate(remainder_sign_mask, vec16x8i{results.rem})
+        };
     }
 
     [[nodiscard]]
@@ -2082,6 +2080,20 @@ namespace avel {
     [[nodiscard]]
     vec16x8i bit_shift_right<0>(vec16x8i v) {
         return v;
+    }
+
+    #if defined(AVEL_SSE2)
+    template<>
+    [[nodiscard]]
+    vec16x8i bit_shift_right<7>(vec16x8i v) {
+        return vec16x8i{_mm_cmplt_epi8(decay(v), _mm_setzero_si128())};
+    };
+    #endif
+
+    template<>
+    [[nodiscard]]
+    vec16x8i bit_shift_right<8>(vec16x8i v) {
+        return broadcast_mask(v < vec16x8i{0x00});
     }
 
 

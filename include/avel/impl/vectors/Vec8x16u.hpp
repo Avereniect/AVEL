@@ -1364,6 +1364,8 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
+        //TODO: Utilize __builtin_assume_aligned on GCC and Clang
+        //TODO: Utilize assume_aligned if C++ 20 is available
         return vec8x16u{vld1q_u16(ptr)};
         #endif
     }
@@ -1590,7 +1592,13 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u countr_zero(vec8x16u x) {
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
+        auto undef = _mm_undefined_si128();
+        auto neg_one = _mm_cmpeq_epi16(undef, undef);
+        auto tz_mask = _mm_andnot_si128(decay(x), _mm_add_epi16(decay(x), neg_one));
+        return vec8x16u{_mm_popcnt_epi16(tz_mask)};
+
+        #elif defined(AVEL_SSE2)
         //TODO: Optimize
         vec8x16u ret{0x0000};
 

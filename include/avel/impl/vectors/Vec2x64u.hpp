@@ -1255,6 +1255,8 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
+        //TODO: Utilize __builtin_assume_aligned on GCC and Clang
+        //TODO: Utilize assume_aligned if C++ 20 is available
         return vec2x64u{vld1q_u64(ptr)};
         #endif
     }
@@ -1586,7 +1588,19 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64u countr_zero(vec2x64u x) {
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
+        auto undef = _mm_undefined_si128();
+        auto neg_one = _mm_cmpeq_epi64(undef, undef);
+        auto tz_mask = _mm_andnot_si128(decay(x), _mm_add_epi64(decay(x), neg_one));
+        return vec2x64u{_mm_popcnt_epi64(tz_mask)};
+
+        #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
+        auto zero_mask = (x == vec2x64u{0x00});
+        auto y = (x & (vec2x64u{0x00} - x));
+        auto z = vec2x64u{31} - countl_zero(y);
+        return blend(zero_mask, vec2x64u{32}, z);
+
+        #elif defined(AVEL_SSE2)
         auto y = decay(x & (vec2x64u{0x00} - x));
 
         auto lo_double = _mm_cvtsi64_sd(_mm_undefined_pd(), _mm_cvtsi128_si64(y));
@@ -1597,11 +1611,11 @@ namespace avel {
         biased_exponents = _mm_min_epi16(decay(vec2x64u{1086}), decay(biased_exponents));
         auto tzcnt = biased_exponents - vec2x64u{1023};
         tzcnt = blend(x == vec2x64u{}, vec2x64u{64}, tzcnt);
+
         return vec2x64u{tzcnt};
         #endif
 
         #if defined(AVEL_NEON)
-        //TODO: Optimize
         auto zero_mask = (x == vec2x64u{0x00});
         x &= vec2x64u{0x00} - x;
 

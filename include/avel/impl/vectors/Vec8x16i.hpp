@@ -1126,8 +1126,17 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16i negate(mask8x16i m, vec8x16i x) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        return vec8x16i{_mm_mask_sub_epi16(decay(x), decay(m), _mm_setzero_si128(), decay(x))};
+
+        #elif defined(AVEL_SSSE3)
+        return vec8x16i{_mm_sign_epi16(decay(x), _mm_or_si128(decay(m), _mm_set1_epi16(0x01)))};
+        #endif
+
+        #if defined(AVEL_SSE2) || defined(AVEL_NEON)
         auto mask = broadcast_mask(m);
         return (x ^ mask) - mask;
+        #endif
     }
 
     [[nodiscard]]
@@ -1394,6 +1403,8 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
+        //TODO: Utilize __builtin_assume_aligned on GCC and Clang
+        //TODO: Utilize assume_aligned if C++ 20 is available
         return vec8x16i{vld1q_s16(ptr)};
         #endif
     }
@@ -1524,33 +1535,18 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec8x16i> div(vec8x16i x, vec8x16i y) {
-        vec8x16i quotient{};
-
-        mask8x16i sign_mask0 = (x < vec8x16i{});
-        mask8x16i sign_mask1 = (y < vec8x16i{});
-
-        mask8x16i sign_mask2 = sign_mask0 ^ sign_mask1;
+        mask8x16i remainder_sign_mask = (x < vec8x16i{0x00});
+        mask8x16i quotient_sign_mask = remainder_sign_mask ^ (y < vec8x16i{0x00});
 
         vec8x16u numerator{abs(x)};
         vec8x16u denominator{abs(y)};
 
-        //TODO: Compute i more appropriately?
-        //TODO: Otherwise optimize
-        std::int32_t i = 16;
+        auto results = div(numerator, denominator);
 
-        for (; (i-- > 0) && any(mask8x16u(numerator));) {
-            mask8x16u b = ((numerator >> i) >= denominator);
-            numerator -= (broadcast_mask(b) & (denominator << i));
-            quotient |= vec8x16i{(vec8x16u{b} << i)};
-        }
-
-        //Adjust quotient's sign. Should be xor of operands' signs
-        quotient = blend(sign_mask2, -quotient, quotient);
-
-        //Adjust numerator's sign. Should be same sign as it was originally
-        x = blend(sign_mask0, -vec8x16i{numerator}, vec8x16i{numerator});
-
-        return {quotient, x};
+        return {
+            negate(quotient_sign_mask,  vec8x16i{results.quot}),
+            negate(remainder_sign_mask, vec8x16i{results.rem})
+        };
     }
 
     [[nodiscard]]
