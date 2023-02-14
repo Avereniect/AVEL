@@ -7,6 +7,7 @@
 
 namespace avel {
 
+/* //TODO: Uncomment as wider vectors are implemented
 #if defined(AVEL_AVX512BW)
     constexpr std::uint32_t natural_width_8u  = 64;
     constexpr std::uint32_t natural_width_16u = 32;
@@ -124,6 +125,9 @@ namespace avel {
     constexpr std::uint32_t max_width_64f = 4;
 
 #elif defined(AVEL_SSE2) || defined(AVEL_NEON)
+ */
+
+#if defined(AVEL_SSE2) || defined(AVEL_NEON)
     constexpr std::uint32_t natural_width_8u = 16;
     constexpr std::uint32_t natural_width_16u = 8;
     constexpr std::uint32_t natural_width_32u = 4;
@@ -149,8 +153,8 @@ namespace avel {
     constexpr std::uint32_t max_width_32i = 4;
     constexpr std::uint32_t max_width_64i = 2;
 
-    constexpr std::uint32_t max_width_32f = 4;
-    constexpr std::uint32_t max_width_64f = 2;
+    //constexpr std::uint32_t max_width_32f = 4;
+    //constexpr std::uint32_t max_width_64f = 2;
 
 #endif
 

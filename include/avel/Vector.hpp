@@ -47,25 +47,25 @@ namespace avel {
     using vecNx16i = Vector<std::int16_t, natural_width_16i>;
     using vecNx8i  = Vector<std::int8_t,  natural_width_8i>;
 
-    using vecNx32f = Vector<float, natural_width_32f>;
-    using vecNx64f = Vector<double, natural_width_64f>;
+    //using vecNx32f = Vector<float, natural_width_32f>;
+    //using vecNx64f = Vector<double, natural_width_64f>;
 
     //=====================================================
     // Aliases for maximum sized vectors
     //=====================================================
 
-    using vecMx64u = Vector<std::uint64_t, natural_width_64u>;
-    using vecMx32u = Vector<std::uint32_t, natural_width_32u>;
-    using vecMx16u = Vector<std::uint16_t, natural_width_16u>;
-    using vecMx8u  = Vector<std::uint8_t,  natural_width_8u>;
+    using vecMx64u = Vector<std::uint64_t, max_width_64u>;
+    using vecMx32u = Vector<std::uint32_t, max_width_32u>;
+    using vecMx16u = Vector<std::uint16_t, max_width_16u>;
+    using vecMx8u  = Vector<std::uint8_t,  max_width_8u>;
 
-    using vecMx64i = Vector<std::int64_t, natural_width_64i>;
-    using vecMx32i = Vector<std::int32_t, natural_width_32i>;
-    using vecMx16i = Vector<std::int16_t, natural_width_16i>;
-    using vecMx8i  = Vector<std::int8_t,  natural_width_8i>;
+    using vecMx64i = Vector<std::int64_t, max_width_64i>;
+    using vecMx32i = Vector<std::int32_t, max_width_32i>;
+    using vecMx16i = Vector<std::int16_t, max_width_16i>;
+    using vecMx8i  = Vector<std::int8_t,  max_width_8i>;
 
-    using vecMx32f = Vector<float, natural_width_32f>;
-    using vecMx64f = Vector<double, natural_width_64f>;
+    //using vecMx32f = Vector<float, max_width_32f>;
+    //using vecMx64f = Vector<double, max_width_64f>;
 
     //=====================================================
     // Type traits
