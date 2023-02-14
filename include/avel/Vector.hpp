@@ -2,6 +2,7 @@
 #define AVEL_VECTOR_HPP
 
 #include <cstdint>
+#include <array>
 
 #include "./impl/Capabilities.hpp"
 #include "./impl/Sizes.hpp"
@@ -26,8 +27,6 @@ namespace avel {
     /// not be used in large amounts, or for purposes besides processing of
     /// data.
     ///
-    /// Manipulations of
-    ///
     /// \tparam T A fundamental integral or floating-point type.
     /// \tparam N Vector width
     template<class T, std::uint32_t N>
@@ -50,6 +49,36 @@ namespace avel {
     //using vecNx32f = Vector<float, natural_width_32f>;
     //using vecNx64f = Vector<double, natural_width_64f>;
 
+
+
+    using maskNx64u = Vector_mask<std::uint64_t, natural_width_64u>;
+    using maskNx32u = Vector_mask<std::uint32_t, natural_width_32u>;
+    using maskNx16u = Vector_mask<std::uint16_t, natural_width_16u>;
+    using maskNx8u  = Vector_mask<std::uint8_t,  natural_width_8u>;
+
+    using maskNx64i = Vector_mask<std::int64_t, natural_width_64i>;
+    using maskNx32i = Vector_mask<std::int32_t, natural_width_32i>;
+    using maskNx16i = Vector_mask<std::int16_t, natural_width_16i>;
+    using maskNx8i  = Vector_mask<std::int8_t,  natural_width_8i>;
+
+    //using maskNx32f = Vector_mask<float, natural_width_32f>;
+    //using maskNx64f = Vector_mask<double, natural_width_64f>;
+
+
+
+    using arrNx64u = std::array<std::uint64_t, natural_width_64u>;
+    using arrNx32u = std::array<std::uint32_t, natural_width_32u>;
+    using arrNx16u = std::array<std::uint16_t, natural_width_16u>;
+    using arrNx8u  = std::array<std::uint8_t,  natural_width_8u>;
+
+    using arrNx64i = std::array<std::int64_t, natural_width_64i>;
+    using arrNx32i = std::array<std::int32_t, natural_width_32i>;
+    using arrNx16i = std::array<std::int16_t, natural_width_16i>;
+    using arrNx8i  = std::array<std::int8_t,  natural_width_8i>;
+
+    //using arrNx32f = std::array<float, natural_width_32f>;
+    //using arrNx64f = std::array<double, natural_width_64f>;
+
     //=====================================================
     // Aliases for maximum sized vectors
     //=====================================================
@@ -66,6 +95,36 @@ namespace avel {
 
     //using vecMx32f = Vector<float, max_width_32f>;
     //using vecMx64f = Vector<double, max_width_64f>;
+
+
+
+    using maskMx64u = Vector_mask<std::uint64_t, max_width_64u>;
+    using maskMx32u = Vector_mask<std::uint32_t, max_width_32u>;
+    using maskMx16u = Vector_mask<std::uint16_t, max_width_16u>;
+    using maskMx8u  = Vector_mask<std::uint8_t,  max_width_8u>;
+
+    using maskMx64i = Vector_mask<std::int64_t, max_width_64i>;
+    using maskMx32i = Vector_mask<std::int32_t, max_width_32i>;
+    using maskMx16i = Vector_mask<std::int16_t, max_width_16i>;
+    using maskMx8i  = Vector_mask<std::int8_t,  max_width_8i>;
+
+    //using maskMx32f = Vector_mask<float, max_width_32f>;
+    //using maskMx64f = Vector_mask<double, max_width_64f>;
+
+
+
+    using arrMx64u = std::array<std::uint64_t, max_width_64u>;
+    using arrMx32u = std::array<std::uint32_t, max_width_32u>;
+    using arrMx16u = std::array<std::uint16_t, max_width_16u>;
+    using arrMx8u  = std::array<std::uint8_t,  max_width_8u>;
+
+    using arrMx64i = std::array<std::int64_t, max_width_64i>;
+    using arrMx32i = std::array<std::int32_t, max_width_32i>;
+    using arrMx16i = std::array<std::int16_t, max_width_16i>;
+    using arrMx8i  = std::array<std::int8_t,  max_width_8i>;
+
+    //using arrMx32f = std::array<float, max_width_32f>;
+    //using arrMx64f = std::array<double, max_width_64f>;
 
     //=====================================================
     // Type traits

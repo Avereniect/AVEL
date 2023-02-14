@@ -6,6 +6,7 @@ set(AVEL_OPTIONS
     AVEL_X86
     AVEL_POPCNT;
     AVEL_LZCNT;
+    AVEL_PREFETCH;
     AVEL_BMI;
     AVEL_BMI2;
     AVEL_SSE2;
@@ -35,7 +36,7 @@ set(AVEL_OPTIONS
 
 add_library(AVEL INTERFACE)
 target_compile_features(AVEL INTERFACE "cxx_std_11")
-target_include_directories(AVEL INTERFACE ./include/)
+target_include_directories(AVEL INTERFACE include/)
 
 ##Create options
 foreach (extension IN LISTS AVEL_OPTIONS)
@@ -80,6 +81,5 @@ if (AVEL_BUILD_TESTS)
 
     target_include_directories(AVEL_TESTS PRIVATE ./include/)
 endif()
-
 
 #add_subdirectory(support)
