@@ -1327,6 +1327,14 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         return vec2x64i{_mm_mask_sub_epi64(decay(x), decay(m), _mm_setzero_si128(), decay(x))};
 
+        #elif defined(AVEL_SSE2)
+
+        auto mask = broadcast_mask(m);
+        return (x ^ mask) - mask;
+        #endif
+
+        #if defined(AVEL_NEON)
+
         auto mask = broadcast_mask(m);
         return (x ^ mask) - mask;
         #endif
