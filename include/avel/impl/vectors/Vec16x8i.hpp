@@ -660,24 +660,29 @@ namespace avel {
             auto mask = _mm256_set1_epi16(0x00FF);
             auto product = _mm256_mullo_epi16(lhs_whole, rhs_whole);
             auto masked = _mm256_and_si256(product, mask);
-            auto packed = _mm256_packus_epi16(masked, _mm256_set_m128i(_mm_setzero_si128(), (_mm256_extractf128_si256(masked, 0x1))));
+
+
+            auto packed = _mm256_packus_epi16(
+                masked,
+                _mm256_permute2x128_si256(masked, masked, 0xF1)
+            );
 
             content = _mm256_castsi256_si128(packed);
 
             #elif defined(AVEL_SSE2)
-            primitive zeros = _mm_setzero_si128();
-            primitive byte_mask = _mm_set1_epi16(0x00FF);
-            primitive lhs_whole = content;
-            primitive rhs_whole = rhs.content;
+            auto zeros = _mm_setzero_si128();
+            auto byte_mask = _mm_set1_epi16(0x00FF);
+            auto lhs_whole = content;
+            auto rhs_whole = rhs.content;
 
-            primitive lhs_lo = _mm_unpacklo_epi8(lhs_whole, zeros);
-            primitive lhs_hi = _mm_unpackhi_epi8(lhs_whole, zeros);
+            auto lhs_lo = _mm_unpacklo_epi8(lhs_whole, zeros);
+            auto lhs_hi = _mm_unpackhi_epi8(lhs_whole, zeros);
 
-            primitive rhs_lo = _mm_unpacklo_epi8(rhs_whole, zeros);
-            primitive rhs_hi = _mm_unpackhi_epi8(rhs_whole, zeros);
+            auto rhs_lo = _mm_unpacklo_epi8(rhs_whole, zeros);
+            auto rhs_hi = _mm_unpackhi_epi8(rhs_whole, zeros);
 
-            primitive out_lo = _mm_mullo_epi16(lhs_lo, rhs_lo);
-            primitive out_hi = _mm_mullo_epi16(lhs_hi, rhs_hi);
+            auto out_lo = _mm_mullo_epi16(lhs_lo, rhs_lo);
+            auto out_hi = _mm_mullo_epi16(lhs_hi, rhs_hi);
 
             out_lo = _mm_and_si128(byte_mask, out_lo);
             out_hi = _mm_and_si128(byte_mask, out_hi);
@@ -1161,6 +1166,103 @@ namespace avel {
         #if defined(AVEL_NEON)
         return vgetq_lane_s8(decay(v), N);
         #endif
+    }
+
+    //=====================================================
+    // Bit Manipulation Operations
+    //=====================================================
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec16x8i bit_shift_left(vec16x8i v) {
+        static_assert(S <= 8, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
+
+        return vec16x8i{bit_shift_left<S>(vec16x8u{v})};
+    }
+
+    template<std::uint32_t S>
+    vec16x8i bit_shift_right(vec16x8i v) {
+        static_assert(S <= 8, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VL)
+        auto widened = _mm256_cvtepi8_epi16(decay(v));
+        widened = _mm256_srai_epi16(widened, S);
+
+        return vec16x8i{_mm256_cvtepi16_epi8(widened)};
+
+        #elif defined(AVEL_SSE2)
+        auto lo = _mm_unpacklo_epi8(decay(v), decay(v));
+        auto hi = _mm_unpackhi_epi8(decay(v), decay(v));
+
+        lo = _mm_srai_epi16(lo, S + 8);
+        hi = _mm_srai_epi16(hi, S + 8);
+
+        return vec16x8i{_mm_packs_epi16(lo, hi)};
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec16x8i{vshrq_n_s8(decay(v), S)};
+
+        #endif
+    }
+
+    template<>
+    [[nodiscard]]
+    vec16x8i bit_shift_right<0>(vec16x8i v) {
+        return v;
+    }
+
+    #if defined(AVEL_SSE2)
+    template<>
+    [[nodiscard]]
+    vec16x8i bit_shift_right<7>(vec16x8i v) {
+        return vec16x8i{_mm_cmplt_epi8(decay(v), _mm_setzero_si128())};
+    };
+    #endif
+
+    template<>
+    [[nodiscard]]
+    vec16x8i bit_shift_right<8>(vec16x8i v) {
+        return broadcast_mask(v < vec16x8i{0x00});
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec16x8i rotl(vec16x8i v) {
+        return vec16x8i{rotl<S>(vec16x8u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x8i rotl(vec16x8i x, long long s) {
+        return vec16x8i{rotl(vec16x8u{x}, s)};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x8i rotl(vec16x8i x, vec16x8i s) {
+        return vec16x8i{rotl(vec16x8u{x}, vec16x8u{s})};
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec16x8i rotr(vec16x8i v) {
+        return vec16x8i{rotr<S>(vec16x8u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x8i rotr(vec16x8i x, long long s) {
+        return vec16x8i{rotr(vec16x8u{x}, s)};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x8i rotr(vec16x8i x, vec16x8i s) {
+        return vec16x8i{rotr(vec16x8u{x}, vec16x8u{s})};
     }
 
     //=====================================================
@@ -1980,6 +2082,15 @@ namespace avel {
         #endif
     }
 
+
+
+    [[nodiscard]]
+    AVEL_FINL arr16x8i to_array(vec16x8i v) {
+        alignas(16) arr16x8i ret;
+        aligned_store(ret.data(), v);
+        return ret;
+    }
+
     //=====================================================
     // Integer vector operations
     //=====================================================
@@ -2036,112 +2147,8 @@ namespace avel {
     }
 
     //=====================================================
-    // Bit Manipulation Operations
-    //=====================================================
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    vec16x8i bit_shift_left(vec16x8i v) {
-        static_assert(S <= 8, "Cannot shift by more than scalar width");
-        typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
-
-        return vec16x8i{bit_shift_left<S>(vec16x8u{v})};
-    }
-
-    template<std::uint32_t S>
-    vec16x8i bit_shift_right(vec16x8i v) {
-        static_assert(S <= 8, "Cannot shift by more than scalar width");
-        typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
-
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VL)
-        auto widened = _mm256_cvtepi8_epi16(decay(v));
-        widened = _mm256_srai_epi16(widened, S);
-
-        return vec16x8i{_mm256_cvtepi16_epi8(widened)};
-
-        #elif defined(AVEL_SSE2)
-        auto lo = _mm_unpacklo_epi8(decay(v), decay(v));
-        auto hi = _mm_unpackhi_epi8(decay(v), decay(v));
-
-        lo = _mm_srai_epi16(lo, S + 8);
-        hi = _mm_srai_epi16(hi, S + 8);
-
-        return vec16x8i{_mm_packs_epi16(lo, hi)};
-
-        #endif
-
-        #if defined(AVEL_NEON)
-        return vec16x8i{vshrq_n_s8(decay(v), S)};
-
-        #endif
-    }
-
-    template<>
-    [[nodiscard]]
-    vec16x8i bit_shift_right<0>(vec16x8i v) {
-        return v;
-    }
-
-    #if defined(AVEL_SSE2)
-    template<>
-    [[nodiscard]]
-    vec16x8i bit_shift_right<7>(vec16x8i v) {
-        return vec16x8i{_mm_cmplt_epi8(decay(v), _mm_setzero_si128())};
-    };
-    #endif
-
-    template<>
-    [[nodiscard]]
-    vec16x8i bit_shift_right<8>(vec16x8i v) {
-        return broadcast_mask(v < vec16x8i{0x00});
-    }
-
-
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    AVEL_FINL vec16x8i rotl(vec16x8i v) {
-        return vec16x8i{rotl<S>(vec16x8u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x8i rotl(vec16x8i x, long long s) {
-        return vec16x8i{rotl(vec16x8u{x}, s)};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x8i rotl(vec16x8i x, vec16x8i s) {
-        return vec16x8i{rotl(vec16x8u{x}, vec16x8u{s})};
-    }
-
-
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    AVEL_FINL vec16x8i rotr(vec16x8i v) {
-        return vec16x8i{rotr<S>(vec16x8u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x8i rotr(vec16x8i x, long long s) {
-        return vec16x8i{rotr(vec16x8u{x}, s)};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x8i rotr(vec16x8i x, vec16x8i s) {
-        return vec16x8i{rotr(vec16x8u{x}, vec16x8u{s})};
-    }
-
-    //=====================================================
     // Vector conversions
     //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL arr16x8i to_array(vec16x8i v) {
-        alignas(16) arr16x8i ret;
-        aligned_store(ret.data(), v);
-        return ret;
-    }
 
     template<>
     [[nodiscard]]

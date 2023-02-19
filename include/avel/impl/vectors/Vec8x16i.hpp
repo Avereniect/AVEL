@@ -89,7 +89,7 @@ namespace avel {
             content = static_cast<primitive>(_mm_cmplt_epi8_mask(_mm_setzero_si128(), array_data));
 
             #elif defined(AVEL_SSE2)
-            primitive array_data = _mm_loadu_si64(arr.data());
+            auto array_data = _mm_loadu_si64(arr.data());
 
             array_data = _mm_unpacklo_epi8(array_data, array_data);
             content = _mm_cmplt_epi16(_mm_setzero_si128(), array_data);
@@ -246,8 +246,8 @@ namespace avel {
             return Vector_mask{_mm_ternarylogic_epi32(content, content, content, 0x01)};
 
             #elif defined(AVEL_SSE2)
-            primitive t = _mm_undefined_si128();
-            return Vector_mask{_mm_andnot_si128(content, _mm_cmpeq_epi16(t, t))};
+            auto undef = _mm_undefined_si128();
+            return Vector_mask{_mm_andnot_si128(content, _mm_cmpeq_epi16(undef, undef))};
 
             #endif
 
@@ -303,6 +303,7 @@ namespace avel {
     AVEL_FINL std::uint32_t count(mask8x16i m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return popcount(decay(m));
+
         #elif defined(AVEL_SSE2)
         return popcount(_mm_movemask_epi8(decay(m))) / 2;
         #endif
@@ -326,6 +327,7 @@ namespace avel {
     AVEL_FINL bool any(mask8x16i m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return decay(m);
+
         #elif defined(AVEL_SSE2)
         return _mm_movemask_epi8(decay(m));
         #endif
@@ -346,6 +348,7 @@ namespace avel {
     AVEL_FINL bool all(mask8x16i m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return _mm512_mask2int(decay(m)) == 0x00FF;
+
         #elif defined(AVEL_SSE2)
         auto tmp = _mm_movemask_epi8(decay(m));
         return 0xFFFF == tmp;
@@ -375,7 +378,7 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL std::array<mask8x16i, 1> convert<mask8x16i, mask8x16i>(mask8x16i m) {
-        return std::array<mask8x16i, 1>{m};
+        return {m};
     }
 
     template<>
@@ -789,7 +792,7 @@ namespace avel {
             #elif defined(AVEL_SSE2)
             for (unsigned i = 0; i < 4; ++i) {
                 auto t0 = _mm_and_si128(rhs.content, _mm_set1_epi16(1u << i));
-                auto m = _mm_cmplt_epi16(primitive{}, t0);
+                auto m = _mm_cmplt_epi16(_mm_setzero_si128(), t0);
 
                 auto a = _mm_andnot_si128(m, content);
                 auto b = _mm_and_si128(m, _mm_sll_epi16(content, _mm_cvtsi64_si128(1u << i)));
@@ -960,7 +963,7 @@ namespace avel {
     }
 
     //=====================================================
-    // Arrangment operations
+    // Arrangement operations
     //=====================================================
 
     template<std::uint32_t N>
@@ -979,6 +982,74 @@ namespace avel {
         #if defined(AVEL_NEON)
         return vgetq_lane_s16(decay(v), N);
         #endif
+    }
+
+    //=====================================================
+    // Bit Manipulation Operations
+    //=====================================================
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec8x16i bit_shift_left(vec8x16i v) {
+        static_assert(S <= 16, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
+
+        return vec8x16i{bit_shift_left<S>(vec8x16u{v})};
+    }
+
+    template<std::uint32_t S>
+    vec8x16i bit_shift_right(vec8x16i v) {
+        static_assert(S <= 16, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE2)
+        return vec8x16i{_mm_srai_epi16(decay(v), S)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec8x16i{vshrq_n_s16(decay(v), S)};
+        #endif
+    }
+
+    template<>
+    vec8x16i bit_shift_right<0>(vec8x16i v) {
+        return v;
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec8x16i rotl(vec8x16i v) {
+        return vec8x16i{rotl<S>(vec8x16u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x16i rotl(vec8x16i x, long long s) {
+        return vec8x16i{rotl(vec8x16u{x}, s)};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x16i rotl(vec8x16i x, vec8x16i s) {
+        return vec8x16i{rotl(vec8x16u{x}, vec8x16u{s})};
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec8x16i rotr(vec8x16i v) {
+        return vec8x16i{rotr<S>(vec8x16u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x16i rotr(vec8x16i x, long long s) {
+        return vec8x16i{rotr(vec8x16u{x}, s)};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x16i rotr(vec8x16i x, vec8x16i s) {
+        return vec8x16i{rotr(vec8x16u{x}, vec8x16u{s})};
     }
 
     //=====================================================
@@ -1529,6 +1600,15 @@ namespace avel {
         #endif
     }
 
+
+
+    [[nodiscard]]
+    AVEL_FINL arr8x16i to_array(vec8x16i x) {
+        alignas(16) arr8x16i ret;
+        aligned_store(ret.data(), x);
+        return ret;
+    }
+
     //=====================================================
     // Integer vector operations
     //=====================================================
@@ -1580,83 +1660,8 @@ namespace avel {
     }
 
     //=====================================================
-    // Bit Manipulation Operations
-    //=====================================================
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    vec8x16i bit_shift_left(vec8x16i v) {
-        static_assert(S <= 16, "Cannot shift by more than scalar width");
-        typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
-
-        return vec8x16i{bit_shift_left<S>(vec8x16u{v})};
-    }
-
-    template<std::uint32_t S>
-    vec8x16i bit_shift_right(vec8x16i v) {
-        static_assert(S <= 16, "Cannot shift by more than scalar width");
-        typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
-
-        #if defined(AVEL_SSE2)
-        return vec8x16i{_mm_srai_epi16(decay(v), S)};
-        #endif
-
-        #if defined(AVEL_NEON)
-        return vec8x16i{vshrq_n_s16(decay(v), S)};
-        #endif
-    }
-
-    template<>
-    vec8x16i bit_shift_right<0>(vec8x16i v) {
-        return v;
-    }
-
-
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    AVEL_FINL vec8x16i rotl(vec8x16i v) {
-        return vec8x16i{rotl<S>(vec8x16u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec8x16i rotl(vec8x16i x, long long s) {
-        return vec8x16i{rotl(vec8x16u{x}, s)};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec8x16i rotl(vec8x16i x, vec8x16i s) {
-        return vec8x16i{rotl(vec8x16u{x}, vec8x16u{s})};
-    }
-
-
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    AVEL_FINL vec8x16i rotr(vec8x16i v) {
-        return vec8x16i{rotr<S>(vec8x16u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec8x16i rotr(vec8x16i x, long long s) {
-        return vec8x16i{rotr(vec8x16u{x}, s)};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec8x16i rotr(vec8x16i x, vec8x16i s) {
-        return vec8x16i{rotr(vec8x16u{x}, vec8x16u{s})};
-    }
-
-    //=====================================================
     // Vector conversions
     //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL arr8x16i to_array(vec8x16i x) {
-        alignas(16) arr8x16i ret;
-        aligned_store(ret.data(), x);
-        return ret;
-    }
 
     template<>
     [[nodiscard]]

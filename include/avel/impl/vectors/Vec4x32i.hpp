@@ -949,7 +949,7 @@ namespace avel {
     }
 
     //=====================================================
-    // Arrangment operations
+    // Arrangement operations
     //=====================================================
 
     template<std::uint32_t N>
@@ -968,6 +968,80 @@ namespace avel {
         #if defined(AVEL_NEON)
         return vgetq_lane_s32(decay(v), N);
         #endif
+    }
+
+    //=====================================================
+    // Bit Manipulation Operations
+    //=====================================================
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec4x32i bit_shift_left(vec4x32i v) {
+        static_assert(S <= 32, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 32, int>::type dummy_variable = 0;
+
+        return vec4x32i{bit_shift_left<S>(vec4x32u{v})};
+    }
+
+    template<>
+    vec4x32i bit_shift_left<0>(vec4x32i v) {
+        return v;
+    }
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec4x32i bit_shift_right(vec4x32i v) {
+        static_assert(S <= 32, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 32, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE2)
+        return vec4x32i{_mm_srai_epi32(decay(v), S)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec4x32i{vshrq_n_s32(decay(v), S)};
+        #endif
+    }
+
+    template<>
+    vec4x32i bit_shift_right<0>(vec4x32i v) {
+        return v;
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec4x32i rotl(vec4x32i v) {
+        return vec4x32i{rotl<S>(vec4x32u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x32i rotl(vec4x32i v, std::uint32_t s) {
+        return vec4x32i(rotl(vec4x32u(v), s));
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x32i rotl(vec4x32i v, vec4x32u s) {
+        return vec4x32i(rotl(vec4x32u(v), vec4x32u(s)));
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec4x32i rotr(vec4x32i v) {
+        return vec4x32i{rotr<S>(vec4x32u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x32i rotr(vec4x32i v, std::uint32_t s) {
+        return vec4x32i(rotr(vec4x32u(v), s));
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x32i rotr(vec4x32i v, vec4x32u s) {
+        return vec4x32i(rotr(vec4x32u(v), vec4x32u(s)));
     }
 
     //=====================================================
@@ -1310,7 +1384,7 @@ namespace avel {
 
         auto ret = _mm_mask_i32gather_epi32(
             _mm_setzero_si128(),
-            ptr,
+            bit_cast<const int*>(ptr),
             decay(indices),
             mask,
             sizeof(std::int32_t)
@@ -1621,7 +1695,7 @@ namespace avel {
     template<>
     AVEL_FINL void scatter<vec4x32u::width>(std::uint32_t* ptr, vec4x32u x, vec4x32i indices) {
         #if defined(AVEL_AVX512VL)
-        _mm_i32scatter_epi32(ptr, indices, x, sizeof(std::uint32_t));
+        _mm_i32scatter_epi32(ptr, decay(indices), decay(x), sizeof(std::uint32_t));
 
         #elif defined(AVEL_SSE2)
         ptr[extract<0>(indices)] = _mm_cvtsi128_si32(decay(x));
@@ -1679,7 +1753,7 @@ namespace avel {
     template<>
     AVEL_FINL void scatter<vec4x32i::width>(std::int32_t* ptr, vec4x32i x, vec4x32i indices) {
         #if defined(AVEL_AVX512VL)
-        _mm_i32scatter_epi32(ptr, indices, x, sizeof(std::int32_t));
+        _mm_i32scatter_epi32(ptr, decay(indices), decay(x), sizeof(std::int32_t));
 
         #elif defined(AVEL_SSE2)
         ptr[extract<0>(indices)] = _mm_cvtsi128_si32(decay(x));
@@ -1696,6 +1770,15 @@ namespace avel {
         ptr[extract<3>(indices)] = vgetq_lane_s32(decay(x), 0x3);
 
         #endif
+    }
+
+
+
+    [[nodiscard]]
+    AVEL_FINL arr4x32i to_array(vec4x32i v) {
+        alignas(16) arr4x32i ret;
+        aligned_store(ret.data(), v);
+        return ret;
     }
 
     //=====================================================
@@ -1754,89 +1837,8 @@ namespace avel {
     }
 
     //=====================================================
-    // Bit Manipulation Operations
-    //=====================================================
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    vec4x32i bit_shift_left(vec4x32i v) {
-        static_assert(S <= 32, "Cannot shift by more than scalar width");
-        typename std::enable_if<S <= 32, int>::type dummy_variable = 0;
-
-        return vec4x32i{bit_shift_left<S>(vec4x32u{v})};
-    }
-
-    template<>
-    vec4x32i bit_shift_left<0>(vec4x32i v) {
-        return v;
-    }
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    vec4x32i bit_shift_right(vec4x32i v) {
-        static_assert(S <= 32, "Cannot shift by more than scalar width");
-        typename std::enable_if<S <= 32, int>::type dummy_variable = 0;
-
-        #if defined(AVEL_SSE2)
-        return vec4x32i{_mm_srai_epi32(decay(v), S)};
-        #endif
-
-        #if defined(AVEL_NEON)
-        return vec4x32i{vshrq_n_s32(decay(v), S)};
-        #endif
-    }
-
-    template<>
-    vec4x32i bit_shift_right<0>(vec4x32i v) {
-        return v;
-    }
-
-
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    AVEL_FINL vec4x32i rotl(vec4x32i v) {
-        return vec4x32i{rotl<S>(vec4x32u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x32i rotl(vec4x32i v, std::uint32_t s) {
-        return vec4x32i(rotl(vec4x32u(v), s));
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x32i rotl(vec4x32i v, vec4x32u s) {
-        return vec4x32i(rotl(vec4x32u(v), vec4x32u(s)));
-    }
-
-
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    AVEL_FINL vec4x32i rotr(vec4x32i v) {
-        return vec4x32i{rotr<S>(vec4x32u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x32i rotr(vec4x32i v, std::uint32_t s) {
-        return vec4x32i(rotr(vec4x32u(v), s));
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x32i rotr(vec4x32i v, vec4x32u s) {
-        return vec4x32i(rotr(vec4x32u(v), vec4x32u(s)));
-    }
-
-    //=====================================================
     // Vector conversions
     //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL arr4x32i to_array(vec4x32i v) {
-        alignas(16) arr4x32i ret;
-        aligned_store(ret.data(), v);
-        return ret;
-    }
 
     template<>
     [[nodiscard]]

@@ -943,7 +943,7 @@ namespace avel {
     };
 
     //=====================================================
-    // Arrangment operations
+    // Arrangement operations
     //=====================================================
 
     template<std::uint32_t N>
@@ -961,6 +961,221 @@ namespace avel {
 
         #if defined(AVEL_NEON)
         return vgetq_lane_u16(decay(v), N);
+        #endif
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL vec8x16u insert(vec8x16u v, std::uint16_t x) {
+        static_assert(N <= vec8x16u::width, "Specified index does not exist");
+        typename std::enable_if<N <= vec8x16u::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE2)
+        return vec8x16u{_mm_insert_epi16(decay(v), x, N)};
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec8x16u{vsetq_lane_u16(x, decay(v), N)};
+        #endif
+    }
+
+    //=====================================================
+    // Bit Manipulation Operations
+    //=====================================================
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec8x16u bit_shift_left(vec8x16u v) {
+        static_assert(S <= 16, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE2)
+        return vec8x16u{_mm_slli_epi16(decay(v), S)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec8x16u{vshlq_n_u16(decay(v), S)};
+        #endif
+    }
+
+    template<>
+    vec8x16u bit_shift_left<0>(vec8x16u v) {
+        return v;
+    }
+
+    template<>
+    vec8x16u bit_shift_left<16>(vec8x16u v) {
+        return vec8x16u{0x00};
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec8x16u bit_shift_right(vec8x16u v) {
+        static_assert(S <= 16, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE2)
+        return vec8x16u{_mm_srli_epi16(decay(v), S)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec8x16u{vshrq_n_u16(decay(v), S)};
+        #endif
+    }
+
+    template<>
+    [[nodiscard]]
+    vec8x16u bit_shift_right<0>(vec8x16u v) {
+        return v;
+    }
+
+    template<>
+    [[nodiscard]]
+    vec8x16u bit_shift_right<16>(vec8x16u v) {
+        (void)v;
+        return vec8x16u{0x00};
+    }
+
+
+
+    template<std::uint32_t S, typename std::enable_if<S < 16, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotl(vec8x16u v) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        return vec8x16u{_mm_shldi_epi16(decay(v), decay(v), S)};
+
+        #elif defined(AVEL_SSE2)
+        auto left_shifted  = _mm_slli_epi16(decay(v), S);
+        auto right_shifted = _mm_srli_epi16(decay(v), 16 - S);
+
+        auto ret = _mm_or_si128(left_shifted, right_shifted);
+        return vec8x16u{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto left_shifted  = vshlq_n_u16(decay(v), S);
+        auto right_shifted = vshrq_n_u16(decay(v), 16 - S);
+
+        return vec8x16u{vorrq_u16(left_shifted, right_shifted)};
+        #endif
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotl<0>(vec8x16u v) {
+        return v;
+    }
+
+    template<std::uint32_t S, typename std::enable_if<16 <= S, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotl(vec8x16u v) {
+        return rotl<S % 16>(v);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotl(vec8x16u v, long long s) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        s &= 15;
+        return vec8x16u{_mm_shldv_epi16(decay(v), decay(v), _mm_set1_epi16(s))};
+
+        #elif defined(AVEL_SSE2)
+        s &= 15;
+        return (v << s) | (v >> (16 - s));
+        #endif
+
+        #if defined(AVEL_NEON)
+        s &= 15;
+        return (v << s) | (v >> (16 - s));
+        #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotl(vec8x16u v, vec8x16u s) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        s &= vec8x16u{15};
+        return vec8x16u{_mm_shldv_epi16(decay(v), decay(v), decay(s))};
+
+        #elif defined(AVEL_SSE2)
+        s &= vec8x16u{15};
+        return (v << s) | (v >> (vec8x16u{16} - s));
+        #endif
+
+        #if defined(AVEL_NEON)
+        s &= vec8x16u{15};
+        return (v << s) | (v >> (vec8x16u{16} - s));
+        #endif
+    }
+
+
+
+    template<std::uint32_t S, typename std::enable_if<S < 16, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotr(vec8x16u v) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        return vec8x16u{_mm_shrdi_epi16(decay(v), decay(v), S)};
+
+        #elif defined(AVEL_SSE2)
+        auto left_shifted  = _mm_slli_epi16(decay(v), 16 - S);
+        auto right_shifted = _mm_srli_epi16(decay(v), S);
+
+        auto ret = _mm_or_si128(left_shifted, right_shifted);
+        return vec8x16u{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto left_shifted  = vshlq_n_u16(decay(v), 16 - S);
+        auto right_shifted = vshrq_n_u16(decay(v), S);
+
+        return vec8x16u{vorrq_u16(left_shifted, right_shifted)};
+
+        #endif
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotr<0>(vec8x16u v) {
+        return v;
+    }
+
+    template<std::uint32_t S, typename std::enable_if<16 <= S, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotr(vec8x16u v) {
+        return rotr<S % 16>(v);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotr(vec8x16u v, long long s) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        s &= 15;
+        return vec8x16u{_mm_shrdv_epi16(decay(v), decay(v), _mm_set1_epi16(s))};
+
+        #elif defined(AVEL_SSE2)
+        s &= 15;
+        return (v >> s) | (v << (16 - s));
+        #endif
+
+        #if defined(AVEL_NEON)
+        s &= 15;
+        return (v >> s) | (v << (16 - s));
+        #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x16u rotr(vec8x16u v, vec8x16u s) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        s &= vec8x16u{15};
+        return vec8x16u{_mm_shrdv_epi16(decay(v), decay(v), decay(s))};
+
+        #elif defined(AVEL_SSE2)
+        s &= vec8x16u{15};
+        return (v >> s) | (v << (vec8x16u{16} - s));
+        #endif
+
+        #if defined(AVEL_NEON)
+        s &= vec8x16u{15};
+        return (v >> s) | (v << (vec8x16u{16} - s));
         #endif
     }
 
@@ -1010,7 +1225,7 @@ namespace avel {
         return vec8x16u{_mm_movm_epi16(decay(m))};
 
         #elif defined(AVEL_SSE2)
-        return vec8x16u{mask8x16u::primitive(m)};
+        return vec8x16u{decay(m)};
 
         #endif
 
@@ -1041,7 +1256,10 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u byteswap(vec8x16u x) {
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        return vec8x16u{_mm_shldi_epi16(decay(x), decay(x), 0x8)};
+
+        #elif defined(AVEL_SSE2)
         auto lo = _mm_srli_epi16(decay(x), 8);
         auto hi = _mm_slli_epi16(decay(x), 8);
         return vec8x16u{_mm_or_si128(lo, hi)};
@@ -1110,9 +1328,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u average(vec8x16u a, vec8x16u b) {
-        //TODO: Correct this
         #if defined(AVEL_SSE2)
-        return vec8x16u{_mm_avg_epu16(decay(a), decay(b))};
+        return vec8x16u{_mm_avg_epu16(decay(a), decay(b))} - ((a ^ b) & vec8x16u{0x1});
         #endif
 
         #if defined(AVEL_NEON)
@@ -1364,9 +1581,17 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        //TODO: Utilize __builtin_assume_aligned on GCC and Clang
-        //TODO: Utilize assume_aligned if C++ 20 is available
-        return vec8x16u{vld1q_u16(ptr)};
+            #if __cplusplus >= 202002L
+            return vec8x16u{vld1q_u16(assume_aligned<alignof(vec8x16u)>(ptr))};
+
+            #elif defined(AVEL_GCC) || defined(AVEL_CLANG)
+            auto* p = reinterpret_cast<const std::uint16_t*>(__builtin_assume_aligned(ptr, alignof(vec8x16u)));
+            return vec8x16u{vld1q_u16(p)};
+
+            #else
+            return vec8x16u{vld1q_u16(ptr)};
+
+            #endif
         #endif
     }
 
@@ -1488,6 +1713,15 @@ namespace avel {
         #if defined(AVEL_NEON)
         vst1q_u16(ptr, decay(x));
         #endif
+    }
+
+
+
+    [[nodiscard]]
+    AVEL_FINL arr8x16u to_array(vec8x16u x) {
+        alignas(16) arr8x16u ret;
+        aligned_store(ret.data(), x);
+        return ret;
     }
 
     //=====================================================
@@ -1767,215 +2001,8 @@ namespace avel {
     }
 
     //=====================================================
-    // Bit Manipulation Operations
-    //=====================================================
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    vec8x16u bit_shift_left(vec8x16u v) {
-        static_assert(S <= 16, "Cannot shift by more than scalar width");
-        typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
-
-        #if defined(AVEL_SSE2)
-        return vec8x16u{_mm_slli_epi16(decay(v), S)};
-        #endif
-
-        #if defined(AVEL_NEON)
-        return vec8x16u{vshlq_n_u16(decay(v), S)};
-        #endif
-    }
-
-    template<>
-    vec8x16u bit_shift_left<0>(vec8x16u v) {
-        return v;
-    }
-
-    template<>
-    vec8x16u bit_shift_left<16>(vec8x16u v) {
-        return vec8x16u{0x00};
-    }
-
-
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    vec8x16u bit_shift_right(vec8x16u v) {
-        static_assert(S <= 16, "Cannot shift by more than scalar width");
-        typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
-
-        #if defined(AVEL_SSE2)
-        return vec8x16u{_mm_srli_epi16(decay(v), S)};
-        #endif
-
-        #if defined(AVEL_NEON)
-        return vec8x16u{vshrq_n_u16(decay(v), S)};
-        #endif
-    }
-
-    template<>
-    [[nodiscard]]
-    vec8x16u bit_shift_right<0>(vec8x16u v) {
-        return v;
-    }
-
-    template<>
-    [[nodiscard]]
-    vec8x16u bit_shift_right<16>(vec8x16u v) {
-        (void)v;
-        return vec8x16u{0x00};
-    }
-
-
-
-    template<std::uint32_t S, typename std::enable_if<S < 16, bool>::type = true>
-    [[nodiscard]]
-    AVEL_FINL vec8x16u rotl(vec8x16u v) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
-        return vec8x16u{_mm_shldi_epi16(decay(v), decay(v), S)};
-
-        #elif defined(AVEL_SSE2)
-        auto left_shifted  = _mm_slli_epi16(decay(v), S);
-        auto right_shifted = _mm_srli_epi16(decay(v), 16 - S);
-
-        auto ret = _mm_or_si128(left_shifted, right_shifted);
-        return vec8x16u{ret};
-        #endif
-
-        #if defined(AVEL_NEON)
-        auto left_shifted  = vshlq_n_u16(decay(v), S);
-        auto right_shifted = vshrq_n_u16(decay(v), 16 - S);
-
-        return vec8x16u{vorrq_u16(left_shifted, right_shifted)};
-        #endif
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL vec8x16u rotl<0>(vec8x16u v) {
-        return v;
-    }
-
-    template<std::uint32_t S, typename std::enable_if<16 <= S, bool>::type = true>
-    [[nodiscard]]
-    AVEL_FINL vec8x16u rotl(vec8x16u v) {
-        return rotl<S % 16>(v);
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec8x16u rotl(vec8x16u v, long long s) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
-        s &= 15;
-        return vec8x16u{_mm_shldv_epi16(decay(v), decay(v), _mm_set1_epi16(s))};
-
-        #elif defined(AVEL_SSE2)
-        s &= 15;
-        return (v << s) | (v >> (16 - s));
-        #endif
-
-        #if defined(AVEL_NEON)
-        s &= 15;
-        return (v << s) | (v >> (16 - s));
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec8x16u rotl(vec8x16u v, vec8x16u s) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
-        s &= vec8x16u{15};
-        return vec8x16u{_mm_shldv_epi16(decay(v), decay(v), decay(s))};
-
-        #elif defined(AVEL_SSE2)
-        s &= vec8x16u{15};
-        return (v << s) | (v >> (vec8x16u{16} - s));
-        #endif
-
-        #if defined(AVEL_NEON)
-        s &= vec8x16u{15};
-        return (v << s) | (v >> (vec8x16u{16} - s));
-        #endif
-    }
-
-
-
-    template<std::uint32_t S, typename std::enable_if<S < 16, bool>::type = true>
-    [[nodiscard]]
-    AVEL_FINL vec8x16u rotr(vec8x16u v) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
-        return vec8x16u{_mm_shrdi_epi16(decay(v), decay(v), S)};
-
-        #elif defined(AVEL_SSE2)
-        auto left_shifted  = _mm_slli_epi16(decay(v), 16 - S);
-        auto right_shifted = _mm_srli_epi16(decay(v), S);
-
-        auto ret = _mm_or_si128(left_shifted, right_shifted);
-        return vec8x16u{ret};
-        #endif
-
-        #if defined(AVEL_NEON)
-        auto left_shifted  = vshlq_n_u16(decay(v), 16 - S);
-        auto right_shifted = vshrq_n_u16(decay(v), S);
-
-        return vec8x16u{vorrq_u16(left_shifted, right_shifted)};
-
-        #endif
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL vec8x16u rotr<0>(vec8x16u v) {
-        return v;
-    }
-
-    template<std::uint32_t S, typename std::enable_if<16 <= S, bool>::type = true>
-    [[nodiscard]]
-    AVEL_FINL vec8x16u rotr(vec8x16u v) {
-        return rotr<S % 16>(v);
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec8x16u rotr(vec8x16u v, long long s) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
-        s &= 15;
-        return vec8x16u{_mm_shrdv_epi16(decay(v), decay(v), _mm_set1_epi16(s))};
-
-        #elif defined(AVEL_SSE2)
-        s &= 15;
-        return (v >> s) | (v << (16 - s));
-        #endif
-
-        #if defined(AVEL_NEON)
-        s &= 15;
-        return (v >> s) | (v << (16 - s));
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec8x16u rotr(vec8x16u v, vec8x16u s) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
-        s &= vec8x16u{15};
-        return vec8x16u{_mm_shrdv_epi16(decay(v), decay(v), decay(s))};
-
-        #elif defined(AVEL_SSE2)
-        s &= vec8x16u{15};
-        return (v >> s) | (v << (vec8x16u{16} - s));
-        #endif
-
-        #if defined(AVEL_NEON)
-        s &= vec8x16u{15};
-        return (v >> s) | (v << (vec8x16u{16} - s));
-        #endif
-    }
-
-    //=====================================================
     // Vector conversions
     //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL arr8x16u to_array(vec8x16u x) {
-        alignas(16) arr8x16u ret;
-        aligned_store(ret.data(), x);
-        return ret;
-    }
 
     template<>
     [[nodiscard]]

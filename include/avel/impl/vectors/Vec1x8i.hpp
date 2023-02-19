@@ -415,24 +415,24 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator++() {
-            *this += Vector{primitive(1)};
+            *this += Vector{1};
             return *this;
         }
 
         AVEL_FINL Vector operator++(int) {
             auto temp = *this;
-            *this += Vector{primitive(1)};
+            *this += Vector{1};
             return temp;
         }
 
         AVEL_FINL Vector& operator--() {
-            *this -= Vector{primitive(1)};
+            *this -= Vector{1};
             return *this;
         }
 
         AVEL_FINL Vector operator--(int) {
             auto temp = *this;
-            *this -= Vector{primitive(1)};
+            *this -= Vector{1};
             return temp;
         }
 
@@ -669,8 +669,11 @@ namespace avel {
 
 
 
-
-
+    AVEL_FINL void store(std::int8_t* ptr, vec1x8i v, std::uint32_t n) {
+        if (n) {
+            *ptr = decay(v);
+        }
+    }
 
     template<std::uint32_t N = vec1x8i::width>
     AVEL_FINL void store(std::int8_t* ptr, vec1x8i v) {
@@ -682,13 +685,13 @@ namespace avel {
         *ptr = decay(v);
     }
 
-    AVEL_FINL void store(std::int8_t* ptr, vec1x8i v, std::uint32_t n) {
+
+
+    AVEL_FINL void aligned_store(std::int8_t* ptr, vec1x8i v, std::uint32_t n) {
         if (n) {
             *ptr = decay(v);
         }
     }
-
-
 
     template<std::uint32_t N = vec1x8i::width>
     AVEL_FINL void aligned_store(std::int8_t* ptr, vec1x8i v) {
@@ -700,13 +703,14 @@ namespace avel {
         *ptr = decay(v);
     }
 
-    AVEL_FINL void aligned_store(std::int8_t* ptr, vec1x8i v, std::uint32_t n) {
-        if (n) {
-            *ptr = decay(v);
-        }
+
+
+    [[nodiscard]]
+    AVEL_FINL arr1x8i to_array(vec1x8i v) {
+        alignas(1) arr1x8i ret;
+        aligned_store(ret.data(), v);
+        return ret;
     }
-
-
 
     //=====================================================
     // Arrangement Instructions
@@ -726,48 +730,6 @@ namespace avel {
         typename std::enable_if<N <= 1, int>::type dummy_variable = 0;
 
         return vec1x8i{x};
-    }
-
-    //=====================================================
-    // Integer vector operations
-    //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL div_type<vec1x8i> div(vec1x8i x, vec1x8i y) {
-        div_type<vec1x8i> ret;
-        ret.quot = decay(x) / decay(y);
-        ret.rem  = decay(x) % decay(y);
-        return ret;
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x8i popcount(vec1x8i v) {
-        return vec1x8i{popcount(vec1x8u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x8i countl_zero(vec1x8i v) {
-        return vec1x8i{countl_zero(vec1x8u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x8i countl_one(vec1x8i v) {
-        return vec1x8i{countl_one(vec1x8u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x8i countr_zero(vec1x8i v) {
-        return vec1x8i{countr_zero(vec1x8u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x8i countr_one(vec1x8i v) {
-        return vec1x8i{countr_one(vec1x8u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL mask1x8i has_single_bit(vec1x8i v) {
-        return mask1x8i{has_single_bit(vec1x8u{v})};
     }
 
     //=====================================================
@@ -829,15 +791,50 @@ namespace avel {
     }
 
     //=====================================================
-    // Vector conversions
+    // Integer vector operations
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL arr1x8i to_array(vec1x8i v) {
-        alignas(1) arr1x8i ret;
-        aligned_store(ret.data(), v);
+    AVEL_FINL div_type<vec1x8i> div(vec1x8i x, vec1x8i y) {
+        div_type<vec1x8i> ret;
+        ret.quot = decay(x) / decay(y);
+        ret.rem  = decay(x) % decay(y);
         return ret;
     }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x8i popcount(vec1x8i v) {
+        return vec1x8i{popcount(vec1x8u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x8i countl_zero(vec1x8i v) {
+        return vec1x8i{countl_zero(vec1x8u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x8i countl_one(vec1x8i v) {
+        return vec1x8i{countl_one(vec1x8u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x8i countr_zero(vec1x8i v) {
+        return vec1x8i{countr_zero(vec1x8u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x8i countr_one(vec1x8i v) {
+        return vec1x8i{countr_one(vec1x8u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL mask1x8i has_single_bit(vec1x8i v) {
+        return mask1x8i{has_single_bit(vec1x8u{v})};
+    }
+
+    //=====================================================
+    // Vector conversions
+    //=====================================================
 
     template<>
     [[nodiscard]]

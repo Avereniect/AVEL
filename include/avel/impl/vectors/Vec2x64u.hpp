@@ -1013,7 +1013,7 @@ namespace avel {
         static_assert(N <= vec2x64u::width, "Specified index does not exist");
         typename std::enable_if<N <= vec2x64u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SS41)
+        #if defined(AVEL_SSE41)
         return _mm_extract_epi64(decay(v), N);
 
         #elif defined(AVEL_SSE2)
@@ -1023,6 +1023,223 @@ namespace avel {
 
         #if defined(AVEL_NEON)
         return vgetq_lane_u64(decay(v), N);
+        #endif
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL vec2x64u insert(vec2x64u v, std::uint64_t x) {
+        static_assert(N <= vec2x64u::width, "Specified index does not exist");
+        typename std::enable_if<N <= vec2x64u::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE41)
+        return vec2x64u{_mm_insert_epi64(decay(v), x, N)};
+
+        #elif defined(AVEL_SSE2)
+        if (N == 0) {
+            return vec2x64u{_mm_unpacklo_epi64(decay(v), _mm_slli_si128(_mm_cvtsi64_si128(x), 8))};
+        } else {
+            return vec2x64u{_mm_unpacklo_epi64(decay(v), _mm_move_epi64(decay(v)))};
+        }
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec2x64u{vsetq_lane_u64(x, decay(v), N)};
+        #endif
+    }
+
+    //=====================================================
+    // Bit Manipulation Operations
+    //=====================================================
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec2x64u bit_shift_left(vec2x64u v) {
+        static_assert(S <= 64, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 64, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE2)
+        return vec2x64u{_mm_slli_epi64(decay(v), S)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec2x64u{vshlq_n_u64(decay(v), S)};
+        #endif
+    }
+
+    template<>
+    vec2x64u bit_shift_left<0>(vec2x64u v) {
+        return v;
+    }
+
+    template<>
+    vec2x64u bit_shift_left<64>(vec2x64u v) {
+        return vec2x64u{0x00};
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    vec2x64u bit_shift_right(vec2x64u v) {
+        static_assert(S <= 64, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 64, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE2)
+        return vec2x64u{_mm_srli_epi64(decay(v), S)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec2x64u{vshrq_n_u64(decay(v), S)};
+        #endif
+    }
+
+    template<>
+    vec2x64u bit_shift_right<0>(vec2x64u v) {
+        return v;
+    }
+
+    template<>
+    [[nodiscard]]
+    vec2x64u bit_shift_right<64>(vec2x64u v) {
+        (void)v;
+        return vec2x64u{0x00};
+    }
+
+
+
+    template<std::uint32_t S, typename std::enable_if<S < 64, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec2x64u rotl(vec2x64u v) {
+        #if defined(AVEL_AVX512VL)
+        return vec2x64u{_mm_rol_epi64(decay(v), S)};
+
+        #elif defined(AVEL_SSE2)
+        auto left_shifted  = _mm_slli_epi64(decay(v), S);
+        auto right_shifted = _mm_srli_epi64(decay(v), 64 - S);
+
+        auto ret = _mm_or_si128(left_shifted, right_shifted);
+        return vec2x64u{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto left_shifted  = vshlq_n_u64(decay(v), S - 64);
+        auto right_shifted = vshlq_n_u64(decay(v), S);
+
+        return vec2x64u{vorrq_u64(left_shifted, right_shifted)};
+        #endif
+    }
+
+    template<>
+    AVEL_FINL vec2x64u rotl<0>(vec2x64u v) {
+        return v;
+    }
+
+    template<std::uint32_t S, typename std::enable_if<64 <= S, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec2x64u rotl(vec2x64u v) {
+        return rotl<S % 64>(v);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec2x64u rotl(vec2x64u v, long long s) {
+        #if defined(AVEL_AVX512VL)
+        return vec2x64u{_mm_rolv_epi64(decay(v), _mm_set1_epi64x(s))};
+
+        #elif defined(AVEL_SSE2)
+        s &= 0x3F;
+        return (v << s) | (v >> (64 - s));
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        s &= 0x3F;
+        return (v << s) | (v >> (64 - s));
+
+        #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec2x64u rotl(vec2x64u v, vec2x64u s) {
+        #if defined(AVEL_AVX512VL)
+        return vec2x64u{_mm_rolv_epi64(decay(v), decay(s))};
+
+        #elif defined(AVEL_SSE2)
+        s &= vec2x64u{0x3F};
+        return (v << s) | (v >> (vec2x64u{64} - s));
+        #endif
+
+        #if defined(AVEL_NEON)
+        s &= vec2x64u{0x3F};
+        return (v << s) | (v >> (vec2x64u{64} - s));
+        #endif
+    }
+
+
+
+    template<std::uint32_t S, typename std::enable_if<S < 64, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec2x64u rotr(vec2x64u v) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        return vec2x64u{_mm_ror_epi64(decay(v), S)};
+
+        #elif defined(AVEL_SSE2)
+        auto left_shifted  = _mm_slli_epi64(decay(v), 64 - S);
+        auto right_shifted = _mm_srli_epi64(decay(v), S);
+
+        auto ret = _mm_or_si128(left_shifted, right_shifted);
+        return vec2x64u{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto left_shifted  = vshlq_n_u64(decay(v), 64 - S);
+        auto right_shifted = vshrq_n_u64(decay(v), S);
+
+        return vec2x64u{vorrq_u64(left_shifted, right_shifted)};
+
+        #endif
+    }
+
+    template<>
+    AVEL_FINL vec2x64u rotr<0>(vec2x64u v) {
+        return v;
+    }
+
+    template<std::uint32_t S, typename std::enable_if<64 <= S, bool>::type = true>
+    [[nodiscard]]
+    AVEL_FINL vec2x64u rotr(vec2x64u v) {
+        return rotr<S % 64>(v);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec2x64u rotr(vec2x64u v, long long s) {
+        #if defined(AVEL_AVX512VL)
+        return vec2x64u{_mm_rorv_epi64(decay(v), _mm_set1_epi64x(s))};
+
+        #elif defined(AVEL_SSE2)
+        s &= 0x3F;
+        return (v >> s) | (v << (64 - s));
+        #endif
+
+        #if defined(AVEL_NEON)
+        s &= 0x3F;
+        return (v >> s) | (v << (64 - s));
+        #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec2x64u rotr(vec2x64u v, vec2x64u s) {
+        #if defined(AVEL_AVX512VL)
+        return vec2x64u{_mm_rorv_epi64(decay(v), decay(s))};
+
+        #elif defined(AVEL_SSE2)
+        s &= vec2x64u{0x3F};
+        return (v >> s) | (v << (vec2x64u {64} - s));
+        #endif
+
+        #if defined(AVEL_NEON)
+        s &= vec2x64u{0x3F};
+        return (v >> s) | (v << (vec2x64u {64} - s));
         #endif
     }
 
@@ -1166,16 +1383,22 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL vec2x64u average(vec2x64u a, vec2x64u b) {
+        #if defined(AVEL_SSE2)
+        return ((a ^ b) >> 1) + (a & b);
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec2x64u{vsraq_n_u64(vandq_u64(decay(a), decay(b)), veorq_u64(decay(a), decay(b)), 1)};
+        #endif
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec2x64u midpoint(vec2x64u a, vec2x64u b) {
         vec2x64u t0 = a & b & vec2x64u{0x1};
         vec2x64u t1 = (a | b) & vec2x64u{0x1} & broadcast_mask(a > b);
         vec2x64u t2 = t0 | t1;
         return (a >> 1) + (b >> 1) + t2;
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64u average(vec2x64u a, vec2x64u b) {
-        return (a & b) + (a ^ b) >> 1;
     }
 
     //=====================================================
@@ -1255,15 +1478,21 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        //TODO: Utilize __builtin_assume_aligned on GCC and Clang
-        //TODO: Utilize assume_aligned if C++ 20 is available
-        return vec2x64u{vld1q_u64(ptr)};
+            #if __cplusplus >= 202002L
+            return vec2x64u{vld1q_u64(assume_aligned<alignof(vec2x64u)>(ptr))};
+
+            #elif defined(AVEL_GCC) || defined(AVEL_CLANG)
+            auto* p = reinterpret_cast<const std::uint64_t*>(__builtin_assume_aligned(ptr, alignof(vec2x64u)));
+            return vec2x64u{vld1q_u64(p)};
+
+            #else
+            return vec2x64u{vld1q_u64(ptr)};
+
+            #endif
         #endif
     }
 
-
     //Definition of gather deferred until vec2x64i defined
-
 
 
     AVEL_FINL void store(std::uint64_t* ptr, vec2x64u v, std::uint32_t n) {
@@ -1363,8 +1592,16 @@ namespace avel {
         #endif
     }
 
-
     //Definition of scatter deferred until vec2x64i defined
+
+
+
+    [[nodiscard]]
+    AVEL_FINL arr2x64u to_array(vec2x64u v) {
+        alignas(16) arr2x64u array{};
+        aligned_store(array.data(), v);
+        return array;
+    }
 
     //=====================================================
     // Integer vector operators
@@ -1719,210 +1956,8 @@ namespace avel {
     }
 
     //=====================================================
-    // Bit Manipulation Operations
-    //=====================================================
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    vec2x64u bit_shift_left(vec2x64u v) {
-        static_assert(S <= 64, "Cannot shift by more than scalar width");
-        typename std::enable_if<S <= 64, int>::type dummy_variable = 0;
-
-        #if defined(AVEL_SSE2)
-        return vec2x64u{_mm_slli_epi64(decay(v), S)};
-        #endif
-
-        #if defined(AVEL_NEON)
-        return vec2x64u{vshlq_n_u64(decay(v), S)};
-        #endif
-    }
-
-    template<>
-    vec2x64u bit_shift_left<0>(vec2x64u v) {
-        return v;
-    }
-
-    template<>
-    vec2x64u bit_shift_left<64>(vec2x64u v) {
-        return vec2x64u{0x00};
-    }
-
-
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    vec2x64u bit_shift_right(vec2x64u v) {
-        static_assert(S <= 64, "Cannot shift by more than scalar width");
-        typename std::enable_if<S <= 64, int>::type dummy_variable = 0;
-
-        #if defined(AVEL_SSE2)
-        return vec2x64u{_mm_srli_epi64(decay(v), S)};
-        #endif
-
-        #if defined(AVEL_NEON)
-        return vec2x64u{vshrq_n_u64(decay(v), S)};
-        #endif
-    }
-
-    template<>
-    vec2x64u bit_shift_right<0>(vec2x64u v) {
-        return v;
-    }
-
-    template<>
-    [[nodiscard]]
-    vec2x64u bit_shift_right<64>(vec2x64u v) {
-        (void)v;
-        return vec2x64u{0x00};
-    }
-
-
-
-    template<std::uint32_t S, typename std::enable_if<S < 64, bool>::type = true>
-    [[nodiscard]]
-    AVEL_FINL vec2x64u rotl(vec2x64u v) {
-        #if defined(AVEL_AVX512VL)
-        return vec2x64u{_mm_rol_epi64(decay(v), S)};
-
-        #elif defined(AVEL_SSE2)
-        auto left_shifted  = _mm_slli_epi64(decay(v), S);
-        auto right_shifted = _mm_srli_epi64(decay(v), 64 - S);
-
-        auto ret = _mm_or_si128(left_shifted, right_shifted);
-        return vec2x64u{ret};
-        #endif
-
-        #if defined(AVEL_NEON)
-        auto left_shifted  = vshlq_n_u64(decay(v), S - 64);
-        auto right_shifted = vshlq_n_u64(decay(v), S);
-
-        return vec2x64u{vorrq_u64(left_shifted, right_shifted)};
-        #endif
-    }
-
-    template<>
-    AVEL_FINL vec2x64u rotl<0>(vec2x64u v) {
-        return v;
-    }
-
-    template<std::uint32_t S, typename std::enable_if<64 <= S, bool>::type = true>
-    [[nodiscard]]
-    AVEL_FINL vec2x64u rotl(vec2x64u v) {
-        return rotl<S % 64>(v);
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64u rotl(vec2x64u v, long long s) {
-        #if defined(AVEL_AVX512VL)
-        return vec2x64u{_mm_rolv_epi64(decay(v), _mm_set1_epi64x(s))};
-
-        #elif defined(AVEL_SSE2)
-        s &= 0x3F;
-        return (v << s) | (v >> (64 - s));
-
-        #endif
-
-        #if defined(AVEL_NEON)
-        s &= 0x3F;
-        return (v << s) | (v >> (64 - s));
-
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64u rotl(vec2x64u v, vec2x64u s) {
-        #if defined(AVEL_AVX512VL)
-        return vec2x64u{_mm_rolv_epi64(decay(v), decay(s))};
-
-        #elif defined(AVEL_SSE2)
-        s &= vec2x64u{0x3F};
-        return (v << s) | (v >> (vec2x64u{64} - s));
-        #endif
-
-        #if defined(AVEL_NEON)
-        s &= vec2x64u{0x3F};
-        return (v << s) | (v >> (vec2x64u{64} - s));
-        #endif
-    }
-
-
-
-    template<std::uint32_t S, typename std::enable_if<S < 64, bool>::type = true>
-    [[nodiscard]]
-    AVEL_FINL vec2x64u rotr(vec2x64u v) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
-        return vec2x64u{_mm_ror_epi64(decay(v), S)};
-
-        #elif defined(AVEL_SSE2)
-        auto left_shifted  = _mm_slli_epi64(decay(v), 64 - S);
-        auto right_shifted = _mm_srli_epi64(decay(v), S);
-
-        auto ret = _mm_or_si128(left_shifted, right_shifted);
-        return vec2x64u{ret};
-        #endif
-
-        #if defined(AVEL_NEON)
-        auto left_shifted  = vshlq_n_u64(decay(v), 64 - S);
-        auto right_shifted = vshrq_n_u64(decay(v), S);
-
-        return vec2x64u{vorrq_u64(left_shifted, right_shifted)};
-
-        #endif
-    }
-
-    template<>
-    AVEL_FINL vec2x64u rotr<0>(vec2x64u v) {
-        return v;
-    }
-
-    template<std::uint32_t S, typename std::enable_if<64 <= S, bool>::type = true>
-    [[nodiscard]]
-    AVEL_FINL vec2x64u rotr(vec2x64u v) {
-        return rotr<S % 64>(v);
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64u rotr(vec2x64u v, long long s) {
-        #if defined(AVEL_AVX512VL)
-        return vec2x64u{_mm_rorv_epi64(decay(v), _mm_set1_epi64x(s))};
-
-        #elif defined(AVEL_SSE2)
-        s &= 0x3F;
-        return (v >> s) | (v << (64 - s));
-        #endif
-
-        #if defined(AVEL_NEON)
-        s &= 0x3F;
-        return (v >> s) | (v << (64 - s));
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64u rotr(vec2x64u v, vec2x64u s) {
-        #if defined(AVEL_AVX512VL)
-        return vec2x64u{_mm_rorv_epi64(decay(v), decay(s))};
-
-        #elif defined(AVEL_SSE2)
-        s &= vec2x64u{0x3F};
-        return (v >> s) | (v << (vec2x64u {64} - s));
-        #endif
-
-        #if defined(AVEL_NEON)
-        s &= vec2x64u{0x3F};
-        return (v >> s) | (v << (vec2x64u {64} - s));
-        #endif
-    }
-
-    //=====================================================
     // Conversions
     //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL arr2x64u to_array(vec2x64u v) {
-        alignas(16) arr2x64u array{};
-        aligned_store(array.data(), v);
-        return array;
-    }
 
     template<>
     [[nodiscard]]

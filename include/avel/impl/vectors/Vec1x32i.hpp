@@ -408,24 +408,24 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator++() {
-            *this += Vector{primitive(1)};
+            *this += Vector{1};
             return *this;
         }
 
         AVEL_FINL Vector operator++(int) {
             auto temp = *this;
-            *this += Vector{primitive(1)};
+            *this += Vector{1};
             return temp;
         }
 
         AVEL_FINL Vector& operator--() {
-            *this -= Vector{primitive(1)};
+            *this -= Vector{1};
             return *this;
         }
 
         AVEL_FINL Vector operator--(int) {
             auto temp = *this;
-            *this -= Vector{primitive(1)};
+            *this -= Vector{1};
             return temp;
         }
 
@@ -814,6 +814,8 @@ namespace avel {
         }
     }
 
+
+
     [[nodiscard]]
     AVEL_FINL arr1x32i to_array(vec1x32i v) {
         alignas(4) arr1x32i ret;
@@ -839,48 +841,6 @@ namespace avel {
         typename std::enable_if<N <= 1, int>::type dummy_variable = 0;
 
         return vec1x32i{x};
-    }
-
-    //=====================================================
-    // Integer vector operations
-    //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL div_type<vec1x32i> div(vec1x32i x, vec1x32i y) {
-        div_type<vec1x32i> ret;
-        ret.quot = decay(x) / decay(y);
-        ret.rem  = decay(x) % decay(y);
-        return ret;
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x32i popcount(vec1x32i v) {
-        return vec1x32i{popcount(vec1x32u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x32i countl_zero(vec1x32i v) {
-        return vec1x32i{countl_zero(vec1x32u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x32i countl_one(vec1x32i v) {
-        return vec1x32i{countl_one(vec1x32u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x32i countr_zero(vec1x32i v) {
-        return vec1x32i{countr_zero(vec1x32u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x32i countr_one(vec1x32i v) {
-        return vec1x32i{countr_one(vec1x32u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL mask1x32i has_single_bit(vec1x32i v) {
-        return mask1x32i{has_single_bit(vec1x32u{v})};
     }
 
     //=====================================================
@@ -939,6 +899,48 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec1x32i rotr(vec1x32i v, vec1x32i s) {
         return vec1x32i{rotr(vec1x32u{v}, vec1x32u{s})};
+    }
+
+    //=====================================================
+    // Integer vector operations
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL div_type<vec1x32i> div(vec1x32i x, vec1x32i y) {
+        div_type<vec1x32i> ret;
+        ret.quot = decay(x) / decay(y);
+        ret.rem  = decay(x) % decay(y);
+        return ret;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x32i popcount(vec1x32i v) {
+        return vec1x32i{popcount(vec1x32u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x32i countl_zero(vec1x32i v) {
+        return vec1x32i{countl_zero(vec1x32u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x32i countl_one(vec1x32i v) {
+        return vec1x32i{countl_one(vec1x32u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x32i countr_zero(vec1x32i v) {
+        return vec1x32i{countr_zero(vec1x32u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x32i countr_one(vec1x32i v) {
+        return vec1x32i{countr_one(vec1x32u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL mask1x32i has_single_bit(vec1x32i v) {
+        return mask1x32i{has_single_bit(vec1x32u{v})};
     }
 
 }

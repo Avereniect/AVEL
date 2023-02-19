@@ -424,24 +424,24 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator++() {
-            *this += Vector{primitive(1)};
+            *this += Vector{1};
             return *this;
         }
 
         AVEL_FINL Vector operator++(int) {
             auto temp = *this;
-            *this += Vector{primitive(1)};
+            *this += Vector{1};
             return temp;
         }
 
         AVEL_FINL Vector& operator--() {
-            *this -= Vector{primitive(1)};
+            *this -= Vector{1};
             return *this;
         }
 
         AVEL_FINL Vector operator--(int) {
             auto temp = *this;
-            *this -= Vector{primitive(1)};
+            *this -= Vector{1};
             return temp;
         }
 
@@ -674,6 +674,15 @@ namespace avel {
         }
     }
 
+
+
+    [[nodiscard]]
+    AVEL_FINL arr1x16u to_array(vec1x16u x) {
+        alignas(2) arr1x16u ret;
+        aligned_store(ret.data(), x);
+        return ret;
+    }
+
     //=====================================================
     // Arrangement Instructions
     //=====================================================
@@ -692,63 +701,6 @@ namespace avel {
         typename std::enable_if<N <= 1, int>::type dummy_variable = 0;
 
         return vec1x16u{x};
-    }
-
-    //=====================================================
-    // Integer vector operations
-    //=====================================================
-
-    [[nodiscard]]
-    div_type<vec1x16u> div(vec1x16u x, vec1x16u y) {
-        div_type<vec1x16u> ret;
-        ret.quot = decay(x) / decay(y);
-        ret.rem  = decay(x) % decay(y);
-        return ret;
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x16u popcount(vec1x16u v) {
-        return vec1x16u{popcount(decay(v))};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x16u countl_zero(vec1x16u v) {
-        return vec1x16u{countl_zero(decay(v))};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x16u countl_one(vec1x16u v) {
-        return vec1x16u{countl_one(decay(v))};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x16u countr_zero(vec1x16u v) {
-        return vec1x16u{countr_zero(decay(v))};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x16u countr_one(vec1x16u v) {
-        return vec1x16u{countr_one(decay(v))};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x16u bit_width(vec1x16u v) {
-        return vec1x16u{bit_width(decay(v))};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x16u bit_floor(vec1x16u v) {
-        return vec1x16u{bit_floor(decay(v))};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec1x16u bit_ceil(vec1x16u v) {
-        return vec1x16u{bit_ceil(decay(v))};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL mask1x16u has_single_bit(vec1x16u v) {
-        return mask1x16u{has_single_bit(decay(v))};
     }
 
     //=====================================================
@@ -861,15 +813,65 @@ namespace avel {
     }
 
     //=====================================================
-    // Vector conversions
+    // Integer vector operations
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL arr1x16u to_array(vec1x16u x) {
-        alignas(2) arr1x16u ret;
-        aligned_store(ret.data(), x);
+    div_type<vec1x16u> div(vec1x16u x, vec1x16u y) {
+        div_type<vec1x16u> ret;
+        ret.quot = decay(x) / decay(y);
+        ret.rem  = decay(x) % decay(y);
         return ret;
     }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x16u popcount(vec1x16u v) {
+        return vec1x16u{popcount(decay(v))};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x16u countl_zero(vec1x16u v) {
+        return vec1x16u{countl_zero(decay(v))};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x16u countl_one(vec1x16u v) {
+        return vec1x16u{countl_one(decay(v))};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x16u countr_zero(vec1x16u v) {
+        return vec1x16u{countr_zero(decay(v))};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x16u countr_one(vec1x16u v) {
+        return vec1x16u{countr_one(decay(v))};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x16u bit_width(vec1x16u v) {
+        return vec1x16u{bit_width(decay(v))};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x16u bit_floor(vec1x16u v) {
+        return vec1x16u{bit_floor(decay(v))};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x16u bit_ceil(vec1x16u v) {
+        return vec1x16u{bit_ceil(decay(v))};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL mask1x16u has_single_bit(vec1x16u v) {
+        return mask1x16u{has_single_bit(decay(v))};
+    }
+
+    //=====================================================
+    // Vector conversions
+    //=====================================================
 
     template<>
     [[nodiscard]]
