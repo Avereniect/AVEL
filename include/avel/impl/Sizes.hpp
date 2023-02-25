@@ -188,6 +188,136 @@ namespace avel {
     constexpr std::uint32_t max_width_64f = 1;
 #endif
 
+    //=====================================================
+    // Template interface
+    //=====================================================
+
+    //=================================
+    // Natural widths
+    //=================================
+
+    template<class T>
+    struct natural_vector_width {
+        static constexpr std::uint32_t value = 0;
+    };
+
+
+
+    template<>
+    struct natural_vector_width<std::uint8_t> {
+        static constexpr std::uint32_t value = natural_width_8u;
+    };
+
+    template<>
+    struct natural_vector_width<std::uint16_t> {
+        static constexpr std::uint32_t value = natural_width_16u;
+    };
+
+    template<>
+    struct natural_vector_width<std::uint32_t> {
+        static constexpr std::uint32_t value = natural_width_32u;
+    };
+
+    template<>
+    struct natural_vector_width<std::uint64_t> {
+        static constexpr std::uint32_t value = natural_width_64u;
+    };
+
+
+
+    template<>
+    struct natural_vector_width<std::int8_t> {
+        static constexpr std::uint32_t value = natural_width_8u;
+    };
+
+    template<>
+    struct natural_vector_width<std::int16_t> {
+        static constexpr std::uint32_t value = natural_width_16u;
+    };
+
+    template<>
+    struct natural_vector_width<std::int32_t> {
+        static constexpr std::uint32_t value = natural_width_32u;
+    };
+
+    template<>
+    struct natural_vector_width<std::int64_t> {
+        static constexpr std::uint32_t value = natural_width_64u;
+    };
+
+
+
+    #if 201402L <= __cplusplus
+
+    template<class T>
+    constexpr bool natural_vector_width_v = natural_vector_width<T>::value;
+
+    #endif
+
+    //=================================
+    // Maximum widths
+    //=================================
+
+
+    template<class T>
+    struct maximum_vector_width {
+        static constexpr std::uint32_t value = 0;
+    };
+
+
+
+    template<>
+    struct maximum_vector_width<std::uint8_t> {
+        static constexpr std::uint32_t value = max_width_8u;
+    };
+
+    template<>
+    struct maximum_vector_width<std::uint16_t> {
+        static constexpr std::uint32_t value = max_width_16u;
+    };
+
+    template<>
+    struct maximum_vector_width<std::uint32_t> {
+        static constexpr std::uint32_t value = max_width_32u;
+    };
+
+    template<>
+    struct maximum_vector_width<std::uint64_t> {
+        static constexpr std::uint32_t value = max_width_64u;
+    };
+
+
+
+    template<>
+    struct maximum_vector_width<std::int8_t> {
+        static constexpr std::uint32_t value = max_width_8u;
+    };
+
+    template<>
+    struct maximum_vector_width<std::int16_t> {
+        static constexpr std::uint32_t value = max_width_16u;
+    };
+
+    template<>
+    struct maximum_vector_width<std::int32_t> {
+        static constexpr std::uint32_t value = max_width_32u;
+    };
+
+    template<>
+    struct maximum_vector_width<std::int64_t> {
+        static constexpr std::uint32_t value = max_width_64u;
+    };
+
+
+
+    #if 201402L <= __cplusplus
+
+    template<class T>
+    constexpr bool maximum_vector_width_v = maximum_vector_width<T>::value;
+
+    #endif
+
+
 }
 
 #endif //AVEL_SIZES_HPP

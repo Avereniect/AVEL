@@ -20,6 +20,12 @@ namespace avel {
     template<class T, std::uint32_t N>
     class Vector_mask;
 
+    template<class T>
+    using Natural_width_vector_mask = Vector_mask<T, avel::natural_vector_width<T>::value>;
+
+    template<class T>
+    using Max_width_vector_mask = Vector_mask<T, avel::maximum_vector_width<T>::value>;
+
     ///
     /// A class representing a SIMD register.
     ///
@@ -31,6 +37,12 @@ namespace avel {
     /// \tparam N Vector width
     template<class T, std::uint32_t N>
     class Vector;
+
+    template<class T>
+    using Natural_width_vector = Vector<T, avel::natural_vector_width<T>::value>;
+
+    template<class T>
+    using Max_width_vector = Vector<T, avel::maximum_vector_width<T>::value>;
 
     //=====================================================
     // Aliases for naturally sized vectors
