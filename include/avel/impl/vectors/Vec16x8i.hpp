@@ -299,6 +299,8 @@ namespace avel {
 
     };
 
+    constexpr std::uint32_t mask16x8i::width;
+
     //=====================================================
     // Mask functions
     //=====================================================
@@ -1137,6 +1139,13 @@ namespace avel {
         }
 
     };
+
+    static_assert(
+        16 * sizeof(std::int8_t) == sizeof(vec16x8i),
+        "Vector was not of the expected size!"
+    );
+
+    constexpr std::uint32_t vec16x8i::width;
 
     //=====================================================
     // Delayed definitions

@@ -300,6 +300,8 @@ namespace avel {
 
     };
 
+    constexpr std::uint32_t mask16x8u::width;
+
     //=====================================================
     // Mask functions
     //=====================================================
@@ -867,6 +869,7 @@ namespace avel {
             auto shifts = _mm256_cvtepu8_epi16(rhs.content);
             content = _mm256_cvtepi16_epi8(_mm256_sllv_epi16(whole, shifts));
 
+            /* No benefit derived
             #elif defined(AVEL_AVX2)
             auto lhs_lo = _mm256_cvtepu8_epi32(content);
             auto lhs_hi = _mm256_cvtepu8_epi32(_mm_srli_si128(content, 0x8));
@@ -888,6 +891,7 @@ namespace avel {
             auto results_out_of_order = _mm_packus_epi16(lo, hi);
 
             content = _mm_shuffle_epi32(results_out_of_order, 0xD8);
+            */
 
             #elif defined(AVEL_SSSE3)
             alignas(16) static constexpr std::uint8_t table_data[16] {
@@ -962,7 +966,7 @@ namespace avel {
 
             auto s = _mm_min_epu8(decay(rhs), _mm_set1_epi8(0x8));
 
-            auto table = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data));
+            auto table = _mm_load_si128(reinterpret_cast<const primitive*>(table_data));
             auto shift_factors = _mm_shuffle_epi8(table, s);
 
             auto zeros = _mm_setzero_si128();
@@ -1084,6 +1088,13 @@ namespace avel {
         }
 
     };
+
+    static_assert(
+        16 * sizeof(std::uint8_t) == sizeof(vec16x8u),
+        "Vector was not of the expected size!"
+    );
+
+    constexpr std::uint32_t vec16x8u::width;
 
     //=====================================================
     // Arrangement operations
@@ -2563,7 +2574,7 @@ namespace avel {
             x = _mm_mask_sub_epi8(decay(x), decay(b), decay(x), decay(y << i));
             quotient |= (vec16x8u{b} << i);
         }
-        return {quotient, x};
+        return {quotient, x};/
         */
 
 
@@ -2718,29 +2729,11 @@ namespace avel {
 
 
 
-        /*
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
-        vec16x8u quotient{0x00};
-
-        //std::int32_t i = vmaxvq_u8(vqsubq_u8(vclzq_u8(decay(y), vclzq_u8(decay(x))) + 1);
-        //i = max(i, 0);
-        std::int32_t i = 8;
-
-        for (; (i-- > 0);) {
-            mask16x8u b = ((x >> i) >= y);
-            x -= (broadcast_mask(b) & (y << i));
-            quotient |= (vec16x8u{b} << i);
-        }
-
-        return {quotient, x};
-
-        #elif defined(AVEL_NEON)
-        */
-
         #if defined(AVEL_NEON)
-        //Falling back to scalar code ends up being faster
+        //Just to avoid division by zero triggering an exception
         auto denominators = max(y, vec16x8u{1});
 
+        //Falling back to scalar code ends up being faster
         auto x0 = vgetq_lane_u8(decay(x), 0);
         auto x1 = vgetq_lane_u8(decay(x), 1);
         auto x2 = vgetq_lane_u8(decay(x), 2);
@@ -3026,7 +3019,10 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x8u countr_one(vec16x8u x) {
-        #if defined(AVEL_SSSE3)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
+        return vec16x8u{~x};
+
+        #elif defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 0, 2,
             0, 1, 0, 3,
@@ -3287,12 +3283,12 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL mask16x8u has_single_bit(vec16x8u x) {
+    AVEL_FINL mask16x8u has_single_bit(vec16x8u v) {
         #if defined(AVEL_AVX512BITALG)
-        return popcount(x) == vec16x8u{1};
+        return popcount(v) == vec16x8u{1};
 
         #elif defined(AVEL_SSE2)
-        return mask16x8u{x} && !mask16x8u{x & (x - vec16x8u{1})};
+        return mask16x8u{v} && !mask16x8u{v & (v - vec16x8u{1})};
 
         #endif
 

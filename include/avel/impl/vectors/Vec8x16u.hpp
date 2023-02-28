@@ -283,6 +283,8 @@ namespace avel {
 
     };
 
+    constexpr std::uint32_t mask8x16u::width;
+
     //=====================================================
     // Mask functions
     //=====================================================
@@ -777,10 +779,29 @@ namespace avel {
             auto hi = _mm256_permute2f128_si256(lo, lo, 0x01);
             content = _mm256_castsi256_si128(_mm256_packus_epi32(lo, hi));
 
-            #elif defined(AVEL_SSE2)
+
+            #elif defined(AVEL_SSE41)
+            // This implementation is slower than an equivalent scalar approach,
+            // but faster than attempting to scalarize the function
             for (unsigned i = 0; i < 4; ++i) {
                 auto t0 = _mm_and_si128(rhs.content, _mm_set1_epi16(1u << i));
-                auto m = _mm_cmplt_epi16(primitive{}, t0);
+                auto m = _mm_cmplt_epi16(_mm_setzero_si128(), t0);
+
+                auto shifted =  _mm_sll_epi16(content, _mm_cvtsi64_si128(1u << i));
+                content = _mm_blendv_epi8(content, shifted, m);
+            }
+
+            auto m = _mm_cmplt_epi16(rhs.content, _mm_set1_epi16(16));
+            content = _mm_and_si128(content, m);
+
+            //TODO: Consider SSSE3 implementation
+
+            #elif defined(AVEL_SSE2)
+            // This implementation is slower than an equivalent scalar approach,
+            // but faster than attempting to scalarize the function
+            for (unsigned i = 0; i < 4; ++i) {
+                auto t0 = _mm_and_si128(rhs.content, _mm_set1_epi16(1u << i));
+                auto m = _mm_cmplt_epi16(_mm_setzero_si128(), t0);
 
                 auto a = _mm_andnot_si128(m, content);
                 auto b = _mm_and_si128(m, _mm_sll_epi16(content, _mm_cvtsi64_si128(1u << i)));
@@ -941,6 +962,13 @@ namespace avel {
         }
 
     };
+
+    static_assert(
+        8 * sizeof(std::uint16_t) == sizeof(vec8x16u),
+        "Vector was not of the expected size!"
+    );
+
+    constexpr std::uint32_t vec8x16u::width;
 
     //=====================================================
     // Arrangement operations
@@ -1183,20 +1211,33 @@ namespace avel {
     // General vector operations
     //=====================================================
 
-    /*
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(vec8x16u x) {
         #if defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi16(decay(x), _mm_setzero_si128());
         return popcount(_mm_movemask_epi8(compared)) / 2;
         #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool any(vec8x16u x) {
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        return !_mm_test_all_zeros(decay(x), decay(x));
+
+        #elif defined(AVEL_SSE41)
+        return !_mm_testz_si128(decay(x), decay(x));
+
+        #elif defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
-        return 0x00 != _mm_movemask_epi8(compared);
+        return 0xFFFF != _mm_movemask_epi8(compared);
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
         #endif
     }
 
@@ -1205,6 +1246,10 @@ namespace avel {
         #if defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
         return 0x00 == _mm_movemask_epi8(compared);
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
         #endif
     }
 
@@ -1216,8 +1261,11 @@ namespace avel {
         auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
         return 0xFF == _mm_movemask_epi8(compared);
         #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
+        #endif
     }
-    */
 
     [[nodiscard]]
     AVEL_FINL vec8x16u broadcast_mask(mask8x16u m) {
@@ -1730,16 +1778,220 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec8x16u> div(vec8x16u x, vec8x16u y) {
-        vec8x16u quotient{};
+        #if defined(AVEL_SSE2)
+        /*
+        vec8x16u quotient{0x00};
+        vec8x16u remainder{0x00};
 
-        auto z = vec8x16u{};
-        for (std::uint32_t i = 16; (i-- > 0) && any(x != z);) {
-            mask8x16u b = ((x >> i) >= y);
-            x -= (broadcast_mask(b) & (y << i));
-            quotient |= (vec8x16u{b} << i);
+        quotient = insert<0>(quotient, extract<0>(x) / extract<0>(y));
+        quotient = insert<1>(quotient, extract<1>(x) / extract<1>(y));
+        quotient = insert<2>(quotient, extract<2>(x) / extract<2>(y));
+        quotient = insert<3>(quotient, extract<3>(x) / extract<3>(y));
+        quotient = insert<4>(quotient, extract<4>(x) / extract<4>(y));
+        quotient = insert<5>(quotient, extract<5>(x) / extract<5>(y));
+        quotient = insert<6>(quotient, extract<6>(x) / extract<6>(y));
+        quotient = insert<7>(quotient, extract<7>(x) / extract<7>(y));
+
+        remainder = insert<0>(remainder, extract<0>(x) % extract<0>(y));
+        remainder = insert<1>(remainder, extract<1>(x) % extract<1>(y));
+        remainder = insert<2>(remainder, extract<2>(x) % extract<2>(y));
+        remainder = insert<3>(remainder, extract<3>(x) % extract<3>(y));
+        remainder = insert<4>(remainder, extract<4>(x) % extract<4>(y));
+        remainder = insert<5>(remainder, extract<5>(x) % extract<5>(y));
+        remainder = insert<6>(remainder, extract<6>(x) % extract<6>(y));
+        remainder = insert<7>(remainder, extract<7>(x) % extract<7>(y));
+
+        return {quotient, remainder};
+        */
+
+        /*
+        std::int32_t i = 16;
+        mask8x16u b;
+
+        b = ((x >> 15) >= y);
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
         }
 
+        b = ((x >> 14) >= y);
+        i = 15;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 13) >= y);
+        i = 14;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 12) >= y);
+        i = 13;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 11) >= y);
+        i = 12;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 10) >= y);
+        i = 11;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 9) >= y);
+        i = 10;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 8) >= y);
+        i = 9;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 7) >= y);
+        i = 8;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 6) >= y);
+        i = 7;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 5) >= y);
+        i = 6;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 4) >= y);
+        i = 5;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 3) >= y);
+        i = 4;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 2) >= y);
+        i = 3;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 1) >= y);
+        i = 2;
+
+        if (any(b)) {
+            goto avel_vec8x16u_middle;
+        }
+
+        b = ((x >> 0) >= y);
+        i = 1;
+
+        avel_vec8x16u_middle:
+        */
+
+        /*
+        vec8x16u quotient{0x00};
+        std::int32_t i = 0;
+        for (; (i-- > 0) && any(x >= y);) {
+             b = ((x >> i) >= y);
+            x -= (broadcast_mask(b) & (y << i));
+            quotient += quotient;
+            quotient -= broadcast_mask(b);
+        }
+
+        quotient <<= (i + 1);
         return {quotient, x};
+        */
+
+        vec8x16u quotient{0x00};
+        std::int32_t i = 16;
+        for (; (i-- > 0) && any(x >= y);) {
+            mask8x16u b = ((x >> i) >= y);
+            x -= (broadcast_mask(b) & (y << i));
+            quotient += quotient;
+            quotient -= broadcast_mask(b);
+        }
+
+        quotient <<= (i + 1);
+
+        return {quotient, x};
+        #endif
+
+
+
+        #if defined(AVEL_NEON)
+        //Just to avoid division by zero triggering an exception
+        auto denominators = max(y, vec8x16u{1});
+
+        //Falling back to scalar code ends up being faster
+        auto x0 = vgetq_lane_u16(decay(x), 0);
+        auto x1 = vgetq_lane_u16(decay(x), 1);
+        auto x2 = vgetq_lane_u16(decay(x), 2);
+        auto x3 = vgetq_lane_u16(decay(x), 3);
+        auto x4 = vgetq_lane_u16(decay(x), 4);
+        auto x5 = vgetq_lane_u16(decay(x), 5);
+        auto x6 = vgetq_lane_u16(decay(x), 6);
+        auto x7 = vgetq_lane_u16(decay(x), 7);
+
+        auto y0 = vgetq_lane_u8(decay(y), 0);
+        auto y1 = vgetq_lane_u8(decay(y), 1);
+        auto y2 = vgetq_lane_u8(decay(y), 2);
+        auto y3 = vgetq_lane_u8(decay(y), 3);
+        auto y4 = vgetq_lane_u8(decay(y), 4);
+        auto y5 = vgetq_lane_u8(decay(y), 5);
+        auto y6 = vgetq_lane_u8(decay(y), 6);
+        auto y7 = vgetq_lane_u8(decay(y), 7);
+
+        auto quot = vdupq_n_u816(0x00);
+        quot = vsetq_lane_u16(x0 / y0, quot, 0);
+        quot = vsetq_lane_u16(x1 / y1, quot, 1);
+        quot = vsetq_lane_u16(x2 / y2, quot, 2);
+        quot = vsetq_lane_u16(x3 / y3, quot, 3);
+        quot = vsetq_lane_u16(x4 / y4, quot, 4);
+        quot = vsetq_lane_u16(x5 / y5, quot, 5);
+        quot = vsetq_lane_u16(x6 / y6, quot, 6);
+        quot = vsetq_lane_u16(x7 / y7, quot, 7);
+
+        auto rem = vdupq_n_u16(0x00);
+        rem = vsetq_lane_u16(x0 / y0, rem, 0);
+        rem = vsetq_lane_u16(x1 / y1, rem, 1);
+        rem = vsetq_lane_u16(x2 / y2, rem, 2);
+        rem = vsetq_lane_u16(x3 / y3, rem, 3);
+        rem = vsetq_lane_u16(x4 / y4, rem, 4);
+        rem = vsetq_lane_u16(x5 / y5, rem, 5);
+        rem = vsetq_lane_u16(x6 / y6, rem, 6);
+        rem = vsetq_lane_u16(x7 / y7, rem, 7);
+
+        return {vec8x16u{quot}, vec8x16u{rem}};
+        #endif
     }
 
     //=====================================================

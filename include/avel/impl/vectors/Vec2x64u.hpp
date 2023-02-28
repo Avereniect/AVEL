@@ -286,6 +286,8 @@ namespace avel {
 
     };
 
+    constexpr std::uint32_t mask2x64u::width;
+
     //=====================================================
     // Mask functions
     //=====================================================
@@ -1004,8 +1006,15 @@ namespace avel {
 
     };
 
+    static_assert(
+        2 * sizeof(std::uint64_t) == sizeof(vec2x64u),
+        "Vector was not of the expected size!"
+    );
+
+    constexpr std::uint32_t vec2x64u::width;
+
     //=====================================================
-    // Arrangment operations
+    // Arrangement operations
     //=====================================================
 
     template<std::uint32_t N>
