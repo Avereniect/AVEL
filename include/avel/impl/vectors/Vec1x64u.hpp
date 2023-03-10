@@ -757,7 +757,7 @@ namespace avel {
 
     template<std::uint32_t S>
     [[nodiscard]]
-    vec1x64u bit_shift_left(vec1x64u v) {
+    AVEL_FINL vec1x64u bit_shift_left(vec1x64u v) {
         static_assert(S <= 64, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 64, int>::type dummy_variable = 0;
 
@@ -766,13 +766,13 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    vec1x64u bit_shift_left<0>(vec1x64u v) {
+    AVEL_FINL vec1x64u bit_shift_left<0>(vec1x64u v) {
         return v;
     }
 
     template<>
     [[nodiscard]]
-    vec1x64u bit_shift_left<64>(vec1x64u v) {
+    AVEL_FINL vec1x64u bit_shift_left<64>(vec1x64u v) {
         (void)v;
         return vec1x64u{0x00};
     }
@@ -781,7 +781,7 @@ namespace avel {
 
     template<std::uint32_t S>
     [[nodiscard]]
-    vec1x64u bit_shift_right(vec1x64u v) {
+    AVEL_FINL vec1x64u bit_shift_right(vec1x64u v) {
         static_assert(S <= 64, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 64, int>::type dummy_variable = 0;
 
@@ -790,13 +790,13 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    vec1x64u bit_shift_right<0>(vec1x64u v) {
+    AVEL_FINL vec1x64u bit_shift_right<0>(vec1x64u v) {
         return v;
     }
 
     template<>
     [[nodiscard]]
-    vec1x64u bit_shift_right<64>(vec1x64u v) {
+    AVEL_FINL vec1x64u bit_shift_right<64>(vec1x64u v) {
         (void)v;
         return vec1x64u{0x00};
     }
@@ -865,7 +865,7 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    div_type<vec1x64u> div(vec1x64u x, vec1x64u y) {
+    AVEL_FINL div_type<vec1x64u> div(vec1x64u x, vec1x64u y) {
         div_type<vec1x64u> ret;
         ret.quot = decay(x) / decay(y);
         ret.rem  = decay(x) % decay(y);

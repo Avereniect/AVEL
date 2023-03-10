@@ -299,8 +299,6 @@ namespace avel {
 
     };
 
-    constexpr std::uint32_t mask16x8i::width;
-
     //=====================================================
     // Mask functions
     //=====================================================
@@ -385,12 +383,6 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    AVEL_FINL std::array<mask16x8i, 1> convert<mask16x8i, mask16x8i>(mask16x8i m) {
-        return {m};
-    }
-
-    template<>
-    [[nodiscard]]
     AVEL_FINL std::array<mask16x8u, 1> convert<mask16x8u, mask16x8i>(mask16x8i m) {
         return {mask16x8u{decay(m)}};
     }
@@ -458,7 +450,7 @@ namespace avel {
 
         AVEL_FINL explicit Vector(mask m):
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            content(_mm_sub_epi8(_mm_setzero_si128(), _mm_movm_epi8(decay(m)))) {}
+            content(_mm_maskz_set1_epi8(decay(m), 0x1)) {}
         #elif defined(AVEL_SSE2)
             content(_mm_sub_epi8(_mm_setzero_si128(), decay(m))) {}
         #endif
@@ -771,10 +763,6 @@ namespace avel {
             *this -= Vector{1};
             return temp;
         }
-
-        //=================================================
-        // Bitwise assignment operators
-        //=================================================
 
         //=================================================
         // Bitwise assignment operators
@@ -1145,8 +1133,6 @@ namespace avel {
         "Vector was not of the expected size!"
     );
 
-    constexpr std::uint32_t vec16x8i::width;
-
     //=====================================================
     // Delayed definitions
     //=====================================================
@@ -1177,13 +1163,41 @@ namespace avel {
         #endif
     }
 
+    template<std::uint32_t N>
+    AVEL_FINL vec16x8i insert(vec16x8i v, std::int8_t x) {
+        static_assert(N <= vec16x8i::width, "Specified index does not exist");
+        typename std::enable_if<N <= vec16x8i::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE41)
+        return vec16x8i{_mm_insert_epi8(decay(v), x, N)};
+
+        #elif defined(AVEL_SSE2)
+        std::uint16_t lane = _mm_extract_epi16(decay(v), N / 2);
+        std::uint16_t updated_lane;
+        if (N % 2 == 0) {
+            updated_lane = x | (lane & 0xFF00);
+        } else {
+            updated_lane = std::int16_t(x) << 8 | (lane & 0x00FF);
+        }
+
+        auto result = _mm_insert_epi16(decay(v), updated_lane, N / 2);
+        return vec16x8i{result};
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec16x8i{vsetq_lane_s8(x, decay(v), N)};
+
+        #endif
+    }
+
     //=====================================================
     // Bit Manipulation Operations
     //=====================================================
 
     template<std::uint32_t S>
     [[nodiscard]]
-    vec16x8i bit_shift_left(vec16x8i v) {
+    AVEL_FINL vec16x8i bit_shift_left(vec16x8i v) {
         static_assert(S <= 8, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
 
@@ -1191,7 +1205,7 @@ namespace avel {
     }
 
     template<std::uint32_t S>
-    vec16x8i bit_shift_right(vec16x8i v) {
+    AVEL_FINL vec16x8i bit_shift_right(vec16x8i v) {
         static_assert(S <= 8, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
 
@@ -1220,21 +1234,21 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    vec16x8i bit_shift_right<0>(vec16x8i v) {
+    AVEL_FINL vec16x8i bit_shift_right<0>(vec16x8i v) {
         return v;
     }
 
     #if defined(AVEL_SSE2)
     template<>
     [[nodiscard]]
-    vec16x8i bit_shift_right<7>(vec16x8i v) {
+    AVEL_FINL vec16x8i bit_shift_right<7>(vec16x8i v) {
         return vec16x8i{_mm_cmplt_epi8(decay(v), _mm_setzero_si128())};
     };
     #endif
 
     template<>
     [[nodiscard]]
-    vec16x8i bit_shift_right<8>(vec16x8i v) {
+    AVEL_FINL vec16x8i bit_shift_right<8>(vec16x8i v) {
         return broadcast_mask(v < vec16x8i{0x00});
     }
 
@@ -1278,7 +1292,6 @@ namespace avel {
     // General vector operations
     //=====================================================
 
-    /*
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(vec16x8i x) {
         return count(vec16x8u{x});
@@ -1298,11 +1311,20 @@ namespace avel {
     AVEL_FINL bool none(vec16x8i x) {
         return none(vec16x8u{x});
     }
-    */
 
     [[nodiscard]]
     AVEL_FINL vec16x8i broadcast_mask(mask16x8i m) {
         return vec16x8i{broadcast_mask(mask16x8u{m})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x8i keep(mask16x8i m, vec16x8i v) {
+        return vec16x8i{keep(mask16x8u{m}, vec16x8u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x8i clear(mask16x8i m, vec16x8i v) {
+        return vec16x8i{clear(mask16x8u{m}, vec16x8u{v})};
     }
 
     [[nodiscard]]

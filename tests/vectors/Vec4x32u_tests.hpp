@@ -1532,6 +1532,30 @@ namespace avel_tests {
         }
     }
 
+    TEST(Vec4x32u, Average_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr4x32u input_array0{};
+            arr4x32u input_array1{};
+
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                input_array0[j] = random32u();
+                input_array1[j] = random32u();
+            }
+
+            vec4x32u input0{input_array0};
+            vec4x32u input1{input_array1};
+
+            auto results = average(input0, input1);
+
+            arr4x32u results_array{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                results_array[j] = average(input_array0[j], input_array1[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec4x32u{results_array}));
+        }
+    }
+
     TEST(Vec4x32u, Midpoint_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             arr4x32u input_array0{};
@@ -2519,4 +2543,4 @@ namespace avel_tests {
 
 }
 
-#endif //AVEL_VEC4X32U_TESTS_HPP
+#endif

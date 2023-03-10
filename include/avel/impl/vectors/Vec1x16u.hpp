@@ -718,13 +718,13 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    vec1x16u bit_shift_left<0>(vec1x16u v) {
+    AVEL_FINL vec1x16u bit_shift_left<0>(vec1x16u v) {
         return v;
     }
 
     template<>
     [[nodiscard]]
-    vec1x16u bit_shift_left<16>(vec1x16u v) {
+    AVEL_FINL vec1x16u bit_shift_left<16>(vec1x16u v) {
         (void)v;
         return vec1x16u{0x00};
     }
@@ -733,7 +733,7 @@ namespace avel {
 
     template<std::uint32_t S>
     [[nodiscard]]
-    vec1x16u bit_shift_right(vec1x16u v) {
+    AVEL_FINL vec1x16u bit_shift_right(vec1x16u v) {
         static_assert(S <= 16, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
 
@@ -742,13 +742,13 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    vec1x16u bit_shift_right<0>(vec1x16u v) {
+    AVEL_FINL vec1x16u bit_shift_right<0>(vec1x16u v) {
         return v;
     }
 
     template<>
     [[nodiscard]]
-    vec1x16u bit_shift_right<16>(vec1x16u v) {
+    AVEL_FINL vec1x16u bit_shift_right<16>(vec1x16u v) {
         (void)v;
         return vec1x16u{0x00};
     }
@@ -817,7 +817,7 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    div_type<vec1x16u> div(vec1x16u x, vec1x16u y) {
+    AVEL_FINL div_type<vec1x16u> div(vec1x16u x, vec1x16u y) {
         div_type<vec1x16u> ret;
         ret.quot = decay(x) / decay(y);
         ret.rem  = decay(x) % decay(y);

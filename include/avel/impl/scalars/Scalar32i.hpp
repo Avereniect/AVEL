@@ -83,6 +83,24 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL std::int32_t keep(bool m, std::int32_t x) {
+        if (m) {
+            return x;
+        } else {
+            return 0;
+        }
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::int32_t clear(bool m, std::int32_t x) {
+        if (m) {
+            return 0;
+        } else {
+            return x;
+        }
+    }
+
+    [[nodiscard]]
     AVEL_FINL std::int32_t blend(bool m, std::int32_t a, std::int32_t b) {
         if (m) {
             return a;

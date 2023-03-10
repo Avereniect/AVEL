@@ -295,8 +295,6 @@ namespace avel {
 
     };
 
-    constexpr std::uint32_t mask2x64i::width;
-
     //=====================================================
     // Mask functions
     //=====================================================
@@ -454,14 +452,8 @@ namespace avel {
             content(convert<Vector>(v)[0]) {}
 
         AVEL_FINL explicit Vector(mask m):
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
-            content(_mm_sub_epi64(_mm_setzero_si128(), _mm_movm_epi64(decay(m)))) {}
-        #elif defined(AVEL_AVX512VL)
-            content([] (mask m) {
-                auto undef = _mm_undefined_si128();
-                auto t0 =  _mm_maskz_ternarylogic_epi64(decay(m), undef, undef, undef, 0xFF);
-                return _mm_sub_epi64(_mm_setzero_si128(), t0);
-            } (m)) {}
+        #if defined(AVEL_AVX512VL)
+            content(_mm_maskz_set1_epi64(decay(m), 0x1)) {}
         #elif defined(AVEL_SSE2)
             content(_mm_sub_epi64(_mm_setzero_si128(), decay(m))) {}
         #endif
@@ -1136,8 +1128,6 @@ namespace avel {
         "Vector was not of the expected size!"
     );
 
-    constexpr std::uint32_t vec2x64i::width;
-
     //=====================================================
     // Delayed definitions
     //=====================================================
@@ -1225,7 +1215,7 @@ namespace avel {
 
     #if defined(AVEL_SSE2)
     template<>
-    vec2x64i bit_shift_right<64>(vec2x64i v) {
+    AVEL_FINL vec2x64i bit_shift_right<64>(vec2x64i v) {
         auto zeros = _mm_setzero_si128();
         auto shifted = _mm_srli_epi64(decay(v), 63);
         auto ret = _mm_sub_epi64(zeros, shifted);
@@ -1234,7 +1224,7 @@ namespace avel {
     #endif
 
     template<>
-    vec2x64i bit_shift_right<0>(vec2x64i v) {
+    AVEL_FINL vec2x64i bit_shift_right<0>(vec2x64i v) {
         return v;
     }
 
@@ -1277,8 +1267,6 @@ namespace avel {
     //=====================================================
     // General vector operations
     //=====================================================
-
-    /*
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(vec2x64i x) {
         return count(vec2x64u{x});
@@ -1298,7 +1286,6 @@ namespace avel {
     AVEL_FINL bool none(vec2x64i x) {
         return none(vec2x64u{x});
     }
-    */
 
     [[nodiscard]]
     AVEL_FINL vec2x64i broadcast_mask(mask2x64i m) {
@@ -1306,8 +1293,7 @@ namespace avel {
         return vec2x64i{_mm_movm_epi64(decay(m))};
 
         #elif defined(AVEL_AVX512VL)
-        auto undef = _mm_undefined_si128();
-        return vec2x64i{_mm_maskz_ternarylogic_epi64(decay(m), undef, undef, undef, 0xFF)};
+        return vec2x64i{_mm_maskz_set1_epi64(decay(m), -1)};
 
         #elif defined(AVEL_SSE2)
         return vec2x64i{decay(m)};
@@ -1317,6 +1303,16 @@ namespace avel {
         #if defined(AVEL_NEON)
         return vec2x64i{vreinterpretq_s64_u64(decay(m))};
         #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec2x64i keep(mask2x64i m, vec2x64i v) {
+        return vec2x64i{keep(mask2x64u{m}, vec2x64u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec2x64i clear(mask2x64i m, vec2x64i v) {
+        return vec2x64i{clear(mask2x64u{m}, vec2x64u{v})};
     }
 
     [[nodiscard]]

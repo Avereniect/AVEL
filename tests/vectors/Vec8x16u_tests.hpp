@@ -1477,6 +1477,30 @@ namespace avel_tests {
         }
     }
 
+    TEST(Vec8x16u, Average_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            arr8x16u input_array0{};
+            arr8x16u input_array1{};
+
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                input_array0[j] = random16u();
+                input_array1[j] = random16u();
+            }
+
+            vec8x16u input0{input_array0};
+            vec8x16u input1{input_array1};
+
+            auto results = average(input0, input1);
+
+            arr8x16u results_array{};
+            for (std::size_t j = 0; j < input_array0.size(); ++j) {
+                results_array[j] = average(input_array0[j], input_array1[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec8x16u{results_array}));
+        }
+    }
+
     TEST(Vec8x16u, Midpoint_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             arr8x16u input_array0{};
@@ -1892,6 +1916,17 @@ namespace avel_tests {
         }
     }
 
+    TEST(Vec8x16u, Bit_floor_edge_cases) {
+        EXPECT_TRUE(all(vec8x16u{0} == bit_floor(vec8x16u{0x00})));
+
+        for (std::size_t i = 0; i < 15; ++i) {
+            vec8x16u::scalar v = vec8x16u::scalar(1) << i;
+            vec8x16u results = bit_floor(vec8x16u{v});
+            vec8x16u expected{v};
+            EXPECT_TRUE(all(results == expected));
+        }
+    }
+
     TEST(Vec8x16u, Bit_floor_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             arr8x16u input_array0{};
@@ -2197,4 +2232,4 @@ namespace avel_tests {
 
 }
 
-#endif //AVEL_VEC8X16U_HPP
+#endif

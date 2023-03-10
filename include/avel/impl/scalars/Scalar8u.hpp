@@ -30,7 +30,6 @@ namespace avel {
         x = x - ((x >> 1) & 0x55);
         x = (x & 0x33) + ((x >> 2) & 0x33);
         x = (x + (x >> 4)) & 0x0F;
-        //x = (x * 0x01u) >> 0;
         return x;
         #endif
     }
@@ -44,12 +43,14 @@ namespace avel {
     AVEL_FINL std::uint8_t countl_zero(std::uint8_t x) {
         #if defined(AVEL_LZCNT)
         return static_cast<uint8_t>(_lzcnt_u32(x) - 24);
+
         #elif defined(AVEL_X86)
         if (x) {
             return 7 - _bit_scan_reverse(x);
         } else {
             return 8;
         }
+
         #else
         alignas(16) static constexpr std::uint8_t table0[16] {
             8, 3, 2, 2,
@@ -78,8 +79,6 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::uint8_t countl_one(std::uint8_t x) {
         return countl_zero(std::uint8_t(~x));
-
-        //TODO: Implement solution for no architecture specified
     }
 
     [[nodiscard]]
@@ -93,6 +92,7 @@ namespace avel {
         } else {
             return 8;
         }
+
         #else
         std::uint8_t ret = 0x00;
 
@@ -102,7 +102,7 @@ namespace avel {
 
         x &= -x;
 
-        std::uint8_t b = 0x00;
+        std::uint8_t b;
         b = bool(x & 0xAAu);
         ret |= (b << 0);
         b = bool(x & 0xCCu);
@@ -159,6 +159,7 @@ namespace avel {
             return 0;
         }
         return 1 << _bit_scan_reverse(x);
+
         #else
         x = x | (x >> 1);
         x = x | (x >> 2);
@@ -169,7 +170,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint8_t bit_ceil(std::uint8_t x) {
-        #if defined(AVEL_X86)
+        #if defined(AVEL_LZCNT)
+        auto sh = (32 - _lzcnt_u32(x - 1));
+        auto result = 1 << sh;
+        return result;
+
+        #elif defined(AVEL_X86)
         if (x == 0) {
             return 1;
         }
@@ -232,6 +238,24 @@ namespace avel {
             return y;
         } else {
             return -y;
+        }
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::uint8_t keep(bool m, std::uint8_t x) {
+        if (m) {
+            return x;
+        } else {
+            return 0;
+        }
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::uint8_t clear(bool m, std::uint8_t x) {
+        if (m) {
+            return 0;
+        } else {
+            return x;
         }
     }
 

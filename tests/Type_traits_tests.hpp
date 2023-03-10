@@ -1,6 +1,7 @@
 #ifndef AVEL_TYPE_TRAITS_TESTS_HPP
 #define AVEL_TYPE_TRAITS_TESTS_HPP
 
+#include <avel/Vector.hpp>
 #include <type_traits>
 
 namespace avel {

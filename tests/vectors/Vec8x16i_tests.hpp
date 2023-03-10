@@ -1999,4 +1999,4 @@ namespace avel_tests {
     
 }
 
-#endif //AVEL_VEC8X16I_TESTS_HPP
+#endif

@@ -295,8 +295,6 @@ namespace avel {
 
     };
 
-    constexpr std::uint32_t mask8x16i::width;
-
     //=====================================================
     // Mask functions
     //=====================================================
@@ -379,12 +377,6 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    AVEL_FINL std::array<mask8x16i, 1> convert<mask8x16i, mask8x16i>(mask8x16i m) {
-        return {m};
-    }
-
-    template<>
-    [[nodiscard]]
     AVEL_FINL std::array<mask8x16u, 1> convert<mask8x16u, mask8x16i>(mask8x16i m) {
         return {mask8x16u{mask8x16u::primitive(decay(m))}};
     }
@@ -452,7 +444,7 @@ namespace avel {
 
         AVEL_FINL explicit Vector(mask m):
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            content(_mm_sub_epi16(_mm_setzero_si128(), _mm_movm_epi16(decay(m)))) {}
+            content(_mm_maskz_set1_epi16(decay(m), 0x1)) {}
         #elif defined(AVEL_SSE2)
             content(_mm_sub_epi16(_mm_setzero_si128(), decay(m))) {}
         #endif
@@ -961,8 +953,6 @@ namespace avel {
         "Vector was not of the expected size!"
     );
 
-    constexpr std::uint32_t vec8x16i::width;
-
     //=====================================================
     // Delayed definitions
     //=====================================================
@@ -999,7 +989,7 @@ namespace avel {
 
     template<std::uint32_t S>
     [[nodiscard]]
-    vec8x16i bit_shift_left(vec8x16i v) {
+    AVEL_FINL vec8x16i bit_shift_left(vec8x16i v) {
         static_assert(S <= 16, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
 
@@ -1007,7 +997,7 @@ namespace avel {
     }
 
     template<std::uint32_t S>
-    vec8x16i bit_shift_right(vec8x16i v) {
+    AVEL_FINL vec8x16i bit_shift_right(vec8x16i v) {
         static_assert(S <= 16, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
 
@@ -1021,7 +1011,7 @@ namespace avel {
     }
 
     template<>
-    vec8x16i bit_shift_right<0>(vec8x16i v) {
+    AVEL_FINL vec8x16i bit_shift_right<0>(vec8x16i v) {
         return v;
     }
 
@@ -1090,6 +1080,16 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x16i broadcast_mask(mask8x16i m) {
         return vec8x16i{broadcast_mask(mask8x16u{m})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x16i keep(mask8x16i m, vec8x16i v) {
+        return vec8x16i{keep(mask8x16u{m}, vec8x16u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x16i clear(mask8x16i m, vec8x16i v) {
+        return vec8x16i{clear(mask8x16u{m}, vec8x16u{v})};
     }
 
     [[nodiscard]]
@@ -1671,12 +1671,6 @@ namespace avel {
     //=====================================================
     // Vector conversions
     //=====================================================
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec8x16i, 1> convert<vec8x16i, vec8x16i>(vec8x16i x) {
-        return {x};
-    }
 
     template<>
     [[nodiscard]]

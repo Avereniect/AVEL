@@ -284,9 +284,51 @@
   * replace the contents of the `N`th lane with `x` in the vector `v`
   * the contents of all other lanes are left untouched
 
-### Logical/Arithmetic
+### Bit Manipulation Instructions
+* `vector bit_shift_left<S>(vector x)`
+  * performs a bitwise left shift on all lanes in `x` by `S` bits
+  * may perform marginally better than shifting by a runtime scalar
+
+* `vector bit_shift_right<S>(vector x)`
+  * performs a bitwise right shift on all lanes in `x` by `S` bits
+  * may perform marginally better than shifting by a runtime scalar
+
+* `vector rotl<S>(vector x)`
+  * performs a bitwise left rotation on all lanes in `x` by `S` bits
+  * may perform marginally better than rotating by a runtime scalar
+
+* `vector rotl(vector x, scalar s)`
+  * performs a bitwise left rotation on all lanes by s bits
+  * likely to perform suboptimally on x86 on 8-bit elements
+
+* `vector rotl(vector x, vector s)`
+  * for each lane, performs a bitwise left rotation by s bits
+  * likely to perform suboptimally on x86 on 8-bit elements
+  * likely to perform poorly without AVX2 support
+
+* `vector rotr<S>(vector x)``
+  * performs a bitwise right rotation on all lanes in `x` by `S` bits
+  * may perform marginally better than rotating by a runtime scalar
+
+* `vector rotr(vector x, scalar s)`
+  * performs a bitwise right rotation on all lanes in `x` by `s` bits
+  * likely to perform suboptimally on x86 on 8-bit elements
+
+* `vector rotr(vector x, vector s)`
+  * for each lane, performs a bitwise right rotation on `x` by `s` bits
+  * likely to perform suboptimally on x86 on 8-bit elements
+  * likely to perform poorly without AVX2 support
+
+
+### General Vector Operations
 * `vector broadcast_mask(mask m)`
   * for each lane, sets all bits to 0 if `m` is false or to 1 if `m` is true
+
+* `vector keep(mask m, vector v)`
+  * for each lane, zero out `v` if `m` is not set
+
+* `vector clear(mask m, vector v)`
+  * for each lane, zero out `v` if `m` is set
 
 * `vector blend(mask m, vector a, vector b)`
   * for each lane, selects `a` if `m` is true and `b` if `m` is false
@@ -339,7 +381,7 @@
 
 
 
-### Load/Store
+### Load/Store operations
 * `template<class V, N = V::width>`  
   `vector load(const scalar* p)`
   * loads the first `N` values from the address `p` into corresponding lanes
@@ -467,38 +509,3 @@
 
 * `mask has_single_bit(vector x)`
   * for each lane, produces true if `x` has a single bit set. False otherwise
-
-### Bit Manipulation Instructions
-* `vector bit_shift_left<S>(vector x)`
-  * performs a bitwise left shift on all lanes in `x` by `S` bits
-  * may perform marginally better than shifting by a runtime scalar
-
-* `vector bit_shift_right<S>(vector x)`
-  * performs a bitwise right shift on all lanes in `x` by `S` bits
-  * may perform marginally better than shifting by a runtime scalar
-
-* `vector rotl<S>(vector x)`
-  * performs a bitwise left rotation on all lanes in `x` by `S` bits
-  * may perform marginally better than rotating by a runtime scalar
-
-* `vector rotl(vector x, scalar s)`
-  * performs a bitwise left rotation on all lanes by s bits
-  * likely to perform suboptimally on x86 on 8-bit elements
-
-* `vector rotl(vector x, vector s)`
-  * for each lane, performs a bitwise left rotation by s bits
-  * likely to perform suboptimally on x86 on 8-bit elements
-  * likely to perform poorly without AVX2 support
-
-* `vector rotr<S>(vector x)``
-  * performs a bitwise right rotation on all lanes in `x` by `S` bits
-  * may perform marginally better than rotating by a runtime scalar
-
-* `vector rotr(vector x, scalar s)`
-  * performs a bitwise right rotation on all lanes in `x` by `s` bits
-  * likely to perform suboptimally on x86 on 8-bit elements
-
-* `vector rotr(vector x, vector s)`
-  * for each lane, performs a bitwise right rotation on `x` by `s` bits
-  * likely to perform suboptimally on x86 on 8-bit elements
-  * likely to perform poorly without AVX2 support

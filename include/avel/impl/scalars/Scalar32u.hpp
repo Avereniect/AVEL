@@ -1,3 +1,6 @@
+#ifndef AVEL_SCALAR32U_HPP
+#define AVEL_SCALAR32U_HPP
+
 namespace avel {
 
     //=====================================================
@@ -282,6 +285,24 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL std::uint32_t keep(bool m, std::uint32_t x) {
+        if (m) {
+            return x;
+        } else {
+            return 0;
+        }
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t clear(bool m, std::uint32_t x) {
+        if (m) {
+            return 0;
+        } else {
+            return x;
+        }
+    }
+
+    [[nodiscard]]
     AVEL_FINL std::uint32_t blend(bool m, std::uint32_t a, std::uint32_t b) {
         if (m) {
             return a;
@@ -336,3 +357,5 @@ namespace avel {
     }
 
 }
+
+#endif

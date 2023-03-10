@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.1)
+
 project(AVEL)
 
 # List of AVEL CMake options
@@ -43,6 +44,8 @@ foreach (extension IN LISTS AVEL_OPTIONS)
     option(${extension} OFF)
 endforeach()
 
+option(AVEL_USE_PRECOMPILED_HEADERS OFF)
+
 ## Define macros for requested features
 foreach(extension IN LISTS AVEL_OPTIONS)
     if(${extension})
@@ -66,20 +69,31 @@ if(AVEL_L3_CACHE_LINE_SIZE)
 endif()
 
 
+## Handle precompiled headers
+if(AVEL_USE_PRECOMPILED_HEADERS AND (${CMAKE_VERSION} VERSION_LESS "3.16.0"))
+    message(FATAL_ERROR "The use of precompiled headers requires at least CMake 3.16.0")
+endif()
+
+if (AVEL_USE_PRECOMPILED_HEADERS)
+    target_precompile_headers(AVEL
+        INTERFACE
+        include/avel/Avel.hpp
+    )
+endif()
+
 
 # AVEL tests
 option(AVEL_BUILD_TESTS OFF)
 
 if (AVEL_BUILD_TESTS)
-    add_executable(AVEL_TESTS tests/AVEL_tests.cpp)
-    target_link_libraries(AVEL_TESTS PUBLIC AVEL gtest pthread)
-    target_compile_features(AVEL_TESTS PRIVATE "cxx_std_11")
+    add_subdirectory(tests/)
+endif()
 
-    #TODO: Set compilation flags based on enabled features
-    target_compile_options(AVEL_TESTS PRIVATE "")
-    target_link_options(AVEL_TESTS PRIVATE "")
+# AVEL benchmarks
+option(AVEL_BUILD_BENCHMARKS OFF)
 
-    target_include_directories(AVEL_TESTS PRIVATE ./include/)
+if (AVEL_BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
 endif()
 
 #add_subdirectory(support)

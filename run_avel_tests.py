@@ -6,14 +6,14 @@ import shutil
 # Path to compilers and names used for their build directories
 compilers = [
     ['/usr/bin/g++-12', 'gnu-12'],
-    ['/usr/bin/g++-11', 'gnu-11'],
-    ['/usr/bin/g++-10', 'gnu-10'],
-    ['/usr/bin/g++-9',  'gnu-9'],
-    ['/usr/bin/clang++-14', 'clang-14'],
-    ['/usr/bin/clang++-13', 'clang-13'],
-    ['/usr/bin/clang++-12', 'clang-12'],
-    ['/usr/bin/clang++-11', 'clang-11'],
-    ['/opt/intel/oneapi/compiler/2023.0.0/linux/bin/icpx', 'icpx-2023.0.0']
+    #['/usr/bin/g++-11', 'gnu-11'],
+    #['/usr/bin/g++-10', 'gnu-10'],
+    #['/usr/bin/g++-9',  'gnu-9'],
+    #['/usr/bin/clang++-14', 'clang-14'],
+    #['/usr/bin/clang++-13', 'clang-13'],
+    #['/usr/bin/clang++-12', 'clang-12'],
+    #['/usr/bin/clang++-11', 'clang-11'],
+    #['/opt/intel/oneapi/compiler/2023.0.0/linux/bin/icpx', 'icpx-2023.0.0']
 ]
 
 feature_flag_combinations_x86 = [
@@ -39,7 +39,8 @@ feature_flag_combinations_x86 = [
     ['-mavx512bitalg'],
     ['-mavx512vbmi'],
     ['-mavx512vbmi2'],
-    ['-mgfni'],
+    ['-mavx512f', '-mgfni'],
+    ['-mavx512bw', '-mgfni'],
     ['-mavx512vl', '-mavx512bw'],
     ['-mavx512vl', '-mavx512dq'],
     ['-mavx512vl', '-mavx512cd'],
@@ -81,6 +82,7 @@ feature_combinations_x86 = [
     ['AVEL_AVX512VBMI'],
     ['AVEL_AVX512VBMI2'],
     ['AVEL_GFNI'],
+    ['AVEL_AVX512BW', 'AVEL_GFNI'],
     ['AVEL_AVX512VL', 'AVEL_AVX512BW'],
     ['AVEL_AVX512VL', 'AVEL_AVX512DQ'],
     ['AVEL_AVX512VL', 'AVEL_AVX512CD'],
@@ -152,7 +154,7 @@ def test_on_compiler(compiler_path, build_dir_name):
             failed = True
             return failed
 
-        run_command = './test_build_dirs/{}/AVEL_TESTS'.format(build_dir_name)
+        run_command = './test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name)
         ret = os.system(run_command)
         if ret != 0:
             print()

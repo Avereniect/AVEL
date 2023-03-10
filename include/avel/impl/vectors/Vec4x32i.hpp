@@ -296,8 +296,6 @@ namespace avel {
 
     };
 
-    constexpr std::uint32_t mask4x32i::width;
-
     //=====================================================
     // Mask functions
     //=====================================================
@@ -448,10 +446,8 @@ namespace avel {
             Vector(convert<Vector>(v)[0]) {}
 
         AVEL_FINL explicit Vector(mask m):
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
-            content(_mm_sub_epi32(_mm_setzero_si128(), _mm_movm_epi32(decay(m)))) {}
-        #elif defined(AVEL_AVX512VL)
-            content(_mm_mask_blend_epi32(decay(m), _mm_setzero_si128(), _mm_set1_epi32(1))) {}
+        #if defined(AVEL_AVX512VL)
+            content(_mm_maskz_set1_epi32(decay(m), 0x1)) {}
         #elif defined(AVEL_SSE2)
             content(_mm_sub_epi32(_mm_setzero_si128(), decay(m))) {}
         #endif
@@ -947,8 +943,6 @@ namespace avel {
         "Vector was not of the expected size!"
     );
 
-    constexpr std::uint32_t vec4x32i::width;
-
     //=====================================================
     // Delayed definitions
     //=====================================================
@@ -985,7 +979,7 @@ namespace avel {
 
     template<std::uint32_t S>
     [[nodiscard]]
-    vec4x32i bit_shift_left(vec4x32i v) {
+    AVEL_FINL vec4x32i bit_shift_left(vec4x32i v) {
         static_assert(S <= 32, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 32, int>::type dummy_variable = 0;
 
@@ -993,13 +987,13 @@ namespace avel {
     }
 
     template<>
-    vec4x32i bit_shift_left<0>(vec4x32i v) {
+    AVEL_FINL vec4x32i bit_shift_left<0>(vec4x32i v) {
         return v;
     }
 
     template<std::uint32_t S>
     [[nodiscard]]
-    vec4x32i bit_shift_right(vec4x32i v) {
+    AVEL_FINL vec4x32i bit_shift_right(vec4x32i v) {
         static_assert(S <= 32, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 32, int>::type dummy_variable = 0;
 
@@ -1013,7 +1007,7 @@ namespace avel {
     }
 
     template<>
-    vec4x32i bit_shift_right<0>(vec4x32i v) {
+    AVEL_FINL vec4x32i bit_shift_right<0>(vec4x32i v) {
         return v;
     }
 
@@ -1057,7 +1051,6 @@ namespace avel {
     // General vector operations
     //=====================================================
 
-    /*
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(vec4x32i x) {
         return count(vec4x32u{x});
@@ -1077,7 +1070,6 @@ namespace avel {
     AVEL_FINL bool none(vec4x32i x) {
         return none(vec4x32u{x});
     }
-    */
 
     [[nodiscard]]
     AVEL_FINL vec4x32i broadcast_mask(mask4x32i m) {
@@ -1085,9 +1077,7 @@ namespace avel {
         return vec4x32i{_mm_movm_epi32(decay(m))};
 
         #elif defined(AVEL_AVX512VL)
-        const auto x = _mm_set1_epi32(0);
-        const auto y = _mm_set1_epi32(-1);
-        return vec4x32i{_mm_mask_blend_epi32(decay(m), x, y)};
+        return vec4x32i{_mm_maskz_set1_epi32(decay(m), -1)};
 
         #elif defined(AVEL_SSE2)
         return vec4x32i{decay(m)};
@@ -1097,6 +1087,16 @@ namespace avel {
         #if defined(AVEL_NEON)
         return vec4x32i{vreinterpretq_s32_u32(decay(m))};
         #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x32i keep(mask4x32i m, vec4x32i v) {
+        return vec4x32i{keep(mask4x32u{m}, vec4x32u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x32i clear(mask4x32i m, vec4x32i v) {
+        return vec4x32i{clear(mask4x32u{m}, vec4x32u{v})};
     }
 
     [[nodiscard]]

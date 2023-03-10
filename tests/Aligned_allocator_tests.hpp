@@ -1,6 +1,10 @@
 #ifndef AVEL_ALIGNED_ALLOCATOR_TESTS_HPP
 #define AVEL_ALIGNED_ALLOCATOR_TESTS_HPP
 
+#include <avel/Aligned_allocator.hpp>
+
+#include "AVEL_tests.hpp"
+
 namespace avel_tests {
 
     static constexpr std::size_t alloc_iterations = 32;

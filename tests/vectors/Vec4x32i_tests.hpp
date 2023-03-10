@@ -2058,4 +2058,4 @@ namespace avel_tests {
     
 }
 
-#endif //AVEL_VEC4X32I_TESTS_HPP
+#endif
