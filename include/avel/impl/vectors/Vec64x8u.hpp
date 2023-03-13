@@ -135,7 +135,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL Vector_mask operator!() const {
-            return Vector_mask{static_cast<primitive>(~content)};
+            return Vector_mask{_knot_mask64(content)};
         }
 
         [[nodiscard]]

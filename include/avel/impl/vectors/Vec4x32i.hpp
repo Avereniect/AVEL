@@ -297,87 +297,8 @@ namespace avel {
     };
 
     //=====================================================
-    // Mask functions
-    //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL std::uint32_t count(mask4x32i m) {
-        #if defined(AVEL_AVX512VL)
-        return popcount(_mm512_mask2int(decay(m)));
-        #elif defined(AVEL_SSE2)
-        return popcount(_mm_movemask_epi8(decay(m))) / sizeof(std::uint32_t);
-        #endif
-
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
-        auto t0 = vnegq_s32(vreinterpretq_s32_u32(decay(m)));
-        return static_cast<std::uint32_t>(vaddvq_s32(t0));
-
-        #elif defined(AVEL_NEON)
-        auto t0 = vreinterpretq_u32_s32(vnegq_s32(vreinterpretq_s32_u32(decay(m))));
-        auto t1 = vpadd_u32(vget_low_u32(t0), vget_high_u32(t0));
-        auto t2 = vpadd_u32(t1, t1);
-
-        return static_cast<std::uint32_t>(vget_lane_u32(t2, 0));
-
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL bool any(mask4x32i m) {
-        #if defined(AVEL_AVX512VL)
-        return _mm512_mask2int(decay(m));
-        #elif defined(AVEL_SSE2)
-        return _mm_movemask_epi8(decay(m));
-        #endif
-
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
-        return vmaxvq_u32(decay(m)) != 0x00;
-
-        #elif defined(AVEL_NEON)
-        auto t0 = decay(m);
-        auto t1 = vpmax_u32(vget_low_u32(t0), vget_high_u32(t0));
-        auto t2 = vpmax_u32(t1, t1);
-        return vget_lane_u32(t2, 0x0) != 0x00;
-
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL bool all(mask4x32i m) {
-        #if defined(AVEL_AVX512VL)
-        return 0xF == _mm512_mask2int(decay(m));
-        #elif defined(AVEL_SSE41)
-        return _mm_test_all_ones(decay(m));
-        #elif defined(AVEL_SSE2)
-        return 0xFFFF == _mm_movemask_epi8(decay(m));
-        #endif
-
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
-        return vminvq_u8(vreinterpretq_u8_u32(decay(m))) == 0xFF;
-
-        #elif defined(AVEL_NEON)
-        auto t0 = decay(m);
-        auto t1 = vpmin_u32(vget_low_u32(t0), vget_high_u32(t0));
-        auto t2 = vpmin_u32(t1, t1);
-        return vget_lane_u32(t2, 0x0) == 0xFFFFFFFF;
-
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL bool none(mask4x32i m) {
-        return !any(m);
-    }
-
-    //=====================================================
     // Mask conversions
     //=====================================================
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask4x32i, 1> convert<mask4x32i, mask4x32i>(mask4x32i m) {
-        return std::array<mask4x32i, 1>{m};
-    }
 
     template<>
     [[nodiscard]]
@@ -389,6 +310,30 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::array<mask4x32i, 1> convert<mask4x32i, mask4x32u>(mask4x32u m) {
         return {mask4x32i{decay(m)}};
+    }
+
+    //=====================================================
+    // Mask functions
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t count(mask4x32i m) {
+        return count(mask4x32u{m});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool any(mask4x32i m) {
+        return any(mask4x32u{m});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool all(mask4x32i m) {
+        return all(mask4x32u{m});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool none(mask4x32i m) {
+        return none(mask4x32u{m});
     }
 
 
@@ -956,6 +901,7 @@ namespace avel {
     //=====================================================
 
     template<std::uint32_t N>
+    [[nodiscard]]
     AVEL_FINL std::int32_t extract(vec4x32i v) {
         static_assert(N <= vec4x32i::width, "Specified index does not exist");
         typename std::enable_if<N <= vec4x32i::width, int>::type dummy_variable = 0;
@@ -971,6 +917,14 @@ namespace avel {
         #if defined(AVEL_NEON)
         return vgetq_lane_s32(decay(v), N);
         #endif
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL vec4x32i insert(vec4x32i v, std::int32_t x) {
+        static_assert(N <= vec4x32i::width, "Specified index does not exist");
+        typename std::enable_if<N <= vec4x32i::width, int>::type dummy_variable = 0;
+
+        return vec4x32i{insert<N>(vec4x32u{v}, static_cast<std::uint32_t>(x))};
     }
 
     //=====================================================
@@ -1181,7 +1135,16 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32i midpoint(vec4x32i a, vec4x32i b) {
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_AVX512VL)
+        auto avg = decay(((a ^ b) >> 1) + (a & b));
+
+        auto bias = _mm_ternarylogic_epi32(a, b, _mm_set1_epi32(0x1), 0x28);
+        auto mask = _mm_cmplt_epi32_mask(decay(b), decay(a));
+        auto ret = _mm_mask_add_epi32(avg, mask, avg, bias);
+
+        return vec4x32i{ret};
+
+        #elif defined(AVEL_SSE2)
         auto average = ((a ^ b) >> 1) + (a & b);
         auto bias = (broadcast_mask(b < a) & (a ^ b) & vec4x32i{0x1});
         return average + bias;

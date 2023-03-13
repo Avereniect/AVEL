@@ -579,26 +579,17 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator&=(Vector rhs) {
-            #if defined(AVEL_AVX2)
             content = _mm256_and_si256(content, decay(rhs));
-
-            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator|=(Vector rhs) {
-            #if defined(AVEL_AVX2)
             content = _mm256_or_si256(content, decay(rhs));
-
-            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator^=(Vector rhs) {
-            #if defined(AVEL_AVX2)
             content = _mm256_xor_si256(content, decay(rhs));
-
-            #endif
             return *this;
         }
 
@@ -748,7 +739,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return Vector{_mm256_ternarylogic_epi32(content, content, content, 0x01)};
 
-            #elif defined(AVEL_SSE2)
+            #elif defined(AVEL_AVX2)
             auto undef = _mm256_undefined_si256();
             return Vector{_mm256_andnot_si256(content, _mm256_cmpeq_epi32(undef, undef))};
 

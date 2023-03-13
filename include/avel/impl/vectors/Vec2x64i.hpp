@@ -296,91 +296,8 @@ namespace avel {
     };
 
     //=====================================================
-    // Mask functions
-    //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL std::uint32_t count(mask2x64i m) {
-        #if defined(AVEL_AVX512VL)
-        return popcount(decay(m));
-
-        #elif defined(AVEL_SSE2)
-        return popcount(_mm_movemask_epi8(decay(m))) / 8;
-
-        #endif
-
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
-        auto t0 = vnegq_s64(vreinterpretq_s64_u64(decay(m)));
-        return static_cast<std::uint32_t>(vaddvq_s64(t0));
-
-        #elif defined(AVEL_NEON)
-        auto t0 = vreinterpretq_u32_s64(vnegq_s64(vreinterpretq_s64_u64(decay(m))));
-        auto t1 = vgetq_lane_u32(t0, 0x00) + vgetq_lane_u32(t0, 0x2);
-
-        return static_cast<std::uint32_t>(t1);
-
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL bool any(mask2x64i m) {
-        #if defined(AVEL_AVX512VL)
-        return decay(m);
-
-        #elif defined(AVEL_SSE2)
-        return _mm_movemask_epi8(decay(m));
-
-        #endif
-
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
-        return vmaxvq_u32(vreinterpretq_u32_u64(decay(m))) != 0x00;
-
-        #endif
-        #if defined(AVEL_NEON)
-        auto t0 = vreinterpretq_u32_u64(decay(m));
-        auto t1 = vpmax_u32(vget_low_u32(t0), vget_high_u32(t0));
-        auto t2 = vpmax_u32(t1, t1);
-        return vget_lane_u32(t2, 0x0) != 0x00;
-
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL bool all(mask2x64i m) {
-        #if defined(AVEL_AVX512VL)
-        return decay(m) == 0x3;
-
-        #elif defined(AVEL_SSE2)
-        return 0xFFFF == _mm_movemask_epi8(decay(m));
-
-        #endif
-
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
-        return vminvq_u8(vreinterpretq_u8_u64(decay(m))) == 0xFF;
-
-        #elif defined(AVEL_NEON)
-        auto t0 = vreinterpretq_u32_u64(decay(m));
-        auto t1 = vpmin_u32(vget_low_u32(t0), vget_high_u32(t0));
-        auto t2 = vpmin_u32(t1, t1);
-        return vget_lane_u32(t2, 0x0) == 0xFFFFFFFF;
-
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL bool none(mask2x64i m) {
-        return !any(m);
-    }
-
-    //=====================================================
     // Mask conversions
     //=====================================================
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask2x64i, 1> convert<mask2x64i, mask2x64i>(mask2x64i m) {
-        return {m};
-    }
 
     template<>
     [[nodiscard]]
@@ -392,6 +309,30 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::array<mask2x64i, 1> convert<mask2x64i, mask2x64u>(mask2x64u m) {
         return {mask2x64i{decay(m)}};
+    }
+
+    //=====================================================
+    // Mask functions
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t count(mask2x64i m) {
+        return count(mask2x64u{m});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool any(mask2x64i m) {
+        return any(mask2x64u{m});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool all(mask2x64i m) {
+        return all(mask2x64u{m});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool none(mask2x64i m) {
+        return none(mask2x64u{m});
     }
 
 
@@ -1147,6 +1088,7 @@ namespace avel {
     //=====================================================
 
     template<std::uint32_t N>
+    [[nodiscard]]
     AVEL_FINL std::int64_t extract(vec2x64i v) {
         static_assert(N <= vec2x64i::width, "Specified index does not exist");
         typename std::enable_if<N <= vec2x64i::width, int>::type dummy_variable = 0;
@@ -1162,6 +1104,14 @@ namespace avel {
         #if defined(AVEL_NEON)
         return vgetq_lane_s64(decay(v), N);
         #endif
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL vec2x64i insert(vec2x64i v, std::int64_t x) {
+        static_assert(N <= vec2x64i::width, "Specified index does not exist");
+        typename std::enable_if<N <= vec2x64i::width, int>::type dummy_variable = 0;
+
+        return vec2x64i{insert<N>(vec2x64u{v}, static_cast<std::uint64_t>(x))};
     }
 
     //=====================================================
@@ -1422,9 +1372,28 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64i midpoint(vec2x64i a, vec2x64i b) {
+        #if defined(AVEL_AVX512VL)
+        auto avg = decay(((a ^ b) >> 1) + (a & b));
+
+        auto bias = _mm_ternarylogic_epi32(a, b, _mm_set1_epi64x(0x1), 0x28);
+        auto mask = _mm_cmplt_epi64_mask(decay(b), decay(a));
+        auto ret = _mm_mask_add_epi64(avg, mask, avg, bias);
+
+        return vec2x64i{ret};
+
+        #elif defined(AVEL_SSE2)
         auto average = ((a ^ b) >> 1) + (a & b);
         auto bias = (broadcast_mask(b < a) & (a ^ b) & vec2x64i{0x1});
         return average + bias;
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        vec2x64i avg{vsra_n_s64(vand_s64(a, b), veor_s64(a, b), 1)};
+        auto bias = (broadcast_mask(b < a) & (a ^ b) & vec2x64i{0x1});
+        return average + bias;
+
+        #endif
     }
 
     [[nodiscard]]
@@ -1466,7 +1435,10 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64i neg_abs(vec2x64i x) {
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_AVX512VL)
+        return -vec2x64i{_mm_abs_epi64(decay(x))};
+
+        #elif defined(AVEL_SSE2)
         auto y = ~(x >> 63);
         return (x ^ y) - y;
         #endif
@@ -1562,8 +1534,7 @@ namespace avel {
     template<>
     AVEL_FINL vec2x64u gather<vec2x64u>(const std::uint64_t* ptr, vec2x64i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = min(n, vec2x64u::width);
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 2) ? 0x3 : (1 << n) - 1;
 
         return vec2x64u{_mm_mmask_i64gather_epi64(_mm_setzero_si128(), mask, decay(indices), ptr, sizeof(std::uint64_t))};
 
@@ -1651,8 +1622,7 @@ namespace avel {
     template<>
     AVEL_FINL vec2x64i gather<vec2x64i>(const std::int64_t* ptr, vec2x64i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = min(n, vec2x64i::width);
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 2) ? 0x3 : (1 << n) - 1;
 
         return vec2x64i{_mm_mmask_i64gather_epi64(_mm_setzero_si128(), mask, decay(indices), ptr, sizeof(std::int64_t))};
 

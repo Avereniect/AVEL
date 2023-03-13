@@ -296,82 +296,6 @@ namespace avel {
     };
 
     //=====================================================
-    // Mask functions
-    //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL std::uint32_t count(mask8x16i m) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        return popcount(decay(m));
-
-        #elif defined(AVEL_SSE2)
-        return popcount(_mm_movemask_epi8(decay(m))) / 2;
-        #endif
-
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
-        auto t0 = vnegq_s16(vreinterpretq_s16_u16(decay(m)));
-        return static_cast<std::uint32_t>(vaddvq_s16(t0));
-
-        #elif defined(AVEL_NEON)
-        auto t0 = vreinterpretq_u16_s16(vnegq_s16(vreinterpretq_s16_u16(decay(m))));
-        auto t1 = vpadd_u16(vget_low_u16(t0), vget_high_u16(t0));
-        auto t2 = vpadd_u16(t1, t1);
-        auto t3 = vpadd_u16(t2, t2);
-
-        return static_cast<std::uint32_t>(vget_lane_u16(t3, 0));
-
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL bool any(mask8x16i m) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        return decay(m);
-
-        #elif defined(AVEL_SSE2)
-        return _mm_movemask_epi8(decay(m));
-        #endif
-
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
-        return vmaxvq_u16(decay(m)) != 0x00;
-
-        #elif defined(AVEL_NEON)
-        auto t0 = vreinterpretq_u32_u16(decay(m));
-        auto t1 = vpmax_u32(vget_low_u32(t0), vget_high_u32(t0));
-        auto t2 = vpmax_u32(t1, t1);
-        return vget_lane_u32(t2, 0x0) != 0x00;
-
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL bool all(mask8x16i m) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        return _mm512_mask2int(decay(m)) == 0x00FF;
-
-        #elif defined(AVEL_SSE2)
-        auto tmp = _mm_movemask_epi8(decay(m));
-        return 0xFFFF == tmp;
-        #endif
-
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
-        return vminvq_u8(vreinterpretq_u8_u16(decay(m))) == 0xFF;
-
-        #elif defined(AVEL_NEON)
-        auto t0 = vreinterpretq_u32_u16(decay(m));
-        auto t1 = vpmin_u32(vget_low_u32(t0), vget_high_u32(t0));
-        auto t2 = vpmin_u32(t1, t1);
-        return vget_lane_u32(t2, 0x0) == 0xFFFFFFFF;
-
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL bool none(mask8x16i m) {
-        return !any(m);
-    }
-
-    //=====================================================
     // Mask conversions
     //=====================================================
 
@@ -385,6 +309,30 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::array<mask8x16i, 1> convert<mask8x16i, mask8x16u>(mask8x16u m) {
         return {mask8x16i{mask8x16i::primitive(decay(m))}};
+    }
+
+    //=====================================================
+    // Mask functions
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t count(mask8x16i m) {
+        return count(mask8x16u{m});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool any(mask8x16i m) {
+        return any(mask8x16u{m});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool all(mask8x16i m) {
+        return all(mask8x16u{m});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool none(mask8x16i m) {
+        return none(mask8x16u{m});
     }
 
 
@@ -966,21 +914,20 @@ namespace avel {
     //=====================================================
 
     template<std::uint32_t N>
+    [[nodiscard]]
     AVEL_FINL std::int16_t extract(vec8x16i v) {
         static_assert(N <= vec8x16i::width, "Specified index does not exist");
         typename std::enable_if<N <= vec8x16i::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SS41)
-        return _mm_extract_epi16(decay(v), N);
+        return static_cast<std::int16_t>(extract<N>(vec8x16u{v}));
+    }
 
-        #elif defined(AVEL_SSE2)
-        return _mm_cvtsi128_si32(_mm_srli_si128(decay(v), 2 * N)) & 0xFFFF;
+    template<std::uint32_t N>
+    AVEL_FINL vec8x16i insert(vec8x16i v, std::int16_t x) {
+        static_assert(N <= vec8x16i::width, "Specified index does not exist");
+        typename std::enable_if<N <= vec8x16i::width, int>::type dummy_variable = 0;
 
-        #endif
-
-        #if defined(AVEL_NEON)
-        return vgetq_lane_s16(decay(v), N);
-        #endif
+        return vec8x16i{insert<N>(vec8x16u{v}, static_cast<std::uint16_t>(x))};
     }
 
     //=====================================================
@@ -1180,8 +1127,22 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16i midpoint(vec8x16i a, vec8x16i b) {
-        //TODO: Leverage newer instruction sets
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        auto offset = _mm_set1_epi16(0x8000);
+
+        auto a_offset = _mm_xor_si128(decay(a), offset);
+        auto b_offset = _mm_xor_si128(decay(b), offset);
+
+        auto average_offset = _mm_avg_epu16(a_offset, b_offset);
+        auto average = _mm_xor_si128(average_offset, offset);
+
+        auto bias = _mm_ternarylogic_epi32(a, b, _mm_set1_epi16(0x1), 0x28);
+        auto mask = _mm_cmplt_epi16_mask(decay(a), decay(b));
+        auto ret = _mm_mask_sub_epi16(average, mask, average, bias);
+
+        return vec8x16i{ret};
+
+        #elif defined(AVEL_SSE2)
         auto offset = _mm_set1_epi16(0x8000);
 
         auto a_offset = _mm_xor_si128(decay(a), offset);
@@ -1202,7 +1163,7 @@ namespace avel {
         return t0 + t1;
 
         #endif
-    };
+    }
 
     [[nodiscard]]
     AVEL_FINL vec8x16i negate(mask8x16i m, vec8x16i x) {
