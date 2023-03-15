@@ -545,7 +545,6 @@ namespace avel_tests {
         EXPECT_TRUE(all(results == v));
     }
 
-    /* //TODO: Uncomment once vec64x8i is implemented
     TEST(Vec64x8u, Unary_minus) {
         auto inputs = random_array<arr64x8u>();
         const vec64x8u v{inputs};
@@ -559,7 +558,6 @@ namespace avel_tests {
 
         EXPECT_TRUE(all(results == vec64x8i{expected}));
     }
-    */
 
     //=====================================================
     // Arithmetic assignment operators
@@ -1725,7 +1723,6 @@ namespace avel_tests {
         }
     }
 
-    /* //TODO: Uncomment once vec64x8i is implemented
     TEST(Vec64x8u, Neg_abs_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             auto inputs = random_array<arr64x8u>();
@@ -1742,7 +1739,6 @@ namespace avel_tests {
             EXPECT_TRUE(all(results == vec64x8i{expected}));
         }
     }
-    */
 
     //=====================================================
     // Load/Store operations
