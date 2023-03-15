@@ -1550,8 +1550,8 @@ namespace avel_tests {
             arr4xb input_array0{};
             arr4x32i input_array1{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
-                input_array0[j] = random16u() & 0x1;
-                input_array1[j] = random16u();
+                input_array0[j] = random32u() & 0x1;
+                input_array1[j] = random32u();
             }
 
             mask4x32i input0{input_array0};

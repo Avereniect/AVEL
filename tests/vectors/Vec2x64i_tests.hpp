@@ -1455,8 +1455,8 @@ namespace avel_tests {
             arr2xb input_array0{};
             arr2x64i input_array1{};
             for (std::size_t j = 0; j < input_array0.size(); ++j) {
-                input_array0[j] = random16u() & 0x1;
-                input_array1[j] = random16u();
+                input_array0[j] = random64u() & 0x1;
+                input_array1[j] = random64u();
             }
 
             mask2x64i input0{input_array0};

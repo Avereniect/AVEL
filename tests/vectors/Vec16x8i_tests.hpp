@@ -6,7 +6,7 @@ namespace avel_tests {
     using namespace avel;
     
     //=========================================================================
-    // mas16x8i tests
+    // mask16x8i tests
     //=========================================================================
 
     //=====================================================
@@ -395,7 +395,7 @@ namespace avel_tests {
         vec16x8i::primitive x{};
         vec16x8i v{0x0F};
         v = x;
-        vec16x8i expected{};
+        vec16x8i expected{0x00};
 
         EXPECT_TRUE(all(v == expected));
     }
@@ -546,8 +546,8 @@ namespace avel_tests {
     }
 
     TEST(Vec16x8i, Unary_minus) {
-        auto inputs = random_array<arr16x8u>();
-        const vec16x8u input{inputs};
+        auto inputs = random_array<arr16x8i>();
+        const vec16x8i input{inputs};
 
         auto results = -input;
 
@@ -1288,10 +1288,7 @@ namespace avel_tests {
 
     TEST(Vec16x8i, Broadcast_mask_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            arr16xb inputs0{};
-            for (std::size_t j = 0; j < inputs0.size(); ++j) {
-                inputs0[j] = random8u() & 0x1;
-            }
+            auto inputs0 = random_array<arr16xb>();
 
             mask16x8i v0{inputs0};
 
@@ -1356,9 +1353,9 @@ namespace avel_tests {
 
             mask16x8i v0{inputs0};
             vec16x8i v1{inputs1};
-            vec16x8i input2{inputs2};
+            vec16x8i v2{inputs2};
 
-            auto results = blend(v0, v1, input2);
+            auto results = blend(v0, v1, v2);
 
             arr16x8i expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {

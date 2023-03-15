@@ -16,6 +16,7 @@
 
 #if defined(AVEL_AVX2)
     #include "Vec32x8u_tests.hpp"
+    #include "Vec32x8i_tests.hpp"
 #endif
 
 #if defined(AVEL_AVX512F)
@@ -24,4 +25,5 @@
 
 #if defined(AVEL_AVX512BW)
     #include "Vec64x8u_tests.hpp"
+    #include "Vec64x8i_tests.hpp"
 #endif

@@ -537,7 +537,7 @@ namespace avel_tests {
     // Unary arithmetic operators
     //=====================================================
 
-    TEST(Vec16x8u, Unary_plus_random) {
+    TEST(Vec16x8u, Unary_plus) {
         auto inputs = random_array<arr16x8u>();
         const vec16x8u v{inputs};
         vec16x8u results{+v};
