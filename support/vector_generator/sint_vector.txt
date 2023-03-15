@@ -177,6 +177,22 @@ namespace avel {
     };
 
     //=====================================================
+    // Mask conversions
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<$<MASK_ALIAS>, 1> convert<$<UMASK_ALIAS>, $<MASK_ALIAS>>($<MASK_ALIAS> m) {
+        return {$<UMASK_ALIAS>{decay(m)}};
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<$<MASK_ALIAS>, 1> convert<$<MASK_ALIAS>, $<UMASK_ALIAS>>($<UMASK_ALIAS> m) {
+        return {$<MASK_ALIAS>(decay(m))};
+    }
+
+    //=====================================================
     // Mask functions
     //=====================================================
 
@@ -200,10 +216,6 @@ namespace avel {
         return none($<UMASK_ALIAS>{m});
     }
 
-    //=====================================================
-    // Mask conversions
-    //=====================================================
-    $<MASK_CONVERSIONS>
 
 
 
@@ -532,6 +544,27 @@ $END
 
     };
 
+    static_assert(
+        $<VECTOR_WIDTH> * sizeof($<SCALAR_NAME>) == sizeof($<VECTOR_ALIAS>),
+        "Vector was not of the expected size!"
+    );
+
+    //=====================================================
+    // Vector conversions
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<$<UVECTOR_ALIAS>, 1> convert<$<UVECTOR_ALIAS>, $<VECTOR_ALIAS>>($<VECTOR_ALIAS> x) {
+        return {$<UVECTOR_ALIAS>{decay(x)}};
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<$<VECTOR_ALIAS>, 1> convert<$<VECTOR_ALIAS>, $<UVECTOR_ALIAS>>($<UVECTOR_ALIAS> x) {
+        return {$<VECTOR_ALIAS>{decay(x)}};
+    }
+
     //=====================================================
     // Delayed definitions
     //=====================================================
@@ -750,6 +783,16 @@ $BEGIN<HAS_SCATTER>$
         $<scatter(const uscalar*, uvec, vec, std::uint32_t)>
     }
 $END
+
+
+
+    [[nodiscard]]
+    AVEL_FINL $<ARRAY_ALIAS> to_array($<VECTOR_ALIAS> v) {
+        alignas($<VECTOR_ALIGNMENT>) $<ARRAY_ALIAS> ret;
+        aligned_store(ret.data(), v);
+        return ret;
+    }
+
     //=====================================================
     // Arrangement Instructions
     //=====================================================
@@ -768,45 +811,6 @@ $END
         typename std::enable_if<N <= $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
 
         $<insert(vec, scalar)>
-    }
-
-    //=====================================================
-    // Integer vector operations
-    //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL div_type<$<VECTOR_ALIAS>> div($<VECTOR_ALIAS> x, $<VECTOR_ALIAS> y) {
-        $<div(vec, vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> popcount($<VECTOR_ALIAS> v) {
-        return $<VECTOR_ALIAS>{popcount($<UVECTOR_ALIAS>{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> countl_zero($<VECTOR_ALIAS> v) {
-        return $<VECTOR_ALIAS>{countl_zero($<UVECTOR_ALIAS>{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> countl_one($<VECTOR_ALIAS> v) {
-        return $<VECTOR_ALIAS>{countl_one($<UVECTOR_ALIAS>{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> countr_zero($<VECTOR_ALIAS> v) {
-        return $<VECTOR_ALIAS>{countr_zero($<UVECTOR_ALIAS>{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> countr_one($<VECTOR_ALIAS> v) {
-        return $<VECTOR_ALIAS>{countr_one($<UVECTOR_ALIAS>{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<MASK_ALIAS> has_single_bit($<VECTOR_ALIAS> v) {
-        return $<MASK_ALIAS>{has_single_bit($<UVECTOR_ALIAS>{v})};
     }
 
     //=====================================================
@@ -868,16 +872,44 @@ $END
     }
 
     //=====================================================
-    // Vector conversions
+    // Integer vector operations
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL $<ARRAY_ALIAS> to_array($<VECTOR_ALIAS> v) {
-        alignas($<VECTOR_ALIGNMENT>) $<ARRAY_ALIAS> ret;
-        aligned_store(ret.data(), v);
-        return ret;
+    AVEL_FINL div_type<$<VECTOR_ALIAS>> div($<VECTOR_ALIAS> x, $<VECTOR_ALIAS> y) {
+        $<div(vec, vec)>
     }
-    $<VECTOR_CONVERSIONS>
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> popcount($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{popcount($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> countl_zero($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{countl_zero($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> countl_one($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{countl_one($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> countr_zero($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{countr_zero($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> countr_one($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{countr_one($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<MASK_ALIAS> has_single_bit($<VECTOR_ALIAS> v) {
+        return $<MASK_ALIAS>{has_single_bit($<UVECTOR_ALIAS>{v})};
+    }
+
 }
 
 #endif //$<HEADER_GUARD>

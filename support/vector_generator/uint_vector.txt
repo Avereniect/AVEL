@@ -200,10 +200,6 @@ namespace avel {
         $<none(mask)>
     }
 
-    //=====================================================
-    // Mask conversions
-    //=====================================================
-    $<MASK_CONVERSIONS>
 
 
 
@@ -529,6 +525,11 @@ $END
 
     };
 
+    static_assert(
+        $<VECTOR_WIDTH> * sizeof($<SCALAR_NAME>) == sizeof($<VECTOR_ALIAS>),
+        "Vector was not of the expected size!"
+    );
+
     //=====================================================
     // General vector operations
     //=====================================================
@@ -640,6 +641,15 @@ $END
         $<aligned_store(scalar*, vec, std::uint32_t)>
     }
 
+
+
+    [[nodiscard]]
+    AVEL_FINL $<ARRAY_ALIAS> to_array($<VECTOR_ALIAS> x) {
+        alignas($<VECTOR_ALIGNMENT>) $<ARRAY_ALIAS> ret;
+        aligned_store(ret.data(), x);
+        return ret;
+    }
+
     //=====================================================
     // Arrangement Instructions
     //=====================================================
@@ -658,60 +668,6 @@ $END
         typename std::enable_if<N <= $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
 
         $<insert(vec, scalar)>
-    }
-
-    //=====================================================
-    // Integer vector operations
-    //=====================================================
-
-    [[nodiscard]]
-    div_type<$<VECTOR_ALIAS>> div($<VECTOR_ALIAS> x, $<VECTOR_ALIAS> y) {
-        $<div(vec, vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> popcount($<VECTOR_ALIAS> v) {
-        $<popcount(vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> countl_zero($<VECTOR_ALIAS> v) {
-        $<countl_zero(vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> countl_one($<VECTOR_ALIAS> v) {
-        $<countl_one(vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> countr_zero($<VECTOR_ALIAS> v) {
-        $<countr_zero(vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> countr_one($<VECTOR_ALIAS> v) {
-        $<countr_one(vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> bit_width($<VECTOR_ALIAS> v) {
-        $<bit_width(vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> bit_floor($<VECTOR_ALIAS> v) {
-        $<bit_floor(vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> bit_ceil($<VECTOR_ALIAS> v) {
-        $<bit_ceil(vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<MASK_ALIAS> has_single_bit($<VECTOR_ALIAS> v) {
-        $<has_single_bit(vec)>
     }
 
     //=====================================================
@@ -826,16 +782,59 @@ $END
     }
 
     //=====================================================
-    // Vector conversions
+    // Integer vector operations
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL $<ARRAY_ALIAS> to_array($<VECTOR_ALIAS> x) {
-        alignas($<VECTOR_ALIGNMENT>) $<ARRAY_ALIAS> ret;
-        aligned_store(ret.data(), x);
-        return ret;
+    div_type<$<VECTOR_ALIAS>> div($<VECTOR_ALIAS> x, $<VECTOR_ALIAS> y) {
+        $<div(vec, vec)>
     }
-    $<VECTOR_CONVERSIONS>
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> popcount($<VECTOR_ALIAS> v) {
+        $<popcount(vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> countl_zero($<VECTOR_ALIAS> v) {
+        $<countl_zero(vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> countl_one($<VECTOR_ALIAS> v) {
+        $<countl_one(vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> countr_zero($<VECTOR_ALIAS> v) {
+        $<countr_zero(vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> countr_one($<VECTOR_ALIAS> v) {
+        $<countr_one(vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> bit_width($<VECTOR_ALIAS> v) {
+        $<bit_width(vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> bit_floor($<VECTOR_ALIAS> v) {
+        $<bit_floor(vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> bit_ceil($<VECTOR_ALIAS> v) {
+        $<bit_ceil(vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<MASK_ALIAS> has_single_bit($<VECTOR_ALIAS> v) {
+        $<has_single_bit(vec)>
+    }
+
 }
 
 #endif //$<HEADER_GUARD>
