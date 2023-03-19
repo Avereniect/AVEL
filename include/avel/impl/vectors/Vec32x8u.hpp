@@ -119,7 +119,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            return decay(lhs) == decay(rhs);
+            auto tmp = _kxor_mask32(decay(lhs), decay(rhs));
+            return _kortestz_mask32_u8(tmp, tmp);
 
             #elif defined(AVEL_AVX2)
             return _mm256_movemask_epi8(decay(lhs)) == _mm256_movemask_epi8(decay(rhs));
@@ -129,7 +130,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            return decay(lhs) != decay(rhs);
+            auto tmp = _kxor_mask32(decay(lhs), decay(rhs));
+            return !_kortestz_mask32_u8(tmp, tmp);
 
             #elif defined(AVEL_AVX2)
             return _mm256_movemask_epi8(decay(lhs)) != _mm256_movemask_epi8(decay(rhs));
@@ -327,11 +329,11 @@ namespace avel {
             Vector(convert<Vector>(x)[0]) {}
 
         AVEL_FINL explicit Vector(mask m):
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             content(_mm256_sub_epi8(_mm256_setzero_si256(), _mm256_movm_epi8(decay(m)))) {}
-            #elif defined(AVEL_AVX2)
+        #elif defined(AVEL_AVX2)
             content(_mm256_sub_epi8(_mm256_setzero_si256(), decay(m))) {}
-            #endif
+        #endif
 
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}

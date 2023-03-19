@@ -102,12 +102,14 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
-            return decay(lhs) == decay(rhs);
+            auto tmp = _kxor_mask64(decay(lhs), decay(rhs));
+            return _kortestz_mask64_u8(tmp, tmp);
         }
 
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) noexcept {
-            return decay(lhs) != decay(rhs);
+            auto tmp = _kxor_mask64(decay(lhs), decay(rhs));
+            return !_kortestz_mask64_u8(tmp, tmp);
         }
 
         //=================================================

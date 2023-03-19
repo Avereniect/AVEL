@@ -102,12 +102,14 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
-            return lhs.content == rhs.content;
+            auto tmp = _kxor_mask64(decay(lhs), decay(rhs));
+            return _kortestz_mask64_u8(tmp, tmp);
         }
 
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) noexcept {
-            return lhs.content != rhs.content;
+            auto tmp = _kxor_mask64(decay(lhs), decay(rhs));
+            return !_kortestz_mask64_u8(tmp, tmp);
         }
 
         //=================================================
@@ -484,8 +486,20 @@ namespace avel {
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
             #if defined(AVEL_GFNI)
-            constexpr std::uint64_t identity_matrix = 0x0102040810204080ull;
-            const auto matrix = identity_matrix << (8 * rhs);
+            static constexpr std::uint64_t shift_matrices[9] {
+                0x0102040810204080ull,
+                0x0204081020408080ull,
+                0x0408102040808080ull,
+                0x0810204080808080ull,
+
+                0x1020408080808080ull,
+                0x2040808080808080ull,
+                0x4080808080808080ull,
+                0x8080808080808080ull,
+                0x8080808080808080ull,
+            };
+
+            const auto matrix = shift_matrices[rhs];
             content = _mm512_gf2p8affine_epi64_epi8(content, _mm512_set1_epi64(matrix), 0x00);
 
             #else
@@ -617,11 +631,27 @@ namespace avel {
     );
 
     //=====================================================
+    // Vector conversions
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<vec64x8u, 1> convert<vec64x8u, vec64x8i>(vec64x8i x) {
+        return {vec64x8u{decay(x)}};
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<vec64x8i, 1> convert<vec64x8i, vec64x8u>(vec64x8u x) {
+        return {vec64x8i{decay(x)}};
+    }
+
+    //=====================================================
     // Delayed definitions
     //=====================================================
 
     AVEL_FINL vec64x8i operator-(vec64x8u v) {
-        return vec64x8i{0x0} - vec64x8i{v};
+        return vec64x8i{0x00} - vec64x8i{v};
     }
 
     //=====================================================
@@ -979,22 +1009,6 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL mask64x8i has_single_bit(vec64x8i x) {
         return mask64x8i(has_single_bit(vec64x8u(x)));
-    }
-
-    //=====================================================
-    // Vector conversions
-    //=====================================================
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec64x8u, 1> convert<vec64x8u, vec64x8i>(vec64x8i x) {
-        return {vec64x8u{decay(x)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec64x8i, 1> convert<vec64x8i, vec64x8u>(vec64x8u x) {
-        return {vec64x8i{decay(x)}};
     }
 
 }

@@ -90,7 +90,7 @@ namespace avel {
             content = primitive(_mm_cmplt_epu8_mask(_mm_setzero_si128(), array_data));
 
             #elif defined(AVEL_SSE2)
-            primitive array_data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()));
+            auto array_data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()));
             content = _mm_cmplt_epi8(_mm_setzero_si128(), array_data);
 
             #endif
@@ -141,7 +141,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            return decay(lhs) == decay(rhs);
+            auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
+            return _kortestz_mask16_u8(tmp, tmp);
 
             #elif defined(AVEL_SSE2)
             return _mm_movemask_epi8(decay(lhs)) == _mm_movemask_epi8(decay(rhs));
@@ -161,7 +162,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            return decay(lhs) != decay(rhs);
+            auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
+            return !_kortestz_mask16_u8(tmp, tmp);
 
             #elif defined(AVEL_SSE2)
             return _mm_movemask_epi8(decay(lhs)) != _mm_movemask_epi8(decay(rhs));
@@ -310,7 +312,7 @@ namespace avel {
         return popcount(_mm512_mask2int(decay(m)));
 
         #elif defined(AVEL_SSE2)
-        return popcount(_mm_movemask_epi8(decay(m)));
+        return popcount(_mm_movemask_epi8(decay(m))) / sizeof(std::uint8_t);
 
         #endif
 
@@ -679,24 +681,17 @@ namespace avel {
             content = _mm256_castsi256_si128(packed);
 
             #elif defined(AVEL_SSE2)
-            primitive zeros = _mm_setzero_si128();
-            primitive byte_mask = _mm_set1_epi16(0x00FF);
-            primitive lhs_whole = content;
-            primitive rhs_whole = rhs.content;
+            auto even_mask = _mm_set1_epi16(0x00FF);
 
-            primitive lhs_lo = _mm_unpacklo_epi8(lhs_whole, zeros);
-            primitive lhs_hi = _mm_unpackhi_epi8(lhs_whole, zeros);
+            auto product_even = _mm_mullo_epi16(content, decay(rhs));
+            auto product_even_masked = _mm_and_si128(even_mask, product_even);
 
-            primitive rhs_lo = _mm_unpacklo_epi8(rhs_whole, zeros);
-            primitive rhs_hi = _mm_unpackhi_epi8(rhs_whole, zeros);
+            auto lhs_shifted = _mm_srli_epi16(content, 8);
+            auto rhs_masked = _mm_andnot_si128(even_mask, decay(rhs));
+            auto product_odd = _mm_mullo_epi16(lhs_shifted, rhs_masked);
 
-            primitive out_lo = _mm_mullo_epi16(lhs_lo, rhs_lo);
-            primitive out_hi = _mm_mullo_epi16(lhs_hi, rhs_hi);
-
-            out_lo = _mm_and_si128(byte_mask, out_lo);
-            out_hi = _mm_and_si128(byte_mask, out_hi);
-
-            content = _mm_packus_epi16(out_lo, out_hi);
+            auto result = _mm_or_si128(product_even_masked, product_odd);
+            content = result;
 
             #endif
 
@@ -901,27 +896,10 @@ namespace avel {
                 0x00, 0x00, 0x00, 0x00
             };
 
-            auto zeros = _mm_setzero_si128();
             auto table = _mm_load_si128(reinterpret_cast<const primitive*>(table_data));
+            auto shifts = _mm_shuffle_epi8(table, decay(rhs));
 
-            auto lhs_lo = _mm_unpacklo_epi8(content, zeros);
-            auto lhs_hi = _mm_unpackhi_epi8(content, zeros);
-
-            auto valid_mask = _mm_cmplt_epi8(_mm_set1_epi8(0x7), decay(rhs));
-            auto indices = _mm_or_si128(decay(rhs), valid_mask);
-            auto shifts = _mm_shuffle_epi8(table, indices);
-
-            auto rhs_lo = _mm_unpacklo_epi8(shifts, zeros);
-            auto rhs_hi = _mm_unpackhi_epi8(shifts, zeros);
-
-            lhs_lo = _mm_mullo_epi16(lhs_lo, rhs_lo);
-            lhs_hi = _mm_mullo_epi16(lhs_hi, rhs_hi);
-
-            auto byte_mask = _mm_set1_epi16(0xFF);
-            lhs_lo = _mm_and_si128(lhs_lo, byte_mask);
-            lhs_hi = _mm_and_si128(lhs_hi, byte_mask);
-
-            content = _mm_packus_epi16(lhs_lo, lhs_hi);
+            *this *= vec16x8u{shifts};
 
             #elif defined(AVEL_SSE2)
             auto zeros = _mm_setzero_si128();
@@ -964,25 +942,26 @@ namespace avel {
                 0x00, 0x00, 0x00, 0x00
             };
 
-            auto s = _mm_min_epu8(decay(rhs), _mm_set1_epi8(0x8));
-
             auto table = _mm_load_si128(reinterpret_cast<const primitive*>(table_data));
-            auto shift_factors = _mm_shuffle_epi8(table, s);
+            auto shift_factors = _mm_shuffle_epi8(table, decay(rhs));
 
-            auto zeros = _mm_setzero_si128();
-            auto lo = _mm_unpacklo_epi8(content, zeros);
-            auto hi = _mm_unpackhi_epi8(content, zeros);
+            auto even_mask = _mm_set1_epi16(0x00FF);
+            auto lhs_even = _mm_and_si128(even_mask, content);
+            auto lhs_odd  = _mm_srli_epi16(content, 8);
 
-            auto shift_factors_lo = _mm_unpacklo_epi8(shift_factors, zeros);
-            auto shift_factors_hi = _mm_unpackhi_epi8(shift_factors, zeros);
+            auto rhs_even = _mm_and_si128(even_mask, shift_factors);
+            auto rhs_odd  = _mm_srli_epi16(shift_factors, 8);
 
-            lo = _mm_mullo_epi16(lo, shift_factors_lo);
-            hi = _mm_mullo_epi16(hi, shift_factors_hi);
+            auto products_even = _mm_mullo_epi16(lhs_even, rhs_even);
+            auto products_odd  = _mm_mullo_epi16(lhs_odd, rhs_odd);
 
-            lo = _mm_srli_epi16(lo, 0x7);
-            hi = _mm_srli_epi16(hi, 0x7);
+            auto results_even = _mm_srli_epi16(products_even, 7);
+            auto results_odd  = _mm_add_epi16(products_odd, products_odd);
 
-            content = _mm_packus_epi16(lo, hi);
+            results_odd = _mm_andnot_si128(even_mask, results_odd);
+
+            auto result = _mm_or_si128(results_even, results_odd);
+            content = result;
 
             #elif defined(AVEL_SSE2)
             auto zeros = _mm_setzero_si128();

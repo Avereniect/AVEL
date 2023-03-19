@@ -149,9 +149,12 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL)
-            return decay(lhs) == decay(rhs);
+            auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
+            return _kortestz_mask16_u8(tmp, tmp);
+
             #elif defined(AVEL_SSE2)
             return _mm_movemask_epi8(decay(lhs)) == _mm_movemask_epi8(decay(rhs));
+
             #endif
 
             #if defined(AVEL_AARCH64)
@@ -167,7 +170,9 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL)
-            return decay(lhs) != decay(rhs);
+            auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
+            return !_kortestz_mask16_u8(tmp, tmp);
+
             #elif defined(AVEL_SSE2)
             return _mm_movemask_epi8(decay(lhs)) != _mm_movemask_epi8(decay(rhs));
             #endif
@@ -1059,7 +1064,12 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL explicit operator mask() const {
-            return Vector{} != *this;
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm_test_epi64_mask(content, content)};
+
+            #else
+            return *this != Vector{0x00};
+            #endif
         }
 
     };
@@ -1070,17 +1080,39 @@ namespace avel {
     );
 
     //=====================================================
+    // Vector conversions
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<vec2x64u, 1> convert<vec2x64u, vec2x64i>(vec2x64i m) {
+        #if defined(AVEL_SSE2)
+        return {vec2x64u{decay(m)}};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return {vec2x64u{vreinterpretq_u64_s64(decay(m))}};
+        #endif
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<vec2x64i, 1> convert<vec2x64i, vec2x64u>(vec2x64u m) {
+        #if defined(AVEL_SSE2)
+        return {vec2x64i{decay(m)}};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return {vec2x64i{vreinterpretq_s64_u64(decay(m))}};
+        #endif
+    }
+
+    //=====================================================
     // Delayed definitions
     //=====================================================
 
     AVEL_FINL vec2x64i operator-(vec2x64u v) {
-        #if defined(AVEL_SSE2)
-        return vec2x64i{_mm_sub_epi64(_mm_setzero_si128(), decay(v))};
-        #endif
-
-        #if defined(AVEL_NEON)
-        return vec2x64i{vreinterpretq_s64_u64(vsubq_u64(vdupq_n_u64(0x00), decay(v)))};
-        #endif
+        return vec2x64i{0x00} - vec2x64i{v};
     }
 
     //=====================================================
@@ -1920,40 +1952,6 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL mask2x64i has_single_bit(vec2x64i v) {
         return mask2x64i{has_single_bit(vec2x64u{v})};
-    }
-
-    //=====================================================
-    // Vector conversions
-    //=====================================================
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec2x64i, 1> convert<vec2x64i, vec2x64i>(vec2x64i m) {
-        return std::array<vec2x64i, 1>{m};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec2x64u, 1> convert<vec2x64u, vec2x64i>(vec2x64i m) {
-        #if defined(AVEL_SSE2)
-        return {vec2x64u{decay(m)}};
-        #endif
-
-        #if defined(AVEL_NEON)
-        return {vec2x64u{vreinterpretq_u64_s64(decay(m))}};
-        #endif
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec2x64i, 1> convert<vec2x64i, vec2x64u>(vec2x64u m) {
-        #if defined(AVEL_SSE2)
-        return {vec2x64i{decay(m)}};
-        #endif
-
-        #if defined(AVEL_NEON)
-        return {vec2x64i{vreinterpretq_s64_u64(decay(m))}};
-        #endif
     }
 
 }

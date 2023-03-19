@@ -157,10 +157,12 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) {
             #if defined(AVEL_AVX512VL)
-            return decay(lhs) == decay(rhs);
+            auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
+            return _kortestz_mask16_u8(tmp, tmp);
 
             #elif defined(AVEL_SSE2)
             return _mm_movemask_epi8(decay(lhs)) == _mm_movemask_epi8(decay(rhs));
+
             #endif
 
             #if defined(AVEL_AARCH64)
@@ -176,7 +178,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) {
             #if defined(AVEL_AVX512VL)
-            return decay(lhs) != decay(rhs);
+            auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
+            return !_kortestz_mask16_u8(tmp, tmp);
 
             #elif defined(AVEL_SSE2)
             return _mm_movemask_epi8(decay(lhs)) != _mm_movemask_epi8(decay(rhs));

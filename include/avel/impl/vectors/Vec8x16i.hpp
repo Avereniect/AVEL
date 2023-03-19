@@ -142,7 +142,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            return _mm512_mask2int(lhs.content) == _mm512_mask2int(rhs.content);
+            auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
+            return _kortestz_mask16_u8(tmp, tmp);
 
             #elif defined(AVEL_SSE2)
             return _mm_movemask_epi8(decay(lhs)) == _mm_movemask_epi8(decay(rhs));
@@ -162,7 +163,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            return _mm512_mask2int(lhs.content) != _mm512_mask2int(rhs.content);
+            auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
+            return !_kortestz_mask16_u8(tmp, tmp);
 
             #elif defined(AVEL_SSE2)
             return _mm_movemask_epi8(decay(lhs)) != _mm_movemask_epi8(decay(rhs));
@@ -891,7 +893,12 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL explicit operator mask() const {
-            return Vector{} != *this;
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX51BW)
+            return mask{_mm_test_epi16_mask(content, content)};
+
+            #else
+            return *this != Vector{0x00};
+            #endif
         }
 
     };
@@ -902,11 +909,39 @@ namespace avel {
     );
 
     //=====================================================
+    // Vector conversions
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<vec8x16u, 1> convert<vec8x16u, vec8x16i>(vec8x16i x) {
+        #if defined(AVEL_SSE2)
+        return {vec8x16u{decay(x)}};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return {vec8x16u{vreinterpretq_u16_s16(decay(x))}};
+        #endif
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<vec8x16i, 1> convert<vec8x16i, vec8x16u>(vec8x16u x) {
+        #if defined(AVEL_SSE2)
+        return {vec8x16i{decay(x)}};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return {vec8x16i{vreinterpretq_s16_u16(decay(x))}};
+        #endif
+    }
+
+    //=====================================================
     // Delayed definitions
     //=====================================================
 
-    AVEL_FINL vec8x16i operator-(vec8x16u x) {
-        return vec8x16i{} - vec8x16i{x};
+    AVEL_FINL vec8x16i operator-(vec8x16u v) {
+        return vec8x16i{0x00} - vec8x16i{v};
     }
 
     //=====================================================
@@ -1627,34 +1662,6 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL mask8x16i has_single_bit(vec8x16i x) {
         return mask8x16i{has_single_bit(vec8x16u(x))};
-    }
-
-    //=====================================================
-    // Vector conversions
-    //=====================================================
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec8x16u, 1> convert<vec8x16u, vec8x16i>(vec8x16i x) {
-        #if defined(AVEL_SSE2)
-        return {vec8x16u{decay(x)}};
-        #endif
-
-        #if defined(AVEL_NEON)
-        return {vec8x16u{vreinterpretq_u16_s16(decay(x))}};
-        #endif
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec8x16i, 1> convert<vec8x16i, vec8x16u>(vec8x16u x) {
-        #if defined(AVEL_SSE2)
-        return {vec8x16i{decay(x)}};
-        #endif
-
-        #if defined(AVEL_NEON)
-        return {vec8x16i{vreinterpretq_s16_u16(decay(x))}};
-        #endif
     }
 
 }

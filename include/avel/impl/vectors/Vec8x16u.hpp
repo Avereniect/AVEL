@@ -90,7 +90,7 @@ namespace avel {
             content = static_cast<primitive>(_mm_cmplt_epi8_mask(_mm_setzero_si128(), array_data));
 
             #elif defined(AVEL_SSE2)
-            primitive array_data = _mm_loadu_si64(arr.data());
+            auto array_data = _mm_loadu_si64(arr.data());
 
             array_data = _mm_unpacklo_epi8(array_data, array_data);
             content = _mm_cmplt_epi16(_mm_setzero_si128(), array_data);
@@ -138,9 +138,12 @@ namespace avel {
 
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            return decay(lhs) == decay(rhs);
+            auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
+            return _kortestz_mask16_u8(tmp, tmp);
+
             #elif defined(AVEL_SSE2)
             return _mm_movemask_epi8(decay(lhs)) == _mm_movemask_epi8(decay(rhs));
+
             #endif
 
             #if defined(AVEL_AARCH64)
@@ -155,7 +158,9 @@ namespace avel {
 
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            return decay(lhs) != decay(rhs);
+            auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
+            return !_kortestz_mask16_u8(tmp, tmp);
+
             #elif defined(AVEL_SSE2)
             return _mm_movemask_epi8(decay(lhs)) != _mm_movemask_epi8(decay(rhs));
             #endif

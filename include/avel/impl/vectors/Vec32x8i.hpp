@@ -124,7 +124,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            return decay(lhs) == decay(rhs);
+            auto tmp = _kxor_mask32(decay(lhs), decay(rhs));
+            return _kortestz_mask32_u8(tmp, tmp);
 
             #elif defined(AVEL_AVX2)
             return _mm256_movemask_epi8(decay(lhs)) == _mm256_movemask_epi8(decay(rhs));
@@ -135,7 +136,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            return decay(lhs) != decay(rhs);
+            auto tmp = _kxor_mask32(decay(lhs), decay(rhs));
+            return !_kortestz_mask32_u8(tmp, tmp);
 
             #elif defined(AVEL_AVX2)
             return _mm256_movemask_epi8(decay(lhs)) != _mm256_movemask_epi8(decay(rhs));
@@ -823,6 +825,22 @@ namespace avel {
     );
 
     //=====================================================
+    // Vector conversions
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<vec32x8u, 1> convert<vec32x8u, vec32x8i>(vec32x8i x) {
+        return {vec32x8u{decay(x)}};
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<vec32x8i, 1> convert<vec32x8i, vec32x8u>(vec32x8u x) {
+        return {vec32x8i{decay(x)}};
+    }
+
+    //=====================================================
     // Delayed definitions
     //=====================================================
 
@@ -1242,22 +1260,6 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL mask32x8i has_single_bit(vec32x8i v) {
         return mask32x8i{has_single_bit(vec32x8u{v})};
-    }
-
-    //=====================================================
-    // Vector conversions
-    //=====================================================
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec32x8u, 1> convert<vec32x8u, vec32x8i>(vec32x8i x) {
-        return {vec32x8u{decay(x)}};
-    }
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec32x8i, 1> convert<vec32x8i, vec32x8u>(vec32x8u x) {
-        return {vec32x8i{decay(x)}};
     }
 
 }
