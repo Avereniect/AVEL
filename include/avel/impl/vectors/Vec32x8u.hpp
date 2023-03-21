@@ -1425,6 +1425,29 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec32x8u> div(vec32x8u x, vec32x8u y) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        auto quotient = _mm512_setzero_si512();
+        auto widened_x = _mm512_cvtepu8_epi16(decay(x));
+        auto widened_y = _mm512_cvtepu8_epi16(decay(y));
+
+        auto bits = _mm512_set1_epi16(0x1);
+
+        std::int32_t i = 8;
+        for (; (i-- > 0) && 0x0000 != _mm512_cmpge_epi16_mask(widened_x, widened_y);) {
+            auto count = _mm_cvtsi32_si128(i);
+            auto shifted_widened_x = _mm512_srl_epi16(widened_x, count);
+            auto b = _mm512_cmpge_epu16_mask(shifted_widened_x, widened_y);
+            widened_x = _mm512_mask_sub_epi16(widened_x, b, widened_x, _mm512_sll_epi16(widened_y, count));
+
+            quotient = _mm512_mask_add_epi16(quotient, b, quotient, _mm512_sll_epi16(bits, count));
+        }
+
+        return {
+            vec32x8u{_mm512_cvtepi16_epi8(quotient)},
+            vec32x8u{_mm512_cvtepi16_epi8(widened_x)}
+        };
+
+        #elif defined(AVEL_AVX2)
         vec32x8u quotient{};
         std::int32_t i = 8;
 
@@ -1436,6 +1459,7 @@ namespace avel {
         }
 
         return {quotient, x};
+        #endif
     }
 
     [[nodiscard]]

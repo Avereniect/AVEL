@@ -115,7 +115,7 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator=(bool b) {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            content = b ? 0xFFFF : 0x00;
+            content = b ? 0xFF : 0x00;
             #elif defined(AVEL_SSE2)
             content = b ? _mm_set1_epi16(-1) : _mm_setzero_si128();
             #endif
@@ -1171,7 +1171,7 @@ namespace avel {
         auto average_offset = _mm_avg_epu16(a_offset, b_offset);
         auto average = _mm_xor_si128(average_offset, offset);
 
-        auto bias = _mm_ternarylogic_epi32(a, b, _mm_set1_epi16(0x1), 0x28);
+        auto bias = _mm_ternarylogic_epi32(decay(a), decay(b), _mm_set1_epi16(0x1), 0x28);
         auto mask = _mm_cmplt_epi16_mask(decay(a), decay(b));
         auto ret = _mm_mask_sub_epi16(average, mask, average, bias);
 

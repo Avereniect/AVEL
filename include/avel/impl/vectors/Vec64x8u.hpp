@@ -687,7 +687,7 @@ namespace avel {
         typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
 
         auto shifted = _mm512_srli_epi16(decay(v), S);
-        auto mask = _mm512_set1_epi8(std::uint8_t(0xFF >> S));
+        auto mask = _mm512_set1_epi8(0xFF >> S);
         auto masked = _mm512_and_si512(shifted, mask);
 
         return vec64x8u{masked};
@@ -1041,88 +1041,90 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec64x8u> div(vec64x8u x, vec64x8u y) {
-        vec64x8u quotient{};
+        vec64x8u quotient{0x00};
+
+        auto ones = _mm512_set1_epi8(0x01);
 
         mask64x8u b;
         int i = 0;
 
-        if (none(mask64x8u{x})) {
+        if (none(x >= y)) {
             return {quotient, x};
         }
 
         b = (bit_shift_right<7>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<7>(y));
-        quotient -= broadcast_mask(b);
+        x = _mm512_mask_sub_epi8(decay(x), decay(b), decay(x), decay(bit_shift_left<7>(y)));
+        quotient = _mm512_mask_add_epi8(decay(quotient), decay(b), decay(quotient), ones);
 
-        if (none(mask64x8u{x})) {
+        if (none(x >= y)) {
             i = 7;
             goto avel_div64x8u_early_end;
         }
 
         b = (bit_shift_right<6>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<6>(y));
+        x = _mm512_mask_sub_epi8(decay(x), decay(b), decay(x), decay(bit_shift_left<6>(y)));
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient = _mm512_mask_add_epi8(decay(quotient), decay(b), decay(quotient), ones);
 
-        if (none(mask64x8u{x})) {
+        if (none(x >= y)) {
             i = 6;
             goto avel_div64x8u_early_end;
         }
 
         b = (bit_shift_right<5>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<5>(y));
+        x = _mm512_mask_sub_epi8(decay(x), decay(b), decay(x), decay(bit_shift_left<5>(y)));
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient = _mm512_mask_add_epi8(decay(quotient), decay(b), decay(quotient), ones);
 
-        if (none(mask64x8u{x})) {
+        if (none(x >= y)) {
             i = 5;
             goto avel_div64x8u_early_end;
         }
 
         b = (bit_shift_right<4>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<4>(y));
+        x = _mm512_mask_sub_epi8(decay(x), decay(b), decay(x), decay(bit_shift_left<4>(y)));
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient = _mm512_mask_add_epi8(decay(quotient), decay(b), decay(quotient), ones);
 
-        if (none(mask64x8u{x})) {
+        if (none(x >= y)) {
             i = 4;
             goto avel_div64x8u_early_end;
         }
 
         b = (bit_shift_right<3>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<3>(y));
+        x = _mm512_mask_sub_epi8(decay(x), decay(b), decay(x), decay(bit_shift_left<3>(y)));
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient = _mm512_mask_add_epi8(decay(quotient), decay(b), decay(quotient), ones);
 
-        if (none(mask64x8u{x})) {
+        if (none(x >= y)) {
             i = 3;
             goto avel_div64x8u_early_end;
         }
 
         b = (bit_shift_right<2>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<2>(y));
+        x = _mm512_mask_sub_epi8(decay(x), decay(b), decay(x), decay(bit_shift_left<2>(y)));
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient = _mm512_mask_add_epi8(decay(quotient), decay(b), decay(quotient), ones);
 
-        if (none(mask64x8u{x})) {
+        if (none(x >= y)) {
             i = 2;
             goto avel_div64x8u_early_end;
         }
 
         b = (bit_shift_right<1>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<1>(y));
+        x = _mm512_mask_sub_epi8(decay(x), decay(b), decay(x), decay(bit_shift_left<1>(y)));
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient = _mm512_mask_add_epi8(decay(quotient), decay(b), decay(quotient), ones);
 
-        if (none(mask64x8u{x})) {
+        if (none(x >= y)) {
             i = 1;
             goto avel_div64x8u_early_end;
         }
 
         b = (x >= y);
-        x -= (broadcast_mask(b) & y);
+        x = _mm512_mask_sub_epi8(decay(x), decay(b), decay(x), decay(bit_shift_left<0>(y)));
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient = _mm512_mask_add_epi8(decay(quotient), decay(b), decay(quotient), ones);
 
         avel_div64x8u_early_end:
         quotient = _mm512_sll_epi16(decay(quotient), _mm_cvtsi32_si128(i));

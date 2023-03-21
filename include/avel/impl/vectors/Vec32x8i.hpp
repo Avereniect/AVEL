@@ -1044,10 +1044,10 @@ namespace avel {
     AVEL_FINL vec32x8i midpoint(vec32x8i a, vec32x8i b) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         auto avg = _mm256_avg_epu8(decay(a), decay(b));
-        auto sign_correction = _mm256_ternarylogic_epi32(a, b, _mm256_set1_epi8(0x80), 0x28);
+        auto sign_correction = _mm256_ternarylogic_epi32(decay(a), decay(b), _mm256_set1_epi8(0x80), 0x28);
         auto average = _mm256_xor_si256(avg, sign_correction);
 
-        auto bias = _mm256_ternarylogic_epi32(a, b, _mm256_set1_epi8(0x1), 0x28);
+        auto bias = _mm256_ternarylogic_epi32(decay(a), decay(b), _mm256_set1_epi8(0x1), 0x28);
         auto mask = _mm256_cmplt_epi8_mask(decay(a), decay(b));
         auto ret = _mm256_mask_sub_epi8(average, mask, average, bias);
 

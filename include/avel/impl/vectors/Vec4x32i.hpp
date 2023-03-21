@@ -1176,7 +1176,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         auto avg = decay(((a ^ b) >> 1) + (a & b));
 
-        auto bias = _mm_ternarylogic_epi32(a, b, _mm_set1_epi32(0x1), 0x28);
+        auto bias = _mm_ternarylogic_epi32(decay(a), decay(b), _mm_set1_epi32(0x1), 0x28);
         auto mask = _mm_cmplt_epi32_mask(decay(b), decay(a));
         auto ret = _mm_mask_add_epi32(avg, mask, avg, bias);
 
