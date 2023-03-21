@@ -574,6 +574,84 @@ $END
     }
 
     //=====================================================
+    // Arrangement Instructions
+    //=====================================================
+
+    template<std::uint32_t N>
+    AVEL_FINL $<SCALAR_NAME> extract($<VECTOR_ALIAS> v) {
+        static_assert(N <= $<VECTOR_WIDTH>, "Specified index does not exist");
+        typename std::enable_if<N <= $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
+
+        $<extract(vec)>
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL $<VECTOR_ALIAS> insert($<VECTOR_ALIAS> v, $<SCALAR_NAME> x) {
+        static_assert(N <= $<VECTOR_WIDTH>, "Specified index does not exist");
+        typename std::enable_if<N <= $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
+
+        $<insert(vec, scalar)>
+    }
+
+    //=====================================================
+    // Bit Manipulation Operations
+    //=====================================================
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL  $<VECTOR_ALIAS> bit_shift_left($<VECTOR_ALIAS> v) {
+        static_assert(S <= $<SCALAR_WIDTH>, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= $<SCALAR_WIDTH>, int>::type dummy_variable = 0;
+
+        return $<VECTOR_ALIAS>{bit_shift_left<S>($<UVECTOR_ALIAS>{v})};
+    }
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL  $<VECTOR_ALIAS> bit_shift_right($<VECTOR_ALIAS> v) {
+        static_assert(S <= $<SCALAR_WIDTH>, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= $<SCALAR_WIDTH>, int>::type dummy_variable = 0;
+
+        return $<VECTOR_ALIAS>{bit_shift_right<S>($<UVECTOR_ALIAS>{v})};
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> rotl($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{rotl<S>($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> rotl($<VECTOR_ALIAS> v, long long s) {
+        return $<VECTOR_ALIAS>{rotl($<UVECTOR_ALIAS>{v}, s)};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> rotl($<VECTOR_ALIAS> v, $<VECTOR_ALIAS> s) {
+        return $<VECTOR_ALIAS>{rotl($<UVECTOR_ALIAS>{v}, $<UVECTOR_ALIAS>{s})};
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> rotr($<VECTOR_ALIAS> v) {
+        return $<VECTOR_ALIAS>{rotr<S>($<UVECTOR_ALIAS>{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> rotr($<VECTOR_ALIAS> v, long long s) {
+        return $<VECTOR_ALIAS>{rotr($<UVECTOR_ALIAS>{v}, s)};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> rotr($<VECTOR_ALIAS> v, $<VECTOR_ALIAS> s) {
+        return $<VECTOR_ALIAS>{rotr($<UVECTOR_ALIAS>{v}, $<UVECTOR_ALIAS>{s})};
+    }
+
+    //=====================================================
     // General vector operations
     //=====================================================
 
@@ -791,84 +869,6 @@ $END
         alignas($<VECTOR_ALIGNMENT>) $<ARRAY_ALIAS> ret;
         aligned_store(ret.data(), v);
         return ret;
-    }
-
-    //=====================================================
-    // Arrangement Instructions
-    //=====================================================
-
-    template<std::uint32_t N>
-    AVEL_FINL $<SCALAR_NAME> extract($<VECTOR_ALIAS> v) {
-        static_assert(N <= $<VECTOR_WIDTH>, "Specified index does not exist");
-        typename std::enable_if<N <= $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
-
-        $<extract(vec)>
-    }
-
-    template<std::uint32_t N>
-    AVEL_FINL $<VECTOR_ALIAS> insert($<VECTOR_ALIAS> v, $<SCALAR_NAME> x) {
-        static_assert(N <= $<VECTOR_WIDTH>, "Specified index does not exist");
-        typename std::enable_if<N <= $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
-
-        $<insert(vec, scalar)>
-    }
-
-    //=====================================================
-    // Bit Manipulation Operations
-    //=====================================================
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    $<VECTOR_ALIAS> bit_shift_left($<VECTOR_ALIAS> v) {
-        static_assert(S <= $<SCALAR_WIDTH>, "Cannot shift by more than scalar width");
-        typename std::enable_if<S <= $<SCALAR_WIDTH>, int>::type dummy_variable = 0;
-
-        return $<VECTOR_ALIAS>{bit_shift_left<S>($<UVECTOR_ALIAS>{v})};
-    }
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    $<VECTOR_ALIAS> bit_shift_right($<VECTOR_ALIAS> v) {
-        static_assert(S <= $<SCALAR_WIDTH>, "Cannot shift by more than scalar width");
-        typename std::enable_if<S <= $<SCALAR_WIDTH>, int>::type dummy_variable = 0;
-
-        return $<VECTOR_ALIAS>{bit_shift_right<S>($<UVECTOR_ALIAS>{v})};
-    }
-
-
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> rotl($<VECTOR_ALIAS> v) {
-        return $<VECTOR_ALIAS>{rotl<S>($<UVECTOR_ALIAS>{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> rotl($<VECTOR_ALIAS> v, long long s) {
-        return $<VECTOR_ALIAS>{rotl($<UVECTOR_ALIAS>{v}, s)};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> rotl($<VECTOR_ALIAS> v, $<VECTOR_ALIAS> s) {
-        return $<VECTOR_ALIAS>{rotl($<UVECTOR_ALIAS>{v}, $<UVECTOR_ALIAS>{s})};
-    }
-
-
-
-    template<std::uint32_t S>
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> rotr($<VECTOR_ALIAS> v) {
-        return $<VECTOR_ALIAS>{rotr<S>($<UVECTOR_ALIAS>{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> rotr($<VECTOR_ALIAS> v, long long s) {
-        return $<VECTOR_ALIAS>{rotr($<UVECTOR_ALIAS>{v}, s)};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> rotr($<VECTOR_ALIAS> v, $<VECTOR_ALIAS> s) {
-        return $<VECTOR_ALIAS>{rotr($<UVECTOR_ALIAS>{v}, $<UVECTOR_ALIAS>{s})};
     }
 
     //=====================================================

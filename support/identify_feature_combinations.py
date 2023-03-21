@@ -32,7 +32,7 @@ feature_macros = [
 ]
 
 
-root_dir = '../include/avel/'
+root_dir = '../include/avel'
 
 file_counter = 0
 
@@ -82,11 +82,11 @@ def main():
 
     while len(queue) != 0:
         curr = queue.pop()
-        if os.path.isfile(curr):
+        if os.path.isfile(curr) and not curr.endswith('Verify_capabilities.hpp'):
             a, b = process_file(curr)
             feature_combinations.append(a)
             preprocessor_lines.update(b)
-        else:
+        elif os.path.isdir(curr):
             queue += [curr + '/' + p for p in os.listdir(curr)]
 
     print(file_counter)
