@@ -2020,16 +2020,6 @@ namespace avel {
         #endif
     }
 
-    //=====================================================
-    // Conversions
-    //=====================================================
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec2x64u, 1> convert<vec2x64u, vec2x64u>(vec2x64u m) {
-        return std::array<vec2x64u, 1>{m};
-    }
-
 }
 
 #endif //AVEL_VEC2X64U_HPP

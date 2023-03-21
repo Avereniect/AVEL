@@ -2584,7 +2584,7 @@ namespace avel {
         auto bits = _mm256_set1_epi16(0x1);
 
         std::int32_t i = 8;
-        for (; (i-- > 0) && !_mm256_testz_si256(widened_x, widened_x);) {
+        for (; (i-- > 0) && 0x0000 != _mm256_cmpge_epi16_mask(widened_x, widened_y);) {
             auto count = _mm_cvtsi32_si128(i);
             auto shifted_widened_x = _mm256_srl_epi16(widened_x, count);
             auto b = _mm256_cmpge_epu16_mask(shifted_widened_x, widened_y);
@@ -2615,10 +2615,6 @@ namespace avel {
             //Could this perhaps be optimized further
             quotient = _mm256_add_epi16(quotient, quotient);
             quotient = _mm256_sub_epi16(quotient, b);
-        }
-
-        if (i + 1 != 0) {
-            int breakpoint_random = 345;
         }
 
         quotient = _mm256_sll_epi16(quotient, _mm_cvtsi32_si128(i + 1));

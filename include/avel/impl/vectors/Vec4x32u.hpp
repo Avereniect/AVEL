@@ -2034,16 +2034,6 @@ namespace avel {
         #endif
     }
 
-    //=====================================================
-    // Conversions
-    //=====================================================
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec4x32u, 1> convert<vec4x32u, vec4x32u>(vec4x32u m) {
-        return std::array<vec4x32u, 1>{m};
-    }
-
 }
 
 #endif //AVEL_VEC4X32U_HPP

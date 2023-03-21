@@ -1345,7 +1345,7 @@ namespace avel {
         return vec8x16u{_mm_andnot_si128(decay(m), decay(v))};
         #endif
 
-        #if defined(AVEVL_NEON)
+        #if defined(AVEL_NEON)
         return vec8x16u{vbicq_u16(decay(v), decay(m))};
         #endif
     }
@@ -1371,18 +1371,18 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16u byteswap(vec8x16u x) {
+    AVEL_FINL vec8x16u byteswap(vec8x16u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
-        return vec8x16u{_mm_shldi_epi16(decay(x), decay(x), 0x8)};
+        return vec8x16u{_mm_shldi_epi16(decay(v), decay(v), 0x8)};
 
         #elif defined(AVEL_SSE2)
-        auto lo = _mm_srli_epi16(decay(x), 8);
-        auto hi = _mm_slli_epi16(decay(x), 8);
+        auto lo = _mm_srli_epi16(decay(v), 8);
+        auto hi = _mm_slli_epi16(decay(v), 8);
         return vec8x16u{_mm_or_si128(lo, hi)};
         #endif
 
         #if defined(AVEL_NEON)
-        return vec8x16u{vreinterpretq_u16_u8(vrev16q_u8(vreinterpretq_u8_u16(decay(x))))};
+        return vec8x16u{vreinterpretq_u16_u8(vrev16q_u8(vreinterpretq_u8_u16(decay(v))))};
         #endif
     }
 
@@ -2348,16 +2348,6 @@ namespace avel {
         return !mask8x16u{v & (v - vec8x16u{1})} && mask8x16u{v};
 
         #endif
-    }
-
-    //=====================================================
-    // Vector conversions
-    //=====================================================
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<vec8x16u, 1> convert<vec8x16u, vec8x16u>(vec8x16u v) {
-        return {v};
     }
 
 }
