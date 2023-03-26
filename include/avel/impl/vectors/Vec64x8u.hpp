@@ -1222,7 +1222,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u countr_zero(vec64x8u v) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
+        #if defined(AVEL_AVX512BITALG)
         auto neg_one = _mm512_set1_epi8(-1);
         auto tz_mask = _mm512_andnot_si512(decay(v), _mm512_add_epi8(decay(v), neg_one));
         return vec64x8u{_mm512_popcnt_epi8(tz_mask)};
@@ -1259,7 +1259,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u countr_one(vec64x8u v) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        #if defined(AVEL_AVX512BW)
         return countr_zero(~v);
 
         #else
