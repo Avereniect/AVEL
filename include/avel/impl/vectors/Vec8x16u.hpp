@@ -1297,7 +1297,7 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
-        return 0xFF == _mm_movemask_epi8(compared);
+        return 0xFFFF == _mm_movemask_epi8(compared);
         #endif
 
         #if defined(AVEL_NEON)
@@ -2122,7 +2122,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u countl_zero(vec8x16u v) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW) && defined(AVEL_AVX512CD)
         auto widened = _mm256_cvtepu16_epi32(decay(v));
         auto lzcnt = _mm256_lzcnt_epi32(widened);
         auto results = _mm256_cvtepi16_epi8(lzcnt);
@@ -2141,7 +2141,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u countl_one(vec8x16u v) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW) && defined(AVEL_AVX512CD)
         return countl_zero(~v);
 
         //TODO: Optimize for other instruction sets

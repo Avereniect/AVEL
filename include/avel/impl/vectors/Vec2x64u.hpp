@@ -1073,9 +1073,9 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
         if (N == 0) {
-            return vec2x64u{_mm_unpacklo_epi64(decay(v), _mm_slli_si128(_mm_cvtsi64_si128(x), 8))};
+            return vec2x64u{_mm_unpacklo_epi64(_mm_cvtsi64_si128(x), _mm_srli_si128(decay(v), 8))};
         } else {
-            return vec2x64u{_mm_unpacklo_epi64(decay(v), _mm_move_epi64(decay(v)))};
+            return vec2x64u{_mm_unpacklo_epi64(decay(v), _mm_cvtsi64_si128(x))};
         }
 
         #endif
@@ -1290,9 +1290,10 @@ namespace avel {
         return count(mask2x64u{x});
 
         #elif defined(AVEL_SSE2)
+        //TODO: Consider alternative approaches
         auto compared = _mm_cmpeq_epi32(decay(x), _mm_setzero_si128());
         compared = _mm_or_si128(compared, _mm_shuffle_epi32(compared, 0xB1));
-        return popcount(_mm_movemask_epi8(compared)) / 8;
+        return 2 - popcount(_mm_movemask_epi8(compared)) / sizeof(std::uint64_t);
 
         #endif
     }
@@ -1305,7 +1306,8 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
-        return 0x00 != _mm_movemask_epi8(compared);
+        return 0xFFFF != _mm_movemask_epi8(compared);
+
         #endif
     }
 
@@ -1316,9 +1318,7 @@ namespace avel {
         return 0x00 == _mm_movemask_epi8(compared);
 
         #elif defined(AVEL_SSE2)
-        //TODO: Fix implementation
-        auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
-        return 0x00 == _mm_movemask_epi8(compared);
+        return all(mask2x64u{x});
         #endif
     }
 
@@ -1329,7 +1329,7 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
-        return 0xFF == _mm_movemask_epi8(compared);
+        return 0xFFFF == _mm_movemask_epi8(compared);
         #endif
     }
 

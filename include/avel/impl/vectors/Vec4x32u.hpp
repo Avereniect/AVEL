@@ -1237,7 +1237,7 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi32(decay(x), _mm_setzero_si128());
-        return popcount(_mm_movemask_epi8(compared)) / sizeof(vec4x32u::scalar);
+        return 4 - (popcount(_mm_movemask_epi8(compared)) / sizeof(vec4x32u::scalar));
         #endif
     }
 
@@ -1267,7 +1267,7 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
-        return 0xFF == _mm_movemask_epi8(compared);
+        return 0xFFFF == _mm_movemask_epi8(compared);
         #endif
     }
 

@@ -1152,7 +1152,7 @@ namespace avel_tests {
     TEST(Vec4x32u, Insert_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             auto inputs = random_array<arr4x32u>();
-            vec4x32u v{0x00};
+            vec4x32u v{random_val<vec4x32u::scalar>()};
 
             v = insert<0x0>(v, inputs[0x0]);
             v = insert<0x1>(v, inputs[0x1]);

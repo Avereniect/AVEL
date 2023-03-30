@@ -1172,7 +1172,7 @@ namespace avel_tests {
     TEST(Vec8x16i, Insert_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             auto inputs = random_array<arr8x16i>();
-            vec8x16i v{0x00};
+            vec8x16i v{random_val<vec8x16i::scalar>()};
 
             v = insert<0x0>(v, inputs[0x0]);
             v = insert<0x1>(v, inputs[0x1]);

@@ -1147,7 +1147,7 @@ namespace avel {
         static_assert(S <= 8, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         auto widened = _mm256_cvtepi8_epi16(decay(v));
         widened = _mm256_srai_epi16(widened, S);
 

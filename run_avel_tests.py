@@ -46,6 +46,8 @@ feature_flag_combinations_x86 = [
     ['-mavx512vl', '-mavx512cd'],
     ['-mavx512vl', '-mavx512bitalg'],
     ['-mavx512vl', '-mavx512vpopcntdq'],
+    ['-mavx512vl', '-mgfni'],
+    ['-mavx512vl', '-mavx512bw', '-mavx512cd'],
     ['-mavx512vl', '-mavx512cd', '-mgfni']
 ]
 
@@ -89,6 +91,7 @@ feature_combinations_x86 = [
     ['AVEL_AVX512VL', 'AVEL_AVX512BITALG'],
     ['AVEL_AVX512VL', 'AVEL_AVX512VPOPCNTDQ'],
     ['AVEL_AVX512VL', 'AVEL_GFNI'],
+    ['AVEL_AVX512VL', 'AVEL_AVX512BW', 'AVEL_AVX512CD'],
     ['AVEL_AVX512VL', 'AVEL_AVX512CD', 'AVEL_GFNI']
 ]
 

@@ -3195,8 +3195,8 @@ namespace avel {
         };
 
         auto nibble_mask = _mm_set1_epi8(0x0F);
-        auto lo_nibble = _mm_and_si128(nibble_mask, decay(x));
-        auto hi_nibble = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(x), 0x4));
+        auto lo_nibble = _mm_and_si128(nibble_mask, decay(v));
+        auto hi_nibble = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(v), 0x4));
 
         auto table0 = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data0));
         auto table1 = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data1));
