@@ -1009,8 +1009,8 @@ namespace avel {
 
     template<std::uint32_t N>
     AVEL_FINL std::uint16_t extract(vec8x16u v) {
-        static_assert(N <= vec8x16u::width, "Specified index does not exist");
-        typename std::enable_if<N <= vec8x16u::width, int>::type dummy_variable = 0;
+        static_assert(N < vec8x16u::width, "Specified index does not exist");
+        typename std::enable_if<N < vec8x16u::width, int>::type dummy_variable = 0;
 
         #if defined(AVEL_SSE41)
         return _mm_extract_epi16(decay(v), N);
@@ -1027,8 +1027,8 @@ namespace avel {
 
     template<std::uint32_t N>
     AVEL_FINL vec8x16u insert(vec8x16u v, std::uint16_t x) {
-        static_assert(N <= vec8x16u::width, "Specified index does not exist");
-        typename std::enable_if<N <= vec8x16u::width, int>::type dummy_variable = 0;
+        static_assert(N < vec8x16u::width, "Specified index does not exist");
+        typename std::enable_if<N < vec8x16u::width, int>::type dummy_variable = 0;
 
         #if defined(AVEL_SSE2)
         return vec8x16u{_mm_insert_epi16(decay(v), x, N)};
@@ -1280,7 +1280,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool all(vec8x16u x) {
         #if defined(AVEL_SSE2)
-        auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
+        auto compared = _mm_cmpeq_epi16(decay(x), _mm_setzero_si128());
         return 0x00 == _mm_movemask_epi8(compared);
         #endif
 
@@ -1324,7 +1324,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x16u keep(mask8x16u m, vec8x16u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        return vec8x16u{_mm_maskz_mov_epi16(decay(!m), decay(v))};
+        return vec8x16u{_mm_maskz_mov_epi16(decay(m), decay(v))};
 
         #elif defined(AVEL_SSE2)
         return broadcast_mask(m) & v;
@@ -1339,7 +1339,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x16u clear(mask8x16u m, vec8x16u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        return vec8x16u{_mm_maskz_mov_epi16(decay(m), decay(v))};
+        return vec8x16u{_mm_maskz_mov_epi16(decay(!m), decay(v))};
 
         #elif defined(AVEL_SSE2)
         return vec8x16u{_mm_andnot_si128(decay(m), decay(v))};
@@ -2121,55 +2121,69 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16u countl_zero(vec8x16u x) {
-        #if defined(AVEL_SSE2)
-        return countl_one(~x);
+    AVEL_FINL vec8x16u countl_zero(vec8x16u v) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
+        auto widened = _mm256_cvtepu16_epi32(decay(v));
+        auto lzcnt = _mm256_lzcnt_epi32(widened);
+        auto results = _mm256_cvtepi16_epi8(lzcnt);
+        return vec8x16u{results} - vec8x16u{16};
+
+        //TODO: Optimize for other instruction sets
+
+        #elif defined(AVEL_SSE2)
+        return countl_one(~v);
         #endif
 
         #if defined(AVEL_NEON)
-        return vec8x16u{vclzq_u16(decay(x))};
+        return vec8x16u{vclzq_u16(decay(v))};
         #endif
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16u countl_one(vec8x16u x) {
-        #if defined(AVEL_SSE2)
-        vec8x16u sum{x == vec8x16u{0xFFFF}};
+    AVEL_FINL vec8x16u countl_one(vec8x16u v) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
+        return countl_zero(~v);
+
+        //TODO: Optimize for other instruction sets
+
+        #elif defined(AVEL_SSE2)
+        vec8x16u sum{v == vec8x16u{0xFFFF}};
 
         vec8x16u m0{0xFF00u};
-        mask8x16u b0 = (m0 & x) == m0;
+        mask8x16u b0 = (m0 & v) == m0;
         sum += broadcast_mask(b0) & vec8x16u{8};
-        x <<= broadcast_mask(b0) & vec8x16u{8};
+        v <<= broadcast_mask(b0) & vec8x16u{8};
 
         vec8x16u m1{0xF000u};
-        mask8x16u b1 = (m1 & x) == m1;
+        mask8x16u b1 = (m1 & v) == m1;
         sum += broadcast_mask(b1) & vec8x16u{4};
-        x <<= broadcast_mask(b1) & vec8x16u{4};
+        v <<= broadcast_mask(b1) & vec8x16u{4};
 
         vec8x16u m2{0xC000u};
-        mask8x16u b2 = (m2 & x) == m2;
+        mask8x16u b2 = (m2 & v) == m2;
         sum += broadcast_mask(b2) & vec8x16u{2};
-        x <<= broadcast_mask(b2) & vec8x16u{2};
+        v <<= broadcast_mask(b2) & vec8x16u{2};
 
         vec8x16u m3{0x8000u};
-        mask8x16u b3 = (m3 & x) == m3;
+        mask8x16u b3 = (m3 & v) == m3;
         sum += broadcast_mask(b3) & vec8x16u{1};
 
         return sum;
         #endif
 
         #if defined(AVEL_NEON)
-        return countl_zero(~x);
+        return countl_zero(~v);
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x16u countr_zero(vec8x16u x) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
-        auto undef = _mm_undefined_si128();
-        auto neg_one = _mm_cmpeq_epi16(undef, undef);
+        auto neg_one = _mm_set1_epi16(-1);
         auto tz_mask = _mm_andnot_si128(decay(x), _mm_add_epi16(decay(x), neg_one));
         return vec8x16u{_mm_popcnt_epi16(tz_mask)};
+
+        //TODO: Optimize for other instruction sets
 
         #elif defined(AVEL_SSE2)
         mask8x16u zero_mask = (x == vec8x16u{0x0000});
@@ -2318,6 +2332,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u bit_ceil(vec8x16u v) {
+        //TODO: Consider use of pshufb as potential optimization
         #if defined(AVEL_SSE2)
         auto zero_mask = (v == vec8x16u{0x00});
 

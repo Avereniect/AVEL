@@ -1122,8 +1122,8 @@ namespace avel {
     template<std::uint32_t N>
     [[nodiscard]]
     AVEL_FINL std::int64_t extract(vec2x64i v) {
-        static_assert(N <= vec2x64i::width, "Specified index does not exist");
-        typename std::enable_if<N <= vec2x64i::width, int>::type dummy_variable = 0;
+        static_assert(N < vec2x64i::width, "Specified index does not exist");
+        typename std::enable_if<N < vec2x64i::width, int>::type dummy_variable = 0;
 
         #if defined(AVEL_SS41)
         return _mm_extract_epi64(decay(v), N);
@@ -1140,8 +1140,8 @@ namespace avel {
 
     template<std::uint32_t N>
     AVEL_FINL vec2x64i insert(vec2x64i v, std::int64_t x) {
-        static_assert(N <= vec2x64i::width, "Specified index does not exist");
-        typename std::enable_if<N <= vec2x64i::width, int>::type dummy_variable = 0;
+        static_assert(N < vec2x64i::width, "Specified index does not exist");
+        typename std::enable_if<N < vec2x64i::width, int>::type dummy_variable = 0;
 
         return vec2x64i{insert<N>(vec2x64u{v}, static_cast<std::uint64_t>(x))};
     }
@@ -1153,8 +1153,8 @@ namespace avel {
     template<std::uint32_t S>
     [[nodiscard]]
     vec2x64i bit_shift_left(vec2x64i v) {
-        static_assert(S <= 32, "Cannot shift by more than scalar width");
-        typename std::enable_if<S <= 32, int>::type dummy_variable = 0;
+        static_assert(S <= 64, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 64, int>::type dummy_variable = 0;
 
         return vec2x64i{bit_shift_left<S>(vec2x64u{v})};
     }

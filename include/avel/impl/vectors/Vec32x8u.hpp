@@ -330,7 +330,7 @@ namespace avel {
 
         AVEL_FINL explicit Vector(mask m):
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            content(_mm256_sub_epi8(_mm256_setzero_si256(), _mm256_movm_epi8(decay(m)))) {}
+            content(_mm256_maskz_set1_epi8(decay(m), 1)) {}
         #elif defined(AVEL_AVX2)
             content(_mm256_sub_epi8(_mm256_setzero_si256(), decay(m))) {}
         #endif
@@ -1275,12 +1275,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec32x8u load<vec32x8u>(const std::uint8_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        std::uint32_t mask;
-        if (n >= 32) {
-            mask = std::uint32_t(-1);
-        } else {
-            mask = (std::uint32_t(1) << n) - 1;
-        }
+        std::uint32_t mask = (n >= 32) ? std::uint32_t(-1) : (1 << n) - 1;
         return vec32x8u{_mm256_maskz_loadu_epi8(mask, ptr)};
 
         #elif defined(AVEL_AVX2)
@@ -1360,8 +1355,8 @@ namespace avel {
 
     template<std::uint32_t N = vec32x8u::width>
     AVEL_FINL void store(std::uint8_t* ptr, vec32x8u v) {
-        static_assert(N <= vec32x8u::width, "Cannot store more elements than width of vector");
-        typename std::enable_if<N <= vec32x8u::width, int>::type dummy_variable = 0;
+        static_assert(N < vec32x8u::width, "Cannot store more elements than width of vector");
+        typename std::enable_if<N < vec32x8u::width, int>::type dummy_variable = 0;
 
         store(ptr, v, N);
     }
@@ -1399,8 +1394,8 @@ namespace avel {
 
     template<std::uint32_t N = vec32x8u::width>
     AVEL_FINL void aligned_store(std::uint8_t* ptr, vec32x8u v) {
-        static_assert(N <= vec32x8u::width, "Cannot store more elements than width of vector");
-        typename std::enable_if<N <= vec32x8u::width, int>::type dummy_variable = 0;
+        static_assert(N < vec32x8u::width, "Cannot store more elements than width of vector");
+        typename std::enable_if<N < vec32x8u::width, int>::type dummy_variable = 0;
 
         aligned_store(ptr, v, N);
     }

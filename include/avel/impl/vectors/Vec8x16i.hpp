@@ -951,16 +951,16 @@ namespace avel {
     template<std::uint32_t N>
     [[nodiscard]]
     AVEL_FINL std::int16_t extract(vec8x16i v) {
-        static_assert(N <= vec8x16i::width, "Specified index does not exist");
-        typename std::enable_if<N <= vec8x16i::width, int>::type dummy_variable = 0;
+        static_assert(N < vec8x16i::width, "Specified index does not exist");
+        typename std::enable_if<N < vec8x16i::width, int>::type dummy_variable = 0;
 
         return static_cast<std::int16_t>(extract<N>(vec8x16u{v}));
     }
 
     template<std::uint32_t N>
     AVEL_FINL vec8x16i insert(vec8x16i v, std::int16_t x) {
-        static_assert(N <= vec8x16i::width, "Specified index does not exist");
-        typename std::enable_if<N <= vec8x16i::width, int>::type dummy_variable = 0;
+        static_assert(N < vec8x16i::width, "Specified index does not exist");
+        typename std::enable_if<N < vec8x16i::width, int>::type dummy_variable = 0;
 
         return vec8x16i{insert<N>(vec8x16u{v}, static_cast<std::uint16_t>(x))};
     }
@@ -1037,7 +1037,6 @@ namespace avel {
     // General vector operations
     //=====================================================
 
-    /*
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(vec8x16i x) {
         return count(vec8x16u{x});
@@ -1057,7 +1056,6 @@ namespace avel {
     AVEL_FINL bool none(vec8x16i x) {
         return none(vec8x16u{x});
     }
-    */
 
     [[nodiscard]]
     AVEL_FINL vec8x16i broadcast_mask(mask8x16i m) {

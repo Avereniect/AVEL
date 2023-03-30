@@ -941,8 +941,8 @@ namespace avel {
     template<std::uint32_t N>
     [[nodiscard]]
     AVEL_FINL std::int32_t extract(vec4x32i v) {
-        static_assert(N <= vec4x32i::width, "Specified index does not exist");
-        typename std::enable_if<N <= vec4x32i::width, int>::type dummy_variable = 0;
+        static_assert(N < vec4x32i::width, "Specified index does not exist");
+        typename std::enable_if<N < vec4x32i::width, int>::type dummy_variable = 0;
 
         #if defined(AVEL_SS41)
         return _mm_extract_epi32(decay(v), N);
@@ -959,8 +959,8 @@ namespace avel {
 
     template<std::uint32_t N>
     AVEL_FINL vec4x32i insert(vec4x32i v, std::int32_t x) {
-        static_assert(N <= vec4x32i::width, "Specified index does not exist");
-        typename std::enable_if<N <= vec4x32i::width, int>::type dummy_variable = 0;
+        static_assert(N < vec4x32i::width, "Specified index does not exist");
+        typename std::enable_if<N < vec4x32i::width, int>::type dummy_variable = 0;
 
         return vec4x32i{insert<N>(vec4x32u{v}, static_cast<std::uint32_t>(x))};
     }
@@ -1017,7 +1017,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32i rotl(vec4x32i v, vec4x32u s) {
+    AVEL_FINL vec4x32i rotl(vec4x32i v, vec4x32i s) {
         return vec4x32i(rotl(vec4x32u(v), vec4x32u(s)));
     }
 
@@ -1035,7 +1035,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32i rotr(vec4x32i v, vec4x32u s) {
+    AVEL_FINL vec4x32i rotr(vec4x32i v, vec4x32i s) {
         return vec4x32i(rotr(vec4x32u(v), vec4x32u(s)));
     }
 

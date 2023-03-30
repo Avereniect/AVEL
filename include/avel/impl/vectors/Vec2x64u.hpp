@@ -1047,8 +1047,8 @@ namespace avel {
 
     template<std::uint32_t N>
     AVEL_FINL std::uint64_t extract(vec2x64u v) {
-        static_assert(N <= vec2x64u::width, "Specified index does not exist");
-        typename std::enable_if<N <= vec2x64u::width, int>::type dummy_variable = 0;
+        static_assert(N < vec2x64u::width, "Specified index does not exist");
+        typename std::enable_if<N < vec2x64u::width, int>::type dummy_variable = 0;
 
         #if defined(AVEL_SSE41)
         return _mm_extract_epi64(decay(v), N);
@@ -1065,8 +1065,8 @@ namespace avel {
 
     template<std::uint32_t N>
     AVEL_FINL vec2x64u insert(vec2x64u v, std::uint64_t x) {
-        static_assert(N <= vec2x64u::width, "Specified index does not exist");
-        typename std::enable_if<N <= vec2x64u::width, int>::type dummy_variable = 0;
+        static_assert(N < vec2x64u::width, "Specified index does not exist");
+        typename std::enable_if<N < vec2x64u::width, int>::type dummy_variable = 0;
 
         #if defined(AVEL_SSE41)
         return vec2x64u{_mm_insert_epi64(decay(v), x, N)};
@@ -1299,7 +1299,11 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool any(vec2x64u x) {
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_SSE41)
+        auto compared = _mm_cmpeq_epi64(decay(x), _mm_setzero_si128());
+        return 0xFFFF != _mm_movemask_epi8(compared);
+
+        #elif defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
         return 0x00 != _mm_movemask_epi8(compared);
         #endif
@@ -1307,7 +1311,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool all(vec2x64u x) {
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_SSE41)
+        auto compared = _mm_cmpeq_epi64(decay(x), _mm_setzero_si128());
+        return 0x00 == _mm_movemask_epi8(compared);
+
+        #elif defined(AVEL_SSE2)
+        //TODO: Fix implementation
         auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
         return 0x00 == _mm_movemask_epi8(compared);
         #endif
@@ -1345,7 +1354,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec2x64u keep(mask2x64u m, vec2x64u v) {
         #if defined(AVEL_AVX512VL)
-        return vec2x64u{_mm_maskz_mov_epi64(decay(!m), decay(v))};
+        return vec2x64u{_mm_maskz_mov_epi64(decay(m), decay(v))};
 
         #elif defined(AVEL_SSE2)
         return broadcast_mask(m) & v;
@@ -1361,7 +1370,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec2x64u clear(mask2x64u m, vec2x64u v) {
         #if defined(AVEL_AVX512VL)
-        return vec2x64u{_mm_maskz_mov_epi64(decay(m), decay(v))};
+        return vec2x64u{_mm_maskz_mov_epi64(decay(!m), decay(v))};
 
         #elif defined(AVEL_SSE2)
         return vec2x64u{_mm_andnot_si128(decay(m), decay(v))};

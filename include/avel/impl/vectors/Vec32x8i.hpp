@@ -1169,15 +1169,15 @@ namespace avel {
 
     template<std::uint32_t N = vec32x8i::width>
     AVEL_FINL void store(std::int8_t* ptr, vec32x8i x) {
-        static_assert(N <= vec16x8i::width, "Cannot load more elements than width of vector");
-        typename std::enable_if<N <= vec16x8i::width, int>::type dummy_variable = 0;
+        static_assert(N < vec32x8i::width, "Cannot load more elements than width of vector");
+        typename std::enable_if<N < vec32x8i::width, int>::type dummy_variable = 0;
 
         store(ptr, x, N);
     }
 
     template<>
     AVEL_FINL void store<vec32x8i::width>(std::int8_t* ptr, vec32x8i x) {
-        _mm256_store_si256(reinterpret_cast<__m256i*>(ptr), decay(x));
+        _mm256_storeu_si256(reinterpret_cast<__m256i*>(ptr), decay(x));
     }
 
 
@@ -1187,8 +1187,8 @@ namespace avel {
 
     template<std::uint32_t N = vec32x8i::width>
     AVEL_FINL void aligned_store(std::int8_t* ptr, vec32x8i x) {
-        static_assert(N <= vec16x8i::width, "Cannot load more elements than width of vector");
-        typename std::enable_if<N <= vec16x8i::width, int>::type dummy_variable = 0;
+        static_assert(N < vec32x8i::width, "Cannot load more elements than width of vector");
+        typename std::enable_if<N < vec32x8i::width, int>::type dummy_variable = 0;
 
         aligned_store(ptr, x, N);
     }

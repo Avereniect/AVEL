@@ -485,6 +485,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
+            /* //TODO: Fix implementation
             #if defined(AVEL_GFNI)
             static constexpr std::uint64_t shift_matrices[9] {
                 0x0102040810204080ull,
@@ -501,8 +502,9 @@ namespace avel {
 
             const auto matrix = shift_matrices[rhs];
             content = _mm512_gf2p8affine_epi64_epi8(content, _mm512_set1_epi64(matrix), 0x00);
+            */
 
-            #else
+            #if defined(AVEL_AVX512BW)
             //TODO: Optimize
             auto sign_bits = _mm512_cmplt_epi8_mask(content, _mm512_setzero_si512());
             auto lo = _mm512_unpacklo_epi8(content, _mm512_movm_epi8(sign_bits));
@@ -661,16 +663,16 @@ namespace avel {
     template<std::uint32_t N>
     [[nodiscard]]
     AVEL_FINL std::int8_t extract(vec64x8i v) {
-        static_assert(N <= 64, "Specified index does not exist");
-        typename std::enable_if<N <= 64, int>::type dummy_variable = 0;
+        static_assert(N < vec64x8i::width, "Specified index does not exist");
+        typename std::enable_if<N < vec64x8i::width, int>::type dummy_variable = 0;
 
         return static_cast<std::int8_t>(extract<N>(vec64x8u{v}));
     }
 
     template<std::uint32_t N>
     AVEL_FINL vec64x8i insert(vec64x8i v, std::int8_t x) {
-        static_assert(N <= 64, "Specified index does not exist");
-        typename std::enable_if<N <= 64, int>::type dummy_variable = 0;
+        static_assert(N < vec64x8i::width, "Specified index does not exist");
+        typename std::enable_if<N < vec64x8i::width, int>::type dummy_variable = 0;
 
         return vec64x8i{insert<N>(vec64x8u{v}, static_cast<std::uint8_t>(x))};
     }
@@ -693,14 +695,14 @@ namespace avel {
         static_assert(S <= 8, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
 
-        auto zeros = _mm512_setzero_si512();
-        auto lo = _mm512_unpacklo_epi8(decay(v), zeros);
-        auto hi = _mm512_unpackhi_epi8(decay(v), zeros);
+        auto lo = _mm512_unpacklo_epi8(decay(v), decay(v));
+        auto hi = _mm512_unpackhi_epi8(decay(v), decay(v));
 
-        auto lo_shifted = _mm512_srai_epi16(lo, S);
-        auto hi_shifted = _mm512_srai_epi16(hi, S);
+        auto lo_shifted = _mm512_srai_epi16(lo, S + 8);
+        auto hi_shifted = _mm512_srai_epi16(hi, S + 8);
 
-        return vec64x8i{_mm512_packs_epi16(lo_shifted, hi_shifted)};
+        auto result = _mm512_packs_epi16(lo_shifted, hi_shifted);
+        return vec64x8i{result};
     }
 
     template<>
@@ -713,7 +715,8 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec64x8i bit_shift_right<7>(vec64x8i v) {
         auto m = _mm512_cmplt_epi8_mask(decay(v), _mm512_setzero_si512());
-        return vec64x8i{_mm512_mask_set1_epi8(decay(v), m, 0x1)};
+        auto result = _mm512_maskz_set1_epi8(m, -1);
+        return vec64x8i{result};
     }
 
     template<>
@@ -734,7 +737,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec64x8i rotl(vec64x8i v, vec64x8u s) {
+    AVEL_FINL vec64x8i rotl(vec64x8i v, vec64x8i s) {
         return vec64x8i(rotl(vec64x8u(v), vec64x8u(s)));
     }
 
@@ -752,7 +755,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec64x8i rotr(vec64x8i v, vec64x8u s) {
+    AVEL_FINL vec64x8i rotr(vec64x8i v, vec64x8i s) {
         return vec64x8i(rotr(vec64x8u(v), vec64x8u(s)));
     }
 

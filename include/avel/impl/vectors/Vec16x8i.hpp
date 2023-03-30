@@ -1113,16 +1113,16 @@ namespace avel {
     template<std::uint32_t N>
     [[nodiscard]]
     AVEL_FINL std::int8_t extract(vec16x8i v) {
-        static_assert(N <= vec16x8i::width, "Specified index does not exist");
-        typename std::enable_if<N <= vec16x8i::width, int>::type dummy_variable = 0;
+        static_assert(N < vec16x8i::width, "Specified index does not exist");
+        typename std::enable_if<N < vec16x8i::width, int>::type dummy_variable = 0;
 
         return static_cast<std::int8_t>(extract<N>(vec16x8u{v}));
     }
 
     template<std::uint32_t N>
     AVEL_FINL vec16x8i insert(vec16x8i v, std::int8_t x) {
-        static_assert(N <= vec16x8i::width, "Specified index does not exist");
-        typename std::enable_if<N <= vec16x8i::width, int>::type dummy_variable = 0;
+        static_assert(N < vec16x8i::width, "Specified index does not exist");
+        typename std::enable_if<N < vec16x8i::width, int>::type dummy_variable = 0;
 
         return vec16x8i{insert<N>(vec16x8u{v}, static_cast<std::uint8_t>(x))};
     }
@@ -1354,10 +1354,10 @@ namespace avel {
     AVEL_FINL vec16x8i midpoint(vec16x8i a, vec16x8i b) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         auto avg = _mm_avg_epu8(decay(a), decay(b));
-        auto sign_correction = _mm_ternarylogic_epi32(a, b, _mm_set1_epi8(0x80), 0x28);
+        auto sign_correction = _mm_ternarylogic_epi32(decay(a), decay(b), _mm_set1_epi8(0x80), 0x28);
         auto average = _mm_xor_si128(avg, sign_correction);
 
-        auto bias = _mm_ternarylogic_epi32(a, b, _mm_set1_epi8(0x1), 0x28);
+        auto bias = _mm_ternarylogic_epi32(decay(a), decay(b), _mm_set1_epi8(0x1), 0x28);
         auto mask = _mm_cmplt_epi8_mask(decay(a), decay(b));
         auto ret = _mm_mask_sub_epi8(average, mask, average, bias);
 

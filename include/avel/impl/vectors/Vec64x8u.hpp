@@ -251,7 +251,7 @@ namespace avel {
             Vector(convert<Vector>(x)[0]) {}
 
         AVEL_FINL explicit Vector(mask m):
-            content(_mm512_sub_epi8(_mm512_setzero_si512(), _mm512_movm_epi8(decay(m)))) {}
+            content(_mm512_maskz_set1_epi8(decay(m), 1)) {}
 
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}
@@ -609,16 +609,16 @@ namespace avel {
 
     template<std::uint32_t N>
     AVEL_FINL std::uint8_t extract(vec64x8u v) {
-        static_assert(N <= 64, "Specified index does not exist");
-        typename std::enable_if<N <= 64, int>::type dummy_variable = 0;
+        static_assert(N < vec64x8u::width, "Specified index does not exist");
+        typename std::enable_if<N < vec64x8u::width, int>::type dummy_variable = 0;
 
         return _mm_extract_epi8(_mm512_extracti32x4_epi32(decay(v), N / 16), N % 16);
     }
 
     template<std::uint32_t N>
     AVEL_FINL vec64x8u insert(vec64x8u v, std::uint8_t x) {
-        static_assert(N <= 64, "Specified index does not exist");
-        typename std::enable_if<N <= 64, int>::type dummy_variable = 0;
+        static_assert(N < vec64x8u::width, "Specified index does not exist");
+        typename std::enable_if<N < vec64x8u::width, int>::type dummy_variable = 0;
 
         auto quarter = _mm512_extracti32x4_epi32(decay(v), N / 16);
         quarter = _mm_insert_epi8(quarter, x, N % 16);
