@@ -61,6 +61,20 @@ namespace avel {
         #endif
     }
 
+    //=====================================================
+    // Integer widths
+    //=====================================================
+
+    template<class T>
+    class type_width : public std::integral_constant<std::size_t, CHAR_BIT * sizeof(T)> {};
+
+    #if 201402L <= __cplusplus
+
+    template<class T>
+    constexpr bool type_width_v = type_width<T>::value;
+
+    #endif
+
 }
 
 #endif //AVEL_MISC_HPP
