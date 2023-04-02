@@ -386,6 +386,8 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
 
         # Run tests with specified features enabled
         failed |= run_test(compiler_path, build_dir_name, full_variable_assignments, test_groups)
+        if failed:
+            return failed
 
         # Remove feature combinations that were satisfied by the previous test
         for vec_name in names_and_features:

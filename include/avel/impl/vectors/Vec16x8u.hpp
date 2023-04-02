@@ -2331,18 +2331,13 @@ namespace avel {
         return vec16x8u{_mm_load_si128(reinterpret_cast<const __m128i*>(ptr))};
         #endif
 
-        #if defined(AVEL_NEON)
-            #if __cplusplus >= 202002L
+        #if defined(AVEL_NEON) && __cplusplus >= 202002L
             return vec16x8u{vld1q_u8(assume_aligned<alignof(vec16x8u)>(ptr))};
-
-            #elif defined(AVEL_GCC) || defined(AVEL_CLANG)
+        #elif defined(AVEL_NEON) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
             auto* p = reinterpret_cast<const std::uint8_t*>(__builtin_assume_aligned(ptr, alignof(vec16x8u)));
             return vec16x8u{vld1q_u8(p)};
-
-            #else
+        #elif defined(AVEL_NEON)
             return vec16x8u{vld1q_u8(ptr)};
-
-            #endif
         #endif
     }
 
@@ -3360,7 +3355,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask16x8u has_single_bit(vec16x8u v) {
-        #if defined(AVEL_AVX512BITALG)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
         return popcount(v) == vec16x8u{1};
 
         #elif defined(AVEL_SSE2)

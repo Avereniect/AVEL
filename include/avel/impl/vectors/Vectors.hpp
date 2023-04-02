@@ -198,18 +198,22 @@ namespace avel {
 
 #if defined(AVEL_AVX2)
     #include "Vec32x8u.hpp"
-    //#include "Vec32x8i.hpp"
+    #include "Vec32x8i.hpp"
 
     //#include "Vec16x16u.hpp"
     //#include "Vec16x16i.hpp"
+
+    //#include "Vec8x32u.hpp"
+    //#include "Vec8x32i.hpp"
+
+    //#include "Vec4x64u.hpp"
+    //#include "Vec4x64i.hpp"
 
 #endif
 
 //512-bit vectors
 
 #if defined(AVEL_AVX512F)
-    #include "Vec64x8u.hpp"
-    //#include "Vec64x8i.hpp"
 
     //#include "Vec32x16u.hpp"
     //#include "Vec32x16i.hpp"
@@ -223,6 +227,11 @@ namespace avel {
     //#include "Vec16x32f.hpp"
     //#include "Vec8x64f.hpp"
 
+#endif
+
+#if defined(AVEL_AVX512BW)
+    #include "Vec64x8u.hpp"
+    #include "Vec64x8i.hpp"
 #endif
 
 /*
