@@ -8,10 +8,24 @@
 
 #include "Type_traits_tests.hpp"
 
-#include "Aligned_allocator_tests.hpp"
+#ifndef AVEL_ENABLE_ALLOCATOR_TESTS
+    #define AVEL_ENABLE_ALLOCATOR_TESTS true
+#endif
 
-#include "Denominator_tests.hpp"
-#include "Denominator_vector_tests.hpp"
+#if AVEL_ENABLE_ALLOCATOR_TESTS
+    #include "Aligned_allocator_tests.hpp"
+#endif
+
+
+
+#ifndef AVEL_ENABLE_DENOMINATOR_TESTS
+    #define AVEL_ENABLE_DENOMINATOR_TESTS true
+#endif
+
+#if AVEL_ENABLE_DENOMINATOR_TESTS
+    #include "Denominator_tests.hpp"
+    #include "Denominator_vector_tests.hpp"
+#endif
 
 using namespace avel;
 

@@ -1,5 +1,5 @@
-#ifndef AVEL_VEC64X8U_TESTS_HPP
-#define AVEL_VEC64X8U_TESTS_HPP
+#ifndef AVEL_VEC32X8U_TESTS_HPP
+#define AVEL_VEC32X8U_TESTS_HPP
 
 namespace avel_tests {
 

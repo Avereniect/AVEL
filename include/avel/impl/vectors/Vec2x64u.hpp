@@ -1555,18 +1555,13 @@ namespace avel {
         return vec2x64u{_mm_load_si128(reinterpret_cast<const __m128i*>(ptr))};
         #endif
 
-        #if defined(AVEL_NEON)
-            #if __cplusplus >= 202002L
+        #if defined(AVEL_NEON) && __cplusplus >= 202002L
             return vec2x64u{vld1q_u64(assume_aligned<alignof(vec2x64u)>(ptr))};
-
-            #elif defined(AVEL_GCC) || defined(AVEL_CLANG)
+        #elif defined(AVEL_NEON) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
             auto* p = reinterpret_cast<const std::uint64_t*>(__builtin_assume_aligned(ptr, alignof(vec2x64u)));
             return vec2x64u{vld1q_u64(p)};
-
-            #else
+        #elif defined(AVEL_NEON)
             return vec2x64u{vld1q_u64(ptr)};
-
-            #endif
         #endif
     }
 
@@ -2016,7 +2011,10 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask2x64u has_single_bit(vec2x64u x) {
-        #if defined(AVEL_AVX512VL) && (defined(AVEL_AVX512VPOPCNTDQ) || defined(AVEL_AVX512BITALG))
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
+        return mask2x64u{popcount(x) == vec2x64u{1}};
+
+        #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
         return mask2x64u{popcount(x) == vec2x64u{1}};
 
         #elif defined(AVEL_SSE2)

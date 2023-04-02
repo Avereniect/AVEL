@@ -988,7 +988,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL explicit operator mask() const {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX51BW)
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return mask{_mm_test_epi16_mask(content, content)};
 
             #else
@@ -1703,18 +1703,13 @@ namespace avel {
         return vec8x16u{_mm_load_si128(reinterpret_cast<const __m128i*>(ptr))};
         #endif
 
-        #if defined(AVEL_NEON)
-            #if __cplusplus >= 202002L
+        #if defined(AVEL_NEON) && __cplusplus >= 202002L
             return vec8x16u{vld1q_u16(assume_aligned<alignof(vec8x16u)>(ptr))};
-
-            #elif defined(AVEL_GCC) || defined(AVEL_CLANG)
+        #elif defined(AVEL_NEON) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
             auto* p = reinterpret_cast<const std::uint16_t*>(__builtin_assume_aligned(ptr, alignof(vec8x16u)));
             return vec8x16u{vld1q_u16(p)};
-
-            #else
+        #elif defined(AVEL_NEON)
             return vec8x16u{vld1q_u16(ptr)};
-
-            #endif
         #endif
     }
 

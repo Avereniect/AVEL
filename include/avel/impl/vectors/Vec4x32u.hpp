@@ -1537,18 +1537,13 @@ namespace avel {
 
         #endif
 
-        #if defined(AVEL_NEON)
-            #if __cplusplus >= 202002L
+        #if defined(AVEL_NEON) && __cplusplus >= 202002L
             return vec4x32u{vld1q_u32(assume_aligned<alignof(vec4x32u)>(ptr))};
-
-            #elif defined(AVEL_GCC) || defined(AVEL_CLANG)
+        #elif defined(AVEL_NEON) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
             auto* p = reinterpret_cast<const std::uint32_t*>(__builtin_assume_aligned(ptr, alignof(vec4x32u)));
             return vec4x32u{vld1q_u32(p)};
-
-            #else
+        #elif defined(AVEL_NEON)
             return vec4x32u{vld1q_u32(ptr)};
-
-            #endif
         #endif
     }
 

@@ -893,7 +893,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL explicit operator mask() const {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX51BW)
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return mask{_mm_test_epi16_mask(content, content)};
 
             #else

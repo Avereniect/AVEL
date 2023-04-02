@@ -4,7 +4,7 @@ project(AVEL)
 
 # List of AVEL CMake options
 set(AVEL_OPTIONS
-    AVEL_X86
+    AVEL_X86;
     AVEL_POPCNT;
     AVEL_LZCNT;
     AVEL_PREFETCH;
@@ -39,12 +39,20 @@ add_library(AVEL INTERFACE)
 target_compile_features(AVEL INTERFACE "cxx_std_11")
 target_include_directories(AVEL INTERFACE include/)
 
-##Create options
+
+
+## Create feature options
 foreach (extension IN LISTS AVEL_OPTIONS)
     option(${extension} OFF)
 endforeach()
 
-option(AVEL_USE_PRECOMPILED_HEADERS OFF)
+option(AVEL_USE_PRECOMPILED_HEADERS OFF "Make the Avel.hpp a precompiled header")
+
+set(AVEL_L1_CACHE_LINE_SIZE "0" CACHE STRING "Size of L1 cache in bytes")
+set(AVEL_L2_CACHE_LINE_SIZE "0" CACHE STRING "Size of L2 cache in bytes")
+set(AVEL_L3_CACHE_LINE_SIZE "0" CACHE STRING "Size of L3 cache in bytes")
+
+
 
 ## Define macros for requested features
 foreach(extension IN LISTS AVEL_OPTIONS)
@@ -55,23 +63,26 @@ endforeach()
 
 target_compile_definitions(AVEL INTERFACE ${AVEL_REQUESTED_EXTENSIONS})
 
+
+
 ## Define macros for cache line sizes
-if(AVEL_L1_CACHE_LINE_SIZE)
-    target_compile_definitions(AVEL INTERFACE AVEL_L1_CACHE_LINE_SIZE=${AVEL_L1_CACHE_LINE_SIZE})
-endif()
+#if(NOT AVEL_L1_CACHE_LINE_SIZE STREQUAL "0")
+#    target_compile_definitions(AVEL INTERFACE AVEL_L1_CACHE_LINE_SIZE=${AVEL_L1_CACHE_LINE_SIZE})
+#endif()
+#
+#if(NOT AVEL_L2_CACHE_LINE_SIZE STREQUAL "0")
+#    target_compile_definitions(AVEL INTERFACE AVEL_L2_CACHE_LINE_SIZE=${AVEL_L2_CACHE_LINE_SIZE})
+#endif()
+#
+#if(NOT AVEL_L3_CACHE_LINE_SIZE STREQUAL "0")
+#    target_compile_definitions(AVEL INTERFACE AVEL_L3_CACHE_LINE_SIZE=${AVEL_L3_CACHE_LINE_SIZE})
+#endif()
 
-if(AVEL_L2_CACHE_LINE_SIZE)
-    target_compile_definitions(AVEL INTERFACE AVEL_L2_CACHE_LINE_SIZE=${AVEL_L2_CACHE_LINE_SIZE})
-endif()
-
-if(AVEL_L3_CACHE_LINE_SIZE)
-    target_compile_definitions(AVEL INTERFACE AVEL_L3_CACHE_LINE_SIZE=${AVEL_L3_CACHE_LINE_SIZE})
-endif()
 
 
 ## Handle precompiled headers
 if(AVEL_USE_PRECOMPILED_HEADERS AND (${CMAKE_VERSION} VERSION_LESS "3.16.0"))
-    message(FATAL_ERROR "The use of precompiled headers requires at least CMake 3.16.0")
+    message(FATAL_ERROR "Precompiled headers require CMake 3.16.0")
 endif()
 
 if (AVEL_USE_PRECOMPILED_HEADERS)
@@ -82,12 +93,15 @@ if (AVEL_USE_PRECOMPILED_HEADERS)
 endif()
 
 
+
 # AVEL tests
 option(AVEL_BUILD_TESTS OFF)
 
 if (AVEL_BUILD_TESTS)
     add_subdirectory(tests/)
 endif()
+
+
 
 # AVEL benchmarks
 option(AVEL_BUILD_BENCHMARKS OFF)

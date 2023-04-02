@@ -40,7 +40,7 @@ namespace avel {
 
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         using primitive = __mmask32;
-        #elif defined(AVEL_AVX)
+        #elif defined(AVEL_AVX2)
         using primitive = __m256i;
         #endif
 
@@ -99,13 +99,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator=(bool b) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            content = b ? std::uint32_t(-1) : std::uint32_t(0);
-
-            #elif defined(AVEL_AVX2)
-            content = b ? _mm256_set1_epi8(-1) : _mm256_setzero_si256();
-
-            #endif
+            *this = Vector_mask{b};
             return *this;
         }
 
@@ -153,7 +147,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             content &= decay(rhs);
 
-            #elif defined(AVEL_SSE2)
+            #elif defined(AVEL_AVX2)
             content = _mm256_and_si256(content, decay(rhs));
 
             #endif
@@ -164,7 +158,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             content |= decay(rhs);
 
-            #elif defined(AVEL_SSE2)
+            #elif defined(AVEL_AVX2)
             content = _mm256_or_si256(content, decay(rhs));
 
             #endif
@@ -175,7 +169,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             content ^= decay(rhs);
 
-            #elif defined(AVEL_SSE2)
+            #elif defined(AVEL_AVX2)
             content = _mm256_xor_si256(content, decay(rhs));
 
             #endif
@@ -301,7 +295,7 @@ namespace avel {
 
         using scalar = std::int8_t;
 
-        #if defined(AVEL_AVX)
+        #if defined(AVEL_AVX2)
         using primitive = __m256i;
         #endif
 
@@ -334,7 +328,7 @@ namespace avel {
         AVEL_FINL explicit Vector(mask m):
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             content(_mm256_maskz_set1_epi8(decay(m), 0x1)) {}
-        #elif defined(AVEL_SSE2)
+        #elif defined(AVEL_AVX2)
             content(_mm256_sub_epi8(_mm256_setzero_si256(), decay(m))) {}
         #endif
 
@@ -342,10 +336,14 @@ namespace avel {
             content(content) {}
 
         AVEL_FINL explicit Vector(scalar x):
+        #if defined(AVEL_AVX2)
             content(_mm256_set1_epi8(x)) {}
+        #endif
 
         AVEL_FINL explicit Vector(const arr32x8i& arr):
+        #if defined(AVEL_AVX2)
             content(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(arr.data()))) {}
+        #endif
 
         Vector() = default;
         Vector(const Vector&) = default;
@@ -422,7 +420,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return mask{_mm256_cmpgt_epi8_mask(lhs.content, rhs.content)};
 
-            #elif defined(AVEL_SSE2)
+            #elif defined(AVEL_AVX2)
             return mask{_mm256_cmpgt_epi8(lhs.content, rhs.content)};
 
             #endif
@@ -433,7 +431,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return mask{_mm256_cmpge_epi8_mask(lhs.content, rhs.content)};
 
-            #elif defined(AVEL_SSE2)
+            #elif defined(AVEL_AVX2)
             return !mask{_mm256_cmpgt_epi8(rhs.content, lhs.content)};
 
             #endif
@@ -458,12 +456,16 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator+=(Vector rhs) {
+            #if defined(AVEL_AVX2)
             content = _mm256_add_epi8(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator-=(Vector rhs) {
+            #if defined(AVEL_AVX2)
             content = _mm256_sub_epi8(content, decay(rhs));
+            #endif
             return *this;
         }
 
@@ -587,17 +589,23 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator&=(Vector rhs) {
+            #if defined(AVEL_AVX2)
             content = _mm256_and_si256(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator|=(Vector rhs) {
+            #if defined(AVEL_AVX2)
             content = _mm256_or_si256(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator^=(Vector rhs) {
+            #if defined(AVEL_AVX2)
             content = _mm256_xor_si256(content, decay(rhs));
+            #endif
             return *this;
         }
 
@@ -624,7 +632,7 @@ namespace avel {
             tmp = _mm512_sra_epi16(tmp, _mm_cvtsi32_si128(rhs));
             content = _mm512_cvtepi16_epi8(tmp);
 
-            #elif defined(AVEL_SSE2)
+            #elif defined(AVEL_AVX2)
             auto sign_bits = _mm256_cmpgt_epi8(_mm256_setzero_si256(), content);
             auto lo = _mm256_unpacklo_epi8(content, sign_bits);
             auto hi = _mm256_unpackhi_epi8(content, sign_bits);
@@ -895,7 +903,7 @@ namespace avel {
 
         return vec32x8i{_mm512_cvtepi16_epi8(widened)};
 
-        #elif defined(AVEL_SSE2)
+        #elif defined(AVEL_AVX2)
         auto lo = _mm256_unpacklo_epi8(decay(v), decay(v));
         auto hi = _mm256_unpackhi_epi8(decay(v), decay(v));
 
@@ -913,13 +921,13 @@ namespace avel {
         return v;
     }
 
-    #if defined(AVEL_SSE2)
     template<>
     [[nodiscard]]
     AVEL_FINL vec32x8i bit_shift_right<7>(vec32x8i v) {
+        #if defined(AVEL_AVX2)
         return vec32x8i{_mm256_cmpgt_epi8(_mm256_setzero_si256(), decay(v))};
+        #endif
     }
-    #endif
 
     template<>
     [[nodiscard]]
@@ -1011,20 +1019,26 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec32x8i max(vec32x8i a, vec32x8i b) {
+        #if defined(AVEL_AVX2)
         return vec32x8i{_mm256_max_epi8(decay(a), decay(b))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec32x8i min(vec32x8i a, vec32x8i b) {
+        #if defined(AVEL_AVX2)
         return vec32x8i{_mm256_min_epi8(decay(a), decay(b))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL std::array<vec32x8i, 2> minmax(vec32x8i a, vec32x8i b) {
+        #if defined(AVEL_AVX2)
         return {
             vec32x8i{_mm256_min_epi8(decay(a), decay(b))},
             vec32x8i{_mm256_max_epi8(decay(a), decay(b))}
         };
+        #endif
     }
 
     [[nodiscard]]
@@ -1074,19 +1088,23 @@ namespace avel {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return vec32x8i{_mm256_mask_sub_epi8(decay(x), decay(m), _mm256_setzero_si256(), decay(x))};
 
-        #elif defined(AVEL_SSSE3)
+        #elif defined(AVEL_AVX2)
         return vec32x8i{_mm256_sign_epi8(decay(x), _mm256_or_si256(decay(m), _mm256_set1_epi8(0x01)))};
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec32x8i abs(vec32x8i v) {
+        #if defined(AVEL_AVX2)
         return vec32x8i{_mm256_abs_epi8(decay(v))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec32x8i neg_abs(vec32x8i v) {
+        #if defined(AVEL_AVX2)
         return -vec32x8i{_mm256_abs_epi8(decay(v))};
+        #endif
     }
 
     [[nodiscard]]
@@ -1127,7 +1145,9 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec32x8i load<vec32x8i, vec32x8i::width>(const std::int8_t* ptr) {
+        #if defined(AVEL_AVX2)
         return vec32x8i{_mm256_loadu_si256(reinterpret_cast<const __m256i*>(ptr))};
+        #endif
     }
 
 
@@ -1140,7 +1160,9 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec32x8i aligned_load<vec32x8i, vec32x8i::width>(const std::int8_t* ptr) {
+        #if defined(AVEL_AVX2)
         return vec32x8i{_mm256_load_si256(reinterpret_cast<const __m256i*>(ptr))};
+        #endif
     }
 
 
@@ -1177,7 +1199,9 @@ namespace avel {
 
     template<>
     AVEL_FINL void store<vec32x8i::width>(std::int8_t* ptr, vec32x8i x) {
+        #if defined(AVEL_AVX2)
         _mm256_storeu_si256(reinterpret_cast<__m256i*>(ptr), decay(x));
+        #endif
     }
 
 
@@ -1195,7 +1219,9 @@ namespace avel {
 
     template<>
     AVEL_FINL void aligned_store<vec32x8i::width>(std::int8_t* ptr, vec32x8i x) {
+        #if defined(AVEL_AVX2)
         _mm256_store_si256(reinterpret_cast<__m256i*>(ptr), decay(x));
+        #endif
     }
 
 

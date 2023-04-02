@@ -1,57 +1,136 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.16)
 
+
+# Use CompilerCache when available
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
 endif()
 
-# Clear variables from cache for reuse of build-directory with different
-# feature sets
-foreach (extension IN LISTS AVEL_OPTIONS)
-    unset(${extension} CACHE)
+
+
+## AVEL test groups list
+set(AVEL_TEST_GROUPS
+    AVEL_ENABLE_VEC1X8I_TESTS;
+    AVEL_ENABLE_VEC1X8U_TESTS;
+
+    AVEL_ENABLE_VEC1X16I_TESTS;
+    AVEL_ENABLE_VEC1X16U_TESTS;
+
+    AVEL_ENABLE_VEC1X32I_TESTS;
+    AVEL_ENABLE_VEC1X32U_TESTS;
+
+    AVEL_ENABLE_VEC1X64I_TESTS;
+    AVEL_ENABLE_VEC1X64U_TESTS;
+
+
+    AVEL_ENABLE_VEC16X8U_TESTS;
+    AVEL_ENABLE_VEC16X8I_TESTS;
+
+    AVEL_ENABLE_VEC8X16U_TESTS;
+    AVEL_ENABLE_VEC8X16I_TESTS;
+
+    AVEL_ENABLE_VEC4X32U_TESTS;
+    AVEL_ENABLE_VEC4X32I_TESTS;
+
+    AVEL_ENABLE_VEC2X64U_TESTS;
+    AVEL_ENABLE_VEC2X64I_TESTS;
+
+
+    AVEL_ENABLE_VEC32X8U_TESTS;
+    AVEL_ENABLE_VEC32X8I_TESTS;
+
+    AVEL_ENABLE_VEC16X16U_TESTS;
+    AVEL_ENABLE_VEC16X16I_TESTS;
+
+    AVEL_ENABLE_VEC8X32U_TESTS;
+    AVEL_ENABLE_VEC8X32I_TESTS;
+
+    AVEL_ENABLE_VEC4X64U_TESTS;
+    AVEL_ENABLE_VEC4X64I_TESTS;
+
+
+    AVEL_ENABLE_VEC64X8U_TESTS;
+    AVEL_ENABLE_VEC64X8I_TESTS;
+
+    AVEL_ENABLE_VEC32X16U_TESTS;
+    AVEL_ENABLE_VEC32X16I_TESTS;
+
+    AVEL_ENABLE_VEC16X32U_TESTS;
+    AVEL_ENABLE_VEC16X32I_TESTS;
+
+    AVEL_ENABLE_VEC8X64U_TESTS;
+    AVEL_ENABLE_VEC8X64I_TESTS;
+)
+
+foreach(extension IN LISTS AVEL_TEST_GROUPS)
+    if(DEFINED ${extension} AND ${extension})
+        list(APPEND AVEL_REQUESTED_TEST_GROUPS "${extension}=1 ")
+    else()
+        list(APPEND AVEL_REQUESTED_TEST_GROUPS "${extension}=0 ")
+    endif()
 endforeach()
 
+## Create test group options
+foreach (extension IN LISTS AVEL_TEST_GROUPS)
+    option(${extension} OFF)
+endforeach()
+
+
+
+# AVEL_TESTS
 add_executable(AVEL_TESTS
-        Type_traits_tests.hpp
+    Type_traits_tests.hpp
 
-        AVEL_tests.hpp
-        AVEL_tests.cpp
-
-
-
-        scalars/Scalar8u_tests.hpp
-        scalars/Scalar8i_tests.hpp
-
-        scalars/Scalar16u_tests.hpp
-        scalars/Scalar16i_tests.hpp
-
-        scalars/Scalar32u_tests.hpp
-        scalars/Scalar32i_tests.hpp
-
-        scalars/Scalar64u_tests.hpp
-        scalars/Scalar64i_tests.hpp
-
-        scalars/Scalar_tests.cpp
-
-        Denominator_tests.hpp
+    AVEL_tests.hpp
+    AVEL_tests.cpp
 
 
-        vectors/Vec16x8u_tests.hpp
-        vectors/Vec16x8i_tests.hpp
 
-        vectors/Vec8x16u_tests.hpp
-        vectors/Vec8x16i_tests.hpp
+    scalars/Scalar8u_tests.hpp
+    scalars/Scalar8i_tests.hpp
 
-        vectors/Vec4x32u_tests.hpp
-        vectors/Vec4x32i_tests.hpp
+    scalars/Scalar16u_tests.hpp
+    scalars/Scalar16i_tests.hpp
 
-        vectors/Vec2x64u_tests.hpp
-        vectors/Vec2x64i_tests.hpp
+    scalars/Scalar32u_tests.hpp
+    scalars/Scalar32i_tests.hpp
 
-        vectors/Vector_tests.cpp
+    scalars/Scalar64u_tests.hpp
+    scalars/Scalar64i_tests.hpp
 
-        Denominator_vector_tests.hpp
+    scalars/Scalar_tests.cpp
+
+    Denominator_tests.hpp
+
+
+    vectors/Vec16x8u_tests.hpp
+    vectors/Vec16x8i_tests.hpp
+
+    vectors/Vec8x16u_tests.hpp
+    vectors/Vec8x16i_tests.hpp
+
+    vectors/Vec4x32u_tests.hpp
+    vectors/Vec4x32i_tests.hpp
+
+    vectors/Vec2x64u_tests.hpp
+    vectors/Vec2x64i_tests.hpp
+
+
+    vectors/Vec32x8u_tests.hpp
+    vectors/Vec32x8i_tests.hpp
+
+
+    vectors/Vec64x8u_tests.hpp
+    vectors/Vec64x8i_tests.hpp
+
+
+    vectors/Vector_tests.cpp
+
+    Denominator_vector_tests.hpp
 )
+
+target_compile_definitions(AVEL INTERFACE ${AVEL_REQUESTED_TEST_GROUPS})
 
 target_link_libraries(AVEL_TESTS PUBLIC AVEL gtest pthread)
 target_compile_features(AVEL_TESTS PRIVATE "cxx_std_11")

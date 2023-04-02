@@ -339,10 +339,14 @@ namespace avel {
             content(content) {}
 
         AVEL_FINL explicit Vector(scalar x):
+        #if defined(AVEL_AVX2)
             content(_mm256_set1_epi8(x)) {}
+        #endif
 
         AVEL_FINL explicit Vector(const arr32x8u& arr):
+        #if defined(AVEL_AVX2)
             content(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(arr.data()))) {}
+        #endif
 
         Vector() = default;
         Vector(const Vector&) = default;
@@ -581,17 +585,23 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator&=(Vector rhs) {
+            #if defined(AVEL_AVX2)
             content = _mm256_and_si256(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator|=(Vector rhs) {
+            #if defined(AVEL_AVX2)
             content = _mm256_or_si256(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator^=(Vector rhs) {
+            #if defined(AVEL_AVX2)
             content = _mm256_xor_si256(content, decay(rhs));
+            #endif
             return *this;
         }
 
@@ -835,7 +845,9 @@ namespace avel {
         static_assert(N <= 32, "Specified index does not exist");
         typename std::enable_if<N <= 32, int>::type dummy_variable = 0;
 
+        #if defined(AVEL_AVX2)
         return vec32x8u{_mm256_insert_epi8(decay(v), x, N)};
+        #endif
     }
 
     //=====================================================
@@ -848,11 +860,13 @@ namespace avel {
         static_assert(S <= 8, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
 
+        #if defined(AVEL_AVX2)
         auto shifted = _mm256_slli_epi16(decay(v), S);
         auto mask = _mm256_set1_epi8(std::uint8_t(0xFF << S));
         auto masked = _mm256_and_si256(mask, shifted);
 
         return vec32x8u{masked};
+        #endif
     }
 
     template<>
@@ -897,11 +911,13 @@ namespace avel {
         static_assert(S <= 8, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
 
+        #if defined(AVEL_AVX2)
         auto shifted = _mm256_srli_epi16(decay(v), S);
         auto mask = _mm256_set1_epi8(std::uint8_t(0xFF >> S));
         auto masked = _mm256_and_si256(shifted, mask);
 
         return vec32x8u{masked};
+        #endif
     }
 
     template<>
@@ -923,6 +939,7 @@ namespace avel {
     template<std::uint32_t S, typename std::enable_if<S < 8, bool>::type = true>
     [[nodiscard]]
     AVEL_FINL vec32x8u rotl(vec32x8u v) {
+        #if defined(AVEL_AVX2)
         auto lo = _mm256_unpacklo_epi8(decay(v), decay(v));
         auto hi = _mm256_unpackhi_epi8(decay(v), decay(v));
 
@@ -934,6 +951,7 @@ namespace avel {
 
         auto ret = _mm256_packus_epi16(lo, hi);
         return vec32x8u{ret};
+        #endif
     }
 
     template<>
@@ -994,7 +1012,7 @@ namespace avel {
 
         return vec32x8u{ret};
 
-        #elif defined(AVEL_SSSE3)
+        #elif defined(AVEL_AVX2)
         alignas(16) static constexpr std::uint8_t table_data[16] {
             0x01, 0x02, 0x04, 0x08,
             0x10, 0x20, 0x40, 0x80,
@@ -1031,6 +1049,7 @@ namespace avel {
     template<std::uint32_t S, typename std::enable_if<S < 8, bool>::type = true>
     [[nodiscard]]
     AVEL_FINL vec32x8u rotr(vec32x8u v) {
+        #if defined(AVEL_AVX2)
         auto lo = _mm256_unpacklo_epi8(decay(v), decay(v));
         auto hi = _mm256_unpackhi_epi8(decay(v), decay(v));
 
@@ -1042,6 +1061,7 @@ namespace avel {
 
         auto ret = _mm256_packus_epi16(lo, hi);
         return vec32x8u{ret};
+        #endif
     }
 
     template<>
@@ -1100,7 +1120,7 @@ namespace avel {
 
         //TODO: Offer AVX2 version?
 
-        #elif defined(AVEL_SSSE3)
+        #elif defined(AVEL_AVX2)
         alignas(16) static constexpr std::uint8_t table_data[16] {
             0x01, 0x80, 0x40, 0x20,
             0x10, 0x08, 0x04, 0x02,
@@ -1153,13 +1173,17 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool all(vec32x8u x) {
+        #if defined(AVEL_AVX2)
         auto compared = _mm256_cmpeq_epi8(decay(x), _mm256_setzero_si256());
         return 0x0000 == _mm256_movemask_epi8(compared);
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool none(vec32x8u x) {
+        #if defined(AVEL_AVX2)
         return _mm256_testz_si256(decay(x), decay(x));
+        #endif
     }
 
     [[nodiscard]]
@@ -1620,6 +1644,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec32x8u bit_width(vec32x8u v) {
+        #if defined(AVEL_AVX2)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 2, 2,
             3, 3, 3, 3,
@@ -1646,10 +1671,12 @@ namespace avel {
 
         auto ret = _mm256_max_epu8(partial0, partial1);
         return vec32x8u{ret};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec32x8u bit_floor(vec32x8u v) {
+        #if defined(AVEL_AVX2)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 2, 2,
             4, 4, 4, 4,
@@ -1676,10 +1703,12 @@ namespace avel {
 
         auto ret = _mm256_max_epu8(partial0, partial1);
         return vec32x8u{ret};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec32x8u bit_ceil(vec32x8u v) {
+        #if defined(AVEL_AVX2)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
              0,  1,  3,  3,
              7,  7,  7,  7,
@@ -1710,6 +1739,7 @@ namespace avel {
 
         auto ret = _mm256_add_epi8(_mm256_max_epu8(partial0, partial1), _mm256_set1_epi8(0x01));
         return vec32x8u{_mm256_sub_epi8(ret, zero_mask)};
+        #endif
     }
 
     [[nodiscard]]

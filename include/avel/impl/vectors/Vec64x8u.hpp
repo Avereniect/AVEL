@@ -38,7 +38,9 @@ namespace avel {
         // Type aliases
         //=================================================
 
+        #if defined(AVEL_AVX512BW)
         using primitive = __mmask64;
+        #endif
 
     private:
 
@@ -70,8 +72,10 @@ namespace avel {
                 "Implementation assumes bools occupy a single byte"
             );
 
+            #if defined(AVEL_AVX512BW)
             auto array_data = _mm512_loadu_si512(arr.data());
             content = _mm512_cmplt_epu8_mask(_mm512_setzero_si512(), array_data);
+            #endif
         }
 
         Vector_mask() = default;
@@ -102,14 +106,18 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
+            #if defined(AVEL_AVX512BW)
             auto tmp = _kxor_mask64(decay(lhs), decay(rhs));
             return _kortestz_mask64_u8(tmp, tmp);
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) noexcept {
+            #if defined(AVEL_AVX512BW)
             auto tmp = _kxor_mask64(decay(lhs), decay(rhs));
             return !_kortestz_mask64_u8(tmp, tmp);
+            #endif
         }
 
         //=================================================
@@ -117,17 +125,23 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator&=(Vector_mask rhs) {
+            #if defined(AVEL_AVX512BW)
             content &= decay(rhs);
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector_mask& operator|=(Vector_mask rhs) {
+            #if defined(AVEL_AVX512BW)
             content |= decay(rhs);
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector_mask& operator^=(Vector_mask rhs) {
+            #if defined(AVEL_AVX512BW)
             content ^= decay(rhs);
+            #endif
             return *this;
         }
 
@@ -137,7 +151,9 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL Vector_mask operator!() const {
+            #if defined(AVEL_AVX512BW)
             return Vector_mask{_knot_mask64(content)};
+            #endif
         }
 
         [[nodiscard]]
@@ -190,17 +206,23 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool any(mask64x8u m) {
+        #if defined(AVEL_AVX512BW)
         return !_kortestz_mask64_u8(decay(m), decay(m));
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool all(mask64x8u m) {
+        #if defined(AVEL_AVX512BW)
         return _kortestc_mask64_u8(decay(m), decay(m));
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool none(mask64x8u m) {
+        #if defined(AVEL_AVX512BW)
         return _kortestz_mask64_u8(decay(m), decay(m));
+        #endif
     }
 
 
@@ -222,7 +244,9 @@ namespace avel {
 
         using scalar = std::uint8_t;
 
+        #if defined(AVEL_AVX512BW)
         using primitive = __m512i;
+        #endif
 
         using mask = Vector_mask<scalar, width>;
 
@@ -251,16 +275,22 @@ namespace avel {
             Vector(convert<Vector>(x)[0]) {}
 
         AVEL_FINL explicit Vector(mask m):
+        #if defined(AVEL_AVX512BW)
             content(_mm512_maskz_set1_epi8(decay(m), 1)) {}
+        #endif
 
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}
 
         AVEL_FINL explicit Vector(scalar x):
+        #if defined(AVEL_AVX512BW)
             content(_mm512_set1_epi8(x)) {}
+        #endif
 
         AVEL_FINL explicit Vector(const arr64x8u& arr):
+        #if defined(AVEL_AVX512BW)
             content(_mm512_loadu_si512(arr.data())) {}
+        #endif
 
         Vector() = default;
         Vector(const Vector&) = default;
@@ -290,32 +320,44 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator==(Vector lhs, Vector rhs) {
+            #if defined(AVEL_AVX512BW)
             return mask{_mm512_cmpeq_epi8_mask(decay(lhs), decay(rhs))};
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator!=(Vector lhs, Vector rhs) {
+            #if defined(AVEL_AVX512BW)
             return mask{_mm512_cmpneq_epi8_mask(decay(lhs), decay(rhs))};
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator<(Vector lhs, Vector rhs) {
+            #if defined(AVEL_AVX512BW)
             return mask{_mm512_cmplt_epu8_mask(decay(lhs), decay(rhs))};
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator<=(Vector lhs, Vector rhs) {
+            #if defined(AVEL_AVX512BW)
             return mask{_mm512_cmple_epu8_mask(decay(lhs), decay(rhs))};
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator>(Vector lhs, Vector rhs) {
+            #if defined(AVEL_AVX512BW)
             return mask{_mm512_cmpgt_epu8_mask(decay(lhs), decay(rhs))};
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator>=(Vector lhs, Vector rhs) {
+            #if defined(AVEL_AVX512BW)
             return mask{_mm512_cmpge_epu8_mask(decay(lhs), decay(rhs))};
+            #endif
         }
 
         //=================================================
@@ -334,16 +376,21 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator+=(Vector rhs) {
+            #if defined(AVEL_AVX512BW)
             content = _mm512_add_epi8(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator-=(Vector rhs) {
+            #if defined(AVEL_AVX512BW)
             content = _mm512_sub_epi8(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator*=(Vector rhs) {
+            #if defined(AVEL_AVX512BW)
             auto even_mask = _mm512_set1_epi16(0x00FF);
 
             auto even_product = _mm512_and_si512(even_mask, _mm512_mullo_epi16(content, decay(rhs)));
@@ -358,6 +405,7 @@ namespace avel {
             auto product = _mm512_or_si512(even_product, odd_product);
             content = product;
             //TODO: Explicitly use vpternlogd
+            #endif
 
             return *this;
         }
@@ -439,34 +487,44 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator&=(Vector rhs) {
+            #if defined(AVEL_AVX512BW)
             content = _mm512_and_si512(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator|=(Vector rhs) {
+            #if defined(AVEL_AVX512BW)
             content = _mm512_or_si512(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator^=(Vector rhs) {
+            #if defined(AVEL_AVX512BW)
             content = _mm512_xor_si512(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator<<=(long long rhs) {
+            #if defined(AVEL_AVX512BW)
             auto s = _mm_cvtsi32_si128(rhs);
 
             auto shifted = _mm512_sll_epi16(content, s);
             auto mask = _mm512_set1_epi8(std::uint8_t(0xFF << rhs));
             content = _mm512_and_si512(mask, shifted);
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
+            #if defined(AVEL_AVX512BW)
             auto s = _mm_cvtsi32_si128(rhs);
             auto shifted = _mm512_srl_epi16(content, s);
             auto mask = _mm512_set1_epi8(std::uint8_t(0xFF >> rhs));
             content = _mm512_and_si512(shifted, mask);
+            #endif
             return *this;
         }
 
@@ -488,6 +546,7 @@ namespace avel {
             content = ret;
             */
 
+            #if defined(AVEL_AVX512BW)
             auto even_mask = _mm512_set1_epi16(0x00FF);
 
             auto even_result = _mm512_and_si512(
@@ -503,11 +562,13 @@ namespace avel {
             auto result = _mm512_or_si512(even_result, odd_result);
             content = result;
             //TODO: Explicitly use vpternlogd
+            #endif
 
             return *this;
         }
 
         AVEL_FINL Vector& operator>>=(Vector rhs) {
+            #if defined(AVEL_AVX512BW)
             auto even_mask = _mm512_set1_epi16(0x00FF);
 
             auto even_result = _mm512_srlv_epi16(
@@ -527,6 +588,7 @@ namespace avel {
             content = result;
 
             //TODO: Explicitly use vpternlogd
+            #endif
 
             return *this;
         }
@@ -537,7 +599,9 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL Vector operator~() const {
+            #if defined(AVEL_AVX512BW)
             return Vector{_mm512_ternarylogic_epi32(content, content, content, 0x01)};
+            #endif
         }
 
         [[nodiscard]]
@@ -593,7 +657,9 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL explicit operator mask() const {
+            #if defined(AVEL_AVX512BW)
             return mask{_mm512_test_epi8_mask(content, content)};
+            #endif
         }
 
     };
@@ -612,7 +678,9 @@ namespace avel {
         static_assert(N < vec64x8u::width, "Specified index does not exist");
         typename std::enable_if<N < vec64x8u::width, int>::type dummy_variable = 0;
 
+        #if defined(AVEL_AVX512BW)
         return _mm_extract_epi8(_mm512_extracti32x4_epi32(decay(v), N / 16), N % 16);
+        #endif
     }
 
     template<std::uint32_t N>
@@ -620,9 +688,11 @@ namespace avel {
         static_assert(N < vec64x8u::width, "Specified index does not exist");
         typename std::enable_if<N < vec64x8u::width, int>::type dummy_variable = 0;
 
+        #if defined(AVEL_AVX512BW)
         auto quarter = _mm512_extracti32x4_epi32(decay(v), N / 16);
         quarter = _mm_insert_epi8(quarter, x, N % 16);
         return vec64x8u{_mm512_inserti32x4(decay(v), quarter, N / 16)};
+        #endif
     }
 
     //=====================================================
@@ -635,11 +705,13 @@ namespace avel {
         static_assert(S <= 8, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
 
+        #if defined(AVEL_AVX512BW)
         auto shifted = _mm512_slli_epi16(decay(v), S);
         auto mask = _mm512_set1_epi8(std::uint8_t(0xFF << S));
         auto masked = _mm512_and_si512(mask, shifted);
 
         return vec64x8u{masked};
+        #endif
     }
 
     template<>
@@ -686,11 +758,13 @@ namespace avel {
         static_assert(S <= 8, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
 
+        #if defined(AVEL_AVX512BW)
         auto shifted = _mm512_srli_epi16(decay(v), S);
         auto mask = _mm512_set1_epi8(0xFF >> S);
         auto masked = _mm512_and_si512(shifted, mask);
 
         return vec64x8u{masked};
+        #endif
     }
 
     template<>
@@ -712,14 +786,14 @@ namespace avel {
     template<std::uint32_t S, typename std::enable_if<S < 8, bool>::type = true>
     [[nodiscard]]
     AVEL_FINL vec64x8u rotl(vec64x8u v) {
-        #if defined(AVEL_GFNI)
+        #if defined(AVEL_AVX512BW) && defined(AVEL_GFNI)
         std::uint64_t control = rotr(std::uint64_t{0x0102040810204080ull}, S * 8);
         auto control_vector = _mm512_set1_epi64(control);
 
         auto result = _mm512_gf2p8affine_epi64_epi8(decay(v), control_vector, 0x00);
         return vec64x8u{result};
 
-        #else
+        #elif defined(AVEL_AVX512BW)
         auto lo = _mm512_unpacklo_epi8(decay(v), decay(v));
         auto hi = _mm512_unpackhi_epi8(decay(v), decay(v));
 
@@ -743,6 +817,7 @@ namespace avel {
     template<std::uint32_t S, typename std::enable_if<8 <= S, bool>::type = true>
     [[nodiscard]]
     AVEL_FINL vec64x8u rotl(vec64x8u v) {
+        #if defined(AVEL_AVX512BW)
         auto lo = _mm512_unpacklo_epi8(decay(v), decay(v));
         auto hi = _mm512_unpackhi_epi8(decay(v), decay(v));
 
@@ -754,12 +829,12 @@ namespace avel {
 
         auto ret = _mm512_packus_epi16(lo, hi);
         return vec64x8u{ret};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec64x8u rotl(vec64x8u v, long long s) {
-
-        #if defined(AVEL_GFNI)
+        #if defined(AVEL_AVX512BW) && defined(AVEL_GFNI)
         s &= 0x7;
         std::uint64_t control = rotr(std::uint64_t{0x0102040810204080ull}, s * 8);
         auto control_vector = _mm512_set1_epi64(control);
@@ -767,7 +842,7 @@ namespace avel {
         auto result = _mm512_gf2p8affine_epi64_epi8(decay(v), control_vector, 0x00);
         return vec64x8u{result};
 
-        #else
+        #elif defined(AVEL_AVX512BW)
         s &= 0x7;
         auto shift_amount = _mm_cvtsi64_si128(8 - s);
         auto lo = _mm512_unpacklo_epi8(decay(v), decay(v));
@@ -787,6 +862,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u rotl(vec64x8u v, vec64x8u s) {
+        #if defined(AVEL_AVX512BW)
         s = vec64x8u{8} - (s & vec64x8u{0x7});
         auto lo = _mm512_unpacklo_epi8(decay(v), decay(v));
         auto hi = _mm512_unpackhi_epi8(decay(v), decay(v));
@@ -800,6 +876,7 @@ namespace avel {
         hi = _mm512_and_si512(hi, byte_mask);
 
         return vec64x8u{_mm512_packus_epi16(lo, hi)};
+        #endif
     }
 
 
@@ -807,14 +884,14 @@ namespace avel {
     template<std::uint32_t S, typename std::enable_if<S < 8, bool>::type = true>
     [[nodiscard]]
     AVEL_FINL vec64x8u rotr(vec64x8u v) {
-        #if defined(AVEL_GFNI)
+        #if defined(AVEL_AVX512BW) && defined(AVEL_GFNI)
         std::uint64_t control = rotl(std::uint64_t{0x0102040810204080ull}, S * 8);
         auto control_vector = _mm512_set1_epi64(control);
 
         auto result = _mm512_gf2p8affine_epi64_epi8(decay(v), control_vector, 0x00);
         return vec64x8u{result};
 
-        #else
+        #elif defined(AVEL_AVX512BW)
         auto l = bit_shift_left<8 - S>(v);
         auto r = bit_shift_right<S>(v);
 
@@ -835,7 +912,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u rotr(vec64x8u v, long long s) {
-        #if defined(AVEL_GFNI)
+        #if defined(AVEL_AVX512BW) && defined(AVEL_GFNI)
         s &= 0x7;
         std::uint64_t control = rotl(std::uint64_t{0x0102040810204080ull}, s * 8);
         auto control_vector = _mm512_set1_epi64(control);
@@ -843,7 +920,7 @@ namespace avel {
         auto result = _mm512_gf2p8affine_epi64_epi8(decay(v), control_vector, 0x00);
         return vec64x8u{result};
 
-        #else
+        #elif defined(AVEL_AVX512BW)
         s &= 0x7;
         auto l = (v << (8 - s));
         auto r = (v >> s);
@@ -857,6 +934,8 @@ namespace avel {
         /* //TODO: Leverage this implementation if AVEL_AVX512VBMI2 is available
         _mm512_shldi_epi16(_mm512_shrdv_epi16(a, _mm512_swaphl_epi8(a), _mm512_alignr_epi8(_rotate_vcnt_r(mm512, cnt), _rotate_vcnt_r(mm512, cnt), 1)), _mm512_shrdv_epi16(_mm512_swaphl_epi8(a), a, _rotate_vcnt_r(mm512, cnt)), 8);
         */
+
+        #if defined(AVEL_AVX512BW)
         s &= vec64x8u{0x7};
         auto lo = _mm512_unpacklo_epi8(decay(v), decay(v));
         auto hi = _mm512_unpackhi_epi8(decay(v), decay(v));
@@ -870,6 +949,7 @@ namespace avel {
         hi = _mm512_and_si512(hi, byte_mask);
 
         return vec64x8u{_mm512_packus_epi16(lo, hi)};
+        #endif
     }
 
     //=====================================================
@@ -898,22 +978,30 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u broadcast_mask(mask64x8u m) {
+        #if defined(AVEL_AVX512BW)
         return vec64x8u{_mm512_movm_epi8(decay(m))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec64x8u keep(mask64x8u m, vec64x8u v) {
+        #if defined(AVEL_AVX512BW)
         return vec64x8u{_mm512_maskz_mov_epi8(decay(m), decay(v))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec64x8u clear(mask64x8u m, vec64x8u v) {
+        #if defined(AVEL_AVX512BW)
         return vec64x8u{_mm512_maskz_mov_epi8(decay(!m), decay(v))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec64x8u blend(mask64x8u m, vec64x8u a, vec64x8u b) {
+        #if defined(AVEL_AVX512BW)
         return vec64x8u{_mm512_mask_blend_epi8(decay(m), decay(b), decay(a))};
+        #endif
     }
 
     [[nodiscard]]
@@ -923,20 +1011,26 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u max(vec64x8u a, vec64x8u b) {
+        #if defined(AVEL_AVX512BW)
         return vec64x8u{_mm512_max_epu8(decay(a), decay(b))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec64x8u min(vec64x8u a, vec64x8u b) {
+        #if defined(AVEL_AVX512BW)
         return vec64x8u{_mm512_min_epu8(decay(a), decay(b))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL std::array<vec64x8u, 2> minmax(vec64x8u a, vec64x8u b) {
+        #if defined(AVEL_AVX512BW)
         return {
             vec64x8u{_mm512_min_epu8(decay(a), decay(b))},
             vec64x8u{_mm512_max_epu8(decay(a), decay(b))}
         };
+        #endif
     }
 
     [[nodiscard]]
@@ -946,15 +1040,19 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u average(vec64x8u a, vec64x8u b) {
+        #if defined(AVEL_AVX512BW)
         return vec64x8u{_mm512_avg_epu8(decay(a), decay(b))} - ((a ^ b) & vec64x8u{0x1});
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec64x8u midpoint(vec64x8u a, vec64x8u b) {
+        #if defined(AVEL_AVX512BW)
         auto t1 = _mm512_avg_epu8(decay(a), decay(b));
         auto t5 = _mm512_and_si512(_mm512_ternarylogic_epi32(decay(a), decay(b), decay(broadcast_mask(b < a)), 0x14), _mm512_set1_epi8(0x1));
         auto t6 = _mm512_sub_epi8(t1, t5);
         return vec64x8u{t6};
+        #endif
     }
 
     //Definition of neg_abs delayed until later
@@ -966,14 +1064,18 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec64x8u load<vec64x8u>(const std::uint8_t* ptr, std::uint32_t n) {
+        #if defined(AVEL_AVX512BW)
         auto mask = (n >= 64) ? std::uint64_t(-1) : (std::uint64_t(1) << n) - 1;
         return vec64x8u{_mm512_maskz_loadu_epi8(mask, ptr)};
+        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec64x8u load<vec64x8u, vec64x8u::width>(const std::uint8_t* ptr) {
+        #if defined(AVEL_AVX512BW)
         return vec64x8u{_mm512_loadu_si512(reinterpret_cast<const __m512i*>(ptr))};
+        #endif
     }
 
     template<>
@@ -985,15 +1087,19 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec64x8u aligned_load<vec64x8u, vec64x8u::width>(const std::uint8_t* ptr) {
+        #if defined(AVEL_AVX512BW)
         return vec64x8u{_mm512_load_si512(reinterpret_cast<const __m512i*>(ptr))};
+        #endif
     }
 
 
 
 
     AVEL_FINL void store(std::uint8_t* ptr, vec64x8u v, std::uint32_t n) {
+        #if defined(AVEL_AVX512BW)
         auto mask = (n >= 64) ? std::uint64_t(-1) : (std::uint64_t(1) << n) - 1;
         _mm512_mask_storeu_epi8(ptr, mask, decay(v));
+        #endif
     }
 
     template<std::uint32_t N = vec64x8u::width>
@@ -1006,7 +1112,9 @@ namespace avel {
 
     template<>
     AVEL_FINL void store<vec64x8u::width>(std::uint8_t* ptr, vec64x8u v) {
+        #if defined(AVEL_AVX512BW)
         _mm512_storeu_si512(reinterpret_cast<__m512i*>(ptr), decay(v));
+        #endif
     }
 
 
@@ -1025,7 +1133,9 @@ namespace avel {
 
     template<>
     AVEL_FINL void aligned_store<vec64x8u::width>(std::uint8_t* ptr, vec64x8u v) {
+        #if defined(AVEL_AVX512BW)
         _mm512_store_si512(reinterpret_cast<__m512i*>(ptr), decay(v));
+        #endif
     }
 
     [[nodiscard]]
@@ -1041,6 +1151,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec64x8u> div(vec64x8u x, vec64x8u y) {
+        #if defined(AVEL_AVX512BW)
         vec64x8u quotient{0x00};
 
         auto ones = _mm512_set1_epi8(0x01);
@@ -1129,14 +1240,15 @@ namespace avel {
         avel_div64x8u_early_end:
         quotient = _mm512_sll_epi16(decay(quotient), _mm_cvtsi32_si128(i));
         return {quotient, x};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec64x8u popcount(vec64x8u v) {
-        #if defined(AVEL_BITALG)
+        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512BITALG)
         return vec64x8u{_mm512_popcnt_epi8(decay(v))};
 
-        #else
+        #elif defined(AVEL_AVX512BW)
         alignas(64) static constexpr std::uint8_t table_data[16] {
             0, 1, 1, 2,
             1, 2, 2, 3,
@@ -1160,6 +1272,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u countl_zero(vec64x8u v) {
+        #if defined(AVEL_AVX512BW)
         //Combined high and low nibble lookup table data
         alignas(32) static constexpr std::uint8_t table_data[32] {
             8, 3, 2, 2,
@@ -1188,10 +1301,12 @@ namespace avel {
 
         auto ret = _mm512_min_epu8(partial0, partial1);
         return vec64x8u{ret};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec64x8u countl_one(vec64x8u v) {
+        #if defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 0, 0, 0,
             0, 0, 0, 0,
@@ -1218,16 +1333,17 @@ namespace avel {
 
         auto ret = _mm512_min_epu8(partial0, partial1);
         return vec64x8u{ret};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec64x8u countr_zero(vec64x8u v) {
-        #if defined(AVEL_AVX512BITALG)
+        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512BITALG)
         auto neg_one = _mm512_set1_epi8(-1);
         auto tz_mask = _mm512_andnot_si512(decay(v), _mm512_add_epi8(decay(v), neg_one));
         return vec64x8u{_mm512_popcnt_epi8(tz_mask)};
 
-        #else
+        #elif defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             8, 0, 1, 0,
             2, 0, 1, 0,
@@ -1260,9 +1376,6 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec64x8u countr_one(vec64x8u v) {
         #if defined(AVEL_AVX512BW)
-        return countr_zero(~v);
-
-        #else
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 0, 2,
             0, 1, 0, 3,
@@ -1294,6 +1407,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u bit_width(vec64x8u v) {
+        #if defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 2, 2,
             3, 3, 3, 3,
@@ -1320,10 +1434,12 @@ namespace avel {
 
         auto ret = _mm512_max_epu8(partial0, partial1);
         return vec64x8u{ret};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec64x8u bit_floor(vec64x8u v) {
+        #if defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 2, 2,
             4, 4, 4, 4,
@@ -1350,10 +1466,12 @@ namespace avel {
 
         auto ret = _mm512_max_epu8(partial0, partial1);
         return vec64x8u{ret};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec64x8u bit_ceil(vec64x8u v) {
+        #if defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
              0,  1,  3,  3,
              7,  7,  7,  7,
@@ -1384,14 +1502,15 @@ namespace avel {
 
         auto ret = _mm512_add_epi8(_mm512_max_epu8(partial0, partial1), _mm512_set1_epi8(0x01));
         return vec64x8u{_mm512_add_epi8(ret, _mm512_maskz_set1_epi8(zero_mask, 1))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask64x8u has_single_bit(vec64x8u v) {
-        #if defined(AVEL_AVX512BITALG)
+        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512BITALG)
         return popcount(v) == vec64x8u{0x01};
 
-        #else
+        #elif defined(AVEL_AVX512BW)
         return mask64x8u{v} && !mask64x8u{v & (v - vec64x8u{1})};
 
         #endif
