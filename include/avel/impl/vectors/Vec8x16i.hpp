@@ -16,8 +16,9 @@ namespace avel {
     //=====================================================
 
     div_type<vec8x16i> div(vec8x16i numerator, vec8x16i denominator);
-    vec8x16i broadcast_mask(mask8x16i m);
     vec8x16i blend(mask8x16i m, vec8x16i a, vec8x16i b);
+    vec8x16i broadcast_mask(mask8x16i m);
+    vec8x16i countl_one(vec8x16i x);
 
 
 
@@ -114,16 +115,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator=(bool b) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            content = b ? 0xFF : 0x00;
-            #elif defined(AVEL_SSE2)
-            content = b ? _mm_set1_epi16(-1) : _mm_setzero_si128();
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_u16(b ? -1 : 0);
-            #endif
-
+            *this = Vector_mask{b};
             return *this;
         }
 
@@ -413,15 +405,13 @@ namespace avel {
             content(vdupq_n_s16(x)) {}
         #endif
 
-        AVEL_FINL explicit Vector(const arr8x16i& array) {
-            #if defined(AVEL_SSE2)
-            content = _mm_loadu_si128(reinterpret_cast<const __m128i*>(array.data()));
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vld1q_s16(array.data());
-            #endif
-        }
+        AVEL_FINL explicit Vector(const arr8x16i& arr):
+        #if defined(AVEL_SSE2)
+            content(_mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()))) {}
+        #endif
+        #if defined(AVEL_NEON)
+            content(vld1q_s16(array.data()) {}
+        #endif
 
         Vector() = default;
         Vector(const Vector&) = default;
@@ -433,14 +423,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator=(scalar x) {
-            #if defined(AVEL_SSE2)
-            content = _mm_set1_epi16(x);
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_s16(x);
-            #endif
-
+            *this = Vector{x};
             return *this;
         }
 
@@ -472,7 +455,7 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator!=(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            return !mask{_mm_cmpeq_epi16_mask(lhs.content, rhs.content)};
+            return mask{_mm_cmpneq_epi16_mask(lhs.content, rhs.content)};
             #elif defined(AVEL_SSE2)
             return !mask{_mm_cmpeq_epi16(lhs.content, rhs.content)};
             #endif
@@ -733,6 +716,8 @@ namespace avel {
             auto hi = _mm256_permute2f128_si256(lo, lo, 0x01);
             content = _mm256_castsi256_si128(_mm256_packus_epi32(lo, hi));
 
+            //TODO: Optimize for other instruction sets
+
             #elif defined(AVEL_SSE2)
             for (unsigned i = 0; i < 4; ++i) {
                 auto t0 = _mm_and_si128(rhs.content, _mm_set1_epi16(1u << i));
@@ -772,6 +757,7 @@ namespace avel {
             #elif defined(AVEL_SSE41)
             auto threshold = _mm_set1_epi16(8);
 
+            //TODO: manually unroll loop
             for (unsigned i = 4; i-- > 0; ) {
                 auto m = _mm_cmplt_epi16(decay(rhs), threshold);
 
@@ -896,7 +882,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return mask{_mm_test_epi16_mask(content, content)};
 
-            #else
+            #elif defined(AVEL_SSE2)
             return *this != Vector{0x00};
             #endif
         }
@@ -1006,13 +992,13 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i rotl(vec8x16i x, long long s) {
-        return vec8x16i{rotl(vec8x16u{x}, s)};
+    AVEL_FINL vec8x16i rotl(vec8x16i v, long long s) {
+        return vec8x16i{rotl(vec8x16u{v}, s)};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i rotl(vec8x16i x, vec8x16i s) {
-        return vec8x16i{rotl(vec8x16u{x}, vec8x16u{s})};
+    AVEL_FINL vec8x16i rotl(vec8x16i v, vec8x16i s) {
+        return vec8x16i{rotl(vec8x16u{v}, vec8x16u{s})};
     }
 
 
@@ -1024,13 +1010,13 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i rotr(vec8x16i x, long long s) {
-        return vec8x16i{rotr(vec8x16u{x}, s)};
+    AVEL_FINL vec8x16i rotr(vec8x16i v, long long s) {
+        return vec8x16i{rotr(vec8x16u{v}, s)};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i rotr(vec8x16i x, vec8x16i s) {
-        return vec8x16i{rotr(vec8x16u{x}, vec8x16u{s})};
+    AVEL_FINL vec8x16i rotr(vec8x16i v, vec8x16i s) {
+        return vec8x16i{rotr(vec8x16u{v}, vec8x16u{s})};
     }
 
     //=====================================================
@@ -1038,23 +1024,23 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL std::uint32_t count(vec8x16i x) {
-        return count(vec8x16u{x});
+    AVEL_FINL std::uint32_t count(vec8x16i v) {
+        return count(vec8x16u{v});
     }
 
     [[nodiscard]]
-    AVEL_FINL bool any(vec8x16i x) {
-        return any(vec8x16u{x});
+    AVEL_FINL bool any(vec8x16i v) {
+        return any(vec8x16u{v});
     }
 
     [[nodiscard]]
-    AVEL_FINL bool all(vec8x16i x) {
-        return all(vec8x16u{x});
+    AVEL_FINL bool all(vec8x16i v) {
+        return all(vec8x16u{v});
     }
 
     [[nodiscard]]
-    AVEL_FINL bool none(vec8x16i x) {
-        return none(vec8x16u{x});
+    AVEL_FINL bool none(vec8x16i v) {
+        return none(vec8x16u{v});
     }
 
     [[nodiscard]]
@@ -1078,8 +1064,8 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i byteswap(vec8x16i x) {
-        return vec8x16i{byteswap(vec8x16u(x))};
+    AVEL_FINL vec8x16i byteswap(vec8x16i v) {
+        return vec8x16i{byteswap(vec8x16u(v))};
     }
 
     [[nodiscard]]
@@ -1140,11 +1126,10 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i average(vec8x16i x, vec8x16i y) {
+    AVEL_FINL vec8x16i average(vec8x16i a, vec8x16i b) {
         #if defined(AVEL_SSE2)
-        auto avg = (x & y) + ((x ^ y) >> 1);
-        auto c = broadcast_mask((x < -y) | (y == vec8x16i{std::int16_t(1 << 15)})) & (x ^ y) & vec8x16i{1};
-
+        auto avg = (a & b) + ((a ^ b) >> 1);
+        auto c = broadcast_mask((a < -b) | (b == vec8x16i{std::int16_t(1 << 15)})) & (a ^ b) & vec8x16i{1};
         return avg + c;
 
         #endif
@@ -1199,69 +1184,69 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i negate(mask8x16i m, vec8x16i x) {
+    AVEL_FINL vec8x16i negate(mask8x16i m, vec8x16i v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        return vec8x16i{_mm_mask_sub_epi16(decay(x), decay(m), _mm_setzero_si128(), decay(x))};
+        return vec8x16i{_mm_mask_sub_epi16(decay(v), decay(m), _mm_setzero_si128(), decay(v))};
 
         #elif defined(AVEL_SSSE3)
-        return vec8x16i{_mm_sign_epi16(decay(x), _mm_or_si128(decay(m), _mm_set1_epi16(0x01)))};
+        return vec8x16i{_mm_sign_epi16(decay(v), _mm_or_si128(decay(m), _mm_set1_epi16(0x01)))};
         #endif
 
         #if defined(AVEL_SSE2) || defined(AVEL_NEON)
         auto mask = broadcast_mask(m);
-        return (x ^ mask) - mask;
+        return (v ^ mask) - mask;
         #endif
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i abs(vec8x16i x) {
+    AVEL_FINL vec8x16i abs(vec8x16i v) {
         #if defined(AVEL_SSSE3)
-        return vec8x16i{_mm_abs_epi16(decay(x))};
+        return vec8x16i{_mm_abs_epi16(decay(v))};
 
         #elif defined(AVEL_SSE2)
-        auto y = x >> 15;
-        return (x ^ y) - y;
+        auto y = v >> 15;
+        return (v ^ y) - y;
 
         #endif
 
         #if defined(AVEL_NEON)
         auto zeros = vdupq_n_s16(0x00);
-        return vec8x16i{vabdq_s16(decay(x), zeros)};
+        return vec8x16i{vabdq_s16(decay(v), zeros)};
         #endif
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i neg_abs(vec8x16i x) {
+    AVEL_FINL vec8x16i neg_abs(vec8x16i v) {
         #if defined(AVEL_SSSE3)
-        return -vec8x16i{_mm_abs_epi16(decay(x))};
+        return -vec8x16i{_mm_abs_epi16(decay(v))};
 
         #elif defined(AVEL_SSE2)
-        auto y = ~(x >> 15);
-        return (x ^ y) - y;
+        auto y = ~(v >> 15);
+        return (v ^ y) - y;
 
         #endif
 
         #if defined(AVEL_NEON)
-        auto y = vmvnq_s16(vshrq_n_s16(decay(x), 15));
-        return vec8x16i{vsubq_s16(veorq_s16(decay(x), y), y)};
+        auto y = vmvnq_s16(vshrq_n_s16(decay(v), 15));
+        return vec8x16i{vsubq_s16(veorq_s16(decay(v), y), y)};
         #endif
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i neg_abs(vec8x16u x) {
+    AVEL_FINL vec8x16i neg_abs(vec8x16u v) {
         #if defined(AVEL_SSSE3)
-        return -vec8x16i{_mm_abs_epi16(decay(x))};
+        return -vec8x16i{_mm_abs_epi16(decay(v))};
 
         #elif defined(AVEL_SSE2)
-        auto z = vec8x16i(x);
+        auto z = vec8x16i(v);
         auto y = ~z >> 15;
         return (z ^ y) - y;
 
         #endif
 
         #if defined(AVEL_NEON)
-        auto y = vmvnq_s16(vshrq_n_s16(vreinterpretq_s16_u16(decay(x)), 15));
-        return vec8x16i{vsubq_s16(veorq_s16(vreinterpretq_s16_u16(decay(x)), y), y)};
+        auto y = vmvnq_s16(vshrq_n_s16(vreinterpretq_s16_u16(decay(v)), 15));
+        return vec8x16i{vsubq_s16(veorq_s16(vreinterpretq_s16_u16(decay(v)), y), y)};
         #endif
     }
 
@@ -1273,8 +1258,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x16i load<vec8x16i>(const std::int16_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        n = std::min(8u, n);
-        auto mask = 0xFF >> (8 - n);
+        auto mask = (n >= 8) ? -1 : (1 << n)  - 1;
         return vec8x16i{_mm_maskz_loadu_epi16(mask, ptr)};
 
         #elif defined(AVEL_SSE2)
@@ -1485,11 +1469,11 @@ namespace avel {
 
 
 
-    AVEL_FINL void store(std::int16_t* ptr, vec8x16i x, std::uint32_t n) {
+    AVEL_FINL void store(std::int16_t* ptr, vec8x16i v, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         n = min(n, vec8x16i::width);
         auto mask = (1 << n) - 1;
-        _mm_mask_storeu_epi16(ptr, mask, decay(x));
+        _mm_mask_storeu_epi16(ptr, mask, decay(v));
 
         #elif defined(AVEL_SSE2)
         auto undef = _mm_undefined_si128();
@@ -1501,114 +1485,114 @@ namespace avel {
         auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(16 * (h - min(h, n))));
         auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(16 * (w - min(w, n))));
         auto mask = _mm_unpacklo_epi64(lo, hi);
-        _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
+        _mm_maskmoveu_si128(decay(v), mask, reinterpret_cast<char *>(ptr));
         #endif
 
         #if defined(AVEL_NEON)
         switch (n) {
             case 0: {} break;
             case 1: {
-                std::int16_t x0 = vgetq_lane_s16(decay(x), 0);
+                std::int16_t x0 = vgetq_lane_s16(decay(v), 0);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::int16_t));
             } break;
             case 2: {
-                std::int32_t x0 = vgetq_lane_s32(vreinterpretq_s32_s16(decay(x)), 0);
+                std::int32_t x0 = vgetq_lane_s32(vreinterpretq_s32_s16(decay(v)), 0);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::int32_t));
             } break;
             case 3: {
-                std::int32_t x0 = vgetq_lane_s32(vreinterpretq_s32_s16(decay(x)), 0);
-                std::int16_t x1 = vgetq_lane_s16(decay(x), 2);
+                std::int32_t x0 = vgetq_lane_s32(vreinterpretq_s32_s16(decay(v)), 0);
+                std::int16_t x1 = vgetq_lane_s16(decay(v), 2);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::int32_t));
                 std::memcpy(ptr + 2, &x1, sizeof(std::int16_t));
             } break;
 
             case 4: {
-                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s16(decay(x)), 0);
+                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s16(decay(v)), 0);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::int64_t));
             } break;
             case 5: {
-                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s16(decay(x)), 0);
-                std::int16_t x1 = vgetq_lane_s16(decay(x), 4);
+                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s16(decay(v)), 0);
+                std::int16_t x1 = vgetq_lane_s16(decay(v), 4);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::int64_t));
                 std::memcpy(ptr + 4, &x1, sizeof(std::int16_t));
             } break;
             case 6: {
-                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s16(decay(x)), 0);
-                std::int32_t x1 = vgetq_lane_s32(vreinterpretq_s32_s16(decay(x)), 2);
+                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s16(decay(v)), 0);
+                std::int32_t x1 = vgetq_lane_s32(vreinterpretq_s32_s16(decay(v)), 2);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::int64_t));
                 std::memcpy(ptr + 4, &x1, sizeof(std::int32_t));
             } break;
             case 7: {
-                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s16(decay(x)), 0);
-                std::int32_t x1 = vgetq_lane_s32(vreinterpretq_s32_s16(decay(x)), 2);
-                std::int16_t x2 = vgetq_lane_s16(decay(x), 6);
+                std::int64_t x0 = vgetq_lane_s64(vreinterpretq_s64_s16(decay(v)), 0);
+                std::int32_t x1 = vgetq_lane_s32(vreinterpretq_s32_s16(decay(v)), 2);
+                std::int16_t x2 = vgetq_lane_s16(decay(v), 6);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::int64_t));
                 std::memcpy(ptr + 4, &x1, sizeof(std::int32_t));
                 std::memcpy(ptr + 6, &x2, sizeof(std::int16_t));
             } break;
             default: {
-                vst1q_s16(ptr, decay(x));
+                vst1q_s16(ptr, decay(v));
             }
         }
         #endif
     }
 
     template<std::uint32_t N = vec8x16i::width>
-    AVEL_FINL void store(std::int16_t* ptr, vec8x16i x) {
+    AVEL_FINL void store(std::int16_t* ptr, vec8x16i v) {
         static_assert(N <= vec8x16i::width, "Cannot store more elements than width of vector");
         typename std::enable_if<N <= vec8x16i::width, int>::type dummy_variable = 0;
 
-        store(ptr, x, N);
+        store(ptr, v, N);
     }
 
     template<>
-    AVEL_FINL void store<vec8x16i::width>(std::int16_t* ptr, vec8x16i x) {
+    AVEL_FINL void store<vec8x16i::width>(std::int16_t* ptr, vec8x16i v) {
         #if defined(AVEL_SSE2)
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
         #endif
 
         #if defined(AVEL_NEON)
-        vst1q_s16(ptr, decay(x));
+        vst1q_s16(ptr, decay(v));
         #endif
     }
 
 
-    AVEL_FINL void aligned_store(std::int16_t* ptr, vec8x16i x, std::uint32_t n) {
-        store(ptr, x, n);
+    AVEL_FINL void aligned_store(std::int16_t* ptr, vec8x16i v, std::uint32_t n) {
+        store(ptr, v, n);
     }
 
     template<std::uint32_t N = vec8x16i::width>
-    AVEL_FINL void aligned_store(std::int16_t* ptr, vec8x16i x) {
+    AVEL_FINL void aligned_store(std::int16_t* ptr, vec8x16i v) {
         static_assert(N <= vec8x16i::width, "Cannot store more elements than width of vector");
         typename std::enable_if<N <= vec8x16i::width, int>::type dummy_variable = 0;
 
-        aligned_store(ptr, x, N);
+        aligned_store(ptr, v, N);
     }
 
     template<>
-    AVEL_FINL void aligned_store<vec8x16i::width>(std::int16_t* ptr, vec8x16i x) {
+    AVEL_FINL void aligned_store<vec8x16i::width>(std::int16_t* ptr, vec8x16i v) {
         #if defined(AVEL_SSE2)
-        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
+        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
         #endif
 
         #if defined(AVEL_NEON)
-        vst1q_s16(ptr, decay(x));
+        vst1q_s16(ptr, decay(v));
         #endif
     }
 
 
 
     [[nodiscard]]
-    AVEL_FINL arr8x16i to_array(vec8x16i x) {
+    AVEL_FINL arr8x16i to_array(vec8x16i v) {
         alignas(16) arr8x16i ret;
-        aligned_store(ret.data(), x);
+        aligned_store(ret.data(), v);
         return ret;
     }
 
@@ -1633,33 +1617,33 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i popcount(vec8x16i x) {
-        return vec8x16i{popcount(vec8x16u(x))};
+    AVEL_FINL vec8x16i popcount(vec8x16i v) {
+        return vec8x16i{popcount(vec8x16u(v))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i countl_zero(vec8x16i x) {
-        return vec8x16i{countl_zero(vec8x16u{x})};
+    AVEL_FINL vec8x16i countl_zero(vec8x16i v) {
+        return vec8x16i{countl_zero(vec8x16u{v})};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i countl_one(vec8x16i x) {
-        return vec8x16i{countl_one(vec8x16u{x})};
+    AVEL_FINL vec8x16i countl_one(vec8x16i v) {
+        return vec8x16i{countl_one(vec8x16u{v})};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i countr_zero(vec8x16i x) {
-        return vec8x16i{countr_zero(vec8x16u{x})};
+    AVEL_FINL vec8x16i countr_zero(vec8x16i v) {
+        return vec8x16i{countr_zero(vec8x16u{v})};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i countr_one(vec8x16i x) {
-        return vec8x16i{countr_one(vec8x16u{x})};
+    AVEL_FINL vec8x16i countr_one(vec8x16i v) {
+        return vec8x16i{countr_one(vec8x16u{v})};
     }
 
     [[nodiscard]]
-    AVEL_FINL mask8x16i has_single_bit(vec8x16i x) {
-        return mask8x16i{has_single_bit(vec8x16u(x))};
+    AVEL_FINL mask8x16i has_single_bit(vec8x16i v) {
+        return mask8x16i{has_single_bit(vec8x16u(v))};
     }
 
 }

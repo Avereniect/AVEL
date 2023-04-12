@@ -401,16 +401,6 @@ namespace avel {
         #endif
     }
 
-    //=====================================================
-    // Mask conversions
-    //=====================================================
-
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask16x8u, 1> convert<mask16x8u, mask16x8u>(mask16x8u m) {
-        return {m};
-    }
-
 
 
 
@@ -812,7 +802,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator<<=(long long rhs) {
-            /*
+            /* No performance benefit derived
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             auto widened = _mm256_cvtepi8_epi16(content);
             auto shifted = _mm256_sll_epi16(widened, _mm_cvtsi32_si128(rhs));
@@ -836,7 +826,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
-            /*
+            /* No performance benefit derived
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             auto whole = _mm256_cvtepu8_epi16(content);
             auto shifted = _mm256_srl_epi16(whole, _mm_cvtsi32_si128(rhs));
@@ -864,7 +854,7 @@ namespace avel {
             auto shifts = _mm256_cvtepu8_epi16(rhs.content);
             content = _mm256_cvtepi16_epi8(_mm256_sllv_epi16(whole, shifts));
 
-            /* No benefit derived
+            /* No performance benefit derived
             #elif defined(AVEL_AVX2)
             auto lhs_lo = _mm256_cvtepu8_epi32(content);
             auto lhs_hi = _mm256_cvtepu8_epi32(_mm_srli_si128(content, 0x8));
@@ -889,6 +879,7 @@ namespace avel {
             */
 
             #elif defined(AVEL_SSSE3)
+            //TODO: Benchmark whether this is faster
             alignas(16) static constexpr std::uint8_t table_data[16] {
                 0x01, 0x02, 0x04, 0x08,
                 0x10, 0x20, 0x40, 0x80,
@@ -935,6 +926,7 @@ namespace avel {
             //TODO: Offer AVX2 version?
 
             #elif defined(AVEL_SSSE3)
+            //TODO: Benchmark if this is faster
             alignas(16) static constexpr std::uint8_t table_data[16] {
                 0x80, 0x40, 0x20, 0x10,
                 0x08, 0x04, 0x02, 0x01,
@@ -1138,7 +1130,7 @@ namespace avel {
         static_assert(S <= 8, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 8, int>::type dummy_variable = 0;
 
-        /*
+        /* Implementation that doesn't end up being faster
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         auto widened = _mm256_cvtepu8_epi16(decay(v));
         widened = _mm256_slli_epi16(widened, 8 + S);
@@ -1154,7 +1146,7 @@ namespace avel {
 
         return vec16x8u{masked};
 
-        /*
+        /* Older implementation
         auto lo = _mm_unpacklo_epi8(decay(v), decay(v));
         auto hi = _mm_unpackhi_epi8(decay(v), decay(v));
 
@@ -1219,7 +1211,7 @@ namespace avel {
         static_assert(S <= 16, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
 
-        /*
+        /* Implementation that doesn't end up being any faster
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         auto widened = _mm256_cvtepu8_epi16(decay(v));
         widened = _mm256_srli_epi16(widened, S);
@@ -1234,7 +1226,7 @@ namespace avel {
 
         return vec16x8u{masked};
 
-        /*
+        /* Older implementation
         auto lo = _mm_unpacklo_epi8(decay(v), decay(v));
         auto hi = _mm_unpackhi_epi8(decay(v), decay(v));
 
@@ -1782,6 +1774,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x8u average(vec16x8u a, vec16x8u b) {
+        // TODO: Leverage newer instruction sets
         #if defined(AVEL_SSE2)
         return vec16x8u{_mm_avg_epu8(decay(a), decay(b))} - ((a ^ b) & vec16x8u{0x1});
         #endif
@@ -2317,6 +2310,8 @@ namespace avel {
         #endif
     }
 
+    //TODO: Add specializations for multiple of N that allow for 32-bit
+    //masked loads to be used
 
     template<>
     [[nodiscard]]
@@ -2341,13 +2336,14 @@ namespace avel {
         #endif
     }
 
+    //TODO: Add specializations for multiple of N that allow for 32-bit
+    //masked aligned loads to be used
 
-
-    AVEL_FINL void store(std::uint8_t* ptr, vec16x8u x, std::uint32_t n) {
+    AVEL_FINL void store(std::uint8_t* ptr, vec16x8u v, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         n = min(n, vec16x8u::width);
         auto mask = (1 << n) - 1;
-        _mm_mask_storeu_epi8(ptr, mask, decay(x));
+        _mm_mask_storeu_epi8(ptr, mask, decay(v));
 
         #elif defined(AVEL_SSE2)
         auto undef = _mm_undefined_si128();
@@ -2359,7 +2355,7 @@ namespace avel {
         auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(8 * (h - min(h, n))));
         auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(8 * (w - min(w, n))));
         auto mask = _mm_unpacklo_epi64(lo, hi);
-        _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
+        _mm_maskmoveu_si128(decay(v), mask, reinterpret_cast<char *>(ptr));
 
         #endif
 
@@ -2367,46 +2363,46 @@ namespace avel {
         switch (n) {
             case 0: {} break;
             case 1: {
-                std::uint8_t x0 = vgetq_lane_u8(decay(x), 0);
+                std::uint8_t x0 = vgetq_lane_u8(decay(v), 0);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint8_t));
             } break;
             case 2: {
-                std::uint16_t x0 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(x)), 0);
+                std::uint16_t x0 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(v)), 0);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint16_t));
             } break;
             case 3: {
-                std::uint16_t x0 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(x)), 0);
-                std::uint8_t  x1 = vgetq_lane_u8(decay(x), 2);
+                std::uint16_t x0 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(v)), 0);
+                std::uint8_t  x1 = vgetq_lane_u8(decay(v), 2);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint16_t));
                 std::memcpy(ptr + 2, &x1, sizeof(std::uint8_t ));
             } break;
 
             case 4: {
-                std::uint32_t x0 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(x)), 0);
+                std::uint32_t x0 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(v)), 0);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint32_t));
             } break;
             case 5: {
-                std::uint32_t x0 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(x)), 0);
-                std::uint8_t  x1 = vgetq_lane_u8(decay(x), 4);
+                std::uint32_t x0 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(v)), 0);
+                std::uint8_t  x1 = vgetq_lane_u8(decay(v), 4);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint32_t));
                 std::memcpy(ptr + 4, &x1, sizeof(std::uint8_t ));
             } break;
             case 6: {
-                std::uint32_t x0 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(x)), 0);
-                std::uint16_t x1 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(x)), 2);
+                std::uint32_t x0 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(v)), 0);
+                std::uint16_t x1 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(v)), 2);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint32_t));
                 std::memcpy(ptr + 4, &x1, sizeof(std::uint16_t));
             } break;
             case 7: {
-                std::uint32_t x0 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(x)), 0);
-                std::uint16_t x1 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(x)), 2);
-                std::uint8_t  x2 = vgetq_lane_u8(decay(x), 6);
+                std::uint32_t x0 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(v)), 0);
+                std::uint16_t x1 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(v)), 2);
+                std::uint8_t  x2 = vgetq_lane_u8(decay(v), 6);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint32_t));
                 std::memcpy(ptr + 4, &x1, sizeof(std::uint16_t));
@@ -2414,28 +2410,28 @@ namespace avel {
             } break;
 
             case 8: {
-                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(x)), 0);
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(v)), 0);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint64_t));
             } break;
             case 9: {
-                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(x)), 0);
-                std::uint8_t  x1 = vgetq_lane_u8(decay(x), 8);
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(v)), 0);
+                std::uint8_t  x1 = vgetq_lane_u8(decay(v), 8);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint64_t));
                 std::memcpy(ptr + 8, &x1, sizeof(std::uint8_t ));
             } break;
             case 10: {
-                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(x)), 0);
-                std::uint16_t x1 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(x)), 4);
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(v)), 0);
+                std::uint16_t x1 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(v)), 4);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint64_t));
                 std::memcpy(ptr + 8, &x1, sizeof(std::uint16_t));
             } break;
             case 11: {
-                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(x)), 0);
-                std::uint16_t x1 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(x)), 4);
-                std::uint8_t  x2 = vgetq_lane_u8(decay(x), 10);
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(v)), 0);
+                std::uint16_t x1 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(v)), 4);
+                std::uint8_t  x2 = vgetq_lane_u8(decay(v), 10);
 
                 std::memcpy(ptr + 0,  &x0, sizeof(std::uint64_t));
                 std::memcpy(ptr + 8,  &x1, sizeof(std::uint16_t));
@@ -2443,35 +2439,35 @@ namespace avel {
             } break;
 
             case 12: {
-                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(x)), 0);
-                std::uint32_t x1 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(x)), 2);
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(v)), 0);
+                std::uint32_t x1 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(v)), 2);
 
                 std::memcpy(ptr + 0,  &x0, sizeof(std::uint64_t));
                 std::memcpy(ptr + 8,  &x1, sizeof(std::uint32_t));
             } break;
             case 13: {
-                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(x)), 0);
-                std::uint32_t x1 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(x)), 2);
-                std::uint8_t  x2 = vgetq_lane_u8(decay(x), 12);
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(v)), 0);
+                std::uint32_t x1 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(v)), 2);
+                std::uint8_t  x2 = vgetq_lane_u8(decay(v), 12);
 
                 std::memcpy(ptr + 0,  &x0, sizeof(std::uint64_t));
                 std::memcpy(ptr + 8,  &x1, sizeof(std::uint32_t));
                 std::memcpy(ptr + 12, &x2, sizeof(std::uint8_t ));
             } break;
             case 14: {
-                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(x)), 0);
-                std::uint32_t x1 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(x)), 2);
-                std::uint16_t x2 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(x)), 6);
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(v)), 0);
+                std::uint32_t x1 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(v)), 2);
+                std::uint16_t x2 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(v)), 6);
 
                 std::memcpy(ptr + 0,  &x0, sizeof(std::uint64_t));
                 std::memcpy(ptr + 8,  &x1, sizeof(std::uint32_t));
                 std::memcpy(ptr + 12, &x2, sizeof(std::uint16_t));
             } break;
             case 15: {
-                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(x)), 0);
-                std::uint32_t x1 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(x)), 2);
-                std::uint16_t x2 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(x)), 6);
-                std::uint8_t  x3 = vgetq_lane_u8(decay(x), 14);
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u8(decay(v)), 0);
+                std::uint32_t x1 = vgetq_lane_u32(vreinterpretq_u32_u8(decay(v)), 2);
+                std::uint16_t x2 = vgetq_lane_u16(vreinterpretq_u16_u8(decay(v)), 6);
+                std::uint8_t  x3 = vgetq_lane_u8(decay(v), 14);
 
                 std::memcpy(ptr + 0,  &x0, sizeof(std::uint64_t));
                 std::memcpy(ptr + 8,  &x1, sizeof(std::uint32_t));
@@ -2480,27 +2476,27 @@ namespace avel {
             } break;
 
             default: {
-                vst1q_u8(ptr, decay(x));
+                vst1q_u8(ptr, decay(v));
             } break;
         }
         #endif
     }
 
     template<std::uint32_t N = vec16x8u::width>
-    AVEL_FINL void store(std::uint8_t* ptr, vec16x8u x) {
+    AVEL_FINL void store(std::uint8_t* ptr, vec16x8u v) {
         static_assert(N <= vec16x8u::width, "Cannot store more elements than width of vector");
         typename std::enable_if<N <= vec16x8u::width, int>::type dummy_variable = 0;
 
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         auto mask = (1 << N) - 1;
-        _mm_mask_storeu_epi8(ptr, mask, decay(x));
+        _mm_mask_storeu_epi8(ptr, mask, decay(v));
 
         #elif defined(AVEL_SSE2)
         auto undef = _mm_undefined_si128();
         auto full = _mm_cmpeq_epi8(undef, undef);
 
         auto mask = _mm_srli_si128(full, vec16x8u::width - N);
-        _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
+        _mm_maskmoveu_si128(decay(v), mask, reinterpret_cast<char *>(ptr));
         #endif
 
         #if defined(AVEL_NEON)
@@ -2508,39 +2504,45 @@ namespace avel {
         #endif
     }
 
+    //TODO: Add specializations for multiple of N that allow for 32-bit
+    //masked aligned stores to be used
+
     template<>
-    AVEL_FINL void store<vec16x8u::width>(std::uint8_t* ptr, vec16x8u x) {
+    AVEL_FINL void store<vec16x8u::width>(std::uint8_t* ptr, vec16x8u v) {
         #if defined(AVEL_SSE2)
-        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
+        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
         #endif
 
         #if defined(AVEL_NEON)
-        vst1q_u8(ptr, decay(x));
+        vst1q_u8(ptr, decay(v));
         #endif
     }
 
 
 
-    AVEL_FINL void aligned_store(std::uint8_t* ptr, vec16x8u x, std::uint32_t n) {
-        store(ptr, x, n);
+    AVEL_FINL void aligned_store(std::uint8_t* ptr, vec16x8u v, std::uint32_t n) {
+        store(ptr, v, n);
     }
 
     template<std::uint32_t N = vec16x8u::width>
-    AVEL_FINL void aligned_store(std::uint8_t* ptr, vec16x8u x) {
+    AVEL_FINL void aligned_store(std::uint8_t* ptr, vec16x8u v) {
         static_assert(N <= vec16x8u::width, "Cannot store more elements than width of vector");
         typename std::enable_if<N <= vec16x8u::width, int>::type dummy_variable = 0;
 
-        aligned_store(ptr, x, N);
+        aligned_store(ptr, v, N);
     }
 
+    //TODO: Add specializations for multiple of N that allow for 32-bit
+    //masked aligned stores to be used
+
     template<>
-    AVEL_FINL void aligned_store<vec16x8u::width>(std::uint8_t* ptr, vec16x8u x) {
+    AVEL_FINL void aligned_store<vec16x8u::width>(std::uint8_t* ptr, vec16x8u v) {
         #if defined(AVEL_SSE2)
-        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
+        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
         #endif
 
         #if defined(AVEL_NEON)
-        vst1q_u8(ptr, decay(x));
+        vst1q_u8(ptr, decay(v));
         #endif
     }
 
@@ -2569,8 +2571,8 @@ namespace avel {
         return {quotient, x};/
         */
 
-
-
+        //TODO: Consider leveraging VBMI and leading zero count instructions to
+        // implement Grunland-Montgomery division
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         auto quotient = _mm256_setzero_si256();
         auto widened_x = _mm256_cvtepu8_epi16(decay(x));
@@ -2795,9 +2797,9 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x8u popcount(vec16x8u x) {
+    AVEL_FINL vec16x8u popcount(vec16x8u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
-        return vec16x8u{_mm_popcnt_epi8(decay(x))};
+        return vec16x8u{_mm_popcnt_epi8(decay(v))};
 
         #elif defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t table_data[16] {
@@ -2810,8 +2812,8 @@ namespace avel {
         auto table = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data));
         auto nibble_mask = _mm_set1_epi8(0x0F);
 
-        auto index0 = _mm_and_si128(decay(x), nibble_mask);
-        auto index1 = _mm_and_si128(_mm_srli_epi16(decay(x), 0x4), nibble_mask);
+        auto index0 = _mm_and_si128(decay(v), nibble_mask);
+        auto index1 = _mm_and_si128(_mm_srli_epi16(decay(v), 0x4), nibble_mask);
 
         auto partial_sum0 = _mm_shuffle_epi8(table, index0);
         auto partial_sum1 = _mm_shuffle_epi8(table, index1);
@@ -2823,22 +2825,23 @@ namespace avel {
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
         // Due to lack of 8-bit multiply instructions, the solution that doesn't
         // use multiplication is chosen here
-        x = x - ((x >> 1) & vec16x8u{0x55});
-        x = (x & vec16x8u{0x33}) + ((x >> 2) & vec16x8u{0x33});
-        x = (x + (x >> 4)) & vec16x8u{0x0F};
+        v = v - ((v >> 1) & vec16x8u{0x55});
+        v = (v & vec16x8u{0x33}) + ((v >> 2) & vec16x8u{0x33});
+        v = (v + (v >> 4)) & vec16x8u{0x0F};
         //TODO: Consider is 8-bit shift emulation overhead could be eliminated
 
-        return x;
+        return v;
 
         #endif
 
         #if defined(AVEL_NEON)
-        return vec16x8u{vcntq_u8(decay(x))};
+        return vec16x8u{vcntq_u8(decay(v))};
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x8u countl_zero(vec16x8u v) {
+        //TODO: Leverage leading zero count instructions
         #if defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             8, 3, 2, 2,
@@ -2868,6 +2871,32 @@ namespace avel {
         return vec16x8u{ret};
 
         #elif defined(AVEL_SSE2)
+        auto ret = _mm_setzero_si128();
+
+        auto threshold0 = _mm_set1_epi8(0x08);
+        auto mask0 = _mm_cmplt_epi8(decay(v), threshold0);
+        ret = _mm_sub_epi8(ret, mask0);
+        ret = _mm_add_epi8(ret, ret);
+
+        auto threshold1_0 = _mm_set1_epi8(0x02);
+        auto threshold1_1 = _mm_set1_epi8(0x20);
+
+        auto threshold1 = _mm_max_epu8(threshold1_0, _mm_andnot_si128(mask0, threshold1_1));
+        auto mask1 = _mm_cmplt_epi8(decay(v), threshold1);
+        ret = _mm_sub_epi8(ret, mask1);
+        ret = _mm_add_epi8(ret, ret);
+
+        auto threshold2_0 = _mm_srli_epi16(threshold1, 1);
+        auto threshold2_1 = _mm_add_epi8(threshold1, threshold1);
+        auto threshold2 = _mm_max_epu8(threshold2_0, _mm_andnot_si128(mask1, threshold2_1));
+        auto mask2 = _mm_cmplt_epi8(decay(v), threshold2);
+        ret = _mm_sub_epi8(ret, mask2);
+
+        ret = _mm_sub_epi8(ret, _mm_set1_epi8(-1));
+        ret = _mm_andnot_si128(_mm_cmplt_epi8(decay(v), _mm_setzero_si128()), ret);
+        return vec16x8u{ret};
+
+        /* Older implementations
         auto x = decay(v);
         auto bit_mask = _mm_set1_epi32(0x11111111);
         auto x0 = _mm_andnot_si128(_mm_srli_epi16(x, 3), bit_mask);
@@ -2893,8 +2922,9 @@ namespace avel {
         auto t3 = _mm_add_epi8(t0, t2);
 
         return vec16x8u{t3};
+        */
 
-        /* Older attempt at optimizing
+        /* Even older attempt at optimizing
         // TODO: Consider if further optimization is possible
 
         auto x0 = decay(v);
@@ -2923,6 +2953,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x8u countl_one(vec16x8u v) {
+        //TODO: Leverage leading zero count instructions
         #if defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 0, 0, 0,
@@ -3007,10 +3038,10 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x8u countr_zero(vec16x8u x) {
+    AVEL_FINL vec16x8u countr_zero(vec16x8u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
         auto neg_one = _mm_set1_epi8(-1);
-        auto tz_mask = _mm_andnot_si128(decay(x), _mm_add_epi8(decay(x), neg_one));
+        auto tz_mask = _mm_andnot_si128(decay(v), _mm_add_epi8(decay(v), neg_one));
         return vec16x8u{_mm_popcnt_epi8(tz_mask)};
 
         #elif defined(AVEL_SSSE3)
@@ -3029,8 +3060,8 @@ namespace avel {
         };
 
         auto nibble_mask = _mm_set1_epi8(0x0F);
-        auto lo_nibble = _mm_and_si128(nibble_mask, decay(x));
-        auto hi_nibble = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(x), 0x4));
+        auto lo_nibble = _mm_and_si128(nibble_mask, decay(v));
+        auto hi_nibble = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(v), 0x4));
 
         auto table0 = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data0));
         auto table1 = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data1));
@@ -3046,19 +3077,19 @@ namespace avel {
         // Newer implementation that replaced shifts with adds which have a
         // better throughput
         vec16x8u ret{0};
-        ret -= broadcast_mask(x == vec16x8u{0x00});
+        ret -= broadcast_mask(v == vec16x8u{0x00});
         ret += ret;
 
-        x &= vec16x8u{0x00} - x;
+        v &= vec16x8u{0x00} - v;
 
         mask16x8u b;
-        b = mask16x8u(x & vec16x8u{0xF0u});
+        b = mask16x8u(v & vec16x8u{0xF0u});
         ret -= broadcast_mask(b);
         ret += ret;
-        b = mask16x8u(x & vec16x8u{0xCCu});
+        b = mask16x8u(v & vec16x8u{0xCCu});
         ret -= broadcast_mask(b);
         ret += ret;
-        b = mask16x8u(x & vec16x8u{0xAAu});
+        b = mask16x8u(v & vec16x8u{0xAAu});
         ret -= broadcast_mask(b);
 
         return ret;
@@ -3081,21 +3112,21 @@ namespace avel {
         #endif
 
         #if defined(AVEL_AARCH64)
-        auto reversed_bits = vrbitq_u8(decay(x));
+        auto reversed_bits = vrbitq_u8(decay(v));
         return vec16x8u{vclzq_u8(reversed_bits)};
 
         #elif defined(AVEL_NEON)
         auto neg_one = vdupq_n_u8(-1);
-        auto tz_mask = 	vbicq_u8(vaddq_u8(decay(x), neg_one), decay(x));
+        auto tz_mask = 	vbicq_u8(vaddq_u8(decay(v), neg_one), decay(x));
         return vec16x8u{vcntq_u8(tz_mask)};
 
         #endif
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x8u countr_one(vec16x8u x) {
+    AVEL_FINL vec16x8u countr_one(vec16x8u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
-        return countr_zero(~x);
+        return countr_zero(~v);
 
         #elif defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
@@ -3113,8 +3144,8 @@ namespace avel {
         };
 
         auto nibble_mask = _mm_set1_epi8(0x0F);
-        auto lo_nibble = _mm_and_si128(nibble_mask, decay(x));
-        auto hi_nibble = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(x), 0x4));
+        auto lo_nibble = _mm_and_si128(nibble_mask, decay(v));
+        auto hi_nibble = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(v), 0x4));
 
         auto table0 = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data0));
         auto table1 = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data1));
@@ -3126,12 +3157,12 @@ namespace avel {
         return vec16x8u{ret};
 
         #elif defined(AVEL_SSE2)
-        return countr_zero(~x);
+        return countr_zero(~v);
 
         #endif
 
         #if defined(AVEL_NEON)
-        return countr_zero(~x);
+        return countr_zero(~v);
 
         #endif
     }
@@ -3252,6 +3283,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x8u bit_floor(vec16x8u v) {
+        //TODO: Leverage leading zero count instructions
         #if defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 2, 2,
@@ -3301,6 +3333,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x8u bit_ceil(vec16x8u v) {
+        //TODO: Leverage leading zero count instructions
         #if defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
              0,  1,  3,  3,

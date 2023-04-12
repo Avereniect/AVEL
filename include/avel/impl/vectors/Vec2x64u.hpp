@@ -121,18 +121,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator=(bool x) {
-            #if defined(AVEL_AVX512VL)
-            content = primitive(x ? 0x3 : 0x0);
-
-            #elif defined(AVEL_SSE2)
-            content = x ? _mm_set1_epi64x(-1ull) : _mm_setzero_si128();
-
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_u64(x ? -1 : 0);
-            #endif
-
+            *this = Vector_mask{x};
             return *this;
         }
 
@@ -484,13 +473,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator=(scalar x) {
-            #if defined(AVEL_SSE2)
-            content = _mm_set1_epi64x(x);
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_u64(x);
-            #endif
+            *this = Vector{x};
             return *this;
         }
 
@@ -1457,7 +1440,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64u clamp(vec2x64u x, vec2x64u lo, vec2x64u hi) {
-        return vec2x64u{min(max(x, lo), hi)};
+        return min(max(x, lo), hi);
     }
 
     [[nodiscard]]
@@ -1487,7 +1470,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec2x64u load<vec2x64u>(const std::uint64_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 2) ? 0x03 : (1 << n) - 1;
         return vec2x64u{_mm_maskz_loadu_epi64(mask, ptr)};
 
         #elif defined(AVEL_SSE2)
@@ -1536,7 +1519,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec2x64u aligned_load<vec2x64u>(const std::uint64_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 2) ? 0x03 : (1 << n) - 1;
         return vec2x64u{_mm_maskz_load_epi64(mask, ptr)};
 
         #elif defined(AVEL_SSE2)
@@ -1570,8 +1553,7 @@ namespace avel {
 
     AVEL_FINL void store(std::uint64_t* ptr, vec2x64u v, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        auto mask = (1 << n) - 1;
-
+        auto mask = (n >= 2) ? 0x03 : (1 << n) - 1;
         _mm_mask_storeu_epi64(ptr, mask, decay(v));
 
         #elif defined(AVEL_SSE2)
@@ -1625,7 +1607,7 @@ namespace avel {
 
     AVEL_FINL void aligned_store(std::uint64_t* ptr, vec2x64u v, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 2) ? 0x03 : (1 << n) - 1;
         _mm_mask_store_epi64(ptr, mask, decay(v));
 
         #elif defined(AVEL_SSE2)
@@ -1657,7 +1639,7 @@ namespace avel {
     template<>
     AVEL_FINL void aligned_store<vec2x64u::width>(std::uint64_t* ptr, vec2x64u v) {
         #if defined(AVEL_SSE2)
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
+        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
         #endif
 
         #if defined(AVEL_NEON)
@@ -1682,40 +1664,21 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec2x64u> div(vec2x64u numerator, vec2x64u denominator) {
+        auto n0 = extract<0>(numerator);
+        auto n1 = extract<1>(numerator);
+
+        auto d0 = extract<0>(denominator);
+        auto d1 = extract<1>(denominator);
+
         vec2x64u quotient{};
+        quotient = insert<0>(quotient, n0 / d0);
+        quotient = insert<1>(quotient, n1 / d1);
 
-        /*
-        #if defined(AVEL_AVX512VL)
+        vec2x64u remainder{};
+        remainder = insert<0>(remainder, n0 % d0);
+        remainder = insert<1>(remainder, n1 % d1);
 
-        std::int32_t i = ;
-        #elif defined(AVEL_SSE2)
-
-        vec2x64u::primitive t0 = numerator;
-        vec2x64u::primitive t1 = _mm_srli_si128(t0, 8);
-        vec2x64u::primitive t2 = _mm_or_si128(t0, t1);
-
-        vec2x64u::primitive s0 = denominator;
-        vec2x64u::primitive s1 = _mm_srli_si128(s0, 8);
-        vec2x64u::primitive s2 = _mm_and_si128(s0, s1);
-
-        std::int64_t x = countl_zero(std::int64_t(_mm_cvtsi128_si64(t2)));
-        std::int64_t y = countl_zero(std::int64_t(_mm_cvtsi128_si64(s2)));
-
-        std::int32_t i = y - x + 1;
-        #endif
-        */
-
-        std::int32_t i = 64;
-
-        vec2x64u zeroes{};
-        for (; (i-- > 0) && any(numerator != zeroes);) {
-            mask2x64u b = ((numerator >> i) >= denominator);
-            auto tmp0 = broadcast_mask(b);
-            numerator -= (tmp0 & (denominator << i));
-            quotient |= (vec2x64u{b} << i);
-        }
-
-        return {quotient, numerator};
+        return {quotient, remainder};
     }
 
     [[nodiscard]]
@@ -1759,6 +1722,7 @@ namespace avel {
         return vec2x64u{_mm_popcnt_epi64(decay(v))};
 
         #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
+        //TODO: Check if this is any faster than the scalar approach
         auto tmp0 = _mm_popcnt_epi16(decay(v));
         auto tmp1 = _mm_slli_epi64(tmp0, 32);
         auto tmp2 = _mm_add_epi32(tmp0, tmp1);
@@ -1853,41 +1817,10 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec2x64u countl_one(vec2x64u x) {
         #if defined(AVEL_AVX512VL)
-        return vec2x64u{countl_zero(~x)};
+        return countl_zero(~x);
 
         #elif defined(AVEL_SSE2)
-        return vec2x64u{countl_zero(~x)};
-
-        /*
-        // Adjust to be suitable for 64-bit integers
-        vec2x64u sum{x == vec2x64u{0xFFFFFFFF}};
-
-        vec2x64u m0{0xFFFF0000u};
-        mask2x64u b0 = (m0 & x) == m0;
-        sum += broadcast_mask(b0) & vec2x64u{16};
-        x <<= broadcast_mask(b0) * vec2x64u{16};
-
-        vec2x64u m1{0xFF000000u};
-        mask2x64u b1 = (m1 & x) == m1;
-        sum += broadcast_mask(b1) & vec2x64u{8};
-        x <<= broadcast_mask(b1) & vec2x64u{8};
-
-        vec2x64u m2{0xF0000000u};
-        mask2x64u b2 = (m2 & x) == m2;
-        sum += broadcast_mask(b2) & vec2x64u{4};
-        x <<= broadcast_mask(b2) & vec2x64u{4};
-
-        vec2x64u m3{0xC0000000u};
-        mask2x64u b3 = (m3 & x) == m3;
-        sum += broadcast_mask(b3) & vec2x64u{2};
-        x <<= broadcast_mask(b3) & vec2x64u{2};
-
-        vec2x64u m4{0x80000000u};
-        mask2x64u b4 = (m4 & x) == m4;
-        sum += broadcast_mask(b3) & vec2x64u{1};
-
-        return sum;
-        */
+        return countl_zero(~x);
 
         #endif
 
@@ -1920,6 +1853,8 @@ namespace avel {
         auto biased_exponents = (vec2x64u(_mm_castpd_si128(doubles)) >> 52);
         biased_exponents = _mm_min_epi16(decay(vec2x64u{1086}), decay(biased_exponents));
         auto tzcnt = biased_exponents - vec2x64u{1023};
+
+        //TODO: Optimize this line
         tzcnt = blend(x == vec2x64u{0x00}, vec2x64u{64}, tzcnt);
 
         return vec2x64u{tzcnt};
@@ -1988,7 +1923,6 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         auto zero_mask = (v == vec2x64u{0});
 
-        //TODO: Optimize body
         --v;
         v |= v >> 1;
         v |= v >> 2;
@@ -1998,8 +1932,7 @@ namespace avel {
         v |= v >> 32;
         ++v;
 
-        //TODO: Optimize?
-        return blend(zero_mask, vec2x64u{1}, v);
+        return v - broadcast_mask(zero_mask);
         #endif
 
         #if defined(AVEL_NEON)

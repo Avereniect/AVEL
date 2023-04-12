@@ -785,7 +785,7 @@ namespace avel {
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
             #if defined(AVEL_SSE2)
-            content = _mm_srl_epi16(content, _mm_cvtsi32_si128(rhs));
+            content = _mm_srl_epi16(content, _mm_cvtsi64_si128(rhs));
             #endif
 
             #if defined(AVEL_NEON)
@@ -1715,11 +1715,11 @@ namespace avel {
 
 
 
-    AVEL_FINL void store(std::uint16_t* ptr, vec8x16u x, std::uint32_t n) {
+    AVEL_FINL void store(std::uint16_t* ptr, vec8x16u v, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         n = min(n, vec8x16u::width);
         auto mask = (1 << n) - 1;
-        _mm_mask_storeu_epi16(ptr, mask, decay(x));
+        _mm_mask_storeu_epi16(ptr, mask, decay(v));
 
         #elif defined(AVEL_SSE2)
         auto undef = _mm_undefined_si128();
@@ -1731,114 +1731,114 @@ namespace avel {
         auto lo = _mm_srl_epi64(full, _mm_cvtsi64_si128(16 * (h - min(h, n))));
         auto hi = _mm_srl_epi64(full, _mm_cvtsi64_si128(16 * (w - min(w, n))));
         auto mask = _mm_unpacklo_epi64(lo, hi);
-        _mm_maskmoveu_si128(decay(x), mask, reinterpret_cast<char *>(ptr));
+        _mm_maskmoveu_si128(decay(v), mask, reinterpret_cast<char *>(ptr));
         #endif
 
         #if defined(AVEL_NEON)
         switch (n) {
             case 0: {} break;
             case 1: {
-                std::uint16_t x0 = vgetq_lane_u16(decay(x), 0);
+                std::uint16_t x0 = vgetq_lane_u16(decay(v), 0);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint16_t));
             } break;
             case 2: {
-                std::uint32_t x0 = vgetq_lane_u32(vreinterpretq_u32_u16(decay(x)), 0);
+                std::uint32_t x0 = vgetq_lane_u32(vreinterpretq_u32_u16(decay(v)), 0);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint32_t));
             } break;
             case 3: {
-                std::uint32_t x0 = vgetq_lane_u32(vreinterpretq_u32_u16(decay(x)), 0);
-                std::uint16_t x1 = vgetq_lane_u16(decay(x), 2);
+                std::uint32_t x0 = vgetq_lane_u32(vreinterpretq_u32_u16(decay(v)), 0);
+                std::uint16_t x1 = vgetq_lane_u16(decay(v), 2);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint32_t));
                 std::memcpy(ptr + 2, &x1, sizeof(std::uint16_t));
             } break;
 
             case 4: {
-                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u16(decay(x)), 0);
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u16(decay(v)), 0);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint64_t));
             } break;
             case 5: {
-                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u16(decay(x)), 0);
-                std::uint16_t x1 = vgetq_lane_u16(decay(x), 4);
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u16(decay(v)), 0);
+                std::uint16_t x1 = vgetq_lane_u16(decay(v), 4);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint64_t));
                 std::memcpy(ptr + 4, &x1, sizeof(std::uint16_t));
             } break;
             case 6: {
-                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u16(decay(x)), 0);
-                std::uint32_t x1 = vgetq_lane_u32(vreinterpretq_u32_u16(decay(x)), 2);
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u16(decay(v)), 0);
+                std::uint32_t x1 = vgetq_lane_u32(vreinterpretq_u32_u16(decay(v)), 2);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint64_t));
                 std::memcpy(ptr + 4, &x1, sizeof(std::uint32_t));
             } break;
             case 7: {
-                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u16(decay(x)), 0);
-                std::uint32_t x1 = vgetq_lane_u32(vreinterpretq_u32_u16(decay(x)), 2);
-                std::uint16_t x2 = vgetq_lane_u16(decay(x), 6);
+                std::uint64_t x0 = vgetq_lane_u64(vreinterpretq_u64_u16(decay(v)), 0);
+                std::uint32_t x1 = vgetq_lane_u32(vreinterpretq_u32_u16(decay(v)), 2);
+                std::uint16_t x2 = vgetq_lane_u16(decay(v), 6);
 
                 std::memcpy(ptr + 0, &x0, sizeof(std::uint64_t));
                 std::memcpy(ptr + 4, &x1, sizeof(std::uint32_t));
                 std::memcpy(ptr + 6, &x2, sizeof(std::uint16_t));
             } break;
             default: {
-                vst1q_u16(ptr, decay(x));
+                vst1q_u16(ptr, decay(v));
             }
         }
         #endif
     }
 
     template<std::uint32_t N = vec8x16u::width>
-    AVEL_FINL void store(std::uint16_t* ptr, vec8x16u x) {
+    AVEL_FINL void store(std::uint16_t* ptr, vec8x16u v) {
         static_assert(N <= vec8x16u::width, "Cannot store more elements than width of vector");
         typename std::enable_if<N <= vec8x16u::width, int>::type dummy_variable = 0;
 
-        store(ptr, x, N);
+        store(ptr, v, N);
     }
 
     template<>
-    AVEL_FINL void store<vec8x16u::width>(std::uint16_t* ptr, vec8x16u x) {
+    AVEL_FINL void store<vec8x16u::width>(std::uint16_t* ptr, vec8x16u v) {
         #if defined(AVEL_SSE2)
-        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
+        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
         #endif
 
         #if defined(AVEL_NEON)
-        vst1q_u16(ptr, decay(x));
+        vst1q_u16(ptr, decay(v));
         #endif
     }
 
 
-    AVEL_FINL void aligned_store(std::uint16_t* ptr, vec8x16u x, std::uint32_t n) {
-        store(ptr, x, n);
+    AVEL_FINL void aligned_store(std::uint16_t* ptr, vec8x16u v, std::uint32_t n) {
+        store(ptr, v, n);
     }
 
     template<std::uint32_t N = vec8x16u::width>
-    AVEL_FINL void aligned_store(std::uint16_t* ptr, vec8x16u x) {
+    AVEL_FINL void aligned_store(std::uint16_t* ptr, vec8x16u v) {
         static_assert(N <= vec8x16u::width, "Cannot store more elements than width of vector");
         typename std::enable_if<N <= vec8x16u::width, int>::type dummy_variable = 0;
 
-        aligned_store(ptr, x, N);
+        aligned_store(ptr, v, N);
     }
 
     template<>
-    AVEL_FINL void aligned_store<vec8x16u::width>(std::uint16_t* ptr, vec8x16u x) {
+    AVEL_FINL void aligned_store<vec8x16u::width>(std::uint16_t* ptr, vec8x16u v) {
         #if defined(AVEL_SSE2)
-        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(x));
+        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
         #endif
 
         #if defined(AVEL_NEON)
-        vst1q_u16(ptr, decay(x));
+        vst1q_u16(ptr, decay(v));
         #endif
     }
 
 
 
     [[nodiscard]]
-    AVEL_FINL arr8x16u to_array(vec8x16u x) {
+    AVEL_FINL arr8x16u to_array(vec8x16u v) {
         alignas(16) arr8x16u ret;
-        aligned_store(ret.data(), x);
+        aligned_store(ret.data(), v);
         return ret;
     }
 
@@ -2064,14 +2064,10 @@ namespace avel {
         #endif
     }
 
-    //=====================================================
-    // Bit operations
-    //=====================================================
-
     [[nodiscard]]
-    AVEL_FINL vec8x16u popcount(vec8x16u x) {
+    AVEL_FINL vec8x16u popcount(vec8x16u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
-        return vec8x16u{_mm_popcnt_epi16(decay(x))};
+        return vec8x16u{_mm_popcnt_epi16(decay(v))};
 
         #elif defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t table_data[16] {
@@ -2084,8 +2080,8 @@ namespace avel {
         auto table = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data));
         auto nibble_mask = _mm_set1_epi8(0x0F);
 
-        auto index0 = _mm_and_si128(decay(x), nibble_mask);
-        auto index1 = _mm_and_si128(_mm_srli_epi16(decay(x), 0x4), nibble_mask);
+        auto index0 = _mm_and_si128(decay(v), nibble_mask);
+        auto index1 = _mm_and_si128(_mm_srli_epi16(decay(v), 0x4), nibble_mask);
 
         auto partial_sum0 = _mm_shuffle_epi8(table, index0);
         auto partial_sum1 = _mm_shuffle_epi8(table, index1);
@@ -2099,15 +2095,15 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
-        x = x - ((x >> 1) & vec8x16u{0x5555});
-        x = (x & vec8x16u{0x3333}) + ((x >> 2) & vec8x16u{0x3333});
-        x = ((x + (x >> 4) & vec8x16u{0x0F0F}) * vec8x16u{0x0101}) >> 8;
-        return x;
+        v = v - ((v >> 1) & vec8x16u{0x5555});
+        v = (v & vec8x16u{0x3333}) + ((v >> 2) & vec8x16u{0x3333});
+        v = ((v + (v >> 4) & vec8x16u{0x0F0F}) * vec8x16u{0x0101}) >> 8;
+        return v;
 
         #endif
 
         #if defined(AVEL_NEON)
-        auto t0 = vreinterpretq_u16_u8(vcntq_u8(vreinterpretq_u8_u16(decay(x))));
+        auto t0 = vreinterpretq_u16_u8(vcntq_u8(vreinterpretq_u8_u16(decay(v))));
         auto t1 = vshlq_n_u16(t0, 8);
         auto t2 = vaddq_u16(t0, t1);
         auto t3 = vshrq_n_u16(t2, 8);
@@ -2142,6 +2138,7 @@ namespace avel {
         //TODO: Optimize for other instruction sets
 
         #elif defined(AVEL_SSE2)
+        //TODO: Optimize
         vec8x16u sum{v == vec8x16u{0xFFFF}};
 
         vec8x16u m0{0xFF00u};
@@ -2172,32 +2169,130 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16u countr_zero(vec8x16u x) {
+    AVEL_FINL vec8x16u countr_zero(vec8x16u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
         auto neg_one = _mm_set1_epi16(-1);
-        auto tz_mask = _mm_andnot_si128(decay(x), _mm_add_epi16(decay(x), neg_one));
+        auto tz_mask = _mm_andnot_si128(decay(v), _mm_add_epi16(decay(v), neg_one));
         return vec8x16u{_mm_popcnt_epi16(tz_mask)};
 
         //TODO: Optimize for other instruction sets
+        #elif defined(AVEL_SSSE3)
+        alignas(16) static constexpr std::uint8_t table_data[16] {
+            0, 0, 1, 0,
+            2, 0, 0, 0,
+            3, 0, 0, 0,
+            0, 0, 0, 0
+        };
+
+        auto nibble_mask = _mm_set1_epi8(0x0F);
+        auto lo_nibble = _mm_and_si128(nibble_mask, decay(v));
+        auto hi_nibble = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(v), 0x4));
+
+        auto table = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data0);
+
+        auto low_ret = ;
+
+
+
+        auto zero = _mm_setzero_si128();
+        auto is_zero = _mm_cmpeq_epi16(decay(v), zero);
+
+        v = _mm_and_si128(decay(v), _mm_sub_epi16(zero, decay(v)));
+        auto ret = zero;
+
+        auto b3 = _mm_cmpeq_epi16(_mm_and_si128(decay(v), _mm_set1_epi16(0x00FFu)), zero);
+        ret = _mm_sub_epi16(ret, b3);
+        ret = _mm_add_epi16(ret, ret);
+
+        auto b2 = _mm_cmpeq_epi16(_mm_and_si128(decay(v), _mm_set1_epi16(0x0F0Fu)), zero);
+        ret = _mm_sub_epi16(ret, b2);
+        ret = _mm_slli_epi16(ret, 2);
+
+        ret = _mm_or_si128(ret, low_ret);
+
+        return
+
+
+        /*
+        alignas(16) static constexpr std::uint8_t table_data0[16] {
+            8, 0, 1, 0,
+            2, 0, 1, 0,
+            3, 0, 1, 0,
+            2, 0, 1, 0
+        };
+
+        alignas(16) static constexpr std::uint8_t table_data1[16] {
+            8, 4, 5, 4,
+            6, 4, 5, 4,
+            7, 4, 5, 4,
+            6, 4, 5, 4
+        };
+
+        auto nibble_mask = _mm_set1_epi8(0x0F);
+        auto lo_nibble = _mm_and_si128(nibble_mask, decay(v));
+        auto hi_nibble = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(v), 0x4));
+
+        auto table0 = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data0));
+        auto table1 = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data1));
+
+        auto partial0 = _mm_shuffle_epi8(table0, lo_nibble);
+        auto partial1 = _mm_shuffle_epi8(table1, hi_nibble);
+
+        auto partial2 = _mm_min_epu8(partial0, partial1);
+        auto partial3 = _mm_slli_epi16(partial2, 8);
+
+        auto partial4 = _mm_min_epu8(partial2, partial3);
+
+        auto ret = _mm_srli_epi16(partial4, 8);
+
+        return vec8x16u{ret};
+        */
 
         #elif defined(AVEL_SSE2)
-        mask8x16u zero_mask = (x == vec8x16u{0x0000});
+        auto zero = _mm_setzero_si128();
+        auto is_zero = _mm_cmpeq_epi16(decay(v), zero);
 
-        x &= vec8x16u{0x0000} - x;
+        v = _mm_and_si128(decay(v), _mm_sub_epi16(zero, decay(v)));
+        auto ret = zero;
 
-        vec8x16u ret = vec8x16u{16} & broadcast_mask(x == vec8x16u{0x00});
+        auto b3 = _mm_cmpeq_epi16(_mm_and_si128(decay(v), _mm_set1_epi16(0x00FFu)), zero);
+        ret = _mm_sub_epi16(ret, b3);
+        ret = _mm_add_epi16(ret, ret);
+
+        auto b2 = _mm_cmpeq_epi16(_mm_and_si128(decay(v), _mm_set1_epi16(0x0F0Fu)), zero);
+        ret = _mm_sub_epi16(ret, b2);
+        ret = _mm_add_epi16(ret, ret);
+
+        auto b1 = _mm_cmpeq_epi16(_mm_and_si128(decay(v), _mm_set1_epi16(0x3333u)), zero);
+        ret = _mm_sub_epi16(ret, b1);
+        ret = _mm_add_epi16(ret, ret);
+
+        auto b0 = _mm_cmpeq_epi16(_mm_and_si128(decay(v), _mm_set1_epi16(0x5555u)), zero);
+        ret = _mm_sub_epi16(ret, b0);
+
+        ret = _mm_sub_epi16(ret, is_zero);
+
+        return vec8x16u{ret};
+
+        /* Old unoptimized approach
+        mask8x16u zero_mask = (v == vec8x16u{0x0000});
+
+        v &= vec8x16u{0x0000} - v;
+
+        vec8x16u ret = vec8x16u{16} & broadcast_mask(v == vec8x16u{0x00});
 
         mask8x16u b;
-        b = mask8x16u(x & vec8x16u{0xAAAAu});
+        b = mask8x16u(v & vec8x16u{0xAAAAu});
         ret |= (vec8x16u{b} << 0);
-        b = mask8x16u(x & vec8x16u{0xCCCCu});
+        b = mask8x16u(v & vec8x16u{0xCCCCu});
         ret |= (vec8x16u{b} << 1);
-        b = mask8x16u(x & vec8x16u{0xF0F0u});
+        b = mask8x16u(v & vec8x16u{0xF0F0u});
         ret |= (vec8x16u{b} << 2);
-        b = mask8x16u(x & vec8x16u{0xFF00u});
+        b = mask8x16u(v & vec8x16u{0xFF00u});
         ret |= (vec8x16u{b} << 3);
 
         return ret;
+        */
         #endif
 
 
@@ -2218,14 +2313,14 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16u countr_one(vec8x16u x) {
-        return countr_zero(~x);
+    AVEL_FINL vec8x16u countr_one(vec8x16u v) {
+        return countr_zero(~v);
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16u bit_width(vec8x16u x) {
+    AVEL_FINL vec8x16u bit_width(vec8x16u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
-        auto widened = _mm256_cvtepu16_epi32(decay(x));
+        auto widened = _mm256_cvtepu16_epi32(decay(v));
         auto counts32 = _mm256_lzcnt_epi32(widened);
         auto counts16 = _mm256_cvtepi32_epi16(counts32);
 
@@ -2248,10 +2343,10 @@ namespace avel {
 
         auto nibble_mask = _mm_set1_epi8(0x0F);
 
-        auto nibble0 = _mm_and_si128(nibble_mask, decay(x));
-        auto nibble1 = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(x), 0x4));
-        auto nibble2 = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(x), 0x8));
-        auto nibble3 = _mm_srli_epi16(decay(x), 0xC);
+        auto nibble0 = _mm_and_si128(nibble_mask, decay(v));
+        auto nibble1 = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(v), 0x4));
+        auto nibble2 = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(v), 0x8));
+        auto nibble3 = _mm_srli_epi16(decay(v), 0xC);
 
         auto table_incrementers = _mm_load_si128(reinterpret_cast<const __m128i*>(table_increments_data));
         auto table0 = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data));
@@ -2273,26 +2368,27 @@ namespace avel {
         return vec8x16u{ret};
 
         #elif defined(AVEL_SSE2)
-        mask8x16u zero_mask = (x == vec8x16u{0x0000});
+        //TODO: Optimize
+        mask8x16u zero_mask = (v == vec8x16u{0x0000});
 
         vec8x16u ret{0x0000};
 
-        auto b0 = mask8x16u{x & vec8x16u{0xFF00}};
+        auto b0 = mask8x16u{v & vec8x16u{0xFF00}};
         auto t0 = broadcast_mask(b0) & vec8x16u{8};
         ret += t0;
-        x >>= t0;
+        v >>= t0;
 
-        auto b1 = mask8x16u{x & vec8x16u{0xFFF0}};
+        auto b1 = mask8x16u{v & vec8x16u{0xFFF0}};
         auto t1 = broadcast_mask(b1) & vec8x16u{4};
         ret += t1;
-        x >>= t1;
+        v >>= t1;
 
-        auto b2 = mask8x16u{x & vec8x16u{0xFFFC}};
+        auto b2 = mask8x16u{v & vec8x16u{0xFFFC}};
         auto t2 = broadcast_mask(b2) & vec8x16u{2};
         ret += t2;
-        x >>= t2;
+        v >>= t2;
 
-        auto b3 = mask8x16u{x & vec8x16u{0xFFFE}};
+        auto b3 = mask8x16u{v & vec8x16u{0xFFFE}};
         auto t3 = broadcast_mask(b3) & vec8x16u{1};
         ret += t3;
 
@@ -2300,7 +2396,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        return vec8x16u{16} - countl_zero(x);
+        return vec8x16u{16} - countl_zero(v);
 
         #endif
     }

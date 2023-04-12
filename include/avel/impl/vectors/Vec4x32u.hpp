@@ -129,16 +129,7 @@ namespace avel {
         //=================================================
 
         Vector_mask& operator=(bool b) {
-            #if defined(AVEL_AVX512VL)
-            content = b ? 0xF : 0x0;
-            #elif defined(AVEL_SSE2)
-            content = b ? _mm_set1_epi32(-1) : _mm_setzero_si128();
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_u32(b ? -1 : 0);
-            #endif
-
+            *this = Vector_mask{b};
             return *this;
         }
 
@@ -508,16 +499,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator=(scalar x) {
-            #if defined(AVEL_AVX2)
-            content = _mm_broadcastd_epi32(_mm_cvtsi32_si128(x));
-            #elif defined(AVEL_SSE2)
-            content = _mm_set1_epi32(x);
-            #endif
-
-            #if defined(AVEL_NEON)
-            *this = vdupq_n_u32(x);
-            #endif
-
+            *this = Vector{x};
             return *this;
         }
 

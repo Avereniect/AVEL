@@ -774,9 +774,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec64x8i bit_shift_right<7>(vec64x8i v) {
         #if defined(AVEL_AVX512BW)
-        auto m = _mm512_cmplt_epi8_mask(decay(v), _mm512_setzero_si512());
-        auto result = _mm512_maskz_set1_epi8(m, -1);
-        return vec64x8i{result};
+        return vec64x8i{_mm512_maskz_set1_epi8(_mm512_movepi8_mask(decay(v)), -1)};
         #endif
     }
 

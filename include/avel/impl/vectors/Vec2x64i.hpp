@@ -125,17 +125,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator=(bool x) {
-            #if defined(AVEL_AVX512VL)
-            content = x ? 0x3 : 0x0;
-
-            #elif defined(AVEL_SSE2)
-            content = x ? _mm_set1_epi64x(-1) : _mm_setzero_si128();
-
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_u64(x ? -1ul : 0ul);
-            #endif
+            *this = Vector_mask{x};
             return *this;
         }
 
@@ -433,14 +423,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator=(scalar x) {
-            #if defined(AVEL_SSE2)
-            content = _mm_set1_epi64x(x);
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_s64(x);
-
-            #endif
+            *this = Vector{x};
             return *this;
         }
 
@@ -1468,7 +1451,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec2x64i neg_abs(vec2x64i x) {
         #if defined(AVEL_AVX512VL)
-        return -vec2x64i{_mm_abs_epi64(decay(x))};
+        return -abs(x);
 
         #elif defined(AVEL_SSE2)
         auto y = ~(x >> 63);

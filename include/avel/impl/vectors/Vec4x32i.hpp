@@ -17,7 +17,8 @@ namespace avel {
 
     div_type<vec4x32i> div(vec4x32i numerator, vec4x32i denominator);
     vec4x32i blend(mask4x32i m, vec4x32i a, vec4x32i b);
-    arr4x32i to_array(vec4x32i);
+    vec4x32i broadcast_mask(mask4x32i m);
+    vec4x32i countl_one(vec4x32i x);
 
 
 
@@ -124,16 +125,7 @@ namespace avel {
         //=================================================
 
         Vector_mask& operator=(bool x) {
-            #if defined(AVEL_AVX512VL)
-            content = x ? 0xF : 0x0;
-            #elif defined(AVEL_SSE2)
-            content = x ? _mm_set1_epi32(-1) : _mm_setzero_si128();
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_u32(x ? -1 : 0);
-            #endif
-
+            *this = Vector_mask{x};
             return *this;
         }
 
@@ -434,16 +426,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator=(scalar x) {
-            #if defined(AVEL_AVX2)
-            content = _mm_broadcastd_epi32(_mm_cvtsi32_si128(x));
-            #elif defined(AVEL_SSE2)
-            content = _mm_set1_epi32(x);
-            #endif
-
-            #if defined(AVEL_NEON)
-            *this = vdupq_n_s32(x);
-            #endif
-
+            *this = Vector{x};
             return *this;
         }
 
@@ -1372,6 +1355,7 @@ namespace avel {
 
 
     template<>
+    [[nodiscard]]
     AVEL_FINL vec4x32u gather<vec4x32u>(const std::uint32_t* ptr, vec4x32i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
         n = min(n, vec4x32u::width);
@@ -1472,6 +1456,7 @@ namespace avel {
 
 
     template<>
+    [[nodiscard]]
     AVEL_FINL vec4x32i gather<vec4x32i>(const std::int32_t* ptr, vec4x32i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
         n = min(n, vec4x32i::width);
@@ -1545,12 +1530,15 @@ namespace avel {
         return vec4x32i{_mm_i32gather_epi32(ptr, decay(indices), sizeof(std::int32_t))};
 
         #elif defined(AVEL_SSE2)
-        auto i = to_array(indices);
+        auto i0 = extract<0>(indices);
+        auto i1 = extract<1>(indices);
+        auto i2 = extract<2>(indices);
+        auto i3 = extract<3>(indices);
 
-        auto a = _mm_cvtsi32_si128(ptr[i[0]]);
-        auto b = _mm_cvtsi32_si128(ptr[i[1]]);
-        auto c = _mm_cvtsi32_si128(ptr[i[2]]);
-        auto d = _mm_cvtsi32_si128(ptr[i[3]]);
+        auto a = _mm_cvtsi32_si128(ptr[i0]);
+        auto b = _mm_cvtsi32_si128(ptr[i1]);
+        auto c = _mm_cvtsi32_si128(ptr[i2]);
+        auto d = _mm_cvtsi32_si128(ptr[i3]);
 
         auto abab = _mm_unpacklo_epi32(a, b);
         auto cdcd = _mm_unpacklo_epi32(c, d);
