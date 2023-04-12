@@ -17,7 +17,7 @@ namespace avel {
 
     div_type<vec1x32i> div(vec1x32i numerator, vec1x32i denominator);
     vec1x32i broadcast_mask(mask1x32i m);
-    vec1x32i blend(vec1x32i a, vec1x32i b, mask1x32i m);
+    vec1x32i blend(mask1x32i m, vec1x32i a, vec1x32i b);
     vec1x32i negate(vec1x32i m, vec1x32i x);
 
 
@@ -38,7 +38,7 @@ namespace avel {
         // Type aliases
         //=================================================
 
-        using primitive = std::uint8_t;
+        using primitive = bool;
 
     private:
 
@@ -58,11 +58,8 @@ namespace avel {
         AVEL_FINL explicit Vector_mask(Vector_mask<U, width> m):
             Vector_mask(convert<Vector_mask>(m)[0]) {}
 
-        AVEL_FINL explicit Vector_mask(primitive p):
-            content(p) {}
-
         AVEL_FINL explicit Vector_mask(bool b):
-            content(-b) {}
+            content(b) {}
 
         AVEL_FINL explicit Vector_mask(const arr1xb& arr) {
             static_assert(
@@ -70,7 +67,7 @@ namespace avel {
                 "Implementation assumes bool occupy a single byte"
             );
 
-            content = -arr[0];
+            content = arr[0];
         }
 
         Vector_mask() = default;
@@ -84,11 +81,6 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator=(bool b) {
             *this = Vector_mask{b};
-            return *this;
-        }
-
-        AVEL_FINL Vector_mask& operator=(primitive p) {
-            *this = Vector_mask{p};
             return *this;
         }
 
@@ -569,8 +561,38 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
+    AVEL_FINL std::uint32_t count(vec1x32i v) {
+        return count(vec1x32u{v});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t any(vec1x32i v) {
+        return any(vec1x32u{v});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t all(vec1x32i v) {
+        return all(vec1x32u{v});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t none(vec1x32i v) {
+        return none(vec1x32u{v});
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec1x32i broadcast_mask(mask1x32i m) {
         return vec1x32i{static_cast<vec1x32i::scalar>(-decay(m))};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x32i keep(mask1x32i m, vec1x32i v) {
+        return vec1x32i{keep(mask1x32u{m}, vec1x32u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x32i clear(mask1x32i m, vec1x32i v) {
+        return vec1x32i{clear(mask1x32u{m}, vec1x32u{v})};
     }
 
     [[nodiscard]]
@@ -683,52 +705,34 @@ namespace avel {
 
 
 
-    template<std::uint32_t N = vec1x32i::width>
-    AVEL_FINL vec1x32i gather(std::int32_t* ptr, vec1x32i indices) {
-        return vec1x32i{ptr[decay(indices)]};
-    }
-
     template<>
-    AVEL_FINL vec1x32i gather<0>(std::int32_t* ptr, vec1x32i indices) {
-        return vec1x32i{0x00};
-    }
-
-    template<>
-    AVEL_FINL vec1x32i gather<vec1x32i::width>(std::int32_t* ptr, vec1x32i indices) {
-        return vec1x32i{ptr[decay(indices)]};
-    }
-
-    AVEL_FINL vec1x32i gather(std::int32_t* ptr, vec1x32i indices, std::uint32_t n) {
+    [[nodiscard]]
+    AVEL_FINL vec1x32i gather<vec1x32i>(const std::int32_t* ptr, vec1x32i indices, std::uint32_t n) {
         if (n) {
             return vec1x32i{ptr[decay(indices)]};
-        } else {
-            return vec1x32i{0x00};
         }
     }
 
-
-
-    template<std::uint32_t N = vec1x32u::width>
-    AVEL_FINL vec1x32u gather(std::uint32_t* ptr, vec1x32i indices) {
-        return vec1x32u{ptr[decay(indices)]};
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec1x32i gather<vec1x32i>(const std::int32_t* ptr, vec1x32i indices) {
+        return vec1x32i{ptr[decay(indices)]};
     }
+
+
 
     template<>
-    AVEL_FINL vec1x32u gather<0>(std::uint32_t* ptr, vec1x32i indices) {
-        return vec1x32u{0x00};
-    }
-
-    template<>
-    AVEL_FINL vec1x32u gather<vec1x32u::width>(std::uint32_t* ptr, vec1x32i indices) {
-        return vec1x32u{ptr[decay(indices)]};
-    }
-
-    AVEL_FINL vec1x32u gather(std::uint32_t* ptr, vec1x32i indices, std::uint32_t n) {
+    [[nodiscard]]
+    AVEL_FINL vec1x32u gather<vec1x32u>(const std::uint32_t* ptr, vec1x32i indices, std::uint32_t n) {
         if (n) {
             return vec1x32u{ptr[decay(indices)]};
-        } else {
-            return vec1x32u{0x00};
         }
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec1x32u gather<vec1x32u>(const std::uint32_t* ptr, vec1x32i indices) {
+        return vec1x32u{ptr[decay(indices)]};
     }
 
 
@@ -770,6 +774,12 @@ namespace avel {
 
 
 
+    AVEL_FINL void scatter(std::int32_t* ptr, vec1x32i v, vec1x32i indices, std::uint32_t n) {
+        if (n) {
+            ptr[decay(indices)] = decay(v);
+        }
+    }
+
     template<std::uint32_t N = vec1x32i::width>
     AVEL_FINL void scatter(std::int32_t* ptr, vec1x32i v, vec1x32i indices) {
         ptr[decay(indices)] = decay(v);
@@ -785,13 +795,13 @@ namespace avel {
         ptr[decay(indices)] = decay(v);
     }
 
-    AVEL_FINL void scatter(std::int32_t* ptr, vec1x32i v, vec1x32i indices, std::uint32_t n) {
+
+
+    AVEL_FINL void scatter(std::uint32_t* ptr, vec1x32u v, vec1x32i indices, std::uint32_t n) {
         if (n) {
             ptr[decay(indices)] = decay(v);
         }
     }
-
-
 
     template<std::uint32_t N = vec1x32i::width>
     AVEL_FINL void scatter(std::uint32_t* ptr, vec1x32u v, vec1x32i indices) {
@@ -806,12 +816,6 @@ namespace avel {
     template<>
     AVEL_FINL void scatter<vec1x32i::width>(std::uint32_t* ptr, vec1x32u v, vec1x32i indices) {
         ptr[decay(indices)] = decay(v);
-    }
-
-    AVEL_FINL void scatter(std::uint32_t* ptr, vec1x32u v, vec1x32i indices, std::uint32_t n) {
-        if (n) {
-            ptr[decay(indices)] = decay(v);
-        }
     }
 
 

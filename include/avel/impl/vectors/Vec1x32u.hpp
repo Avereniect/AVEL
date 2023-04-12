@@ -17,7 +17,7 @@ namespace avel {
 
     div_type<vec1x32u> div(vec1x32u numerator, vec1x32u denominator);
     vec1x32u broadcast_mask(mask1x32u m);
-    vec1x32u blend(vec1x32u a, vec1x32u b, mask1x32u m);
+    vec1x32u blend(mask1x32u m, vec1x32u a, vec1x32u b);
     vec1x32u countl_one(vec1x32u x);
 
 
@@ -38,7 +38,7 @@ namespace avel {
         // Type aliases
         //=================================================
 
-        using primitive = std::uint8_t;
+        using primitive = bool;
 
     private:
 
@@ -58,11 +58,8 @@ namespace avel {
         AVEL_FINL explicit Vector_mask(Vector_mask<U, width> m):
             Vector_mask(convert<Vector_mask>(m)[0]) {}
 
-        AVEL_FINL explicit Vector_mask(primitive p):
-            content(p & 0x1) {}
-
         AVEL_FINL explicit Vector_mask(bool b):
-            content(-b) {}
+            content(b) {}
 
         AVEL_FINL explicit Vector_mask(const arr1xb& arr) {
             static_assert(
@@ -70,7 +67,7 @@ namespace avel {
                 "Implementation assumes bools occupy a single byte"
             );
 
-            content = -arr[0];
+            content = arr[0];
         }
 
         Vector_mask() = default;
@@ -84,11 +81,6 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator=(bool b) {
             content = -b;
-            return *this;
-        }
-
-        AVEL_FINL Vector_mask& operator=(primitive p) {
-            content = p;
             return *this;
         }
 
@@ -307,7 +299,7 @@ namespace avel {
             Vector(convert<Vector>(x)[0]) {}
 
         AVEL_FINL explicit Vector(mask m):
-            content(-decay(m)) {}
+            content(decay(m) ? 1 : 0) {}
 
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}
@@ -570,7 +562,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL explicit operator mask() const {
-            return mask{static_cast<mask::primitive>(bool(content))};
+            return Vector{0x00} != *this;
         }
 
     };
@@ -580,8 +572,46 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
+    AVEL_FINL std::uint32_t count(vec1x32u v) {
+        return decay(v) != 0;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t any(vec1x32u v) {
+        return decay(v) != 0;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t all(vec1x32u v) {
+        return decay(v) != 0;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t none(vec1x32u v) {
+        return decay(v) == 0;
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec1x32u broadcast_mask(mask1x32u m) {
         return vec1x32u{static_cast<vec1x32u::scalar>(-decay(m))};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x32u keep(mask1x32u m, vec1x32u v) {
+        if (decay(m)) {
+            return v;
+        } else {
+            return vec1x32u{0x0};
+        }
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x32u clear(mask1x32u m, vec1x32u v) {
+        if (decay(m)) {
+            return vec1x32u{0x0};
+        } else {
+            return v;
+        }
     }
 
     [[nodiscard]]
@@ -666,7 +696,9 @@ namespace avel {
 
     template<std::uint32_t N = vec1x32u::width>
     AVEL_FINL void store(std::uint32_t* ptr, vec1x32u v) {
-        *ptr = decay(v);
+        if (N) {
+            *ptr = decay(v);
+        }
     }
 
     template<>
@@ -684,7 +716,9 @@ namespace avel {
 
     template<std::uint32_t N = vec1x32u::width>
     AVEL_FINL void aligned_store(std::uint32_t* ptr, vec1x32u v) {
-        *ptr = decay(v);
+        if (N) {
+            *ptr = decay(v);
+        }
     }
 
     template<>
@@ -697,6 +731,10 @@ namespace avel {
             *ptr = decay(v);
         }
     }
+
+
+
+
 
 
 

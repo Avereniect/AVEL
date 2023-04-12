@@ -17,7 +17,7 @@ namespace avel {
 
     div_type<vec1x8i> div(vec1x8i numerator, vec1x8i denominator);
     vec1x8i broadcast_mask(mask1x8i m);
-    vec1x8i blend(vec1x8i a, vec1x8i b, mask1x8i m);
+    vec1x8i blend(mask1x8i m, vec1x8i a, vec1x8i b);
     vec1x8i negate(vec1x8i m, vec1x8i x);
 
 
@@ -38,7 +38,7 @@ namespace avel {
         // Type aliases
         //=================================================
 
-        using primitive = std::uint8_t;
+        using primitive = bool;
 
     private:
 
@@ -58,11 +58,8 @@ namespace avel {
         AVEL_FINL explicit Vector_mask(Vector_mask<U, width> m):
             Vector_mask(convert<Vector_mask>(m)[0]) {}
 
-        AVEL_FINL explicit Vector_mask(primitive p):
-            content(p) {}
-
         AVEL_FINL explicit Vector_mask(bool b):
-            content(-b) {}
+            content(b) {}
 
         AVEL_FINL explicit Vector_mask(const arr1xb& arr) {
             static_assert(
@@ -70,7 +67,7 @@ namespace avel {
                 "Implementation assumes bool occupy a single byte"
             );
 
-            content = -arr[0];
+            content = arr[0];
         }
 
         Vector_mask() = default;
@@ -84,11 +81,6 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator=(bool b) {
             content = -b;
-            return *this;
-        }
-
-        AVEL_FINL Vector_mask& operator=(primitive p) {
-            content = p;
             return *this;
         }
 
@@ -555,8 +547,38 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
+    AVEL_FINL std::uint32_t count(vec1x8i v) {
+        return count(vec1x8u{v});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t any(vec1x8i v) {
+        return any(vec1x8u{v});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t all(vec1x8i v) {
+        return all(vec1x8u{v});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::uint32_t none(vec1x8i v) {
+        return none(vec1x8u{v});
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec1x8i broadcast_mask(mask1x8i m) {
         return vec1x8i{static_cast<vec1x8i::scalar>(-decay(m))};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x8i keep(mask1x8i m, vec1x8i v) {
+        return vec1x8i{keep(mask1x8u{m}, vec1x8u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x8i clear(mask1x8i m, vec1x8i v) {
+        return vec1x8i{clear(mask1x8u{m}, vec1x8u{v})};
     }
 
     [[nodiscard]]
