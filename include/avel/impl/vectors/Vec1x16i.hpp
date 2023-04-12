@@ -18,7 +18,7 @@ namespace avel {
     div_type<vec1x16i> div(vec1x16i numerator, vec1x16i denominator);
     vec1x16i broadcast_mask(mask1x16i m);
     vec1x16i blend(mask1x16i m, vec1x16i a, vec1x16i b);
-    vec1x16i negate(vec1x16i m, vec1x16i x);
+    vec1x16i negate(mask1x16i m, vec1x16i x);
 
 
 
@@ -256,7 +256,7 @@ namespace avel {
             Vector(convert<Vector>(x)[0]) {}
 
         AVEL_FINL explicit Vector(mask m):
-            content(-decay(m)) {}
+            content(decay(m) ? 1 : 0) {}
 
         AVEL_FINL Vector(primitive content):
             content(content) {}
@@ -636,7 +636,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x16i negate(vec1x16i m, vec1x16i v) {
+    AVEL_FINL vec1x16i negate(mask1x16i m, vec1x16i v) {
         if (decay(m)) {
             return -v;
         } else {
@@ -710,7 +710,9 @@ namespace avel {
 
     template<std::uint32_t N = vec1x16i::width>
     AVEL_FINL void store(std::int16_t* ptr, vec1x16i v) {
-        *ptr = decay(v);
+        if (N) {
+            *ptr = decay(v);
+        }
     }
 
     template<>
@@ -728,7 +730,9 @@ namespace avel {
 
     template<std::uint32_t N = vec1x16i::width>
     AVEL_FINL void aligned_store(std::int16_t* ptr, vec1x16i v) {
-        *ptr = decay(v);
+        if (N) {
+            *ptr = decay(v);
+        }
     }
 
     template<>
@@ -790,7 +794,7 @@ namespace avel {
         static_assert(S <= 16, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
 
-        return vec1x16i{bit_shift_right<S>(vec1x16u{v})};
+        return v >> S;
     }
 
 

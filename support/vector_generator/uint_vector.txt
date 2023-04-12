@@ -17,7 +17,7 @@ namespace avel {
 
     div_type<$<VECTOR_ALIAS>> div($<VECTOR_ALIAS> numerator, $<VECTOR_ALIAS> denominator);
     $<VECTOR_ALIAS> broadcast_mask($<MASK_ALIAS> m);
-    $<VECTOR_ALIAS> blend($<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b, $<MASK_ALIAS> m);
+    $<VECTOR_ALIAS> blend($<MASK_ALIAS> m, $<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b);
     $<VECTOR_ALIAS> countl_one($<VECTOR_ALIAS> x);
 
 
@@ -83,7 +83,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator=(bool b) {
-            $<mask::operator=(bool)>
+            *this = Vector_mask{b};
             return *this;
         }
 
@@ -536,16 +536,16 @@ $END
 
     template<std::uint32_t N>
     AVEL_FINL $<SCALAR_NAME> extract($<VECTOR_ALIAS> v) {
-        static_assert(N <= $<VECTOR_WIDTH>, "Specified index does not exist");
-        typename std::enable_if<N <= $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
+        static_assert(N < $<VECTOR_WIDTH>, "Specified index does not exist");
+        typename std::enable_if<N < $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
 
         $<extract(vec)>
     }
 
     template<std::uint32_t N>
     AVEL_FINL $<VECTOR_ALIAS> insert($<VECTOR_ALIAS> v, $<SCALAR_NAME> x) {
-        static_assert(N <= $<VECTOR_WIDTH>, "Specified index does not exist");
-        typename std::enable_if<N <= $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
+        static_assert(N < $<VECTOR_WIDTH>, "Specified index does not exist");
+        typename std::enable_if<N < $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
 
         $<insert(vec, scalar)>
     }
@@ -727,17 +727,17 @@ $END
 
     [[nodiscard]]
     AVEL_FINL $<VECTOR_ALIAS> clamp($<VECTOR_ALIAS> x, $<VECTOR_ALIAS> lo, $<VECTOR_ALIAS> hi) {
-        $<clamp(vec, vec, vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> midpoint($<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b) {
-        $<midpoint(vec, vec)>
+        return min(max(x, lo), hi);
     }
 
     [[nodiscard]]
     AVEL_FINL $<VECTOR_ALIAS> average($<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b) {
         $<average(vec, vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> midpoint($<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b) {
+        $<midpoint(vec, vec)>
     }
 
     //Definition of neg_abs delayed until later
@@ -772,6 +772,10 @@ $END
 
 
 
+    AVEL_FINL void store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, std::uint32_t n) {
+        $<store(scalar*, vec, std::uint32_t)>
+    }
+
     template<std::uint32_t N = $<VECTOR_ALIAS>::width>
     AVEL_FINL void store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v) {
         $<store<std::uint32_t>(scalar*, vec)>
@@ -782,11 +786,11 @@ $END
         $<store<VECTOR_WIDTH>(scalar*, vec)>
     }
 
-    AVEL_FINL void store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, std::uint32_t n) {
-        $<store(scalar*, vec, std::uint32_t)>
+
+
+    AVEL_FINL void aligned_store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, std::uint32_t n) {
+        $<aligned_store(scalar*, vec, std::uint32_t)>
     }
-
-
 
     template<std::uint32_t N = $<VECTOR_ALIAS>::width>
     AVEL_FINL void aligned_store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v) {
@@ -796,10 +800,6 @@ $END
     template<>
     AVEL_FINL void aligned_store<$<VECTOR_ALIAS>::width>($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v) {
         $<aligned_store<VECTOR_WIDTH>(scalar*, vec)>
-    }
-
-    AVEL_FINL void aligned_store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, std::uint32_t n) {
-        $<aligned_store(scalar*, vec, std::uint32_t)>
     }
 
 
