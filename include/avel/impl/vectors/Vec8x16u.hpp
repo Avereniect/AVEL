@@ -2119,10 +2119,26 @@ namespace avel {
         auto results = _mm256_cvtepi16_epi8(lzcnt);
         return vec8x16u{results} - vec8x16u{16};
 
-        //TODO: Optimize for other instruction sets
+        //TODO: Explore conversion to float-16 as possible alternative
 
         #elif defined(AVEL_SSE2)
-        return countl_one(~v);
+        auto zero = _mm_setzero_si128();
+
+        auto v_lo = _mm_unpacklo_epi16(decay(v), zero);
+        auto v_hi = _mm_unpackhi_epi16(decay(v), zero);
+
+        auto floats_lo = _mm_cvtepi32_ps(v_lo);
+        auto floats_hi = _mm_cvtepi32_ps(v_hi);
+
+        auto exponents_lo = _mm_srli_epi32(_mm_castps_si128(floats_lo), 23);
+        auto exponents_hi = _mm_srli_epi32(_mm_castps_si128(floats_hi), 23);
+
+        auto exponents = _mm_packs_epi32(exponents_lo, exponents_hi);
+        auto partial = _mm_sub_epi16(_mm_set1_epi16(142), exponents);
+        auto ret = _mm_min_epi16(_mm_set1_epi16(16), partial);
+
+        return vec8x16u{ret};
+
         #endif
 
         #if defined(AVEL_NEON)
@@ -2135,32 +2151,9 @@ namespace avel {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW) && defined(AVEL_AVX512CD)
         return countl_zero(~v);
 
-        //TODO: Optimize for other instruction sets
-
         #elif defined(AVEL_SSE2)
-        //TODO: Optimize
-        vec8x16u sum{v == vec8x16u{0xFFFF}};
+        return countl_zero(~v);
 
-        vec8x16u m0{0xFF00u};
-        mask8x16u b0 = (m0 & v) == m0;
-        sum += broadcast_mask(b0) & vec8x16u{8};
-        v <<= broadcast_mask(b0) & vec8x16u{8};
-
-        vec8x16u m1{0xF000u};
-        mask8x16u b1 = (m1 & v) == m1;
-        sum += broadcast_mask(b1) & vec8x16u{4};
-        v <<= broadcast_mask(b1) & vec8x16u{4};
-
-        vec8x16u m2{0xC000u};
-        mask8x16u b2 = (m2 & v) == m2;
-        sum += broadcast_mask(b2) & vec8x16u{2};
-        v <<= broadcast_mask(b2) & vec8x16u{2};
-
-        vec8x16u m3{0x8000u};
-        mask8x16u b3 = (m3 & v) == m3;
-        sum += broadcast_mask(b3) & vec8x16u{1};
-
-        return sum;
         #endif
 
         #if defined(AVEL_NEON)
@@ -2175,45 +2168,8 @@ namespace avel {
         auto tz_mask = _mm_andnot_si128(decay(v), _mm_add_epi16(decay(v), neg_one));
         return vec8x16u{_mm_popcnt_epi16(tz_mask)};
 
-        //TODO: Optimize for other instruction sets
-        #elif defined(AVEL_SSSE3)
-        alignas(16) static constexpr std::uint8_t table_data[16] {
-            0, 0, 1, 0,
-            2, 0, 0, 0,
-            3, 0, 0, 0,
-            0, 0, 0, 0
-        };
-
-        auto nibble_mask = _mm_set1_epi8(0x0F);
-        auto lo_nibble = _mm_and_si128(nibble_mask, decay(v));
-        auto hi_nibble = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(v), 0x4));
-
-        auto table = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data0);
-
-        auto low_ret = ;
-
-
-
-        auto zero = _mm_setzero_si128();
-        auto is_zero = _mm_cmpeq_epi16(decay(v), zero);
-
-        v = _mm_and_si128(decay(v), _mm_sub_epi16(zero, decay(v)));
-        auto ret = zero;
-
-        auto b3 = _mm_cmpeq_epi16(_mm_and_si128(decay(v), _mm_set1_epi16(0x00FFu)), zero);
-        ret = _mm_sub_epi16(ret, b3);
-        ret = _mm_add_epi16(ret, ret);
-
-        auto b2 = _mm_cmpeq_epi16(_mm_and_si128(decay(v), _mm_set1_epi16(0x0F0Fu)), zero);
-        ret = _mm_sub_epi16(ret, b2);
-        ret = _mm_slli_epi16(ret, 2);
-
-        ret = _mm_or_si128(ret, low_ret);
-
-        return
-
-
         /*
+        #elif defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             8, 0, 1, 0,
             2, 0, 1, 0,
@@ -2249,6 +2205,28 @@ namespace avel {
         */
 
         #elif defined(AVEL_SSE2)
+        // Conversion to float implementation
+        auto zero = _mm_setzero_si128();
+        auto is_zero = _mm_cmpeq_epi16(zero, decay(v));
+        auto offset = _mm_add_epi16(_mm_set1_epi16(127), _mm_and_si128(is_zero, _mm_set1_epi16(-143)));
+
+        v = _mm_and_si128(decay(v), _mm_sub_epi16(zero, decay(v)));
+
+        auto v_lo = _mm_unpacklo_epi16(decay(v), zero);
+        auto v_hi = _mm_unpackhi_epi16(decay(v), zero);
+
+        auto floats_lo = _mm_cvtepi32_ps(v_lo);
+        auto floats_hi = _mm_cvtepi32_ps(v_hi);
+
+        auto exponents_lo = _mm_srli_epi32(_mm_castps_si128(floats_lo), 23);
+        auto exponents_hi = _mm_srli_epi32(_mm_castps_si128(floats_hi), 23);
+
+        auto exponents = _mm_packs_epi32(exponents_lo, exponents_hi);
+        auto ret = _mm_sub_epi16(exponents, offset);
+
+        return vec8x16u{ret};
+
+        /* Divide and conquer implementation
         auto zero = _mm_setzero_si128();
         auto is_zero = _mm_cmpeq_epi16(decay(v), zero);
 
@@ -2273,6 +2251,7 @@ namespace avel {
         ret = _mm_sub_epi16(ret, is_zero);
 
         return vec8x16u{ret};
+        */
 
         /* Old unoptimized approach
         mask8x16u zero_mask = (v == vec8x16u{0x0000});
@@ -2326,6 +2305,7 @@ namespace avel {
 
         return vec8x16u{32} - vec8x16u{counts16};
 
+        /*
         #elif defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t table_data[16] {
             0, 1, 2, 2,
@@ -2366,9 +2346,28 @@ namespace avel {
         auto ret = _mm_and_si128(partial6, _mm_set1_epi16(0x00FF));
 
         return vec8x16u{ret};
+         */
+
+        //TODO: Explore conversion to float-16 as possible alternative
 
         #elif defined(AVEL_SSE2)
-        //TODO: Optimize
+        auto zero = _mm_setzero_si128();
+
+        auto v_lo = _mm_unpacklo_epi16(decay(v), zero);
+        auto v_hi = _mm_unpackhi_epi16(decay(v), zero);
+
+        auto floats_lo = _mm_cvtepi32_ps(v_lo);
+        auto floats_hi = _mm_cvtepi32_ps(v_hi);
+
+        auto exponents_lo = _mm_srli_epi32(_mm_castps_si128(floats_lo), 23);
+        auto exponents_hi = _mm_srli_epi32(_mm_castps_si128(floats_hi), 23);
+
+        auto exponents = _mm_packs_epi32(exponents_lo, exponents_hi);
+        auto ret = _mm_subs_epu16(exponents, _mm_set1_epi16(126));
+
+        return vec8x16u{ret};
+
+        /* Older bad implementation
         mask8x16u zero_mask = (v == vec8x16u{0x0000});
 
         vec8x16u ret{0x0000};
@@ -2393,6 +2392,7 @@ namespace avel {
         ret += t3;
 
         return blend(zero_mask, vec8x16u{0}, ret + vec8x16u{1});
+        */
         #endif
 
         #if defined(AVEL_NEON)
@@ -2403,6 +2403,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u bit_floor(vec8x16u v) {
+        //TODO: Explore conversion to float-32 as possible alternative
+        //TODO: Explore conversion to float-16 as possible alternative
         #if defined(AVEL_SSE2)
         v |= (v >> 1);
         v |= (v >> 2);
@@ -2423,7 +2425,24 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u bit_ceil(vec8x16u v) {
-        //TODO: Consider use of pshufb as potential optimization
+        /* No performance benefit derived
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW) && defined(AVEL_AVX512CD)
+        auto ones = _mm_set1_epi16(0x1);
+        v = _mm_max_epu16(decay(v), ones);
+        v = _mm_sub_epi16(decay(v), ones);
+
+        auto zero = _mm_setzero_si128();
+        auto v_widened = _mm256_cvtepu16_epi32(decay(v));
+        auto lzcnt = _mm256_lzcnt_epi32(v_widened);
+        auto lzcnt_narrowed = _mm256_cvtepi32_epi16(lzcnt);
+        auto lzcnt_corrected = _mm_sub_epi16(_mm_set1_epi16(32), lzcnt_narrowed);
+
+        auto ret = _mm_sllv_epi16(_mm_set1_epi16(0x1), lzcnt_corrected);
+        return vec8x16u{ret};
+        */
+
+        //TODO: Explore conversion to float-32 as possible alternative
+        //TODO: Explore conversion to float-16 as possible alternative
         #if defined(AVEL_SSE2)
         auto zero_mask = (v == vec8x16u{0x00});
 

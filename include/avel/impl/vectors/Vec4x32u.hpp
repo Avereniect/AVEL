@@ -1978,9 +1978,10 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x32u bit_ceil(vec4x32u x) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
-        auto sh = (vec4x32u{32} - countl_zero(x - vec4x32u{1}));
-        auto result = vec4x32u{1} << sh;
-        return result - broadcast_mask(x == vec4x32u{0x00});
+        auto ones = _mm_set1_epi32(1);
+        auto sh = _mm_sub_epi32(_mm_set1_epi32(32), _mm_lzcnt_epi32(_mm_sub_epi32(decay(x), ones)));
+        auto result = _mm_sllv_epi32(ones, sh);
+        return vec4x32u{_mm_sub_epi32(result, _mm_cmpeq_epi32(decay(x), _mm_setzero_si128()))};
 
         #elif defined(AVEL_SSE2)
         auto zero_mask = (x == vec4x32u{0x00});
