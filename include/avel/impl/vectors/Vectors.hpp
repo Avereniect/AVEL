@@ -196,7 +196,7 @@ namespace avel {
     #include "Vec64x8i.hpp"
 
     #include "Vec32x16u.hpp"
-    //#include "Vec32x16i.hpp"
+    #include "Vec32x16i.hpp"
 #endif
 
 
