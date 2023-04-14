@@ -147,7 +147,7 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator&=(Vector_mask rhs) {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            content = _kand_mask16(content, rhs.content);
+            content &= rhs.content;
 
             #elif defined(AVEL_SSE2)
             content = _mm256_and_si256(content, rhs.content);
@@ -158,7 +158,7 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator|=(Vector_mask rhs) {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            content = _kor_mask16(content, rhs.content);
+            content |= rhs.content;
 
             #elif defined(AVEL_SSE2)
             content = _mm256_or_si256(content, rhs.content);
@@ -169,7 +169,7 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator^=(Vector_mask rhs) {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            content = _kand_mask16(_kxor_mask16(content, rhs.content), _cvtu32_mask16(0xFF));
+            content ^= rhs.content;
 
             #elif defined(AVEL_SSE2)
             content = _mm256_xor_si256(content, rhs.content);
@@ -571,7 +571,7 @@ namespace avel {
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
             #if defined(AVEL_AVX2)
-            content  = _mm256_srl_epi16(content, _mm_cvtsi64_si128(rhs));
+            content  = _mm256_sra_epi16(content, _mm_cvtsi64_si128(rhs));
             #endif
             return *this;
         }
@@ -581,7 +581,18 @@ namespace avel {
             content = _mm256_sllv_epi16(content, rhs.content);
 
             #elif defined(AVEL_AVX2)
-            //TODO: Implement
+            auto even_mask = _mm256_set1_epi32(0x0000FFFF);
+
+            auto rhs_even = _mm256_and_si256(even_mask, decay(rhs));
+            auto even_result32 = _mm256_sllv_epi32(content, rhs_even);
+            auto even_result = _mm256_and_si256(even_mask, even_result32);
+
+            auto rhs_odd = _mm256_srli_epi32(decay(rhs), 16);
+            auto lhs_odd_32 = _mm256_andnot_si256(even_mask, content);
+            auto odd_result = _mm256_sllv_epi32(lhs_odd_32, rhs_odd);
+
+            auto result = _mm256_or_si256(even_result, odd_result);
+            content = result;
 
             #endif
             return *this;
@@ -592,7 +603,18 @@ namespace avel {
             content = _mm256_srav_epi16(content, rhs.content);
 
             #elif defined(AVEL_AVX2)
-            //TODO: Implement
+            auto even_mask = _mm256_set1_epi32(0x0000FFFF);
+
+            auto rhs_even = _mm256_and_si256(even_mask, decay(rhs));
+            auto lhs_even = _mm256_slli_epi32(content, 16);
+            auto result_even = _mm256_srli_epi32(_mm256_srav_epi32(lhs_even, rhs_even), 16);
+
+            auto rhs_odd = _mm256_srli_epi32(decay(rhs), 16);
+            auto result_odd32 = _mm256_srav_epi32(content, rhs_odd);
+            auto result_odd = _mm256_andnot_si256(even_mask, result_odd32);
+
+            auto result = _mm256_or_si256(result_odd, result_even);
+            content = result;
 
             #endif
             return *this;
@@ -745,7 +767,9 @@ namespace avel {
         static_assert(S <= 16, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 16, int>::type dummy_variable = 0;
 
-        return vec16x16i{bit_shift_right<S>(vec16x16u{v})};
+        #if defined(AVEL_AVX2)
+        return vec16x16i{_mm256_srai_epi16(decay(v), S)};
+        #endif
     }
 
 
@@ -987,35 +1011,51 @@ namespace avel {
 
 
     AVEL_FINL void store(std::int16_t* ptr, vec16x16i v, std::uint32_t n) {
-        // $<store(scalar*, vec, std::uint32_t)>
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        _mm256_mask_storeu_epi16(ptr, mask, decay(v));
+
+        #elif defined(AVEL_AVX2)
+        if (n > 8) {
+            store(ptr + 0, vec8x16i{_mm256_castsi256_si128(decay(v))}, n - 0);
+            store(ptr + 8, vec8x16i{_mm256_extracti128_si256(decay(v), 0x1)}, n - 8);
+        } else {
+            store(ptr, vec8x16i{_mm256_castsi256_si128(decay(v))}, n);
+        }
+
+        #endif
     }
 
     template<std::uint32_t N = vec16x16i::width>
     AVEL_FINL void store(std::int16_t* ptr, vec16x16i v) {
-        // $<store<std::uint32_t>(scalar*, vec)>
+        store(ptr, v, N);
     }
 
     // Add specializations using 32-bit aligned stores
 
     template<>
     AVEL_FINL void store<vec16x16i::width>(std::int16_t* ptr, vec16x16i v) {
-        // $<store<VECTOR_WIDTH>(scalar*, vec)>
+        #if defined(AVEL_AVX2)
+        _mm256_storeu_si256(reinterpret_cast<__m256i*>(ptr), decay(v));
+        #endif
     }
 
 
 
     AVEL_FINL void aligned_store(std::int16_t* ptr, vec16x16i v, std::uint32_t n) {
-        // $<aligned_store(scalar*, vec, std::uint32_t)>
+        store(ptr, v, n);
     }
 
     template<std::uint32_t N = vec16x16i::width>
     AVEL_FINL void aligned_store(std::int16_t* ptr, vec16x16i v) {
-        // $<aligned_store<std::uint32_t>(scalar*, vec)>
+        aligned_store(ptr, v, N);
     }
 
     template<>
     AVEL_FINL void aligned_store<vec16x16i::width>(std::int16_t* ptr, vec16x16i v) {
-        // $<aligned_store<VECTOR_WIDTH>(scalar*, vec)>
+        #if defined(AVEL_AVX2)
+        _mm256_storeu_si256(reinterpret_cast<__m256i*>(ptr), decay(v));
+        #endif
     }
 
 

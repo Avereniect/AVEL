@@ -1406,6 +1406,7 @@ namespace avel {
     AVEL_FINL vec8x16u min(vec8x16u a, vec8x16u b) {
         #if defined(AVEL_SSE41)
         return vec8x16u{_mm_min_epu16(decay(a), decay(b))};
+
         #elif defined(AVEL_SSE2)
         return blend(b < a, b, a);
         #endif
@@ -1455,7 +1456,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u midpoint(vec8x16u a, vec8x16u b) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         auto t1 = _mm_avg_epu16(decay(a), decay(b));
         auto t5 = _mm_and_si128(_mm_ternarylogic_epi32(decay(a), decay(b), decay(broadcast_mask(b < a)), 0x14), _mm_set1_epi16(0x1));
         auto t6 = _mm_sub_epi16(t1, t5);
