@@ -70,7 +70,7 @@ namespace avel {
                 "Implementation assumes bool occupy a single byte"
             );
 
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if defined(AVEL_AVX512BW)
             auto array_data = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(arr.data()));
             content = _mm256_cmplt_epu8_mask(_mm256_setzero_si256(), array_data);
             #endif
@@ -253,7 +253,9 @@ namespace avel {
 
         using scalar = std::int16_t;
 
+        #if defined(AVEL_AVX512BW)
         using primitive = __m512i;
+        #endif
 
         using mask = Vector_mask<scalar, width>;
 

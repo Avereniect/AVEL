@@ -714,6 +714,8 @@ namespace avel {
     AVEL_FINL vec1x64i gather<vec1x64i>(const std::int64_t* ptr, vec1x64i indices, std::uint32_t n) {
         if (n) {
             return vec1x64i{ptr[decay(indices)]};
+        } else {
+            return vec1x64i{0x00};
         }
     }
 
@@ -730,6 +732,8 @@ namespace avel {
     AVEL_FINL vec1x64u gather<vec1x64u>(const std::uint64_t* ptr, vec1x64i indices, std::uint32_t n) {
         if (n) {
             return vec1x64u{ptr[decay(indices)]};
+        } else {
+            return vec1x64u{0x00};
         }
     }
 

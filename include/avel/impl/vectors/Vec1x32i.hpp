@@ -710,6 +710,8 @@ namespace avel {
     AVEL_FINL vec1x32i gather<vec1x32i>(const std::int32_t* ptr, vec1x32i indices, std::uint32_t n) {
         if (n) {
             return vec1x32i{ptr[decay(indices)]};
+        } else {
+            return vec1x32i{0x00};
         }
     }
 
@@ -726,6 +728,8 @@ namespace avel {
     AVEL_FINL vec1x32u gather<vec1x32u>(const std::uint32_t* ptr, vec1x32i indices, std::uint32_t n) {
         if (n) {
             return vec1x32u{ptr[decay(indices)]};
+        } else {
+            return vec1x32u{0x00};
         }
     }
 

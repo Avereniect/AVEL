@@ -869,7 +869,11 @@ namespace avel {
             #if defined(AVEL_AVX512VL)
             return mask{_mm_test_epi32_mask(content, content)};
 
-            #else
+            #elif defined(AVEL_SSE2)
+            return *this != Vector{0x00};
+            #endif
+
+            #if defined(AVEL_NEON)
             return *this != Vector{0x00};
             #endif
         }

@@ -73,7 +73,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL)
             content(b ? 0xF : 0x00) {}
             #elif defined(AVEL_SSE2)
-            content(b ? _mm_set1_epi16(-1) : _mm_setzero_si128()) {}
+            content(b ? _mm_set1_epi32(-1) : _mm_setzero_si128()) {}
             #endif
             #if defined(AVEL_NEON)
             content(vmovq_n_u32(b ? -1 : 0)) {}
@@ -87,7 +87,7 @@ namespace avel {
 
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
-            content = __mmask8(_mm_cmplt_epi8_mask(_mm_setzero_si128(), array_data));
+            content = __mmask8(_mm_cmplt_epu8_mask(_mm_setzero_si128(), array_data));
 
             #elif defined(AVEL_AVX512VL)
             auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
@@ -948,7 +948,11 @@ namespace avel {
             #if defined(AVEL_AVX512VL)
             return mask{_mm_test_epi32_mask(content, content)};
 
-            #else
+            #elif defined(AVEL_SSE2)
+            return *this != Vector{0x00};
+            #endif
+
+            #if defined(AVEL_NEON)
             return *this != Vector{0x00};
             #endif
         }
@@ -1837,10 +1841,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         //http://www.icodeguru.com/Embedded/Hacker%27s-Delight/040.htm
 
-        x = _mm_andnot_si128(decay(x >> 1), decay(x));
+        x = _mm_andnot_si128(_mm_srli_epi32(decay(x), 1), decay(x));
         auto floats = _mm_add_ps(_mm_cvtepi32_ps(decay(x)), _mm_set1_ps(0.5f));
-        auto biased_exponents = (vec4x32u(_mm_castps_si128(floats)) >> 23);
-        auto lzcnt = _mm_subs_epu16(_mm_set1_epi32(158), decay(biased_exponents));
+        auto biased_exponents = _mm_srli_epi32(_mm_castps_si128(floats), 23);
+        auto lzcnt = _mm_subs_epu16(_mm_set1_epi32(158), biased_exponents);
         return vec4x32u{lzcnt};
 
         //#else

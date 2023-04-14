@@ -2204,6 +2204,28 @@ namespace avel {
         return vec8x16u{ret};
         */
 
+        #elif defined(AVEL_SSE41)
+        // Conversion to float implementation with blend instruction
+        auto zero = _mm_setzero_si128();
+        auto is_zero = _mm_cmpeq_epi16(zero, decay(v));
+        auto offset = _mm_blendv_epi8(_mm_set1_epi16(127), _mm_set1_epi16(-16), is_zero);
+
+        v = _mm_and_si128(decay(v), _mm_sub_epi16(zero, decay(v)));
+
+        auto v_lo = _mm_unpacklo_epi16(decay(v), zero);
+        auto v_hi = _mm_unpackhi_epi16(decay(v), zero);
+
+        auto floats_lo = _mm_cvtepi32_ps(v_lo);
+        auto floats_hi = _mm_cvtepi32_ps(v_hi);
+
+        auto exponents_lo = _mm_srli_epi32(_mm_castps_si128(floats_lo), 23);
+        auto exponents_hi = _mm_srli_epi32(_mm_castps_si128(floats_hi), 23);
+
+        auto exponents = _mm_packs_epi32(exponents_lo, exponents_hi);
+        auto ret = _mm_sub_epi16(exponents, offset);
+
+        return vec8x16u{ret};
+
         #elif defined(AVEL_SSE2)
         // Conversion to float implementation
         auto zero = _mm_setzero_si128();
@@ -2298,7 +2320,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u bit_width(vec8x16u v) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW) && defined(AVEL_AVX512CD)
         auto widened = _mm256_cvtepu16_epi32(decay(v));
         auto counts32 = _mm256_lzcnt_epi32(widened);
         auto counts16 = _mm256_cvtepi32_epi16(counts32);
@@ -2403,7 +2425,6 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u bit_floor(vec8x16u v) {
-        //TODO: Explore conversion to float-32 as possible alternative
         //TODO: Explore conversion to float-16 as possible alternative
         #if defined(AVEL_SSE2)
         v |= (v >> 1);
@@ -2441,7 +2462,6 @@ namespace avel {
         return vec8x16u{ret};
         */
 
-        //TODO: Explore conversion to float-32 as possible alternative
         //TODO: Explore conversion to float-16 as possible alternative
         #if defined(AVEL_SSE2)
         auto zero_mask = (v == vec8x16u{0x00});
