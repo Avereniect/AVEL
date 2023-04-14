@@ -10,46 +10,46 @@ from itertools import product
 # Path to compilers and names used for their build directories
 compilers = [
     ['/usr/bin/g++-12', 'gnu-12'],
-    #['/usr/bin/g++-11', 'gnu-11'],
-    #['/usr/bin/g++-10', 'gnu-10'],
-    #['/usr/bin/g++-9',  'gnu-9'],
-    #['/usr/bin/clang++-14', 'clang-14'],
-    #['/usr/bin/clang++-13', 'clang-13'],
-    #['/usr/bin/clang++-12', 'clang-12'],
-    #['/usr/bin/clang++-11', 'clang-11'],
-    #['/opt/intel/oneapi/compiler/2023.0.0/linux/bin/icpx', 'icpx-2023.0.0']
+    # ['/usr/bin/g++-11', 'gnu-11'],
+    # ['/usr/bin/g++-10', 'gnu-10'],
+    # ['/usr/bin/g++-9',  'gnu-9'],
+    # ['/usr/bin/clang++-14', 'clang-14'],
+    # ['/usr/bin/clang++-13', 'clang-13'],
+    # ['/usr/bin/clang++-12', 'clang-12'],
+    # ['/usr/bin/clang++-11', 'clang-11'],
+    # ['/opt/intel/oneapi/compiler/2023.0.0/linux/bin/icpx', 'icpx-2023.0.0']
 ]
 
 # Map associating feature macros with their implied features, according to AVEL
 features_x86 = {
-    'AVEL_X86':             ['',                  []],
-    'AVEL_POPCNT':          ['-mpopcnt',          ['AVEL_X86']],
-    'AVEL_LZCNT':           ['-mlzcnt',           ['AVEL_X86']],
-    'AVEL_BMI':             ['-mbmi',             ['AVEL_X86']],
-    'AVEL_BMI2':            ['-mbmi2',            ['AVEL_BMI']],
-    'AVEL_SSE2':            ['-msse2',            ['AVEL_X86']],
-    'AVEL_SSE3':            ['-msse3',            ['AVEL_SSE2']],
-    'AVEL_SSSE3':           ['-mssse3',           ['AVEL_SSE3']],
-    'AVEL_SSE41':           ['-msse4.1',          ['AVEL_SSSE3', 'AVEL_POPCNT']],
-    'AVEL_SSE42':           ['-msse4.2',          ['AVEL_SSE41']],
-    'AVEL_AVX':             ['-mavx',             ['AVEL_SSE42']],
-    'AVEL_AVX2':            ['-mavx2',            ['AVEL_AVX']],
-    'AVEL_FMA':             ['-mfma',             ['AVEL_AVX']],
-    'AVEL_AVX512F':         ['-mavx512f',         ['AVEL_AVX2', 'AVEL_FMA']],
-    'AVEL_AVX512BW':        ['-mavx512bw',        ['AVEL_AVX512F']],
-    'AVEL_AVX512DQ':        ['-mavx512dq',        ['AVEL_AVX512F']],
-    'AVEL_AVX512VL':        ['-mavx512vl',        ['AVEL_AVX512F']],
-    'AVEL_AVX512CD':        ['-mavx512cd',        ['AVEL_AVX512F']],
+    'AVEL_X86': ['', []],
+    'AVEL_POPCNT': ['-mpopcnt', ['AVEL_X86']],
+    'AVEL_LZCNT': ['-mlzcnt', ['AVEL_X86']],
+    'AVEL_BMI': ['-mbmi', ['AVEL_X86']],
+    'AVEL_BMI2': ['-mbmi2', ['AVEL_BMI']],
+    'AVEL_SSE2': ['-msse2', ['AVEL_X86']],
+    'AVEL_SSE3': ['-msse3', ['AVEL_SSE2']],
+    'AVEL_SSSE3': ['-mssse3', ['AVEL_SSE3']],
+    'AVEL_SSE41': ['-msse4.1', ['AVEL_SSSE3', 'AVEL_POPCNT']],
+    'AVEL_SSE42': ['-msse4.2', ['AVEL_SSE41']],
+    'AVEL_AVX': ['-mavx', ['AVEL_SSE42']],
+    'AVEL_AVX2': ['-mavx2', ['AVEL_AVX']],
+    'AVEL_FMA': ['-mfma', ['AVEL_AVX']],
+    'AVEL_AVX512F': ['-mavx512f', ['AVEL_AVX2', 'AVEL_FMA']],
+    'AVEL_AVX512BW': ['-mavx512bw', ['AVEL_AVX512F']],
+    'AVEL_AVX512DQ': ['-mavx512dq', ['AVEL_AVX512F']],
+    'AVEL_AVX512VL': ['-mavx512vl', ['AVEL_AVX512F']],
+    'AVEL_AVX512CD': ['-mavx512cd', ['AVEL_AVX512F']],
     'AVEL_AVX512VPOPCNTDQ': ['-mavx512vpopcntdq', ['AVEL_AVX512F']],
-    'AVEL_AVX512BITALG':    ['-mavx512bitalg',    ['AVEL_AVX512F']],
-    'AVEL_AVX512VBMI':      ['-mavx512vbmi',      ['AVEL_AVX512F']],
-    'AVEL_AVX512VBMI2':     ['-mavx512vbmi2',     ['AVEL_AVX512F']],
-    'AVEL_GFNI':            ['-mgfni',            ['AVEL_AVX512F']]
+    'AVEL_AVX512BITALG': ['-mavx512bitalg', ['AVEL_AVX512F']],
+    'AVEL_AVX512VBMI': ['-mavx512vbmi', ['AVEL_AVX512F']],
+    'AVEL_AVX512VBMI2': ['-mavx512vbmi2', ['AVEL_AVX512F']],
+    'AVEL_GFNI': ['-mgfni', ['AVEL_AVX512F']]
 }
 
 feature_arm = {
-    'AVEL_ARM':     ['', []],
-    'AVEL_NEON':    ['', ['AVEL_ARM']],
+    'AVEL_ARM': ['', []],
+    'AVEL_NEON': ['', ['AVEL_ARM']],
     'AVEL_ARRCH64': ['', ['AVEL_ARM']]
 }
 
@@ -61,17 +61,7 @@ compiler_macros = [
     'AVEL_ICPX'
 ]
 
-
-# def extract_features(line: str):
-#    # If the condition is more complex than an intersection of features, it's
-#    # currently ok to skip the specific combination as they'll be handled via
-#    # other test configurations
-#    if '||' in line or '!' in line:
-#        return tuple()
-#
-#    used_features = [macro for macro in feature_macros if ('defined(' + macro + ')') in line]
-#    used_features = sorted(used_features)
-#    return tuple(used_features)
+launcher = ''
 
 
 def compiler_path_to_macro(compiler_path):
@@ -142,6 +132,9 @@ def evaluate_expression(expression, variable_assignments):
 def find_variable_assignment(expression, variable_list):
     num_vars = len(variable_list)
     possible_solutions = [seq for seq in product(('True', 'False'), repeat=num_vars)]
+
+    # Prefer solutions which enable the smallest number of features
+    possible_solutions = sorted(possible_solutions, key=lambda x: len(x))
 
     assignments = {}
     for solution in possible_solutions:
@@ -223,7 +216,7 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
 
     print()
     print('Test group variables:')
-    for test_group_name, value  in test_groups.items():
+    for test_group_name, value in test_groups.items():
         if value:
             variable = 'AVEL_ENABLE_' + test_group_name.upper() + '_TESTS'
             print(variable)
@@ -260,8 +253,6 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
     cmake_command = cmake_command_format_string.format(build_path, compiler_path, cmake_variables, flags)
     print(cmake_command)
 
-    #return False
-
     ret = os.system(cmake_command)
     if ret != 0:
         print()
@@ -285,7 +276,13 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
         failed = True
         return failed
 
-    run_command = './test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name)
+    run_command = ''
+    if launcher == '':
+        run_command = './test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name)
+    elif '<exec>' in launcher:
+        run_command = launcher.replace('<exec>', './test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name))
+    else:
+        run_command = launcher + ' ./test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name)
 
     ret = os.system(run_command)
     if ret != 0:
@@ -325,7 +322,7 @@ def substitute_compiler_macros(compiler_macro, names_and_features):
 
 def expand_assignments(assignments):
     ret = []
-    # TODO: Tidy this up
+    # TODO: Replace with solution with less nesting
     for assignment in assignments:
         new_assignment = {}
         for variable, value in assignment.items():
@@ -396,14 +393,20 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
             names_and_features[vec_name] = \
                 {k: v for k, v in feature_map.items() if not evaluate_expression(k, full_variable_assignments)}
 
-        # Remove vectors which have no more feature combinations to check for
-        #names_and_features = {k: v for k, v in names_and_features.items() if len(v) > 0}
-
     return failed
 
 
 def main():
     global target_features
+
+    if len(sys.argv) == 1:
+        print('Pass \'x86\' or \'arm\' as first parameter')
+        print(
+            'Optionally pass a command as a second parameter that will be used as a launcher for the test executable.'
+            '\nIf the second parameter contains \'<exec>\' then it will be replaced with the test executable path.'
+            '\nOtherwise, the test executable path will simply be appended to the end of the command'
+        )
+        exit(1)
 
     if len(sys.argv) > 1:
         if sys.argv[1] == 'x86':
@@ -417,6 +420,10 @@ def main():
     else:
         print('Pass "x86" or "arm" as a parameter')
         exit(1)
+
+    global launcher
+    if len(sys.argv) > 2:
+        launcher = sys.argv[2]
 
     failed = False
 
