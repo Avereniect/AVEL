@@ -38,38 +38,50 @@ namespace avel {
         // Type aliases
         //=================================================
 
+        #if defined(AVEL_AVX512F)
         using primitive = __mmask16;
+        #endif
+
+    private:
+
+        //=================================================
+        // Instance members
+        //=================================================
+
+        primitive content;
+
+    public:
 
         //=================================================
         // Constructor
         //=================================================
 
-        AVEL_FINL explicit Vector_mask(Vector_mask<std::uint32_t, 16> v):
-            content(v) {}
-
-        AVEL_FINL explicit Vector_mask(Vector_mask<float, 16> v);
+        template<class U>
+        AVEL_FINL explicit Vector_mask(Vector_mask<U, width> m):
+            Vector_mask(convert<Vector_mask>(m)[0]) {}
 
         AVEL_FINL explicit Vector_mask(primitive content):
             content(content) {}
 
-        AVEL_FINL explicit Vector_mask(bool x):
-            content(from_bool(x)) {}
+        AVEL_FINL explicit Vector_mask(bool b):
+            content(b ? -1 : 0) {}
 
-        AVEL_FINL explicit Vector_mask(const std::array<bool, 16>& arr) {
-            std::uint64_t lo_half;
-            std::memcpy(&lo_half, arr.data() + 0, 8);
+        AVEL_FINL explicit Vector_mask(const arr16xb& arr) {
+            static_assert(
+                sizeof(bool) == 1,
+                "Implementation assumes bools occupy a single byte"
+            );
 
-            std::uint64_t hi_half;
-            std::memcpy(&lo_half, arr.data() + 8, 8);
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            auto array_data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()));
+            content = _mm_cmplt_epu32_mask(_mm_setzero_si128(), array_data);
 
-            //Assumes that the bitwise representation of true has the low bit
-            //set, an assumption that holds when targeting the Itanium ABI
-            std::uint64_t bit_mask = 0x0101010101010101;
+            #elif defined(AVEL_AVX512F)
+            auto array_data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()));
+            auto widened_data = _mm512_cvtepi8_epi32(array_data);
+            content = _mm512_cmplt_epu32_mask(_mm512_setzero_si512(), widened_data);
 
-            unsigned t0 = _pext_u64(lo_half, bit_mask);
-            unsigned t1 = _pext_u64(hi_half, bit_mask);
-
-            content = _mm512_int2mask((t1 << 8) | t0);
+            #endif
         }
 
         Vector_mask() = default;
@@ -81,8 +93,13 @@ namespace avel {
         // Assignment operators
         //=================================================
 
-        AVEL_FINL Vector_mask& operator=(bool x) {
-            content = from_bool(x);
+        AVEL_FINL Vector_mask& operator=(bool b) {
+            *this = Vector_mask{b};
+            return *this;
+        }
+
+        AVEL_FINL Vector_mask& operator=(primitive p) {
+            content = p;
             return *this;
         }
 
@@ -168,29 +185,8 @@ namespace avel {
         // Conversion operators
         //=================================================
 
-        AVEL_FINL operator primitive() const {
+        AVEL_FINL explicit operator primitive() const {
             return content;
-        }
-
-    private:
-
-        //=================================================
-        // Instance members
-        //=================================================
-
-        primitive content;
-
-        //=================================================
-        // Helper functions
-        //=================================================
-
-        AVEL_FINL static primitive from_bool(bool x) {
-            static const primitive full_masks[2] {
-                _cvtu32_mask16(0),
-                _cvtu32_mask16(-1)
-            };
-
-            return full_masks[x];
         }
 
     };
@@ -201,21 +197,25 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(mask16x32i m) {
-        return popcount(_mm512_mask2int(m));
+        //TODO: Optimize
+        return popcount(decay(m));
     }
 
     [[nodiscard]]
     AVEL_FINL bool any(mask16x32i m) {
-        return _mm512_mask2int(m);
+        //TODO: Optimize
+        return decay(m);
     }
 
     [[nodiscard]]
     AVEL_FINL bool all(mask16x32i m) {
-        return 0xFFFF == _mm512_mask2int(m);
+        //TODO: Optimize
+        return 0xFFFF == decay(m);
     }
 
     [[nodiscard]]
     AVEL_FINL bool none(mask16x32i m) {
+        //TODO: Optimize
         return !all(m);
     }
 
@@ -248,16 +248,15 @@ namespace avel {
         using rebind_width = Vector<scalar, M>;
 
         //=================================================
-        // Constructors
+        // -ctors
         //=================================================
 
-        AVEL_FINL explicit Vector(vec16x32u v):
-            content(v) {}
-
-        AVEL_FINL explicit Vector(Vector<float, width> v);
+        template<class U>
+        AVEL_FINL explicit Vector(Vector<U, width> v):
+            Vector(convert<Vector>(v)[0]) {}
 
         AVEL_FINL explicit Vector(mask m):
-            content(_mm512_mask_blend_epi32(m, _mm512_setzero_epi32(), _mm512_set1_epi32(1))) {}
+            content(_mm512_maskz_set1_epi32(decay(m), 0x1)) {}
 
         AVEL_FINL explicit Vector(const primitive content):
             content(content) {}
@@ -274,34 +273,21 @@ namespace avel {
         ~Vector() = default;
 
         //=================================================
-        // Static creation functions
-        //=================================================
-
-        AVEL_FINL static Vector zeros() {
-            return Vector{_mm512_setzero_si512()};
-        }
-
-        AVEL_FINL static Vector ones() {
-            primitive reg = _mm512_undefined_epi32();
-            return Vector{_mm512_ternarylogic_epi32(reg, reg, reg, 0xFF)};
-        }
-
-        //=================================================
         // Assignment operators
         //=================================================
 
-        Vector& operator=(const Vector&) = default;
-        Vector& operator=(Vector&&) = default;
-
         AVEL_FINL Vector& operator=(primitive p) {
-            this->content = p;
+            content = p;
             return *this;
         }
 
         AVEL_FINL Vector& operator=(scalar x) {
-            content = _mm512_set1_epi32(x);
+            *this = Vector{x};
             return *this;
         }
+
+        Vector& operator=(const Vector&) = default;
+        Vector& operator=(Vector&&) = default;
 
         //=================================================
         // Comparison operators
@@ -340,7 +326,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector operator-() const {
-            return zeros() - *this;
+            return Vector{0x00} - *this;
         }
 
         //=================================================
@@ -479,7 +465,9 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL Vector operator~() const {
-            return Vector{_mm512_andnot_si512(content, ones().content)};
+            #if defined(AVEL_AVX512F)
+            return Vector{_mm512_ternarylogic_epi32(content, content, content, 0x01)};
+            #endif
         }
 
         [[nodiscard]]
@@ -550,11 +538,38 @@ namespace avel {
 
     };
 
+    static_assert(
+        16 * sizeof(std::int32_t) == sizeof(vec16x32i),
+        "Vector was not of the expected size!"
+    );
+
+    //=====================================================
+    // Vector conversions
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<vec16x32u, 1> convert<vec16x32u, vec16x32i>(vec16x32i m) {
+        #if defined(AVEL_AVX512F)
+        return {vec16x32u{decay(m)}};
+        #endif
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<vec16x32i, 1> convert<vec16x32i, vec16x32u>(vec16x32u m) {
+        #if defined(AVEL_AVX512F)
+        return {vec16x32i{decay(m)}};
+        #endif
+    }
+
     //=====================================================
     // Delayed definitions
     //=====================================================
 
-
+    AVEL_FINL vec16x32i operator-(vec16x32u v) {
+        return vec16x32i{0x00} - vec16x32i{v};
+    }
 
     //=====================================================
     // Arrangement operations
@@ -581,36 +596,88 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec16x32i broadcast_bits(mask16x32i m) {
-        return vec16x32i{_mm512_movm_epi32(m)};
+    AVEL_FINL std::uint32_t count(vec16x32i x) {
+        return count(vec16x32u{x});
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x32i blend(vec16x32i a, vec16x32i b, mask16x32i m) {
-        return vec16x32i{_mm512_mask_blend_epi32(m, a, b)};
+    AVEL_FINL bool any(vec16x32i x) {
+        return any(vec16x32u{x});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool all(vec16x32i x) {
+        return all(vec16x32u{x});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool none(vec16x32i x) {
+        return none(vec16x32u{x});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x32i broadcast_mask(mask16x32i m) {
+        #if defined(AVEL_AVX512DQ)
+        return vec16x32i{_mm512_movm_epi32(decay(m))};
+        #elif defined(AVEL_AVX512F)
+        return vec16x32i{_mm512_maskz_set1_epi32(decay(m), -1)};
+        #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x32i keep(mask16x32i m, vec16x32i v) {
+        return vec16x32i{keep(mask16x32u{m}, vec16x32u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x32i clear(mask16x32i m, vec16x32i v) {
+        return vec16x32i{clear(mask16x32u{m}, vec16x32u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x32i blend(mask16x32i m, vec16x32i a, vec16x32i b) {
+        #if defined(AVEL_AVX512F)
+        return vec16x32i{_mm512_mask_blend_epi32(decay(m), decay(a), decay(b))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32i max(vec16x32i a, vec16x32i b) {
+        #if defined(AVEL_AVX512F)
         return vec16x32i{_mm512_max_epi32(a, b)};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32i min(vec16x32i a, vec16x32i b) {
+        #if defined(AVEL_AVX512F)
         return vec16x32i{_mm512_min_epi32(a, b)};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL std::pair<vec16x32i, vec16x32i> minmax(vec16x32i a, vec16x32i b) {
+        #if defined(AVEL_AVX512F)
         return {
             vec16x32i{_mm512_min_epi32(a, b)},
             vec16x32i{_mm512_max_epi32(a, b)}
         };
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32i clamp(vec16x32i x, vec16x32i lo, vec16x32i hi) {
         return vec16x32i{min(max(x, lo), hi)};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x32i average(vec16x32i a, vec16x32i b) {
+        #if defined(AVEL_AVX512F)
+        auto avg = (a & b) + ((a ^ b) >> 1);
+        auto c = broadcast_mask((a < -b) | (b == vec16x32i{std::int32_t(1 << 31)})) & (a ^ b) & vec16x32i{1};
+
+        return avg + c;
+        #endif
     }
 
     [[nodiscard]]
@@ -631,13 +698,10 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x32i average(vec16x32i a, vec16x32i b) {
-        const vec16x32u addition_mask{0x80000000};
-
-        auto x = vec16x32u{a} ^ addition_mask;
-        auto y = vec16x32u{b} ^ addition_mask;
-
-        return vec16x32i{average(x, y) ^ addition_mask};
+    AVEL_FINL vec16x32i negate(mask16x32i m, vec16x32i x) {
+        #if defined(AVEL_AVX512VL)
+        return vec16x32i{_mm512_mask_sub_epi32(decay(x), decay(m), _mm512_setzero_si512(), decay(x))};
+        #endif
     }
 
     [[nodiscard]]
@@ -650,10 +714,38 @@ namespace avel {
         return -vec16x32i{_mm512_abs_epi32(v)};
     }
 
+    [[nodiscard]]
+    AVEL_FINL vec16x32i neg_abs(vec16x32u v) {
+        return neg_abs(vec16x32i{v});
+    }
+
+    //=====================================================
+    // Load/Store operations
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec16x32i load<vec16x32i>(const std::int32_t* ptr, std::uint32_t n) {
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        return vec16x32i{_mm512_maskz_loadu_epi32(mask, ptr)};
+        #endif
+    }
+
     template<>
     [[nodiscard]]
     AVEL_FINL vec16x32i load<vec16x32i>(const std::int32_t* ptr) {
         return vec16x32i{_mm512_loadu_si512(ptr)};
+    }
+
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec16x32i aligned_load<vec16x32i>(const std::int32_t* ptr, std::uint32_t n) {
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        return vec16x32i{_mm512_maskz_load_epi32(mask, ptr)};
+        #endif
     }
 
     template<>
@@ -662,32 +754,103 @@ namespace avel {
         return vec16x32i{_mm512_load_si512(ptr)};
     }
 
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec16x32u gather<vec16x32u>(const std::uint32_t* ptr, vec16x32i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        return vec16x32u{_mm512_mask_i32gather_epi32(_mm512_setzero_si512(), mask, decay(indices), ptr, sizeof(std::uint32_t))};
+        #endif
+    }
+
     template<>
     [[nodiscard]]
     AVEL_FINL vec16x32u gather<vec16x32u>(const std::uint32_t* ptr, vec16x32i indices) {
+        #if defined(AVEL_AVX512F)
         return vec16x32u{_mm512_i32gather_epi32(indices, ptr, sizeof(std::uint32_t))};
+        #endif
+    }
+
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec16x32i gather<vec16x32i>(const std::int32_t* ptr, vec16x32i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        return vec16x32i{_mm512_mask_i32gather_epi32(_mm512_setzero_si512(), mask, decay(indices), ptr, sizeof(std::int32_t))};
+        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec16x32i gather<vec16x32i>(const std::int32_t* ptr, vec16x32i indices) {
+        #if defined(AVEL_AVX512F)
         return vec16x32i{_mm512_i32gather_epi32(indices, ptr, sizeof(std::int32_t))};
+        #endif
+    }
+
+
+    AVEL_FINL void store(std::int32_t* ptr, vec16x32i x, std::uint32_t n) {
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
+        _mm512_mask_storeu_epi32(ptr, mask, decay(x));
+        #endif
     }
 
     AVEL_FINL void store(std::int32_t* ptr, vec16x32i v) {
+        #if defined(AVEL_AVX512F)
         _mm512_storeu_si512(ptr, v);
+        #endif
+    }
+
+    AVEL_FINL void aligned_store(std::int32_t* ptr, vec16x32i v, std::uint32_t n) {
+        #if defined(AVEL_AVX512F)
+        _mm512_store_si512(ptr, decay(v));
+        #endif
     }
 
     AVEL_FINL void aligned_store(std::int32_t* ptr, vec16x32i v) {
-        _mm512_store_si512(ptr, v);
+        #if defined(AVEL_AVX512F)
+        _mm512_store_si512(ptr, decay(v));
+        #endif
     }
 
-    AVEL_FINL void scatter(std::uint32_t* ptr, vec16x32i indices, vec16x32u v) {
+    AVEL_FINL void scatter(std::uint32_t* ptr, vec16x32u v, vec16x32i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        _mm512_mask_i32scatter_epi32(ptr, mask, decay(indices), decay(v), sizeof(std::uint32_t));
+        #endif
+    }
+
+    template<std::uint32_t N = vec16x32u::width>
+    AVEL_FINL void scatter(std::uint32_t* ptr, vec16x32u v, vec16x32i indices) {
+        scatter(ptr, v, indices, N);
+    }
+
+    AVEL_FINL void scatter(std::uint32_t* ptr, vec16x32u indices, vec16x32u v) {
+        #if defined(AVEL_AVX512F)
         _mm512_i32scatter_epi32(avel::bit_cast<int*>(ptr), indices, decay(v), sizeof(std::uint32_t));
+        #endif
+    }
+
+
+    AVEL_FINL void scatter(std::int32_t* ptr, vec16x32i v, vec16x32i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        _mm512_mask_i32scatter_epi32(ptr, mask, decay(indices), decay(v), sizeof(std::uint32_t));
+        #endif
+    }
+
+    template<std::uint32_t N = vec16x32i::width>
+    AVEL_FINL void scatter(std::int32_t* ptr, vec16x32i v, vec16x32i indices) {
+        scatter(ptr, v, indices, N);
     }
 
     AVEL_FINL void scatter(std::int32_t* ptr, vec16x32i indices, vec16x32i v) {
+        #if defined(AVEL_AVX512F)
         _mm512_i32scatter_epi32(ptr, indices, v, sizeof(std::int32_t));
+        #endif
     }
 
 
@@ -704,31 +867,19 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL div_type<vec16x32i> div(vec16x32i numerator, vec16x32i denominator) {
-        vec16x32i quotient{};
+    AVEL_FINL div_type<vec16x32i> div(vec16x32i x, vec16x32i y) {
+        mask16x32i remainder_sign_mask = (x < vec16x32i{0x00});
+        mask16x32i quotient_sign_mask = remainder_sign_mask ^ (y < vec16x32i{0x00});
 
-        mask16x32i sign_mask0 = (numerator < vec16x32i{});
-        mask16x32i sign_mask1 = (denominator < vec16x32i{});
+        vec16x32u numerator{abs(x)};
+        vec16x32u denominator{abs(y)};
 
-        mask16x32i sign_mask2 = sign_mask0 ^ sign_mask1;
+        auto results = div(numerator, denominator);
 
-        //TODO: Compute i more appropriately
-
-        std::int32_t i = 31;
-
-        for (; (i-- > 0) && any(mask16x32i(numerator));) {
-            mask16x32i b = ((numerator >> i) >= denominator);
-            numerator -= (broadcast_bits(b) & (denominator << i));
-            quotient |= (vec16x32i{b} << i);
-        }
-
-        //Adjust quotient's sign. Should be xor of operands' signs
-        quotient = blend(quotient, -numerator, sign_mask2);
-
-        //Adjust numerator's sign. Should be same sign as it was originally
-        numerator = blend(numerator, -numerator, sign_mask0);
-
-        return {quotient, numerator};
+        return {
+            negate(quotient_sign_mask,  vec16x32i{results.quot}),
+            negate(remainder_sign_mask, vec16x32i{results.rem})
+        };
     }
 
     [[nodiscard]]
