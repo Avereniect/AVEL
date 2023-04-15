@@ -60,7 +60,7 @@ namespace avel {
                 "Implementation assumes bools occupy a single byte"
             );
 
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if defined(AVEL_AVX512F) && defined(AVEL_AVX512BW)
             auto array_data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()));
             content = _mm_cmplt_epu8_mask(_mm_setzero_si128(), array_data);
 
@@ -713,28 +713,28 @@ namespace avel {
     //=====================================================
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(vec16x32u x) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512F)
         return count(mask16x32u{x});
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool any(vec16x32u x) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512F)
         return any(mask16x32u{x});
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool all(vec16x32u x) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512F)
         return all(mask16x32u{x});
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool none(vec16x32u x) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512F)
         return none(mask16x32u{x});
         #endif
     }
@@ -746,10 +746,9 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32u keep(mask16x32u m, vec16x32u v) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512F)
         return vec16x32u{_mm512_maskz_mov_epi32(decay(m), decay(v))};
         #endif
-
     }
 
     [[nodiscard]]
@@ -1002,14 +1001,15 @@ namespace avel {
         return blend(zero_mask, vec16x32u{32}, z);
 
         #elif defined(AVEL_AVX512F)
-        //TODO: Clean up and optimize
-        auto y = (x & (vec16x32u{0x00} - x));
-        auto floats = _mm512_cvtepi32_ps(decay(y));
-        auto biased_exponents = decay(vec16x32u(_mm512_castps_si512(floats)) >> 23);
-        biased_exponents = _mm512_min_epi16(decay(vec16x32u{158}), biased_exponents);
-        auto tzcnt = vec16x32u{biased_exponents} - vec16x32u{127};
-        tzcnt = blend(x == vec16x32u{0x00}, tzcnt, vec16x32u{32});
-
+        //TODO: Optimize?
+        auto z = decay(x);
+        auto is_zero = _mm512_cmpeq_epi32_mask(z, _mm512_setzero_si512());
+        auto y = _mm512_and_si512(z, _mm512_sub_epi32(_mm512_setzero_si512(), z));
+        auto floats = _mm512_castps_si512(_mm512_cvtepi32_ps(y));
+        auto biased_exponents = _mm512_srli_epi32(floats, 23);
+        biased_exponents = _mm512_min_epi16(_mm512_set1_epi32(158), biased_exponents);
+        auto tzcnt = _mm512_sub_epi32(biased_exponents, _mm512_set1_epi32(127));
+        tzcnt = _mm512_mask_mov_epi32(tzcnt, is_zero, _mm512_set1_epi32(32));
         return vec16x32u{tzcnt};
         #endif
     }
@@ -1024,10 +1024,8 @@ namespace avel {
         #if defined(AVEL_AVX512CD)
         return vec16x32u{32} - vec16x32u{_mm512_lzcnt_epi32(decay(x))};
 
-        #elif defined(AVEL_AVX512)
-        auto floats = _mm512_cvtepi32_ps(x);
-        auto biased_exponents = (vec16x32u(_mm512_castps_si512(floats)) >> 23 & vec16x32u{0xFF});
-        return vec16x32u{_mm512_subs_epu16(vec16x32u{156}, biased_exponents)};
+        #elif defined(AVEL_AVX512F)
+        return vec16x32u{32} - vec16x32u{countl_zero(x)};
         #endif
     }
 
@@ -1058,14 +1056,18 @@ namespace avel {
         return vec16x32u{_mm512_mask_add_epi32(result, is_zero, result, ones)};
 
         #elif defined(AVEL_AVX512F)
-        //TODO: Optimize?
+        auto zero_mask = (v == vec16x32u{0x00});
+        //TODO: Optimize
+
         --v;
         v |= v >> 1;
         v |= v >> 2;
         v |= v >> 4;
         v |= v >> 8;
         v |= v >> 16;
+        v = _mm512_andnot_si512(decay(broadcast_mask(zero_mask)), decay(v));
         ++v;
+
         return v;
         #endif
     };

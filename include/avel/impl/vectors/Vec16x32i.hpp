@@ -74,7 +74,7 @@ namespace avel {
 
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             auto array_data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()));
-            content = _mm_cmplt_epu32_mask(_mm_setzero_si128(), array_data);
+            content = _mm_cmplt_epu8_mask(_mm_setzero_si128(), array_data);
 
             #elif defined(AVEL_AVX512F)
             auto array_data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()));
@@ -149,7 +149,7 @@ namespace avel {
         // Bitwise operators
         //=================================================
 
-        AVEL_FINL Vector_mask operator~() const {
+        AVEL_FINL Vector_mask operator!() const {
             return Vector_mask{_knot_mask16(content)};
         }
 
@@ -192,31 +192,43 @@ namespace avel {
     };
 
     //=====================================================
+    // Mask conversions
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<mask16x32u, 1> convert<mask16x32u, mask16x32i>(mask16x32i m) {
+        return {mask16x32u{decay(m)}};
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<mask16x32i, 1> convert<mask16x32i, mask16x32u>(mask16x32u m) {
+        return {mask16x32i{decay(m)}};
+    }
+
+    //=====================================================
     // Mask functions
     //=====================================================
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(mask16x32i m) {
-        //TODO: Optimize
-        return popcount(decay(m));
+        return count(mask16x32u{m});
     }
 
     [[nodiscard]]
     AVEL_FINL bool any(mask16x32i m) {
-        //TODO: Optimize
-        return decay(m);
+        return any(mask16x32u{m});
     }
 
     [[nodiscard]]
     AVEL_FINL bool all(mask16x32i m) {
-        //TODO: Optimize
-        return 0xFFFF == decay(m);
+        return all(mask16x32u{m});
     }
 
     [[nodiscard]]
     AVEL_FINL bool none(mask16x32i m) {
-        //TODO: Optimize
-        return !all(m);
+        return none(mask16x32u{m});
     }
 
 
@@ -298,7 +310,7 @@ namespace avel {
         }
 
         AVEL_FINL mask operator!=(const Vector vec) const {
-            return ~(*this == vec);
+            return mask{_mm512_cmpneq_epi32_mask(content, vec.content)};
         }
 
         AVEL_FINL mask operator<(const Vector vec) const {
@@ -306,7 +318,7 @@ namespace avel {
         }
 
         AVEL_FINL mask operator<=(const Vector vec) const {
-            return ~mask{*this > vec};
+            return mask{_mm512_cmple_epi32_mask(content, vec.content)};
         }
 
         AVEL_FINL mask operator>(const Vector vec) const {
@@ -314,14 +326,14 @@ namespace avel {
         }
 
         AVEL_FINL mask operator>=(const Vector vec) const {
-            return ~mask{*this < vec};
+            return mask{_mm512_cmpge_epi32_mask(content, vec.content)};
         }
 
         //=================================================
         // Unary arithmetic operators
         //=================================================
 
-        AVEL_FINL Vector operator+() {
+        AVEL_FINL Vector operator+() const {
             return *this;
         }
 
@@ -580,15 +592,85 @@ namespace avel {
         static_assert(N <= vec16x32i::width, "Specified index does not exist");
         typename std::enable_if<N <= vec16x32i::width, int>::type dummy_variable = 0;
 
-        //return _mm512_extract_epi32(decay(v), N);
+        return static_cast<std::uint32_t>(extract<N>(vec16x32u{v}));
     }
 
     template<std::uint32_t N>
-    AVEL_FINL vec16x32i insert(vec16x32i v, std::uint32_t x) {
+    AVEL_FINL vec16x32i insert(vec16x32i v, std::int32_t x) {
         static_assert(N <= vec16x32i::width, "Specified index does not exist");
         typename std::enable_if<N <= vec16x32i::width, int>::type dummy_variable = 0;
 
-        //return vec16x32i{_mm512_insert_epi32(decay(v), x, N)};
+        return vec16x32i{insert<N>(vec16x32u{v}, static_cast<std::uint32_t>(x))};
+    }
+
+    //=====================================================
+    // Bit Manipulation Operations
+    //=====================================================
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec16x32i bit_shift_left(vec16x32i v) {
+        static_assert(S <= 32, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 32, int>::type dummy_variable = 0;
+
+        return vec16x32i{bit_shift_left<S>(vec16x32u{v})};
+    }
+
+    template<>
+    AVEL_FINL vec16x32i bit_shift_left<0>(vec16x32i v) {
+        return v;
+    }
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec16x32i bit_shift_right(vec16x32i v) {
+        static_assert(S <= 32, "Cannot shift by more than scalar width");
+        typename std::enable_if<S <= 32, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512F)
+        return vec16x32i{_mm512_srai_epi32(decay(v), S)};
+        #endif
+    }
+
+    template<>
+    AVEL_FINL vec16x32i bit_shift_right<0>(vec16x32i v) {
+        return v;
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec16x32i rotl(vec16x32i v) {
+        return vec16x32i{rotl<S>(vec16x32u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x32i rotl(vec16x32i v, long long s) {
+        return vec16x32i(rotl(vec16x32u(v), s));
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x32i rotl(vec16x32i v, vec16x32i s) {
+        return vec16x32i(rotl(vec16x32u(v), vec16x32u(s)));
+    }
+
+
+
+    template<std::uint32_t S>
+    [[nodiscard]]
+    AVEL_FINL vec16x32i rotr(vec16x32i v) {
+        return vec16x32i{rotr<S>(vec16x32u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x32i rotr(vec16x32i v, long long s) {
+        return vec16x32i(rotr(vec16x32u(v), s));
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x32i rotr(vec16x32i v, vec16x32i s) {
+        return vec16x32i(rotr(vec16x32u(v), vec16x32u(s)));
     }
 
     //=====================================================
@@ -636,9 +718,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32i blend(mask16x32i m, vec16x32i a, vec16x32i b) {
-        #if defined(AVEL_AVX512F)
-        return vec16x32i{_mm512_mask_blend_epi32(decay(m), decay(a), decay(b))};
-        #endif
+        return vec16x32i{blend(mask16x32u{m}, vec16x32u{a}, vec16x32u{b})};
     }
 
     [[nodiscard]]
@@ -656,7 +736,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL std::pair<vec16x32i, vec16x32i> minmax(vec16x32i a, vec16x32i b) {
+    AVEL_FINL std::array<vec16x32i, 2> minmax(vec16x32i a, vec16x32i b) {
         #if defined(AVEL_AVX512F)
         return {
             vec16x32i{_mm512_min_epi32(a, b)},
@@ -699,7 +779,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32i negate(mask16x32i m, vec16x32i x) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512F)
         return vec16x32i{_mm512_mask_sub_epi32(decay(x), decay(m), _mm512_setzero_si512(), decay(x))};
         #endif
     }
@@ -793,9 +873,17 @@ namespace avel {
 
     AVEL_FINL void store(std::int32_t* ptr, vec16x32i x, std::uint32_t n) {
         #if defined(AVEL_AVX512F)
-        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
         _mm512_mask_storeu_epi32(ptr, mask, decay(x));
         #endif
+    }
+
+    template<std::uint32_t N = vec16x32i::width>
+    AVEL_FINL void store(std::int32_t* ptr, vec16x32i x) {
+        static_assert(N <= vec16x32i::width, "Cannot store more elements than width of vector");
+        typename std::enable_if<N <= vec16x32i::width, int>::type dummy_variable = 0;
+
+        store(ptr, x, N);
     }
 
     AVEL_FINL void store(std::int32_t* ptr, vec16x32i v) {
@@ -804,10 +892,20 @@ namespace avel {
         #endif
     }
 
+
     AVEL_FINL void aligned_store(std::int32_t* ptr, vec16x32i v, std::uint32_t n) {
         #if defined(AVEL_AVX512F)
-        _mm512_store_si512(ptr, decay(v));
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        _mm512_mask_store_epi32(ptr, mask, decay(v));
         #endif
+    }
+
+    template<std::uint32_t N = vec16x32i::width>
+    AVEL_FINL void aligned_store(std::int32_t* ptr, vec16x32i x) {
+        static_assert(N <= vec16x32i::width, "Cannot store more elements than width of vector");
+        typename std::enable_if<N <= vec16x32i::width, int>::type dummy_variable = 0;
+
+        aligned_store(ptr, x, N);
     }
 
     AVEL_FINL void aligned_store(std::int32_t* ptr, vec16x32i v) {
@@ -815,6 +913,7 @@ namespace avel {
         _mm512_store_si512(ptr, decay(v));
         #endif
     }
+
 
     AVEL_FINL void scatter(std::uint32_t* ptr, vec16x32u v, vec16x32i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512F)
@@ -883,73 +982,53 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x32u popcount(vec16x32i v) {
-        return popcount(bit_cast<vec16x32u>(v));
+    AVEL_FINL vec16x32i popcount(vec16x32i v) {
+        return vec16x32i{popcount(vec16x32u{v})};
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32i byteswap(vec16x32i v) {
-        return byteswap(bit_cast<vec16x32i>(v));
+        return vec16x32i{byteswap(vec16x32u{v})};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x32u countl_zero(vec16x32i x) {
-        return countl_zero(bit_cast<vec16x32u>(x));
+    AVEL_FINL vec16x32i countl_zero(vec16x32i x) {
+        return vec16x32i{countl_zero(vec16x32u{x})};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x32u countl_one(vec16x32i x) {
-        return countl_zero(bit_cast<vec16x32u>(x));
+    AVEL_FINL vec16x32i countl_one(vec16x32i x) {
+        return vec16x32i{countl_one(vec16x32u{x})};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x32u countr_zero(vec16x32i x) {
-        return countr_zero(bit_cast<vec16x32u>(x));
+    AVEL_FINL vec16x32i countr_zero(vec16x32i x) {
+        return vec16x32i{countr_zero(vec16x32u{x})};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x32u countr_one(vec16x32i x) {
-        return countr_one(bit_cast<vec16x32u>(x));
+    AVEL_FINL vec16x32i countr_one(vec16x32i x) {
+        return vec16x32i{countr_one(vec16x32u{x})};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x32u bit_width(vec16x32i x) {
-        return bit_width(bit_cast<vec16x32u>(x));
+    AVEL_FINL vec16x32i bit_width(vec16x32i x) {
+        return vec16x32i{bit_width(vec16x32u{x})};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x32u bit_floor(vec16x32i x) {
-        return countr_one(bit_cast<vec16x32u>(x));
+    AVEL_FINL vec16x32i bit_floor(vec16x32i x) {
+        return vec16x32i{bit_floor(vec16x32u{x})};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x32u bit_ceil(vec16x32i x) {
-        return bit_ceil(bit_cast<vec16x32u>(x));
+    AVEL_FINL vec16x32i bit_ceil(vec16x32i x) {
+        return vec16x32i{bit_ceil(vec16x32u{x})};
     }
 
     [[nodiscard]]
     AVEL_FINL mask16x32i has_single_bit(vec16x32i x) {
         return mask16x32i(has_single_bit(bit_cast<vec16x32u>(x)));
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x32i rotl(vec16x32i v, std::uint32_t s) {
-        return bit_cast<vec16x32i>(rotl(bit_cast<vec16x32u>(v), s));
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x32i rotl(vec16x32i v, vec16x32u s) {
-        return bit_cast<vec16x32i>(rotl(bit_cast<vec16x32u>(v), bit_cast<vec16x32u>(s)));
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x32i rotr(vec16x32i v, std::uint32_t s) {
-        return bit_cast<vec16x32i>(rotr(bit_cast<vec16x32u>(v), s));
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x32i rotr(vec16x32i v, vec16x32u s) {
-        return bit_cast<vec16x32i>(rotr(bit_cast<vec16x32u>(v), bit_cast<vec16x32u>(s)));
     }
 
 }
