@@ -93,9 +93,8 @@ namespace avel {
 
             #elif defined(AVEL_AVX2)
             auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
-            array_data = _mm_unpacklo_epi8(array_data, array_data);
-            array_data = _mm_unpacklo_epi16(array_data, array_data);
-            content = _mm_cmplt_epi32(_mm_setzero_si128(), array_data);
+            auto widened = _mm256_cvtepi8_epi64(array_data);
+            content = _mm256_cmpgt_epi64(widened, _mm256_setzero_si256());
 
             #endif
         }
@@ -133,7 +132,7 @@ namespace avel {
             return _kortestz_mask16_u8(tmp, tmp);
 
             #elif defined(AVEL_AVX2)
-            return _mm_movemask_epi8(decay(lhs)) == _mm_movemask_epi8(decay(rhs));
+            return _mm256_movemask_epi8(lhs.content) == _mm256_movemask_epi8(rhs.content);
 
             #endif
         }
@@ -145,7 +144,8 @@ namespace avel {
             return !_kortestz_mask16_u8(tmp, tmp);
 
             #elif defined(AVEL_AVX2)
-            return (0xFFFF != _mm_movemask_epi8(_mm_cmpeq_epi32(decay(lhs), decay(rhs))));
+            return _mm256_movemask_epi8(lhs.content) != _mm256_movemask_epi8(rhs.content);
+
             #endif
         }
 
@@ -247,27 +247,41 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(mask4x64u m) {
+        #if defined(AVEL_AVX512VL)
         return popcount(decay(m));
+
+        #elif defined(AVEL_AVX2)
+        return popcount(_mm256_movemask_epi8(decay(m))) / sizeof(std::uint64_t);
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool any(mask4x64u m) {
-        #if defined(AVEL_AVX512F)
+        #if defined(AVEL_AVX512VL)
         return !_kortestz_mask16_u8(decay(m), decay(m));
+
+        #elif defined(AVEL_AVX2)
+        return !_mm256_testz_si256(decay(m), decay(m));
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool all(mask4x64u m) {
-        #if defined(AVEL_AVX512F)
+        #if defined(AVEL_AVX512VL)
         return decay(m) == 0x0F;
+
+        #elif defined(AVEL_AVX2)
+        return 0xFFFFFFFF == _mm256_movemask_epi8(decay(m));
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool none(mask4x64u m) {
-        #if defined(AVEL_AVX512F)
+        #if defined(AVEL_AVX512VL)
         return _kortestz_mask16_u8(decay(m), decay(m));
+
+        #elif defined(AVEL_AVX2)
+        return _mm256_testz_si256(decay(m), decay(m));
         #endif
     }
 
@@ -395,9 +409,9 @@ namespace avel {
             return mask{_mm256_cmplt_epu64_mask(decay(lhs), decay(rhs))};
 
             #elif defined(AVEL_AVX2)
-            auto addition_mask = _mm_set1_epi64x(0x8000000000000000ull);
-            auto lhs_tmp = _mm_xor_si128(decay(lhs), addition_mask);
-            auto rhs_tmp = _mm_xor_si128(decay(rhs), addition_mask);
+            auto addition_mask = _mm256_set1_epi64x(0x8000000000000000ull);
+            auto lhs_tmp = _mm256_xor_si256(decay(lhs), addition_mask);
+            auto rhs_tmp = _mm256_xor_si256(decay(rhs), addition_mask);
 
             return mask{_mm256_cmpgt_epi64(rhs_tmp, lhs_tmp)};
 
@@ -621,7 +635,7 @@ namespace avel {
             return Vector{_mm256_ternarylogic_epi64(content, content, content, 0x1)};
 
             #elif defined(AVEL_AVX2)
-            auto ones = _mm256_set1_epi64(-1);
+            auto ones = _mm256_set1_epi64x(-1);
             return Vector{_mm256_andnot_si256(content, ones)};
             #endif
         }
@@ -784,7 +798,7 @@ namespace avel {
         return vec4x64u{_mm256_rol_epi64(decay(v), S)};
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        return bit_shift_left<S>(v) | bit_shift_right<64 - S>(v);
 
         #endif
     }
@@ -806,7 +820,8 @@ namespace avel {
         return vec4x64u{_mm256_rolv_epi64(decay(v), _mm256_set1_epi64x(s))};
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        s &= 0x3F;
+        return (v << s) | (v >> (64 - s));
 
         #endif
     }
@@ -817,8 +832,8 @@ namespace avel {
         return vec4x64u{_mm256_rolv_epi64(decay(v), decay(s))};
 
         #elif defined(AVEL_AVX2)
-        s &= 0x3F;
-        return (v << s) | (v >> (64 - s));
+        s &= vec4x64u{0x3F};
+        return (v << s) | (v >> (vec4x64u{64} - s));
         #endif
     }
 
@@ -831,7 +846,7 @@ namespace avel {
         return vec4x64u{_mm256_ror_epi64(decay(v), S)};
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        return bit_shift_right<S>(v) | bit_shift_left<64 - S>(v);
 
         #endif
     }
@@ -853,7 +868,8 @@ namespace avel {
         return vec4x64u{_mm256_rorv_epi64(decay(v), _mm256_set1_epi64x(s))};
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        s &= 0x3f;
+        return (v >> s) | (v << (64 - s));
 
         #endif
     }
@@ -864,8 +880,8 @@ namespace avel {
         return vec4x64u{_mm256_rorv_epi64(decay(v), decay(s))};
 
         #elif defined(AVEL_AVX2)
-        s &= 0x3F;
-        return (v >> s) | (v << (64 - s));
+        s &= vec4x64u{0x3F};
+        return (v >> s) | (v << (vec4x64u{64} - s));
         #endif
     }
 
@@ -879,8 +895,8 @@ namespace avel {
         return count(mask4x64u{v});
 
         #elif defined(AVEL_AVX2)
-        auto compared = _mm256_cmpeq_epi64(decay(x), _mm_setzero_si128());
-        return 4 - popcount(_mm_movemask_epi8(compared)) / sizeof(std::uint64_t);
+        auto compared = _mm256_cmpeq_epi64(decay(v), _mm256_setzero_si256());
+        return 4 - popcount(_mm256_movemask_epi8(compared)) / sizeof(std::uint64_t);
 
         #endif
     }
@@ -947,7 +963,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x64u blend(mask4x64u m, vec4x64u a, vec4x64u b) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        #if defined(AVEL_AVX512VL)
         return vec4x64u{_mm256_mask_blend_epi64(decay(m), decay(b), decay(a))};
 
         #elif defined(AVEL_AVX2)
@@ -1033,7 +1049,14 @@ namespace avel {
         return vec4x64u{_mm256_maskz_loadu_epi64(mask, ptr)};
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        if (n > 2) {
+            auto lo = load<vec2x64u>(ptr + 0, n - 0);
+            auto hi = load<vec2x64u>(ptr + 2, n - 2);
+            return vec4x64u{_mm256_set_m128i(decay(hi), decay(lo))};
+        } else {
+            auto lo = load<vec2x64u>(ptr, n);
+            return vec4x64u{_mm256_zextsi128_si256(decay(lo))};
+        };
 
         #endif
     }
@@ -1054,7 +1077,14 @@ namespace avel {
         return vec4x64u{_mm256_maskz_load_epi64(mask, ptr)};
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        if (n > 2) {
+            auto lo = aligned_load<vec2x64u>(ptr + 0, n - 0);
+            auto hi = aligned_load<vec2x64u>(ptr + 2, n - 2);
+            return vec4x64u{_mm256_set_m128i(decay(hi), decay(lo))};
+        } else {
+            auto lo = aligned_load<vec2x64u>(ptr, n);
+            return vec4x64u{_mm256_zextsi128_si256(decay(lo))};
+        };
 
         #endif
     }
@@ -1075,7 +1105,12 @@ namespace avel {
         _mm256_mask_storeu_epi64(ptr, mask, decay(v));
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        if (n > 2) {
+            store(ptr + 0, vec2x64u{_mm256_castsi256_si128(decay(v))}, n - 0);
+            store(ptr + 2, vec2x64u{_mm256_extracti128_si256(decay(v), 0x1)}, n - 2);
+        } else {
+            store(ptr, vec2x64u{_mm256_castsi256_si128(decay(v))}, n);
+        }
 
         #endif
     }
@@ -1100,7 +1135,12 @@ namespace avel {
         _mm256_mask_store_epi64(ptr, mask, decay(v));
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        if (n > 2) {
+            aligned_store(ptr + 0, vec2x64u{_mm256_castsi256_si128(decay(v))}, n - 0);
+            aligned_store(ptr + 2, vec2x64u{_mm256_extracti128_si256(decay(v), 0x1)}, n - 2);
+        } else {
+            aligned_store(ptr, vec2x64u{_mm256_castsi256_si128(decay(v))}, n);
+        }
 
         #endif
     }
@@ -1161,6 +1201,15 @@ namespace avel {
     AVEL_FINL vec4x64u popcount(vec4x64u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
         return vec4x64u{_mm256_popcnt_epi64(decay(v))};
+
+        #elif defined(AVEL_AVX2)
+        //TODO: Consider alternative implementations
+        auto c0 = popcount(extract<0>(v));
+        auto c1 = popcount(extract<1>(v));
+        auto c2 = popcount(extract<2>(v));
+        auto c3 = popcount(extract<3>(v));
+
+        return vec4x64u{_mm256_set_epi64x(c3, c2, c1, c0)};
         #endif
     }
 
@@ -1168,8 +1217,15 @@ namespace avel {
     AVEL_FINL vec4x64u countl_zero(vec4x64u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
         return vec4x64u{_mm256_lzcnt_epi64(decay(v))};
+
+        #elif defined(AVEL_AVX2)
+        auto c0 = countl_zero(extract<0>(v));
+        auto c1 = countl_zero(extract<1>(v));
+        auto c2 = countl_zero(extract<2>(v));
+        auto c3 = countl_zero(extract<3>(v));
+
+        return vec4x64u{_mm256_set_epi64x(c3, c2, c1, c0)};
         #endif
-        //TODO: Implement
     }
 
     [[nodiscard]]
@@ -1186,10 +1242,19 @@ namespace avel {
         return vec4x64u{_mm256_popcnt_epi64(tz_mask)};
 
         #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
-        auto zero_mask = (x == vec4x64u{0x00});
-        auto y = (x & (vec4x64u{0x00} - x));
+        auto zero_mask = (v == vec4x64u{0x00});
+        auto y = (v & (vec4x64u{0x00} - v));
         auto z = vec4x64u{63} - countl_zero(y);
-        return zero_mask, vec4x64u{64}, z);
+        return blend(zero_mask, vec4x64u{64}, z);
+
+        #elif defined(AVEL_AVX2)
+        auto c0 = countr_zero(extract<0>(v));
+        auto c1 = countr_zero(extract<1>(v));
+        auto c2 = countr_zero(extract<2>(v));
+        auto c3 = countr_zero(extract<3>(v));
+
+        return vec4x64u{_mm256_set_epi64x(c3, c2, c1, c0)};
+
         #endif
     }
 
@@ -1208,16 +1273,16 @@ namespace avel {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
         vec4x64u leading_zeros = countl_zero(v);
         mask4x64u zero_mask = (leading_zeros != vec4x64u{64});
-
         return (vec4x64u{zero_mask} << (vec4x64u{63} - leading_zeros));
+
         #elif defined(AVEL_AVX2)
-        x = x | (x >> 1);
-        x = x | (x >> 2);
-        x = x | (x >> 4);
-        x = x | (x >> 8);
-        x = x | (x >> 16);
-        x = x | (x >> 32);
-        return x - (x >> 1);
+        v = v | (v >> 1);
+        v = v | (v >> 2);
+        v = v | (v >> 4);
+        v = v | (v >> 8);
+        v = v | (v >> 16);
+        v = v | (v >> 32);
+        return v - (v >> 1);
 
         #endif
     }
@@ -1250,11 +1315,8 @@ namespace avel {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
         return mask4x64u{popcount(v) == vec4x64u{1}};
 
-        #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
-        return mask4x64u{popcount(v) == vec4x64u{1}};
-
         #elif defined(AVEL_SSE2)
-        return mask4x64u{x} & !mask4x64u{x & (x - vec4x64u{1})};
+        return mask4x64u{v} & !mask4x64u{v & (v - vec4x64u{1})};
 
         #endif
     }

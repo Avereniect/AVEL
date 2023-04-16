@@ -93,9 +93,8 @@ namespace avel {
 
             #elif defined(AVEL_AVX2)
             auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
-            array_data = _mm_unpacklo_epi8(array_data, array_data);
-            array_data = _mm_unpacklo_epi16(array_data, array_data);
-            content = _mm_cmplt_epi32(_mm_setzero_si128(), array_data);
+            auto widened = _mm256_cvtepi8_epi64(array_data);
+            content = _mm256_cmpgt_epi64(widened, _mm256_setzero_si256());
 
             #endif
         }
@@ -133,7 +132,7 @@ namespace avel {
             return _kortestz_mask16_u8(tmp, tmp);
 
             #elif defined(AVEL_AVX2)
-            return _mm_movemask_epi8(decay(lhs)) == _mm_movemask_epi8(decay(rhs));
+            return _mm256_movemask_epi8(lhs.content) == _mm256_movemask_epi8(rhs.content);
 
             #endif
         }
@@ -145,7 +144,7 @@ namespace avel {
             return !_kortestz_mask16_u8(tmp, tmp);
 
             #elif defined(AVEL_AVX2)
-            return (0xFFFF != _mm_movemask_epi8(_mm_cmpeq_epi32(decay(lhs), decay(rhs))));
+            return _mm256_movemask_epi8(lhs.content) != _mm256_movemask_epi8(rhs.content);
             #endif
         }
 
@@ -622,7 +621,7 @@ namespace avel {
             return Vector{_mm256_ternarylogic_epi64(content, content, content, 0x1)};
 
             #elif defined(AVEL_AVX2)
-            auto ones = _mm256_set1_epi64(-1);
+            auto ones = _mm256_set1_epi64x(-1);
             return Vector{_mm256_andnot_si256(content, ones)};
             #endif
         }
@@ -906,7 +905,7 @@ namespace avel {
 
         #elif defined(AVEL_AVX2)
         auto mask = broadcast_mask(m);
-        return (x ^ mask) - mask;
+        return (v ^ mask) - mask;
 
         #endif
     }
@@ -917,8 +916,8 @@ namespace avel {
         return _mm256_abs_epi64(decay(v));
 
         #elif defined(AVEL_AVX2)
-        auto y = x >> 63;
-        return (x ^ y) - y;
+        auto y = v >> 63;
+        return (v ^ y) - y;
 
         #endif
     }
@@ -945,7 +944,15 @@ namespace avel {
         return vec4x64i{_mm256_maskz_loadu_epi64(mask, ptr)};
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        if (n > 2) {
+            auto lo = load<vec2x64i>(ptr + 0, n - 0);
+            auto hi = load<vec2x64i>(ptr + 2, n - 2);
+            return vec4x64i{_mm256_set_m128i(decay(hi), decay(lo))};
+        } else {
+            auto lo = load<vec2x64i>(ptr, n);
+            return vec4x64i{_mm256_zextsi128_si256(decay(lo))};
+        };
+
         #endif
     }
 
@@ -965,6 +972,14 @@ namespace avel {
         return vec4x64i{_mm256_maskz_load_epi64(mask, ptr)};
 
         #elif defined(AVEL_AVX2)
+        if (n > 2) {
+            auto lo = aligned_load<vec2x64i>(ptr + 0, n - 0);
+            auto hi = aligned_load<vec2x64i>(ptr + 2, n - 2);
+            return vec4x64i{_mm256_set_m128i(decay(hi), decay(lo))};
+        } else {
+            auto lo = aligned_load<vec2x64i>(ptr, n);
+            return vec4x64i{_mm256_zextsi128_si256(decay(lo))};
+        };
 
         #endif
     }
@@ -995,7 +1010,20 @@ namespace avel {
         };
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        std::uint64_t c0 = 0;
+        std::uint64_t c1 = 0;
+        std::uint64_t c2 = 0;
+        std::uint64_t c3 = 0;
+
+        switch (n) {
+            default: { c3 = ptr[extract<3>(indices)]; }
+            case 3:  { c2 = ptr[extract<2>(indices)]; }
+            case 2:  { c1 = ptr[extract<1>(indices)]; }
+            case 1:  { c0 = ptr[extract<0>(indices)]; }
+            case 0:  { /* Do nothing */ }
+        }
+
+        return vec4x64u{_mm256_set_epi64x(c3, c2, c1, c0)};
 
         #endif
     }
@@ -1033,7 +1061,20 @@ namespace avel {
         };
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        std::uint64_t c0 = 0;
+        std::uint64_t c1 = 0;
+        std::uint64_t c2 = 0;
+        std::uint64_t c3 = 0;
+
+        switch (n) {
+            default: { c3 = ptr[extract<3>(indices)]; }
+            case 3:  { c2 = ptr[extract<2>(indices)]; }
+            case 2:  { c1 = ptr[extract<1>(indices)]; }
+            case 1:  { c0 = ptr[extract<0>(indices)]; }
+            case 0:  { /* Do nothing */ }
+        }
+
+        return vec4x64i{_mm256_set_epi64x(c3, c2, c1, c0)};
 
         #endif
     }
@@ -1062,7 +1103,13 @@ namespace avel {
         _mm256_mask_storeu_epi64(ptr, mask, decay(v));
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        if (n > 2) {
+            store(ptr + 0, vec2x64i{_mm256_castsi256_si128(decay(v))}, n - 0);
+            store(ptr + 2, vec2x64i{_mm256_extracti128_si256(decay(v), 0x1)}, n - 2);
+        } else {
+            store(ptr, vec2x64i{_mm256_castsi256_si128(decay(v))}, n);
+        }
+
         #endif
     }
 
@@ -1084,7 +1131,13 @@ namespace avel {
         _mm256_mask_store_epi64(ptr, mask, decay(v));
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        if (n > 2) {
+            aligned_store(ptr + 0, vec2x64i{_mm256_castsi256_si128(decay(v))}, n - 0);
+            aligned_store(ptr + 2, vec2x64i{_mm256_extracti128_si256(decay(v), 0x1)}, n - 2);
+        } else {
+            aligned_store(ptr, vec2x64i{_mm256_castsi256_si128(decay(v))}, n);
+        }
+
         #endif
     }
 
@@ -1102,68 +1155,86 @@ namespace avel {
 
 
     
-    AVEL_FINL void scatter(const std::int64_t* ptr, vec4x64i v, vec4x64i indices, std::uint32_t n) {
+    AVEL_FINL void scatter(std::int64_t* ptr, vec4x64i v, vec4x64i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
         auto mask = (n >= 4) ? 0x0f : (1 << n) - 1;
         _mm256_mask_i64scatter_epi64(ptr, mask, decay(indices), decay(v), sizeof(std::int64_t));
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        switch (n) {
+            default: ptr[extract<3>(indices)] = extract<3>(v);
+            case 3:  ptr[extract<2>(indices)] = extract<2>(v);
+            case 2:  ptr[extract<1>(indices)] = extract<1>(v);
+            case 1:  ptr[extract<0>(indices)] = extract<0>(v);
+            case 0: ; //Do nothing
+        }
 
         #endif
     }
 
     template<std::uint32_t N = vec4x64i::width>
-    AVEL_FINL void scatter(const std::int64_t* ptr, vec4x64i v, vec4x64i indices) {
+    AVEL_FINL void scatter(std::int64_t* ptr, vec4x64i v, vec4x64i indices) {
         scatter(ptr, v, indices, N);
     }
 
     template<>
-    AVEL_FINL void scatter<0>(const std::int64_t* ptr, vec4x64i v, vec4x64i indices) {
+    AVEL_FINL void scatter<0>(std::int64_t* ptr, vec4x64i v, vec4x64i indices) {
         // Don't have to do anything
     }
 
     template<>
-    AVEL_FINL void scatter<vec4x64i::width>(const std::int64_t* ptr, vec4x64i v, vec4x64i indices) {
+    AVEL_FINL void scatter<vec4x64i::width>(std::int64_t* ptr, vec4x64i v, vec4x64i indices) {
         #if defined(AVEL_AVX512VL)
         _mm256_i64scatter_epi64(ptr, decay(indices), decay(v), sizeof(std::int64_t));
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        ptr[extract<3>(indices)] = extract<3>(v);
+        ptr[extract<2>(indices)] = extract<2>(v);
+        ptr[extract<1>(indices)] = extract<1>(v);
+        ptr[extract<0>(indices)] = extract<0>(v);
 
         #endif
     }
 
 
 
-    AVEL_FINL void scatter(const std::uint64_t* ptr, vec4x64u v, vec4x64i indices, std::uint32_t n) {
+    AVEL_FINL void scatter(std::uint64_t* ptr, vec4x64u v, vec4x64i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
         auto mask = (n >= 4) ? 0x0f : (1 << n) - 1;
         _mm256_mask_i64scatter_epi64(ptr, mask, decay(indices), decay(v), sizeof(std::int64_t));
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        switch (n) {
+            default: ptr[extract<3>(indices)] = extract<3>(v);
+            case 3:  ptr[extract<2>(indices)] = extract<2>(v);
+            case 2:  ptr[extract<1>(indices)] = extract<1>(v);
+            case 1:  ptr[extract<0>(indices)] = extract<0>(v);
+            case 0: ; //Do nothing
+        }
 
         #endif
     }
 
     template<std::uint32_t N = vec4x64i::width>
-    AVEL_FINL void scatter(const std::uint64_t* ptr, vec4x64u v, vec4x64i indices) {
+    AVEL_FINL void scatter(std::uint64_t* ptr, vec4x64u v, vec4x64i indices) {
         scatter(ptr, v, indices, N);
     }
 
     template<>
-    AVEL_FINL void scatter<0>(const std::uint64_t* ptr, vec4x64u v, vec4x64i indices) {
+    AVEL_FINL void scatter<0>(std::uint64_t* ptr, vec4x64u v, vec4x64i indices) {
         // Don't have to do anything
     }
 
     template<>
-    AVEL_FINL void scatter<vec4x64i::width>(const std::uint64_t* ptr, vec4x64u v, vec4x64i indices) {
+    AVEL_FINL void scatter<vec4x64i::width>(std::uint64_t* ptr, vec4x64u v, vec4x64i indices) {
         #if defined(AVEL_AVX512VL)
         _mm256_i64scatter_epi64(ptr, decay(indices), decay(v), sizeof(std::int64_t));
 
         #elif defined(AVEL_AVX2)
-        //TODO: Implement
+        ptr[extract<3>(indices)] = extract<3>(v);
+        ptr[extract<2>(indices)] = extract<2>(v);
+        ptr[extract<1>(indices)] = extract<1>(v);
+        ptr[extract<0>(indices)] = extract<0>(v);
 
         #endif
     }

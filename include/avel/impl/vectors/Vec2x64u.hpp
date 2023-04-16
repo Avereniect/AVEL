@@ -1789,20 +1789,10 @@ namespace avel {
         return vec2x64u{_mm_lzcnt_epi64(decay(x))};
 
         #elif defined(AVEL_SSE2)
-        //http://www.icodeguru.com/Embedded/Hacker%27s-Delight/040.htm
+        auto c0 = countl_zero(extract<0>(x));
+        auto c1 = countl_zero(extract<1>(x));
 
-        auto y = _mm_andnot_si128(decay(x >> 1), decay(x));
-
-        auto lo_double = _mm_cvtsi64_sd(_mm_undefined_pd(), _mm_cvtsi128_si64(y));
-        auto hi_double = _mm_cvtsi64_sd(_mm_undefined_pd(), _mm_cvtsi128_si64(_mm_srli_si128(y, 0x8)));
-
-        auto biases = _mm_set1_pd(0.5);
-        auto doubles = _mm_shuffle_pd(lo_double, hi_double, 0x0);
-        auto biased_doubles = _mm_add_pd(doubles, biases);
-
-        auto biased_exponents = _mm_srli_epi64(_mm_castpd_si128(biased_doubles), 52);
-        auto lzcnt = _mm_subs_epu16(_mm_set1_epi64x(1086), biased_exponents);
-        return vec2x64u{lzcnt};
+        return vec2x64u{_mm_set_epi64x(c1, c0)};
 
         #endif
 
@@ -1849,23 +1839,14 @@ namespace avel {
         auto zero_mask = (x == vec2x64u{0x00});
         auto y = (x & (vec2x64u{0x00} - x));
         auto z = vec2x64u{63} - countl_zero(y);
-        return zero_mask, vec2x64u{64}, z);
+        return blend(zero_mask, vec2x64u{64}, z);
 
         #elif defined(AVEL_SSE2)
-        auto y = decay(x & (vec2x64u{0x00} - x));
+        auto c0 = countr_zero(extract<0>(x));
+        auto c1 = countr_zero(extract<1>(x));
 
-        auto lo_double = _mm_cvtsi64_sd(_mm_undefined_pd(), _mm_cvtsi128_si64(y));
-        auto hi_double = _mm_cvtsi64_sd(_mm_undefined_pd(), _mm_cvtsi128_si64(_mm_srli_si128(y, 0x8)));
-        auto doubles = _mm_shuffle_pd(lo_double, hi_double, 0x0);
+        return vec2x64u{_mm_set_epi64x(c1, c0)};
 
-        auto biased_exponents = (vec2x64u(_mm_castpd_si128(doubles)) >> 52);
-        biased_exponents = _mm_min_epi16(decay(vec2x64u{1086}), decay(biased_exponents));
-        auto tzcnt = biased_exponents - vec2x64u{1023};
-
-        //TODO: Optimize this line
-        tzcnt = blend(x == vec2x64u{0x00}, vec2x64u{64}, tzcnt);
-
-        return vec2x64u{tzcnt};
         #endif
 
         #if defined(AVEL_NEON)

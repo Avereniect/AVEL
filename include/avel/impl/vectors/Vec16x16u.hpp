@@ -17,7 +17,7 @@ namespace avel {
 
     div_type<vec16x16u> div(vec16x16u numerator, vec16x16u denominator);
     vec16x16u broadcast_mask(mask16x16u m);
-    vec16x16u blend(vec16x16u a, vec16x16u b, mask16x16u m);
+    vec16x16u blend(mask16x16u m, vec16x16u a, vec16x16u b);
     vec16x16u countl_one(vec16x16u x);
 
 

@@ -78,8 +78,8 @@ namespace avel {
 
             #elif defined(AVEL_AVX512F)
             auto array_data = _mm_cvtsi64_si128(bit_cast<std::uint64_t>(arr));
-            auto expanded = _mm_cvtepi8_epi64(array_data);
-            content = _mm_cmplt_epu64_mask(_mm_setzero_si128(), expanded);
+            auto expanded = _mm256_cvtepi8_epi32(array_data);
+            content = _mm256_cmplt_epu32_mask(_mm256_setzero_si256(), expanded);
 
             #endif
         }
@@ -813,6 +813,7 @@ namespace avel {
     AVEL_FINL vec8x64u broadcast_mask(mask8x64u m) {
         #if defined(AVEL_AVX512DQ)
         return vec8x64u{_mm512_movm_epi64(decay(m))};
+
         #elif defined(AVEL_AVX512F)
         return vec8x64u{_mm512_maskz_set1_epi64(decay(m), -1ull)};
         #endif
@@ -1063,11 +1064,18 @@ namespace avel {
         auto tmp4 = _mm512_add_epi16(tmp2, tmp3);
         return vec8x64u{_mm512_srli_epi64(tmp4, 48)};
 
-        #elif defined(AVEL_AVX512F) && defined(AVEL_POPCNT)
-        //TODO: Implement
-
         #elif defined(AVEL_AVX512F)
-        //TODO: Implement
+        //TODO: Consider alternative implementations
+        auto c0 = popcount(extract<0>(v));
+        auto c1 = popcount(extract<1>(v));
+        auto c2 = popcount(extract<2>(v));
+        auto c3 = popcount(extract<3>(v));
+        auto c4 = popcount(extract<4>(v));
+        auto c5 = popcount(extract<5>(v));
+        auto c6 = popcount(extract<6>(v));
+        auto c7 = popcount(extract<7>(v));
+
+        return vec8x64u{_mm512_set_epi64(c7, c6, c5, c4, c3, c2, c1, c0)};
 
         #endif
     }
@@ -1077,12 +1085,19 @@ namespace avel {
         #if defined(AVEL_AVX512CD)
         return vec8x64u{_mm512_lzcnt_epi64(decay(v))};
 
-        #elif defined(AVEL_AVX512DQ)
-        //TODO: Implement using conversion to doubles
-        //_mm512_cvtepi64_pd();
+        //TODO: Consider alternative approaches
 
         #elif defined(AVEL_AVX512F)
-        //TODO: Implement using pshufb?
+        auto c0 = countl_zero(extract<0>(v));
+        auto c1 = countl_zero(extract<1>(v));
+        auto c2 = countl_zero(extract<2>(v));
+        auto c3 = countl_zero(extract<3>(v));
+        auto c4 = countl_zero(extract<4>(v));
+        auto c5 = countl_zero(extract<5>(v));
+        auto c6 = countl_zero(extract<6>(v));
+        auto c7 = countl_zero(extract<7>(v));
+
+        return vec8x64u{_mm512_set_epi64(c7, c6, c5, c4, c3, c2, c1, c0)};
 
         #endif
     }
@@ -1102,10 +1117,22 @@ namespace avel {
         return vec8x64u{_mm512_popcnt_epi64(tz_mask)};
 
         #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
-        auto zero_mask = (x == vec2x64u{0x00});
-        auto y = (x & (vec2x64u{0x00} - x));
-        auto z = vec2x64u{63} - countl_zero(y);
-        return zero_mask, vec2x64u{64}, z);
+        auto zero_mask = (v == vec8x64u{0x00});
+        auto y = (v & (vec8x64u{0x00} - v));
+        auto z = vec8x64u{63} - countl_zero(y);
+        return blend(zero_mask, vec8x64u{64}, z);
+
+        #elif defined(AVEL_AVX512F)
+        auto c0 = countr_zero(extract<0>(v));
+        auto c1 = countr_zero(extract<1>(v));
+        auto c2 = countr_zero(extract<2>(v));
+        auto c3 = countr_zero(extract<3>(v));
+        auto c4 = countr_zero(extract<4>(v));
+        auto c5 = countr_zero(extract<5>(v));
+        auto c6 = countr_zero(extract<6>(v));
+        auto c7 = countr_zero(extract<7>(v));
+
+        return vec8x64u{_mm512_set_epi64(c7, c6, c5, c4, c3, c2, c1, c0)};
 
         #endif
     }
@@ -1130,14 +1157,14 @@ namespace avel {
 
         return (vec8x64u{zero_mask} << (vec8x64u{63} - leading_zeros));
 
-        #elif defined(AVEL_AVX512)
-        x = x | (x >> 1);
-        x = x | (x >> 2);
-        x = x | (x >> 4);
-        x = x | (x >> 8);
-        x = x | (x >> 16);
-        x = x | (x >> 32);
-        return x - (x >> 1);
+        #elif defined(AVEL_AVX512F)
+        v = v | (v >> 1);
+        v = v | (v >> 2);
+        v = v | (v >> 4);
+        v = v | (v >> 8);
+        v = v | (v >> 16);
+        v = v | (v >> 32);
+        return v - (v >> 1);
 
         #endif
     }

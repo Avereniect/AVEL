@@ -76,8 +76,8 @@ namespace avel {
 
             #elif defined(AVEL_AVX512F)
             auto array_data = _mm_cvtsi64_si128(bit_cast<std::uint64_t>(arr));
-            auto expanded = _mm_cvtepi8_epi64(array_data);
-            content = _mm_cmplt_epu64_mask(_mm_setzero_si128(), expanded);
+            auto expanded = _mm256_cvtepi8_epi32(array_data);
+            content = _mm256_cmplt_epu32_mask(_mm256_setzero_si256(), expanded);
 
             #endif
         }
@@ -1055,7 +1055,7 @@ namespace avel {
 
     template<>
     AVEL_FINL void scatter<vec8x64i::width>(const std::uint64_t* ptr, vec8x64u v, vec8x64i indices) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512F)
         _mm512_i64scatter_epi64(ptr, decay(indices), decay(v), sizeof(std::int64_t));
         #endif
     }

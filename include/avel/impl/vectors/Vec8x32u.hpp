@@ -117,7 +117,7 @@ namespace avel {
             return _mm512_mask2int(primitive(lhs)) == _mm512_mask2int(primitive(rhs));
 
             #elif defined(AVEL_AVX2)
-            return (0xFFFFFFFF == _mm256_movemask_epi8(_mm256_cmpeq_epi32(lhs, rhs)));
+            return _mm256_movemask_epi8(lhs.content) == _mm256_movemask_epi8(rhs.content);
 
             #endif
         }
@@ -128,7 +128,7 @@ namespace avel {
             return _mm512_mask2int(primitive(lhs)) != _mm512_mask2int(primitive(rhs));
 
             #elif defined(AVEL_AVX2)
-            return (0xFFFFFFFF != _mm256_movemask_epi8(_mm256_cmpeq_epi32(lhs, rhs)));
+            return _mm256_movemask_epi8(lhs.content) != _mm256_movemask_epi8(rhs.content);
 
             #endif
         }
@@ -139,10 +139,10 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator&=(Vector_mask rhs) {
             #if defined(AVEL_AVX512VL)
-            content = _kand_mask8(content, rhs);
+            content &= rhs.content;
 
             #elif defined(AVEL_AVX2)
-            content = _mm256_and_si256(content, rhs);
+            content = _mm256_and_si256(content, rhs.content);
 
             #endif
             return *this;
@@ -150,10 +150,10 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator|=(Vector_mask rhs) {
             #if defined(AVEL_AVX512VL)
-            content = _kor_mask8(content, rhs);
+            content |= rhs.content;
 
             #elif defined(AVEL_AVX2)
-            content = _mm256_or_si256(content, rhs);
+            content = _mm256_or_si256(content, rhs.content);
 
             #endif
             return *this;
@@ -161,10 +161,10 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator^=(Vector_mask rhs) {
             #if defined(AVEL_AVX512VL)
-            content = _kxor_mask8(content, rhs);
+            content ^= rhs.content;
 
             #elif defined(AVEL_AVX2)
-            content = _mm256_xor_si256(content, rhs);
+            content = _mm256_xor_si256(content, rhs.content);
 
             #endif
             return *this;
@@ -220,7 +220,7 @@ namespace avel {
         // Conversion operators
         //=================================================
 
-        AVEL_FINL operator primitive() const {
+        AVEL_FINL explicit operator primitive() const {
             return content;
         }
 
@@ -243,7 +243,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         return popcount(decay(m));
         #elif defined(AVEL_AVX2)
-        return popcount(_mm256_movemask_epi8(m)) / sizeof(std::uint32_t);
+        return popcount(_mm256_movemask_epi8(decay(m))) / sizeof(std::uint32_t);
         #endif
     }
 
@@ -253,16 +253,17 @@ namespace avel {
         return decay(m);
 
         #elif defined(AVEL_AVX2)
-        return _mm256_movemask_epi8(m);
+        return _mm256_movemask_epi8(decay(m));
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool all(mask8x32u m) {
         #if defined(AVEL_AVX512VL)
-        return 0xFF == _mm512_mask2int(m);
+        return 0xFF == decay(m);
+
         #elif defined(AVEL_AVX2)
-        return 0xFFFFFFFFu == _mm256_movemask_epi8(m);
+        return 0xFFFFFFFFu == _mm256_movemask_epi8(decay(m));
         #endif
     }
 
@@ -270,8 +271,9 @@ namespace avel {
     AVEL_FINL bool none(mask8x32u m) {
         #if defined(AVEL_AVX512VL)
         return decay(m) == 0x0;
+
         #elif defined(AVEL_AVX2)
-        return _mm256_testz_si256(m, m);
+        return _mm256_testz_si256(decay(m), decay(m));
         #endif
     }
 
@@ -315,9 +317,9 @@ namespace avel {
 
         AVEL_FINL explicit Vector(mask m):
         #if defined(AVEL_AVX512VL)
-            content(_mm256_mask_blend_epi32(m, _mm256_setzero_si256(), _mm256_set1_epi32(1))) {}
+            content(_mm256_mask_set1_epi32(decay(m), 0x1)) {}
         #elif defined(AVEL_AVX2)
-            content(_mm256_sub_epi32(_mm256_setzero_si256(), m)) {}
+            content(_mm256_sub_epi32(_mm256_setzero_si256(), decay(m))) {}
         #endif
 
         AVEL_FINL explicit Vector(const primitive content):
@@ -360,16 +362,18 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator==(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm256_cmpeq_epu32_mask(lhs, rhs)};
+            return mask{_mm256_cmpeq_epu32_mask(lhs.content, rhs.content)};
+
             #elif defined(AVEL_AVX2)
-            return mask{_mm256_cmpeq_epi32(lhs, rhs)};
+            return mask{_mm256_cmpeq_epi32(lhs.content, rhs.content)};
             #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator!=(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm256_cmpneq_epu32_mask(lhs, rhs)};
+            return mask{_mm256_cmpneq_epu32_mask(lhs.content, rhs.content)};
+
             #elif defined(AVEL_AVX2)
             return !(lhs == rhs);
             #endif
@@ -378,17 +382,19 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator<(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm256_cmplt_epu32_mask(lhs, rhs)};
+            return mask{_mm256_cmplt_epu32_mask(lhs.content, rhs.content)};
+
             #elif defined(AVEL_AVX2)
             Vector addition_mask{0x80000000};
-            return mask{_mm256_cmpgt_epi32(rhs ^ addition_mask, lhs ^ addition_mask)};
+            return mask{_mm256_cmpgt_epi32(decay(rhs ^ addition_mask), decay(lhs ^ addition_mask))};
             #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator<=(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm256_cmple_epu32_mask(lhs, rhs)};
+            return mask{_mm256_cmple_epu32_mask(lhs.content, rhs.content)};
+
             #elif defined(AVEL_AVX2)
             return !mask{lhs > rhs};
             #endif
@@ -397,17 +403,19 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator>(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm256_cmpgt_epu32_mask(lhs, rhs)};
+            return mask{_mm256_cmpgt_epu32_mask(lhs.content, rhs.content)};
+
             #elif defined(AVEL_AVX2)
             Vector addition_mask{0x80000000};
-            return mask{_mm256_cmpgt_epi32(lhs ^ addition_mask, rhs ^ addition_mask)};
+            return mask{_mm256_cmpgt_epi32(decay(lhs ^ addition_mask), decay(rhs ^ addition_mask))};
             #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator>=(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm256_cmpge_epu32_mask(lhs, rhs)};
+            return mask{_mm256_cmpge_epu32_mask(lhs.content, rhs.content)};
+
             #elif defined(AVEL_AVX2)
             return !mask{lhs < rhs};
             #endif
@@ -428,30 +436,30 @@ namespace avel {
         // Arithmetic assignment operators
         //=================================================
 
-        AVEL_FINL Vector& operator+=(Vector vec) {
-            content = _mm256_add_epi32(content, vec);
+        AVEL_FINL Vector& operator+=(Vector rhs) {
+            content = _mm256_add_epi32(content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator-=(Vector vec) {
-            content = _mm256_sub_epi32(content, vec);
+        AVEL_FINL Vector& operator-=(Vector rhs) {
+            content = _mm256_sub_epi32(content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator*=(Vector vec) {
-            content = _mm256_mullo_epi32(content, vec);
+        AVEL_FINL Vector& operator*=(Vector rhs) {
+            content = _mm256_mullo_epi32(content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator/=(Vector vec) {
-            auto results = div(*this, vec);
-            content = results.quot;
+        AVEL_FINL Vector& operator/=(Vector rhs) {
+            auto results = div(*this, rhs);
+            content = results.quot.content;
             return *this;
         }
 
-        AVEL_FINL Vector& operator%=(const Vector vec) {
-            auto results = div(*this, vec);
-            content = results.rem;
+        AVEL_FINL Vector& operator%=(const Vector rhs) {
+            auto results = div(*this, rhs);
+            content = results.rem.content;
             return *this;
         }
 
@@ -521,38 +529,38 @@ namespace avel {
         // Bitwise assignment operators
         //=================================================
 
-        AVEL_FINL Vector& operator&=(Vector vec) {
-            content = _mm256_and_si256(content, vec);
+        AVEL_FINL Vector& operator&=(Vector rhs) {
+            content = _mm256_and_si256(content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator|=(Vector vec) {
-            content = _mm256_or_si256(content, vec);
+        AVEL_FINL Vector& operator|=(Vector rhs) {
+            content = _mm256_or_si256(content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator^=(Vector vec) {
-            content = _mm256_xor_si256(content, vec);
+        AVEL_FINL Vector& operator^=(Vector rhs) {
+            content = _mm256_xor_si256(content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator<<=(std::uint64_t s) {
-            content = _mm256_sll_epi32(content, _mm_loadu_si64(&s));
+        AVEL_FINL Vector& operator<<=(long long rhs) {
+            content = _mm256_sll_epi32(content, _mm_cvtsi64_si128(rhs));
             return *this;
         }
 
-        AVEL_FINL Vector& operator>>=(std::uint64_t s) {
-            content = _mm256_srl_epi32(content, _mm_loadu_si64(&s));
+        AVEL_FINL Vector& operator>>=(long long rhs) {
+            content = _mm256_srl_epi32(content, _mm_cvtsi64_si128(rhs));
             return *this;
         }
 
-        AVEL_FINL Vector& operator<<=(Vector s) {
-            content = _mm256_sllv_epi32(content, s);
+        AVEL_FINL Vector& operator<<=(Vector rhs) {
+            content = _mm256_sllv_epi32(content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator>>=(Vector s) {
-            content = _mm256_srlv_epi32(content, s);
+        AVEL_FINL Vector& operator>>=(Vector rhs) {
+            content = _mm256_srlv_epi32(content, rhs.content);
             return *this;
         }
 
@@ -564,8 +572,9 @@ namespace avel {
         AVEL_FINL Vector operator~() const {
             #if defined(AVEL_AVX512F)
             return Vector{_mm256_ternarylogic_epi32(content, content, content, 0x01)};
-            #else
-            return Vector{_mm256_andnot_si256(content, vec8x32u{0xFFFFFFFF})};
+
+            #elif defined(AVEL_AVX2)
+            return Vector{_mm256_andnot_si256(content, _mm256_set1_epi32(-1))};
             #endif
         }
 
@@ -616,7 +625,7 @@ namespace avel {
         //=================================================
 
         [[nodiscard]]
-        AVEL_FINL operator primitive() const {
+        AVEL_FINL explicit operator primitive() const {
             return content;
         }
 
@@ -624,6 +633,7 @@ namespace avel {
         AVEL_FINL explicit operator mask() const {
             #if defined(AVEL_AVX512VL)
             return mask{_mm256_test_epi32_mask(content, content)};
+
             #elif defined(AVEL_AVX2)
             return Vector{0x00} != *this;
             #endif
@@ -905,26 +915,26 @@ namespace avel {
         return vec8x32u{_mm256_mask_blend_epi32(decay(m), decay(b), decay(a))};
 
         #elif defined(AVEL_AVX2)
-        return vec8x32u{_mm256_blendv_epi8(a, b, m)};
+        return vec8x32u{_mm256_blendv_epi8(decay(b), decay(a), decay(m))};
 
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x32u max(vec8x32u a, vec8x32u b) {
-        return vec8x32u{_mm256_max_epu32(a, b)};
+        return vec8x32u{_mm256_max_epu32(decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x32u min(vec8x32u a, vec8x32u b) {
-        return vec8x32u{_mm256_min_epu32(a, b)};
+        return vec8x32u{_mm256_min_epu32(decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL std::array<vec8x32u, 2> minmax(vec8x32u a, vec8x32u b) {
         return {
-            vec8x32u{_mm256_min_epu32(a, b)},
-            vec8x32u{_mm256_max_epu32(a, b)}
+            vec8x32u{_mm256_min_epu32(decay(a), decay(b))},
+            vec8x32u{_mm256_max_epu32(decay(a), decay(b))}
         };
     }
 
@@ -1036,7 +1046,7 @@ namespace avel {
 
     AVEL_FINL void store(std::uint32_t* ptr, vec8x32u v) {
         #if defined(AVEL_AVX2)
-        _mm256_storeu_si256(reinterpret_cast<__m256i*>(ptr), v);
+        _mm256_storeu_si256(reinterpret_cast<__m256i*>(ptr), decay(v));
         #endif
    }
 
@@ -1068,7 +1078,7 @@ namespace avel {
 
     AVEL_FINL void aligned_store(std::uint32_t* ptr, vec8x32u v) {
         #if defined(AVEL_AVX2)
-        _mm256_store_si256(reinterpret_cast<__m256i*>(ptr), v);
+        _mm256_store_si256(reinterpret_cast<__m256i*>(ptr), decay(v));
         #endif
     }
 
@@ -1136,7 +1146,7 @@ namespace avel {
         };
 
         auto indices = _mm256_load_si256((const __m256i*)index_data);
-        auto ret = vec8x32u{_mm256_shuffle_epi8(v, indices)};
+        auto ret = vec8x32u{_mm256_shuffle_epi8(decay(v), indices)};
         return ret;
     }
 
@@ -1147,10 +1157,11 @@ namespace avel {
         #elif defined(AVEL_AVX2)
         //http://www.icodeguru.com/Embedded/Hacker%27s-Delight/040.htm
 
-        x = _mm256_andnot_si256(x >> 1, x);
-        auto floats = _mm256_add_ps(_mm256_cvtepi32_ps(x), _mm256_set1_ps(0.5f));
+        //TODO: Clean this mess up
+        x = _mm256_andnot_si256(decay(x >> 1), decay(x));
+        auto floats = _mm256_add_ps(_mm256_cvtepi32_ps(decay(x)), _mm256_set1_ps(0.5f));
         auto biased_exponents = (vec8x32u(_mm256_castps_si256(floats)) >> 23);
-        auto lzcnt = _mm256_subs_epu16(vec8x32u{158}, biased_exponents);
+        auto lzcnt = _mm256_subs_epu16(decay(vec8x32u{158}), decay(biased_exponents));
         return vec8x32u{lzcnt};
         #endif
     }
@@ -1164,11 +1175,12 @@ namespace avel {
     AVEL_FINL vec8x32u countr_zero(vec8x32u x) {
         //TODO: Use lzcnt
         //TODO: Other optimize
+        //TODO: Clean this mess up
 
-        auto y = (x & (vec8x32u{} - x));
+        auto y = decay(x & (vec8x32u{} - x));
         auto floats = _mm256_cvtepi32_ps(y);
         auto biased_exponents = (vec8x32u(_mm256_castps_si256(floats)) >> 23);
-        biased_exponents = _mm256_min_epi16(vec8x32u{158}, biased_exponents);
+        biased_exponents = _mm256_min_epi16(decay(vec8x32u{158}), decay(biased_exponents));
         auto tzcnt = biased_exponents - vec8x32u{127};
         tzcnt = blend(x == vec8x32u{0x00}, vec8x32u{32}, tzcnt);
 
@@ -1181,13 +1193,13 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x32u bit_width(vec8x32u x) {
+    AVEL_FINL vec8x32u bit_width(vec8x32u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
-        return vec8x32u{32} - vec8x32u{_mm256_lzcnt_epi32(x)};
+        return vec8x32u{32} - vec8x32u{_mm256_lzcnt_epi32(decay(v))};
+
         #elif defined(AVEL_AVX2)
-        auto floats = _mm256_cvtepi32_ps(x);
-        auto biased_exponents = (vec8x32u(_mm256_castps_si256(floats)) >> 23 & vec8x32u{0xFF});
-        return vec8x32u{_mm256_subs_epu16(vec8x32u{156}, biased_exponents)};
+        return vec8x32u{32} - countl_zero(v);
+
         #endif
     }
 

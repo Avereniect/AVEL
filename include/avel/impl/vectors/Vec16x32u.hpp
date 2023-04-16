@@ -168,7 +168,7 @@ namespace avel {
         //=================================================
 
         [[nodiscard]]
-        AVEL_FINL operator primitive() const {
+        AVEL_FINL explicit operator primitive() const {
             return content;
         }
 
@@ -921,12 +921,11 @@ namespace avel {
         return vec16x32u{_mm512_popcnt_epi32(decay(v))};
 
         #elif defined(AVEL_AVX512BITALG)
-        auto tmp0 = _mm512_popcnt_epi16(v);
+        auto tmp0 = _mm512_popcnt_epi16(decay(v));
         auto tmp1 = _mm512_slli_epi32(tmp0, 16);
-
         auto tmp2 = _mm512_add_epi32(tmp0, tmp1);
-
         return vec16x32u{_mm512_srli_epi32(tmp2, 16)};
+
         #else
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
         v = v - ((v >> 1) & vec16x32u{0x55555555});                    // reuse input as temporary

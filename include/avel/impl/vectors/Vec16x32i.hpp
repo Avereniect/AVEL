@@ -346,29 +346,29 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator+=(Vector rhs) {
-            content = _mm512_add_epi32(content, rhs);
+            content = _mm512_add_epi32(content, rhs.content);
             return *this;
         }
 
         AVEL_FINL Vector& operator-=(Vector rhs) {
-            content = _mm512_sub_epi32(content, rhs);
+            content = _mm512_sub_epi32(content, rhs.content);
             return *this;
         }
 
         AVEL_FINL Vector& operator*=(Vector rhs) {
-            content = _mm512_mullo_epi32(content, rhs);
+            content = _mm512_mullo_epi32(content, rhs.content);
             return *this;
         }
 
         AVEL_FINL Vector& operator/=(Vector rhs) {
             auto results = div(*this, rhs);
-            content = results.quot;
+            content = results.quot.content;
             return *this;
         }
 
         AVEL_FINL Vector& operator%=(const Vector rhs) {
             auto results = div(*this, rhs);
-            content = results.rem;
+            content = results.rem.content;
             return *this;
         }
 
@@ -529,7 +529,7 @@ namespace avel {
         //=================================================
 
         [[nodiscard]]
-        AVEL_FINL operator primitive() const {
+        AVEL_FINL explicit operator primitive() const {
             return content;
         }
 
@@ -724,14 +724,14 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec16x32i max(vec16x32i a, vec16x32i b) {
         #if defined(AVEL_AVX512F)
-        return vec16x32i{_mm512_max_epi32(a, b)};
+        return vec16x32i{_mm512_max_epi32(decay(a), decay(b))};
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32i min(vec16x32i a, vec16x32i b) {
         #if defined(AVEL_AVX512F)
-        return vec16x32i{_mm512_min_epi32(a, b)};
+        return vec16x32i{_mm512_min_epi32(decay(a), decay(b))};
         #endif
     }
 
@@ -739,8 +739,8 @@ namespace avel {
     AVEL_FINL std::array<vec16x32i, 2> minmax(vec16x32i a, vec16x32i b) {
         #if defined(AVEL_AVX512F)
         return {
-            vec16x32i{_mm512_min_epi32(a, b)},
-            vec16x32i{_mm512_max_epi32(a, b)}
+            vec16x32i{_mm512_min_epi32(decay(a), decay(b))},
+            vec16x32i{_mm512_max_epi32(decay(a), decay(b))}
         };
         #endif
     }
@@ -786,12 +786,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32i abs(vec16x32i v) {
-        return vec16x32i{_mm512_abs_epi32(v)};
+        return vec16x32i{_mm512_abs_epi32(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32i neg_abs(vec16x32i v) {
-        return -vec16x32i{_mm512_abs_epi32(v)};
+        return -vec16x32i{_mm512_abs_epi32(decay(v))};
     }
 
     [[nodiscard]]
@@ -890,7 +890,7 @@ namespace avel {
 
     AVEL_FINL void store(std::int32_t* ptr, vec16x32i v) {
         #if defined(AVEL_AVX512F)
-        _mm512_storeu_si512(ptr, v);
+        _mm512_storeu_si512(ptr, decay(v));
         #endif
     }
 
