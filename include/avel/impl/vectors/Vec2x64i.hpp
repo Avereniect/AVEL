@@ -1232,6 +1232,7 @@ namespace avel {
     //=====================================================
     // General vector operations
     //=====================================================
+
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(vec2x64i x) {
         return count(vec2x64u{x});

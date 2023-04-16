@@ -79,14 +79,23 @@ namespace avel {
         AVEL_FINL explicit Vector_mask(const arr4xb& arr) {
             static_assert(
                 sizeof(bool) == 1,
-                "Implementation assumes bool occupy a single byte"
+                "Implementation assumes bools occupy a single byte"
             );
 
-            #if defined(AVEL_AVX512VL)
-            //TODO: Implement
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
+            content = __mmask8(_mm_cmplt_epu8_mask(_mm_setzero_si128(), array_data));
+
+            #elif defined(AVEL_AVX512VL)
+            auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
+            auto expanded = _mm_cvtepi8_epi32(array_data);
+            content = _mm_cmplt_epu32_mask(_mm_setzero_si128(), expanded);
 
             #elif defined(AVEL_AVX2)
-            //TODO: Implement
+            auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
+            array_data = _mm_unpacklo_epi8(array_data, array_data);
+            array_data = _mm_unpacklo_epi16(array_data, array_data);
+            content = _mm_cmplt_epi32(_mm_setzero_si128(), array_data);
 
             #endif
         }
@@ -120,18 +129,23 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL)
-            //TODO: Implement
+            auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
+            return _kortestz_mask16_u8(tmp, tmp);
+
             #elif defined(AVEL_AVX2)
-            //TODO: Implement
+            return _mm_movemask_epi8(decay(lhs)) == _mm_movemask_epi8(decay(rhs));
+
             #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL)
-            //TODO: Implement
+            auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
+            return !_kortestz_mask16_u8(tmp, tmp);
+
             #elif defined(AVEL_AVX2)
-            //TODO: Implement
+            return (0xFFFF != _mm_movemask_epi8(_mm_cmpeq_epi32(decay(lhs), decay(rhs))));
             #endif
         }
 
@@ -357,32 +371,68 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator==(Vector lhs, Vector rhs) {
-            // $<vector::operator==(vec, vec)>
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmpeq_epi64_mask(decay(lhs), decay(rhs))};
+
+            #elif defined(AVEL_AVX2)
+            return mask{_mm256_cmpeq_epi64(decay(lhs), decay(rhs))};
+
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator!=(Vector lhs, Vector rhs) {
-            // $<vector::operator!=(vec, vec)>
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmpneq_epi64_mask(decay(lhs), decay(rhs))};
+
+            #elif defined(AVEL_AVX2)
+            return !mask{_mm256_cmpeq_epi64(decay(lhs), decay(rhs))};
+
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator<(Vector lhs, Vector rhs) {
-            // $<vector::operator<(vec, vec)>
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmplt_epi64_mask(decay(lhs), decay(rhs))};
+
+            #elif defined(AVEL_AVX2)
+            return mask{_mm256_cmpgt_epi64(decay(rhs), decay(lhs))};
+
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator<=(Vector lhs, Vector rhs) {
-            // $<vector::operator<=(vec, vec)>
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmple_epi64_mask(decay(lhs), decay(rhs))};
+
+            #elif defined(AVEL_AVX2)
+            return !mask{_mm256_cmpgt_epi64(decay(lhs), decay(rhs))};
+
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator>(Vector lhs, Vector rhs) {
-            // $<vector::operator>(vec, vec)>
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmpgt_epi64_mask(decay(lhs), decay(rhs))};
+
+            #elif defined(AVEL_AVX2)
+            return mask{_mm256_cmpgt_epi64(decay(lhs), decay(rhs))};
+
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator>=(Vector lhs, Vector rhs) {
-            // $<vector::operator>=(vec, vec)>
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmpge_epi64_mask(decay(lhs), decay(rhs))};
+
+            #elif defined(AVEL_AVX2)
+            return !mask{_mm256_cmpgt_epi64(decay(rhs), decay(lhs))};
+
+            #endif
         }
 
         //=================================================
@@ -404,17 +454,36 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator+=(Vector rhs) {
-            // $<vector::operator+=(vec)>
+            #if defined(AVEL_AVX2)
+            content = _mm256_add_epi64(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator-=(Vector rhs) {
-            // $<vector::operator-=(vec)>
+            #if defined(AVEL_AVX2)
+            content = _mm256_sub_epi64(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator*=(Vector rhs) {
-            // $<vector::operator*=(vec)>
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
+            content = _mm256_mullo_epi64(content, rhs.content);
+
+            #elif defined(AVEL_AVX2)
+            //TODO: Consider alternative approach based on emulation using
+            // 32-bit multiplication
+            std::uint64_t c0 = _mm256_extract_epi64(content, 0) * _mm256_extract_epi64(decay(rhs), 0);
+            std::uint64_t c1 = _mm256_extract_epi64(content, 1) * _mm256_extract_epi64(decay(rhs), 1);
+            std::uint64_t c2 = _mm256_extract_epi64(content, 2) * _mm256_extract_epi64(decay(rhs), 2);
+            std::uint64_t c3 = _mm256_extract_epi64(content, 3) * _mm256_extract_epi64(decay(rhs), 3);
+
+            auto result = _mm256_set_epi64x(c3, c2, c1, c0);
+
+            content = result;
+
+            #endif
             return *this;
         }
 
@@ -495,37 +564,51 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator&=(Vector rhs) {
-            // $<vector::operator&=(vec)>
+            #if defined(AVEL_AVX2)
+            content = _mm256_and_si256(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator|=(Vector rhs) {
-            // $<vector::operator|=(vec)>
+            #if defined(AVEL_AVX2)
+            content = _mm256_or_si256(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator^=(Vector rhs) {
-            // $<vector::operator^=(vec)>
+            #if defined(AVEL_AVX2)
+            content = _mm256_xor_si256(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator<<=(long long rhs) {
-            // $<vector::operator<<=(long long)>
+            #if defined(AVEL_AVX2)
+            content = _mm256_sll_epi64(content, _mm_cvtsi64_si128(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
-            // $<vector::operator>>=(long long)>
+            #if defined(AVEL_AVX2)
+            content = _mm256_sra_epi64(content, _mm_cvtsi64_si128(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator<<=(Vector rhs) {
-            // $<vector::operator<<=(vec)>
+            #if defined(AVEL_AVX2)
+            content = _mm256_sllv_epi64(content, decay(rhs));
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator>>=(Vector rhs) {
-            // $<vector::operator>>=(vec)>
+            #if defined(AVEL_AVX2)
+            content = _mm256_srav_epi64(content, decay(rhs));
+            #endif
             return *this;
         }
 
@@ -535,7 +618,13 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL Vector operator~() const {
-            // $<vector::operator~()>
+            #if defined(AVEL_AVX512VL)
+            return Vector{_mm256_ternarylogic_epi64(content, content, content, 0x1)};
+
+            #elif defined(AVEL_AVX2)
+            auto ones = _mm256_set1_epi64(-1);
+            return Vector{_mm256_andnot_si256(content, ones)};
+            #endif
         }
 
         [[nodiscard]]
@@ -591,7 +680,12 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL explicit operator mask() const {
-            // $<vector::operator mask()>
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_test_epi64_mask(content, content)};
+
+            #else
+            return *this != Vector{0x00};
+            #endif
         }
 
     };
@@ -622,7 +716,7 @@ namespace avel {
     //=====================================================
 
     AVEL_FINL vec4x64i operator-(vec4x64u v) {
-        // $<operator-(uvec)>
+        return vec4x64i{0x00} - vec4x64i{v};
     }
 
     //=====================================================
@@ -634,7 +728,7 @@ namespace avel {
         static_assert(N < 4, "Specified index does not exist");
         typename std::enable_if<N < 4, int>::type dummy_variable = 0;
 
-        // $<extract(vec)>
+        return static_cast<std::int64_t>(extract<N>(vec4x64u{v}));
     }
 
     template<std::uint32_t N>
@@ -642,7 +736,7 @@ namespace avel {
         static_assert(N < 4, "Specified index does not exist");
         typename std::enable_if<N < 4, int>::type dummy_variable = 0;
 
-        // $<insert(vec, scalar)>
+        return vec4x64i{insert<N>(vec4x64u{v}, static_cast<std::uint64_t>(x))};
     }
 
     //=====================================================
@@ -664,7 +758,7 @@ namespace avel {
         static_assert(S <= 64, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 64, int>::type dummy_variable = 0;
 
-        return vec4x64i{bit_shift_right<S>(vec4x64u{v})};
+        return vec4x64i{_mm256_srai_epi64(decay(v), S)};
     }
 
 
@@ -708,8 +802,38 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
+    AVEL_FINL std::uint32_t count(vec4x64i x) {
+        return count(vec4x64u{x});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool any(vec4x64i x) {
+        return any(vec4x64u{x});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool all(vec4x64i x) {
+        return all(vec4x64u{x});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool none(vec4x64i x) {
+        return none(vec4x64u{x});
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec4x64i broadcast_mask(mask4x64i m) {
         return vec4x64i{broadcast_mask(mask4x64u{m})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x64i keep(mask4x64i m, vec4x64i v) {
+        return vec4x64i{keep(mask4x64u{m}, vec4x64u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x64i clear(mask4x64i m, vec4x64i v) {
+        return vec4x64i{clear(mask4x64u{m}, vec4x64u{v})};
     }
 
     [[nodiscard]]
@@ -724,17 +848,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x64i max(vec4x64i a, vec4x64i b) {
-        // $<max(vec, vec)>
+        return vec4x64i{_mm256_max_epi64(decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x64i min(vec4x64i a, vec4x64i b) {
-        // $<min(vec, vec)>
+        return vec4x64i{_mm256_min_epi64(decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL std::array<vec4x64i, 2> minmax(vec4x64i a, vec4x64i b) {
-        // $<minmax(vec, vec)>
+        return {
+            vec4x64i{_mm256_min_epi64(decay(a), decay(b))},
+            vec4x64i{_mm256_max_epi64(decay(a), decay(b))}
+        };
     }
 
     [[nodiscard]]
@@ -744,32 +871,66 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x64i average(vec4x64i a, vec4x64i b) {
-        // $<average(vec, vec)>
+        #if defined(AVEL_AVX2)
+        auto avg = (a & b) + ((a ^ b) >> 1);
+        auto c = broadcast_mask((a < -b) | (b == vec4x64i{std::int64_t(1) << 63})) & (a ^ b) & vec4x64i{1};
+
+        return avg + c;
+
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x64i midpoint(vec4x64i a, vec4x64i b) {
-        // $<midpoint(vec, vec)>
+        #if defined(AVEL_AVX512VL)
+        auto avg = decay(((a ^ b) >> 1) + (a & b));
+
+        auto bias = _mm256_ternarylogic_epi32(decay(a), decay(b), _mm256_set1_epi64x(0x1), 0x28);
+        auto mask = _mm256_cmplt_epi64_mask(decay(b), decay(a));
+        auto ret = _mm256_mask_add_epi64(avg, mask, avg, bias);
+
+        return vec4x64i{ret};
+
+        #elif defined(AVEL_AVX2)
+        auto average = ((a ^ b) >> 1) + (a & b);
+        auto bias = (broadcast_mask(b < a) & (a ^ b) & vec4x64i{0x1});
+        return average + bias;
+
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x64i negate(mask4x64i m, vec4x64i v) {
-        // $<negate(mask, vec)>
+        #if defined(AVEL_AVX512VL)
+        return vec4x64i{_mm256_mask_sub_epi64(decay(v), decay(m), _mm256_setzero_si256(), decay(v))};
+
+        #elif defined(AVEL_AVX2)
+        auto mask = broadcast_mask(m);
+        return (x ^ mask) - mask;
+
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x64i abs(vec4x64i v) {
-        // $<abs(vec)>
+        #if defined(AVEL_AVX512VL)
+        return _mm256_abs_epi64(decay(v));
+
+        #elif defined(AVEL_AVX2)
+        auto y = x >> 63;
+        return (x ^ y) - y;
+
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x64i neg_abs(vec4x64i v) {
-        // $<neg_abs(vec)>
+        return -abs(v);
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x64i neg_abs(vec4x64u v) {
-        // $<neg_abs(uvec)>
+        return neg_abs(vec4x64i{v});
     }
 
     //=====================================================
@@ -779,31 +940,107 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec4x64i load<vec4x64i>(const std::int64_t* ptr, std::uint32_t n) {
-        // $<load(const scalar*, std::uint32_t)>
+        #if defined(AVEL_AVX512VL)
+        auto mask = (n >= 4) ? 0x0f : (1 << n) - 1;
+        return vec4x64i{_mm256_maskz_loadu_epi64(mask, ptr)};
+
+        #elif defined(AVEL_AVX2)
+        //TODO: Implement
+        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec4x64i load<vec4x64i, vec4x64i::width>(const std::int64_t* ptr) {
-        // $<load<width>(const scalar*)>
+        #if defined(AVEL_AVX2)
+        return vec4x64i{_mm256_loadu_si256(reinterpret_cast<const __m256i*>(ptr))};
+        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec4x64i aligned_load<vec4x64i>(const std::int64_t* ptr, std::uint32_t n) {
-        // $<aligned_load(const scalar*, std::uint32_t)>
+        #if defined(AVEL_AVX512VL)
+        auto mask = (n >= 4) ? 0x0f : (1 << n) - 1;
+        return vec4x64i{_mm256_maskz_load_epi64(mask, ptr)};
+
+        #elif defined(AVEL_AVX2)
+
+        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec4x64i aligned_load<vec4x64i, vec4x64i::width>(const std::int64_t* ptr) {
-        // $<aligned_load<width>(const scalar*)>
+        #if defined(AVEL_AVX2)
+        return vec4x64i{_mm256_load_si256(reinterpret_cast<const __m256i*>(ptr))};
+        #endif
     }
 
 
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec4x64u gather<vec4x64u>(const std::uint64_t* ptr, vec4x64i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        auto mask = (n >= 4) ? 0x0f : (1 << n) - 1;
+        return vec4x64u{
+            _mm256_mmask_i64gather_epi64(
+                _mm256_setzero_si256(),
+                mask,
+                decay(indices),
+                bit_cast<const std::int64_t*>(ptr),
+                sizeof(std::uint64_t)
+            )
+        };
+
+        #elif defined(AVEL_AVX2)
+        //TODO: Implement
+
+        #endif
+    }
+
+    template<std::uint32_t N = vec4x64u::width>
+    AVEL_FINL vec4x64u gather(const std::uint64_t* ptr, vec4x64i indices) {
+        return gather<vec4x64u>(ptr, indices, N);
+    }
+
+    template<>
+    AVEL_FINL vec4x64u gather<0>(const std::uint64_t* ptr, vec4x64i indices) {
+        return vec4x64u{0x00};
+    }
+
+    template<>
+    AVEL_FINL vec4x64u gather<vec4x64u::width>(const std::uint64_t* ptr, vec4x64i indices) {
+        return vec4x64u{_mm256_i64gather_epi64(ptr, decay(indices), sizeof(std::uint64_t))};
+    }
+
+
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec4x64i gather<vec4x64i>(const std::int64_t* ptr, vec4x64i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
+        auto mask = (n >= 4) ? 0x0f : (1 << n) - 1;
+        return vec4x64i{
+            _mm256_mmask_i64gather_epi64(
+                _mm256_setzero_si256(),
+                mask,
+                decay(indices),
+                bit_cast<const std::int64_t*>(ptr),
+                sizeof(std::uint64_t)
+            )
+        };
+
+        #elif defined(AVEL_AVX2)
+        //TODO: Implement
+
+        #endif
+    }
+
     template<std::uint32_t N = vec4x64i::width>
     AVEL_FINL vec4x64i gather(std::int64_t* ptr, vec4x64i indices) {
-        // $<gather(scalar*, vec)>
+        return gather<vec4x64i>(ptr, indices, N);
     }
 
     template<>
@@ -811,77 +1048,74 @@ namespace avel {
         return vec4x64i{0x00};
     }
 
+
     template<>
     AVEL_FINL vec4x64i gather<vec4x64i::width>(std::int64_t* ptr, vec4x64i indices) {
-        // $<gather<width>(scalar*, vec)>
-    }
-
-    AVEL_FINL vec4x64i gather(std::int64_t* ptr, vec4x64i indices, std::uint32_t n) {
-        // $<gather(scalar*, vec, std::uint32_t n)>
-    }
-
-
-
-    template<std::uint32_t N = vec4x64u::width>
-    AVEL_FINL vec4x64u gather(std::int64_t* ptr, vec4x64i indices) {
-        // $<gather(uscalar*, uvec)>
-    }
-
-    template<>
-    AVEL_FINL vec4x64u gather<0>(std::int64_t* ptr, vec4x64i indices) {
-        return vec4x64u{0x00};
-    }
-
-    template<>
-    AVEL_FINL vec4x64u gather<vec4x64u::width>(std::int64_t* ptr, vec4x64i indices) {
-        // $<gather<width>(uscalar*, uvec)>
-    }
-
-    AVEL_FINL vec4x64u gather(std::uint64_t* ptr, vec4x64i indices, std::uint32_t n) {
-        // $<gather(uscalar*, uvec, std::uint32_t n)>
+        return vec4x64i{_mm256_i64gather_epi64(ptr, decay(indices), sizeof(std::int64_t))};
     }
 
 
 
     AVEL_FINL void store(std::int64_t* ptr, vec4x64i v, std::uint32_t n) {
-        // $<store(scalar*, vec, std::uint32_t)>
+        #if defined(AVEL_AVX512VL)
+        auto mask = (n >= 4) ? 0x0f : (1 << n) - 1;
+        _mm256_mask_storeu_epi64(ptr, mask, decay(v));
+
+        #elif defined(AVEL_AVX2)
+        //TODO: Implement
+        #endif
     }
 
     template<std::uint32_t N = vec4x64i::width>
     AVEL_FINL void store(std::int64_t* ptr, vec4x64i v) {
-        // $<store<std::uint32_t>(scalar*, vec)>
+        store(ptr, v, N);
     }
 
     template<>
     AVEL_FINL void store<vec4x64i::width>(std::int64_t* ptr, vec4x64i v) {
-        // $<store<VECTOR_WIDTH>(scalar*, vec)>
+        _mm256_storeu_si256(reinterpret_cast<__m256i*>(ptr), decay(v));
     }
 
 
 
     AVEL_FINL void aligned_store(std::int64_t* ptr, vec4x64i v, std::uint32_t n) {
-        // $<aligned_store(scalar*, vec, std::uint32_t)>
+        #if defined(AVEL_AVX512VL)
+        auto mask = (n >= 4) ? 0x0f : (1 << n) - 1;
+        _mm256_mask_store_epi64(ptr, mask, decay(v));
+
+        #elif defined(AVEL_AVX2)
+        //TODO: Implement
+        #endif
     }
 
     template<std::uint32_t N = vec4x64i::width>
     AVEL_FINL void aligned_store(std::int64_t* ptr, vec4x64i v) {
-        // $<aligned_store<std::uint32_t>(scalar*, vec)>
+        aligned_store(ptr, v, N);
     }
 
     template<>
     AVEL_FINL void aligned_store<vec4x64i::width>(std::int64_t* ptr, vec4x64i v) {
-        // $<aligned_store<VECTOR_WIDTH>(scalar*, vec)>
+        #if defined(AVEL_AVX2)
+        _mm256_store_si256(reinterpret_cast<__m256i*>(ptr), decay(v));
+        #endif
     }
 
 
     
     AVEL_FINL void scatter(const std::int64_t* ptr, vec4x64i v, vec4x64i indices, std::uint32_t n) {
-        // $<scatter(const scalar*, vec, vec, std::uint32_t)>
+        #if defined(AVEL_AVX512VL)
+        auto mask = (n >= 4) ? 0x0f : (1 << n) - 1;
+        _mm256_mask_i64scatter_epi64(ptr, mask, decay(indices), decay(v), sizeof(std::int64_t));
+
+        #elif defined(AVEL_AVX2)
+        //TODO: Implement
+
+        #endif
     }
 
     template<std::uint32_t N = vec4x64i::width>
     AVEL_FINL void scatter(const std::int64_t* ptr, vec4x64i v, vec4x64i indices) {
-        // $<scatter(const scalar*, vec, vec)>
+        scatter(ptr, v, indices, N);
     }
 
     template<>
@@ -891,18 +1125,31 @@ namespace avel {
 
     template<>
     AVEL_FINL void scatter<vec4x64i::width>(const std::int64_t* ptr, vec4x64i v, vec4x64i indices) {
-        // $<scatter<width>(const scalar*, vec, vec)>
+        #if defined(AVEL_AVX512VL)
+        _mm256_i64scatter_epi64(ptr, decay(indices), decay(v), sizeof(std::int64_t));
+
+        #elif defined(AVEL_AVX2)
+        //TODO: Implement
+
+        #endif
     }
 
 
 
     AVEL_FINL void scatter(const std::uint64_t* ptr, vec4x64u v, vec4x64i indices, std::uint32_t n) {
-        // $<scatter(const uscalar*, uvec, vec, std::uint32_t)>
+        #if defined(AVEL_AVX512VL)
+        auto mask = (n >= 4) ? 0x0f : (1 << n) - 1;
+        _mm256_mask_i64scatter_epi64(ptr, mask, decay(indices), decay(v), sizeof(std::int64_t));
+
+        #elif defined(AVEL_AVX2)
+        //TODO: Implement
+
+        #endif
     }
 
     template<std::uint32_t N = vec4x64i::width>
     AVEL_FINL void scatter(const std::uint64_t* ptr, vec4x64u v, vec4x64i indices) {
-        // $<scatter(const uscalar*, uvec, vec)>
+        scatter(ptr, v, indices, N);
     }
 
     template<>
@@ -912,7 +1159,13 @@ namespace avel {
 
     template<>
     AVEL_FINL void scatter<vec4x64i::width>(const std::uint64_t* ptr, vec4x64u v, vec4x64i indices) {
-        //$<scatter<width>(const uscalar*, uvec, vec)>
+        #if defined(AVEL_AVX512VL)
+        _mm256_i64scatter_epi64(ptr, decay(indices), decay(v), sizeof(std::int64_t));
+
+        #elif defined(AVEL_AVX2)
+        //TODO: Implement
+
+        #endif
     }
 
 
@@ -931,7 +1184,29 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec4x64i> div(vec4x64i x, vec4x64i y) {
-        // TODO: Implement
+        auto n0 = extract<0>(x);
+        auto n1 = extract<1>(x);
+        auto n2 = extract<2>(x);
+        auto n3 = extract<3>(x);
+
+        auto d0 = extract<0>(y);
+        auto d1 = extract<1>(y);
+        auto d2 = extract<2>(y);
+        auto d3 = extract<3>(y);
+
+        vec4x64i quotient{};
+        quotient = insert<0>(quotient, n0 / d0);
+        quotient = insert<1>(quotient, n1 / d1);
+        quotient = insert<2>(quotient, n2 / d2);
+        quotient = insert<3>(quotient, n3 / d3);
+
+        vec4x64i remainder{};
+        remainder = insert<0>(remainder, n0 % d0);
+        remainder = insert<1>(remainder, n1 % d1);
+        remainder = insert<2>(remainder, n2 % d2);
+        remainder = insert<3>(remainder, n3 % d3);
+
+        return {quotient, remainder};
     }
 
     [[nodiscard]]

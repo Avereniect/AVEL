@@ -892,7 +892,7 @@ namespace avel {
     //Definition of scatter deferred until vector of signed integers is defined
 
     [[nodiscard]]
-    AVEL_FINL std::array<std::uint32_t, 16> to_array(vec16x32u v) {
+    AVEL_FINL arr16x32u to_array(vec16x32u v) {
         alignas(64) std::array<std::uint32_t, 16> array{};
         aligned_store(array.data(), v);
         return array;

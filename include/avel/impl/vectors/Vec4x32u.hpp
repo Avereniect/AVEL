@@ -94,6 +94,8 @@ namespace avel {
             auto expanded = _mm_cvtepi8_epi32(array_data);
             content = _mm_cmplt_epu32_mask(_mm_setzero_si128(), expanded);
 
+            //TODO: Utiilze _mm_cvtepi8_epi32
+
             #elif defined(AVEL_SSE2)
             auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
             array_data = _mm_unpacklo_epi8(array_data, array_data);
@@ -306,7 +308,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(mask4x32u m) {
         #if defined(AVEL_AVX512VL)
-        return popcount(_mm512_mask2int(decay(m)));
+        return popcount(decay(m));
 
         #elif defined(AVEL_SSE2)
         return popcount(_mm_movemask_epi8(decay(m))) / sizeof(std::uint32_t);
@@ -330,7 +332,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool any(mask4x32u m) {
         #if defined(AVEL_AVX512VL)
-        return _mm512_mask2int(decay(m));
+        return decay(m);
 
         #elif defined(AVEL_SSE41)
         return !_mm_test_all_zeros(decay(m), decay(m));
@@ -1144,7 +1146,7 @@ namespace avel {
     template<std::uint32_t S, typename std::enable_if<S < 32, bool>::type = true>
     [[nodiscard]]
     AVEL_FINL vec4x32u rotr(vec4x32u v) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        #if defined(AVEL_AVX512VL)
         return vec4x32u{_mm_ror_epi32(decay(v), S)};
 
         #elif defined(AVEL_SSE2)
@@ -1420,8 +1422,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x32u load<vec4x32u>(const std::uint32_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = std::min(4u, n);
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         return vec4x32u{_mm_maskz_load_epi32(mask, ptr)};
 
         #elif defined(AVEL_SSE2)
@@ -1496,6 +1497,8 @@ namespace avel {
         #endif
     }
 
+    //TODO: Add specializations that take advantage of AVX2 masked load instructions
+
     template<>
     [[nodiscard]]
     AVEL_FINL vec4x32u load<vec4x32u, vec4x32u::width>(const std::uint32_t* ptr) {
@@ -1514,6 +1517,8 @@ namespace avel {
     AVEL_FINL vec4x32u aligned_load<vec4x32u>(const std::uint32_t* ptr, std::uint32_t n) {
         return load<vec4x32u>(ptr, n);
     }
+
+    //TODO: Add specializations that take advantage of AVX2 masked load instructions
 
     template<>
     [[nodiscard]]
@@ -1539,8 +1544,7 @@ namespace avel {
 
     AVEL_FINL void store(std::uint32_t* ptr, vec4x32u x, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = min(n, vec4x32u::width);
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         _mm_mask_storeu_epi32(ptr, mask, decay(x));
 
         #elif defined(AVEL_SSE2)
@@ -1595,6 +1599,8 @@ namespace avel {
         store(ptr, x, N);
     }
 
+    //TODO: Add specializations that take advantage of AVX2 masked store instructions
+
     template<>
     AVEL_FINL void store<vec4x32u::width>(std::uint32_t* ptr, vec4x32u x) {
         #if defined(AVEL_SSE2)
@@ -1619,6 +1625,8 @@ namespace avel {
 
         aligned_store(ptr, x, N);
     }
+
+    //TODO: Add specializations that take advantage of AVX2 masked store instructions
 
     template<>
     AVEL_FINL void aligned_store<vec4x32u::width>(std::uint32_t* ptr, vec4x32u x) {

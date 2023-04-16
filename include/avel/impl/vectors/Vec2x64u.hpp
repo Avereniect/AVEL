@@ -644,6 +644,8 @@ namespace avel {
             return *this;
         }
 
+        //Definition of operator-() deferred until later
+
         //=================================================
         // Arithmetic assignment operators
         //=================================================
@@ -851,7 +853,7 @@ namespace avel {
 
         AVEL_FINL Vector& operator<<=(long long s) {
             #if defined(AVEL_SSE2)
-            content = _mm_sll_epi64(content, _mm_cvtsi32_si128(s));
+            content = _mm_sll_epi64(content, _mm_cvtsi64x_si128(s));
             #endif
 
             #if defined(AVEL_NEON)
@@ -863,7 +865,7 @@ namespace avel {
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
             #if defined(AVEL_SSE2)
-            content = _mm_srl_epi64(content, _mm_cvtsi32_si128(rhs));
+            content = _mm_srl_epi64(content, _mm_cvtsi64x_si128(rhs));
             #endif
 
             #if defined(AVEL_NEON)
@@ -1272,6 +1274,10 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         return count(mask2x64u{x});
 
+        #elif defined(AVEL_SSE41)
+        auto compared = _mm_cmpeq_epi64(decay(x), _mm_setzero_si128());
+        return 2 - popcount(_mm_movemask_epi8(compared)) / sizeof(std::uint64_t);
+
         #elif defined(AVEL_SSE2)
         //TODO: Consider alternative approaches
         auto compared = _mm_cmpeq_epi32(decay(x), _mm_setzero_si128());
@@ -1283,6 +1289,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool any(vec2x64u x) {
+        //TODO: Optimize with newer instruction sets
         #if defined(AVEL_SSE41)
         auto compared = _mm_cmpeq_epi64(decay(x), _mm_setzero_si128());
         return 0xFFFF != _mm_movemask_epi8(compared);
@@ -1393,9 +1400,45 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL vec2x64u byteswap(vec2x64u v) {
+        #if defined(AVEL_SSSE3)
+        alignas(16) static constexpr std::uint8_t index_data[16] {
+             7,  6,  5,  4,
+             3,  2,  1,  0,
+            15, 14, 13, 12,
+            11, 10,  9,  8
+        };
+
+        auto indices = _mm_load_si128((const __m128i*)index_data);
+        return vec2x64u{_mm_shuffle_epi8(decay(v), indices)};
+
+        #elif defined(AVEL_SSE2)
+        //TODO: Adjust implementation to work on 64-bit integers
+        alignas(16) static constexpr std::uint32_t mask_data[4]{
+            0x00000000,
+            0xFFFFFFFF,
+            0x00000000,
+            0xFFFFFFFF
+        };
+
+        auto t0 = _mm_shufflelo_epi16(decay(v), 0x1B);
+        auto t1 = _mm_shufflehi_epi16(t0, 0x1B);
+        auto t2 = _mm_slli_epi16(t1, 0x8);
+        auto t3 = _mm_srli_epi16(t1, 0x8);
+        return vec2x64u{_mm_or_si128(t2, t3)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto t0 = vrev64q_u8(vreinterpretq_u8_u64(decay(v)));
+        return vec2x64u{vreinterpretq_u64_u8(t0)};
+        #endif
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec2x64u max(vec2x64u a, vec2x64u b) {
         #if defined(AVEL_AVX512VL)
         return vec2x64u{_mm_max_epu64(decay(a), decay(b))};
+
         #elif defined(AVEL_SSE2)
         return blend(a < b, b, a);
         #endif
@@ -1682,41 +1725,6 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec2x64u byteswap(vec2x64u v) {
-        #if defined(AVEL_SSSE3)
-        alignas(16) static constexpr std::uint8_t index_data[16] {
-             7,  6,  5,  4,
-             3,  2,  1,  0,
-            15, 14, 13, 12,
-            11, 10,  9,  8
-        };
-
-        auto indices = _mm_load_si128((const __m128i*)index_data);
-        return vec2x64u{_mm_shuffle_epi8(decay(v), indices)};
-
-        #elif defined(AVEL_SSE2)
-        //TODO: Adjust implementation to work on 64-bit integers
-        alignas(16) static constexpr std::uint32_t mask_data[4]{
-            0x00000000,
-            0xFFFFFFFF,
-            0x00000000,
-            0xFFFFFFFF
-        };
-
-        auto t0 = _mm_shufflelo_epi16(decay(v), 0x1B);
-        auto t1 = _mm_shufflehi_epi16(t0, 0x1B);
-        auto t2 = _mm_slli_epi16(t1, 0x8);
-        auto t3 = _mm_srli_epi16(t1, 0x8);
-        return vec2x64u{_mm_or_si128(t2, t3)};
-        #endif
-
-        #if defined(AVEL_NEON)
-        auto t0 = vrev64q_u8(vreinterpretq_u8_u64(decay(v)));
-        return vec2x64u{vreinterpretq_u64_u8(t0)};
-        #endif
-    }
-
-    [[nodiscard]]
     AVEL_FINL vec2x64u popcount(vec2x64u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
         return vec2x64u{_mm_popcnt_epi64(decay(v))};
@@ -1841,7 +1849,7 @@ namespace avel {
         auto zero_mask = (x == vec2x64u{0x00});
         auto y = (x & (vec2x64u{0x00} - x));
         auto z = vec2x64u{63} - countl_zero(y);
-        return blend(zero_mask, vec2x64u{64}, z);
+        return zero_mask, vec2x64u{64}, z);
 
         #elif defined(AVEL_SSE2)
         auto y = decay(x & (vec2x64u{0x00} - x));

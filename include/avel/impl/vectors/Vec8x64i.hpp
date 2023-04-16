@@ -531,7 +531,7 @@ namespace avel {
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
             #if defined(AVEL_AVX512F)
-            content = _mm512_srl_epi64(content, _mm_cvtsi64_si128(rhs));
+            content = _mm512_sra_epi64(content, _mm_cvtsi64_si128(rhs));
             #endif
             return *this;
         }
@@ -659,7 +659,7 @@ namespace avel {
         static_assert(N < 8, "Specified index does not exist");
         typename std::enable_if<N < 8, int>::type dummy_variable = 0;
 
-        return static_cast<std::int64_t>(extract<N>(vec8x64i{v}));
+        return static_cast<std::int64_t>(extract<N>(vec8x64u{v}));
     }
 
     template<std::uint32_t N>
@@ -667,7 +667,7 @@ namespace avel {
         static_assert(N < 8, "Specified index does not exist");
         typename std::enable_if<N < 8, int>::type dummy_variable = 0;
 
-        return vec8x64i{insert<N>(vec8x64i{v}, static_cast<std::int64_t>(x))};
+        return vec8x64i{insert<N>(vec8x64u{v}, static_cast<std::uint64_t>(x))};
     }
 
     //=====================================================
@@ -735,8 +735,38 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
+    AVEL_FINL std::uint32_t count(vec8x64i x) {
+        return count(vec8x64u{x});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool any(vec8x64i x) {
+        return any(vec8x64u{x});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool all(vec8x64i x) {
+        return all(vec8x64u{x});
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool none(vec8x64i x) {
+        return none(vec8x64u{x});
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec8x64i broadcast_mask(mask8x64i m) {
         return vec8x64i{broadcast_mask(mask8x64u{m})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x64i keep(mask8x64i m, vec8x64i v) {
+        return vec8x64i{keep(mask8x64u{m}, vec8x64u{v})};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x64i clear(mask8x64i m, vec8x64i v) {
+        return vec8x64i{clear(mask8x64u{m}, vec8x64u{v})};
     }
 
     [[nodiscard]]
@@ -811,14 +841,14 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64i abs(vec8x64i v) {
-        #if defined(AVEL_AVX512VF)
-        return vec8x64i{_mm512_abs_epi64(decay(x))};
+        #if defined(AVEL_AVX512F)
+        return vec8x64i{_mm512_abs_epi64(decay(v))};
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64i neg_abs(vec8x64i v) {
-        #if defined(AVEL_AVX512VF)
+        #if defined(AVEL_AVX512F)
         return -abs(v);
         #endif
     }
@@ -835,108 +865,161 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec8x64i load<vec8x64i>(const std::int64_t* ptr, std::uint32_t n) {
-        // $<load(const scalar*, std::uint32_t)>
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 8) ? -1 : (1 << n) - 1;
+        return vec8x64i{_mm512_maskz_loadu_epi64(mask, ptr)};
+        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec8x64i load<vec8x64i, vec8x64i::width>(const std::int64_t* ptr) {
-        // $<load<width>(const scalar*)>
+        #if defined(AVEL_AVX512F)
+        return vec8x64i{_mm512_loadu_si512(ptr)};
+        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec8x64i aligned_load<vec8x64i>(const std::int64_t* ptr, std::uint32_t n) {
-        //$<aligned_load(const scalar*, std::uint32_t)>
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 8) ? -1 : (1 << n) - 1;
+        return vec8x64i{_mm512_maskz_load_epi64(mask, ptr)};
+        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec8x64i aligned_load<vec8x64i, vec8x64i::width>(const std::int64_t* ptr) {
-        // $<aligned_load<width>(const scalar*)>
+        #if defined(AVEL_AVX512F)
+        return vec8x64i{_mm512_load_si512(ptr)};
+        #endif
     }
 
-
-    template<std::uint32_t N = vec8x64i::width>
-    AVEL_FINL vec8x64i gather(std::int64_t* ptr, vec8x64i indices) {
-        // $<gather(scalar*, vec)>
-    }
 
     template<>
-    AVEL_FINL vec8x64i gather<0>(std::int64_t* ptr, vec8x64i indices) {
-        return vec8x64i{0x00};
+    [[nodiscard]]
+    AVEL_FINL vec8x64u gather<vec8x64u>(const std::uint64_t* ptr, vec8x64i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 8) ? -1 : (1 << n) - 1;
+        return vec8x64u{_mm512_mask_i64gather_epi64(
+            _mm512_setzero_si512(),
+            mask,
+            decay(indices),
+            ptr,
+            sizeof(std::uint64_t)
+        )};
+        #endif
     }
-
-    template<>
-    AVEL_FINL vec8x64i gather<vec8x64i::width>(std::int64_t* ptr, vec8x64i indices) {
-        // $<gather<width>(scalar*, vec)>
-    }
-
-    AVEL_FINL vec8x64i gather(std::int64_t* ptr, vec8x64i indices, std::uint32_t n) {
-        // $<gather(scalar*, vec, std::uint32_t n)>
-    }
-
-
 
     template<std::uint32_t N = vec8x64u::width>
-    AVEL_FINL vec8x64u gather(std::int64_t* ptr, vec8x64i indices) {
-        // $<gather(uscalar*, uvec)>
+    AVEL_FINL vec8x64u gather(const std::uint64_t* ptr, vec8x64i indices) {
+        return gather<vec8x64u>(ptr, indices, N);
     }
 
     template<>
-    AVEL_FINL vec8x64u gather<0>(std::int64_t* ptr, vec8x64i indices) {
+    AVEL_FINL vec8x64u gather<0>(const std::uint64_t* ptr, vec8x64i indices) {
         return vec8x64u{0x00};
     }
 
     template<>
-    AVEL_FINL vec8x64u gather<vec8x64u::width>(std::int64_t* ptr, vec8x64i indices) {
-        // $<gather<width>(uscalar*, uvec)>
+    AVEL_FINL vec8x64u gather<vec8x64u::width>(const std::uint64_t* ptr, vec8x64i indices) {
+        return vec8x64u{_mm512_i64gather_epi64(
+            decay(indices),
+            ptr,
+            sizeof(std::uint64_t)
+        )};
     }
 
-    AVEL_FINL vec8x64u gather(std::uint64_t* ptr, vec8x64i indices, std::uint32_t n) {
-        // $<gather(uscalar*, uvec, std::uint32_t n)>
+
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec8x64i gather<vec8x64i>(const std::int64_t* ptr, vec8x64i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 8) ? -1 : (1 << n) - 1;
+        return vec8x64i{_mm512_mask_i64gather_epi64(
+            _mm512_setzero_si512(),
+            mask,
+            decay(indices),
+            ptr,
+            sizeof(std::int64_t)
+        )};
+        #endif
+    }
+
+    template<std::uint32_t N = vec8x64i::width>
+    AVEL_FINL vec8x64i gather(const std::int64_t* ptr, vec8x64i indices) {
+        return gather<vec8x64i>(ptr, indices, N);
+    }
+
+    template<>
+    AVEL_FINL vec8x64i gather<0>(const std::int64_t* ptr, vec8x64i indices) {
+        return vec8x64i{0x00};
+    }
+
+    template<>
+    AVEL_FINL vec8x64i gather<vec8x64i::width>(const std::int64_t* ptr, vec8x64i indices) {
+        return vec8x64i{_mm512_i64gather_epi64(
+            decay(indices),
+            ptr,
+            sizeof(std::int64_t)
+        )};
     }
 
 
 
     AVEL_FINL void store(std::int64_t* ptr, vec8x64i v, std::uint32_t n) {
-        // $<store(scalar*, vec, std::uint32_t)>
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 8) ? -1 : (1 << n) - 1;
+        _mm512_mask_storeu_epi64(ptr, mask, decay(v));
+        #endif
     }
 
     template<std::uint32_t N = vec8x64i::width>
     AVEL_FINL void store(std::int64_t* ptr, vec8x64i v) {
-        // $<store<std::uint32_t>(scalar*, vec)>
+        store(ptr, v, N);
     }
 
     template<>
     AVEL_FINL void store<vec8x64i::width>(std::int64_t* ptr, vec8x64i v) {
-        // $<store<VECTOR_WIDTH>(scalar*, vec)>
+        #if defined(AVEL_AVX512F)
+        _mm512_storeu_si512(ptr, decay(v));
+        #endif
     }
 
 
 
     AVEL_FINL void aligned_store(std::int64_t* ptr, vec8x64i v, std::uint32_t n) {
-        // $<aligned_store(scalar*, vec, std::uint32_t)>
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 8) ? -1 : (1 << n) - 1;
+        _mm512_mask_store_epi64(ptr, mask, decay(v));
+        #endif
     }
 
     template<std::uint32_t N = vec8x64i::width>
     AVEL_FINL void aligned_store(std::int64_t* ptr, vec8x64i v) {
-        // $<aligned_store<std::uint32_t>(scalar*, vec)>
+        aligned_store(ptr, v, N);
     }
 
     template<>
     AVEL_FINL void aligned_store<vec8x64i::width>(std::int64_t* ptr, vec8x64i v) {
-        // $<aligned_store<VECTOR_WIDTH>(scalar*, vec)>
+        #if defined(AVEL_AVX512F)
+        _mm512_store_si512(ptr, decay(v));
+        #endif
     }
 
 
     AVEL_FINL void scatter(const std::int64_t* ptr, vec8x64i v, vec8x64i indices, std::uint32_t n) {
-        // $<scatter(const scalar*, vec, vec, std::uint32_t)>
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 8) ? -1 : (1 << n) - 1;
+        _mm512_mask_i64scatter_epi64(ptr, mask, decay(indices), decay(v), sizeof(std::int64_t));
+        #endif
     }
 
     template<std::uint32_t N = vec8x64i::width>
     AVEL_FINL void scatter(const std::int64_t* ptr, vec8x64i v, vec8x64i indices) {
-        // $<scatter(const scalar*, vec, vec)>
+        scatter(ptr, v, indices, N);
     }
 
     template<>
@@ -946,18 +1029,23 @@ namespace avel {
 
     template<>
     AVEL_FINL void scatter<vec8x64i::width>(const std::int64_t* ptr, vec8x64i v, vec8x64i indices) {
-        // $<scatter<width>(const scalar*, vec, vec)>
+        #if defined(AVEL_AVX512F)
+        _mm512_i64scatter_epi64(ptr, decay(indices), decay(v), sizeof(std::int64_t));
+        #endif
     }
 
 
 
     AVEL_FINL void scatter(const std::uint64_t* ptr, vec8x64u v, vec8x64i indices, std::uint32_t n) {
-        // $<scatter(const uscalar*, uvec, vec, std::uint32_t)>
+        #if defined(AVEL_AVX512F)
+        auto mask = (n >= 8) ? -1 : (1 << n) - 1;
+        _mm512_mask_i64scatter_epi64(ptr, mask, decay(indices), decay(v), sizeof(std::int64_t));
+        #endif
     }
 
     template<std::uint32_t N = vec8x64i::width>
     AVEL_FINL void scatter(const std::uint64_t* ptr, vec8x64u v, vec8x64i indices) {
-        // $<scatter(const uscalar*, uvec, vec)>
+        scatter(ptr, v, indices, N);
     }
 
     template<>
@@ -967,7 +1055,9 @@ namespace avel {
 
     template<>
     AVEL_FINL void scatter<vec8x64i::width>(const std::uint64_t* ptr, vec8x64u v, vec8x64i indices) {
-        // $<scatter<width>(const uscalar*, uvec, vec)>
+        #if defined(AVEL_AVX512VL)
+        _mm512_i64scatter_epi64(ptr, decay(indices), decay(v), sizeof(std::int64_t));
+        #endif
     }
 
 
@@ -1006,22 +1096,22 @@ namespace avel {
         vec8x64i quotient{};
         quotient = insert<0>(quotient, n0 / d0);
         quotient = insert<1>(quotient, n1 / d1);
-        quotient = insert<0>(quotient, n2 / d2);
-        quotient = insert<0>(quotient, n3 / d3);
-        quotient = insert<0>(quotient, n4 / d4);
-        quotient = insert<0>(quotient, n5 / d5);
-        quotient = insert<0>(quotient, n6 / d6);
-        quotient = insert<0>(quotient, n7 / d7);
+        quotient = insert<2>(quotient, n2 / d2);
+        quotient = insert<3>(quotient, n3 / d3);
+        quotient = insert<4>(quotient, n4 / d4);
+        quotient = insert<5>(quotient, n5 / d5);
+        quotient = insert<6>(quotient, n6 / d6);
+        quotient = insert<7>(quotient, n7 / d7);
 
         vec8x64i remainder{};
-        remainder = insert<1>(remainder, n0 % d0);
+        remainder = insert<0>(remainder, n0 % d0);
         remainder = insert<1>(remainder, n1 % d1);
-        remainder = insert<1>(remainder, n2 % d2);
-        remainder = insert<1>(remainder, n3 % d3);
-        remainder = insert<1>(remainder, n4 % d4);
-        remainder = insert<1>(remainder, n5 % d5);
-        remainder = insert<1>(remainder, n6 % d6);
-        remainder = insert<1>(remainder, n7 % d7);
+        remainder = insert<2>(remainder, n2 % d2);
+        remainder = insert<3>(remainder, n3 % d3);
+        remainder = insert<4>(remainder, n4 % d4);
+        remainder = insert<5>(remainder, n5 % d5);
+        remainder = insert<6>(remainder, n6 % d6);
+        remainder = insert<7>(remainder, n7 % d7);
 
         return {quotient, remainder};
     }

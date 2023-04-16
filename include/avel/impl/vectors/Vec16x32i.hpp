@@ -835,6 +835,7 @@ namespace avel {
     }
 
 
+
     template<>
     [[nodiscard]]
     AVEL_FINL vec16x32u gather<vec16x32u>(const std::uint32_t* ptr, vec16x32i indices, std::uint32_t n) {
@@ -851,6 +852,7 @@ namespace avel {
         return vec16x32u{_mm512_i32gather_epi32(indices, ptr, sizeof(std::uint32_t))};
         #endif
     }
+
 
 
     template<>
@@ -955,7 +957,7 @@ namespace avel {
 
 
     [[nodiscard]]
-    AVEL_FINL std::array<std::int32_t, 16> to_array(vec16x32i v) {
+    AVEL_FINL arr16x32i to_array(vec16x32i v) {
         alignas(64) std::array<std::int32_t, 16> array{};
         aligned_store(array.data(), v);
         return array;

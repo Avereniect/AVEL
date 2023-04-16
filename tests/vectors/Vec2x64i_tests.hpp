@@ -1408,6 +1408,8 @@ namespace avel_tests {
             EXPECT_TRUE(all(rotl<0x3d>(v) == (rotl(v, 0x3d))));
             EXPECT_TRUE(all(rotl<0x3e>(v) == (rotl(v, 0x3e))));
             EXPECT_TRUE(all(rotl<0x3f>(v) == (rotl(v, 0x3f))));
+
+            EXPECT_TRUE(all(rotl<0x40>(v) == (rotl(v, 0x40))));
         }
     }
 
@@ -1521,6 +1523,8 @@ namespace avel_tests {
             EXPECT_TRUE(all(rotr<0x3d>(v) == (rotr(v, 0x3d))));
             EXPECT_TRUE(all(rotr<0x3e>(v) == (rotr(v, 0x3e))));
             EXPECT_TRUE(all(rotr<0x3f>(v) == (rotr(v, 0x3f))));
+
+            EXPECT_TRUE(all(rotr<0x40>(v) == (rotr(v, 0x40))));
         }
     }
 

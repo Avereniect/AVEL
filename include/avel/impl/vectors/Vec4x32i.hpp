@@ -59,7 +59,7 @@ namespace avel {
     public:
 
         //=================================================
-        // Constructor
+        // Constructors
         //=================================================
 
         template<class U>
@@ -999,7 +999,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32i rotl(vec4x32i v, std::uint32_t s) {
+    AVEL_FINL vec4x32i rotl(vec4x32i v, long long s) {
         return vec4x32i(rotl(vec4x32u(v), s));
     }
 
@@ -1017,7 +1017,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32i rotr(vec4x32i v, std::uint32_t s) {
+    AVEL_FINL vec4x32i rotr(vec4x32i v, long long s) {
         return vec4x32i(rotr(vec4x32u(v), s));
     }
 
@@ -1140,10 +1140,10 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32i average(vec4x32i x, vec4x32i y) {
+    AVEL_FINL vec4x32i average(vec4x32i a, vec4x32i b) {
         #if defined(AVEL_SSE2)
-        auto avg = (x & y) + ((x ^ y) >> 1);
-        auto c = broadcast_mask((x < -y) | (y == vec4x32i{std::int32_t(1 << 31)})) & (x ^ y) & vec4x32i{1};
+        auto avg = (a & b) + ((a ^ b) >> 1);
+        auto c = broadcast_mask((a < -b) | (b == vec4x32i{std::int32_t(1 << 31)})) & (a ^ b) & vec4x32i{1};
 
         return avg + c;
 
@@ -1233,8 +1233,8 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32i neg_abs(vec4x32u x) {
-        return neg_abs(vec4x32i{x});
+    AVEL_FINL vec4x32i neg_abs(vec4x32u v) {
+        return neg_abs(vec4x32i{v});
     }
 
     //=====================================================
@@ -1245,8 +1245,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x32i load<vec4x32i>(const std::int32_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = std::min(4u, n);
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         return vec4x32i{_mm_maskz_load_epi32(mask, ptr)};
 
         #elif defined(AVEL_SSE2)
@@ -1362,9 +1361,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x32u gather<vec4x32u>(const std::uint32_t* ptr, vec4x32i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = min(n, vec4x32u::width);
-        auto mask = (1 << n) - 1;
-
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         return vec4x32u{_mm_mmask_i32gather_epi32(_mm_setzero_si128(), mask, decay(indices), ptr, sizeof(std::uint32_t))};
 
         #elif defined(AVEL_AVX2)
@@ -1463,9 +1460,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x32i gather<vec4x32i>(const std::int32_t* ptr, vec4x32i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = min(n, vec4x32i::width);
-        auto mask = (1 << n) - 1;
-
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         return vec4x32i{_mm_mmask_i32gather_epi32(_mm_setzero_si128(), mask, decay(indices), ptr, sizeof(std::uint32_t))};
 
         #elif defined(AVEL_AVX2)
@@ -1566,8 +1561,7 @@ namespace avel {
 
     AVEL_FINL void store(std::int32_t* ptr, vec4x32i x, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = min(n, vec4x32i::width);
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         _mm_mask_storeu_epi32(ptr, mask, decay(x));
 
         #elif defined(AVEL_SSE2)
@@ -1662,8 +1656,7 @@ namespace avel {
 
     AVEL_FINL void scatter(std::uint32_t* ptr, vec4x32u x, vec4x32i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = min(n, vec4x32u::width);
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         _mm_mask_i32scatter_epi32(ptr, mask, decay(indices), decay(x), sizeof(std::uint32_t));
 
         #elif defined(AVEL_SSE2)
@@ -1720,8 +1713,7 @@ namespace avel {
 
     AVEL_FINL void scatter(std::int32_t* ptr, vec4x32i x, vec4x32i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = min(n, vec4x32i::width);
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         _mm_mask_i32scatter_epi32(ptr, mask, decay(indices), decay(x), sizeof(std::int32_t));
 
         #elif defined(AVEL_SSE2)

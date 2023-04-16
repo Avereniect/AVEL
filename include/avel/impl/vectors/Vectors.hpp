@@ -78,10 +78,17 @@ namespace avel {
 
 
     template<class V>
-    V gather(const typename V::scalar* ptr, Vector<typename to_index_type<typename V::scalar>::type, V::width> indices, std::uint32_t n);
+    V gather(
+        const typename V::scalar* ptr,
+        Vector<typename to_index_type<typename V::scalar>::type, V::width> indices,
+        std::uint32_t n
+    );
 
     template<class V, std::uint32_t N = V::width>
-    V gather(const typename V::scalar* ptr, Vector<typename to_index_type<typename V::scalar>::type, V::width> indices) {
+    V gather(
+        const typename V::scalar* ptr,
+        Vector<typename to_index_type<typename V::scalar>::type, V::width> indices
+    ) {
         static_assert(N <= V::width, "Cannot load more elements than width of vector");
         typename std::enable_if<N <= V::width, int>::type dummy_variable = 0;
 

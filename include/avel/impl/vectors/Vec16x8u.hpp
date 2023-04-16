@@ -309,7 +309,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(mask16x8u m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        return popcount(_mm512_mask2int(decay(m)));
+        return popcount(decay(m));
 
         #elif defined(AVEL_SSE2)
         return popcount(_mm_movemask_epi8(decay(m))) / sizeof(std::uint8_t);

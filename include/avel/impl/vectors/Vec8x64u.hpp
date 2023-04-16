@@ -934,7 +934,8 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x64u aligned_load<vec8x64u>(const std::uint64_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512F)
-        return vec8x64u{_mm512_loadu_si512(ptr)};
+        auto mask = (n >= 8) ? -1 : (1 << n) - 1;
+        return vec8x64u{_mm512_maskz_load_epi64(mask, ptr)};
         #endif
     }
 
@@ -1029,30 +1030,30 @@ namespace avel {
         vec8x64u quotient{};
         quotient = insert<0>(quotient, n0 / d0);
         quotient = insert<1>(quotient, n1 / d1);
-        quotient = insert<0>(quotient, n2 / d2);
-        quotient = insert<0>(quotient, n3 / d3);
-        quotient = insert<0>(quotient, n4 / d4);
-        quotient = insert<0>(quotient, n5 / d5);
-        quotient = insert<0>(quotient, n6 / d6);
-        quotient = insert<0>(quotient, n7 / d7);
+        quotient = insert<2>(quotient, n2 / d2);
+        quotient = insert<3>(quotient, n3 / d3);
+        quotient = insert<4>(quotient, n4 / d4);
+        quotient = insert<5>(quotient, n5 / d5);
+        quotient = insert<6>(quotient, n6 / d6);
+        quotient = insert<7>(quotient, n7 / d7);
 
         vec8x64u remainder{};
-        remainder = insert<1>(remainder, n0 % d0);
+        remainder = insert<0>(remainder, n0 % d0);
         remainder = insert<1>(remainder, n1 % d1);
-        remainder = insert<1>(remainder, n2 % d2);
-        remainder = insert<1>(remainder, n3 % d3);
-        remainder = insert<1>(remainder, n4 % d4);
-        remainder = insert<1>(remainder, n5 % d5);
-        remainder = insert<1>(remainder, n6 % d6);
-        remainder = insert<1>(remainder, n7 % d7);
+        remainder = insert<2>(remainder, n2 % d2);
+        remainder = insert<3>(remainder, n3 % d3);
+        remainder = insert<4>(remainder, n4 % d4);
+        remainder = insert<5>(remainder, n5 % d5);
+        remainder = insert<6>(remainder, n6 % d6);
+        remainder = insert<7>(remainder, n7 % d7);
 
         return {quotient, remainder};
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64u popcount(vec8x64u v) {
-        #if defined(AVX512VPOPCNTDQ)
-        return vec2x64u{_mm_popcnt_epi64(decay(v))};
+        #if defined(AVEL_AVX512VPOPCNTDQ)
+        return vec8x64u{_mm512_popcnt_epi64(decay(v))};
 
         #elif defined(AVEL_AVX512BITALG)
         auto tmp0 = _mm512_popcnt_epi16(decay(v));
@@ -1075,6 +1076,7 @@ namespace avel {
     AVEL_FINL vec8x64u countl_zero(vec8x64u v) {
         #if defined(AVEL_AVX512CD)
         return vec8x64u{_mm512_lzcnt_epi64(decay(v))};
+
         #elif defined(AVEL_AVX512DQ)
         //TODO: Implement using conversion to doubles
         //_mm512_cvtepi64_pd();
@@ -1094,8 +1096,17 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64u countr_zero(vec8x64u v) {
-        #if defined(AVEL_AVX512F)
-        //TODO: Implement
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
+        auto neg_one = _mm512_set1_epi64(-1);
+        auto tz_mask = _mm512_andnot_si512(decay(v), _mm512_add_epi64(decay(v), neg_one));
+        return vec8x64u{_mm512_popcnt_epi64(tz_mask)};
+
+        #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
+        auto zero_mask = (x == vec2x64u{0x00});
+        auto y = (x & (vec2x64u{0x00} - x));
+        auto z = vec2x64u{63} - countl_zero(y);
+        return zero_mask, vec2x64u{64}, z);
+
         #endif
     }
 
@@ -1118,6 +1129,7 @@ namespace avel {
         mask8x64u zero_mask = (leading_zeros != vec8x64u{64});
 
         return (vec8x64u{zero_mask} << (vec8x64u{63} - leading_zeros));
+
         #elif defined(AVEL_AVX512)
         x = x | (x >> 1);
         x = x | (x >> 2);
@@ -1157,6 +1169,7 @@ namespace avel {
     AVEL_FINL mask8x64u has_single_bit(vec8x64u v) {
         #if defined(AVX512VPOPCNTDQ)
         return mask8x64u{popcount(x) == vec8x64u{1}};
+
         #elif defined(AVEL_AVX512F)
         return mask8x64u{v} & !mask8x64u{v & (v - vec8x64u{1})};
         #endif
