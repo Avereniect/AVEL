@@ -268,7 +268,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool all(mask4x64u m) {
         #if defined(AVEL_AVX512VL)
-        return decay(m) == 0x0F;
+        return 0xF == decay(m);
 
         #elif defined(AVEL_AVX2)
         return 0xFFFFFFFF == _mm256_movemask_epi8(decay(m));
@@ -903,11 +903,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool any(vec4x64u v) {
-        //TODO: Optimize with newer instruction sets
         #if defined(AVEL_AVX2)
-        auto compared = _mm256_cmpeq_epi64(decay(v), _mm256_setzero_si256());
-        return 0xFFFFFFFF != _mm256_movemask_epi8(compared);
-
+        return !_mm256_testz_si256(decay(v), decay(v));
         #endif
     }
 

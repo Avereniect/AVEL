@@ -38,7 +38,9 @@ namespace avel {
         // Type aliases
         //=================================================
 
+        #if defined(AVEL_AVX512BW)
         using primitive = __mmask32;
+        #endif
 
     private:
 

@@ -249,7 +249,9 @@ namespace avel {
 
         using scalar = std::int32_t;
 
+        #if defined(AVEL_AVX512F)
         using primitive = __m512i;
+        #endif
 
         using mask = Vector_mask<scalar, width>;
 

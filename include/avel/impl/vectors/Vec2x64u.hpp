@@ -125,6 +125,11 @@ namespace avel {
             return *this;
         }
 
+        AVEL_FINL Vector_mask& operator=(primitive p) {
+            content = p;
+            return *this;
+        }
+
         Vector_mask& operator=(const Vector_mask&) = default;
         Vector_mask& operator=(Vector_mask&&) = default;
 
@@ -291,7 +296,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(mask2x64u m) {
         #if defined(AVEL_AVX512VL)
-        return popcount(_mm512_mask2int(decay(m)));
+        return popcount(decay(m));
 
         #elif defined(AVEL_SSE2)
         return popcount(_mm_movemask_epi8(decay(m))) / sizeof(std::uint64_t);
@@ -313,7 +318,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool any(mask2x64u m) {
         #if defined(AVEL_AVX512VL)
-        return _mm512_mask2int(decay(m));
+        return !_kortestz_mask16_u8(decay(m), decay(m));
 
         #elif defined(AVEL_SSE41)
         return !_mm_test_all_zeros(decay(m), decay(m));
@@ -337,7 +342,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool all(mask2x64u m) {
         #if defined(AVEL_AVX512VL)
-        return 0x03 == _mm512_mask2int(decay(m));
+        return 0x3 == decay(m);
 
         #elif defined(AVEL_SSE2)
         return 0xFFFF == _mm_movemask_epi8(decay(m));
@@ -358,7 +363,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool none(mask2x64u m) {
         #if defined(AVEL_AVX512VL)
-        return _mm512_mask2int(decay(m)) == 0x00;
+        return _kortestz_mask16_u8(decay(m), decay(m));
 
         #elif defined(AVEL_SSE41)
         return _mm_test_all_zeros(decay(m), decay(m));
@@ -464,18 +469,18 @@ namespace avel {
         // Assignment operators
         //=================================================
 
-        Vector& operator=(const Vector&) = default;
-        Vector& operator=(Vector&&) = default;
+        AVEL_FINL Vector& operator=(scalar x) {
+            *this = Vector{x};
+            return *this;
+        }
 
         AVEL_FINL Vector& operator=(primitive p) {
             content = p;
             return *this;
         }
 
-        AVEL_FINL Vector& operator=(scalar x) {
-            *this = Vector{x};
-            return *this;
-        }
+        Vector& operator=(const Vector&) = default;
+        Vector& operator=(Vector&&) = default;
 
         //=================================================
         // Comparison operators
@@ -1291,8 +1296,7 @@ namespace avel {
     AVEL_FINL bool any(vec2x64u x) {
         //TODO: Optimize with newer instruction sets
         #if defined(AVEL_SSE41)
-        auto compared = _mm_cmpeq_epi64(decay(x), _mm_setzero_si128());
-        return 0xFFFF != _mm_movemask_epi8(compared);
+        return !_mm_test_all_zeros(decay(x), decay(x));
 
         #elif defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());

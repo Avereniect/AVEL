@@ -99,7 +99,7 @@ namespace avel {
             return *this;
         }
 
-        Vector_mask& operator=(primitive p) {
+        AVEL_FINL Vector_mask& operator=(primitive p) {
             content = p;
             return *this;
         }
@@ -114,7 +114,7 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL)
-            return _mm512_mask2int(primitive(lhs)) == _mm512_mask2int(primitive(rhs));
+            return lhs.content == rhs.content;
 
             #elif defined(AVEL_AVX2)
             return _mm256_movemask_epi8(lhs.content) == _mm256_movemask_epi8(rhs.content);
@@ -125,7 +125,7 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) noexcept {
             #if defined(AVEL_AVX512VL)
-            return _mm512_mask2int(primitive(lhs)) != _mm512_mask2int(primitive(rhs));
+            return lhs.content != rhs.content;
 
             #elif defined(AVEL_AVX2)
             return _mm256_movemask_epi8(lhs.content) != _mm256_movemask_epi8(rhs.content);
@@ -239,6 +239,7 @@ namespace avel {
     AVEL_FINL std::uint32_t count(mask8x32u m) {
         #if defined(AVEL_AVX512VL)
         return popcount(decay(m));
+
         #elif defined(AVEL_AVX2)
         return popcount(_mm256_movemask_epi8(decay(m))) / sizeof(std::uint32_t);
         #endif
@@ -246,8 +247,11 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool any(mask8x32u m) {
-        #if defined(AVEL_AVX512VL)
-        return decay(m);
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
+        return _kortestc_mask8_u8(decay(m), decay(m));
+
+        #elif defined(AVEL_AVX512VL)
+        return !_kortestz_mask16_u8(decay(m), decay(m));
 
         #elif defined(AVEL_AVX2)
         return _mm256_movemask_epi8(decay(m));
@@ -256,7 +260,10 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool all(mask8x32u m) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
+        return _kortestc_mask8_u8(decay(m), decay(m));
+
+        #elif defined(AVEL_AVX512VL)
         return 0xFF == decay(m);
 
         #elif defined(AVEL_AVX2)
@@ -267,7 +274,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool none(mask8x32u m) {
         #if defined(AVEL_AVX512VL)
-        return decay(m) == 0x0;
+        return _kortestz_mask16_u8(decay(m), decay(m));
 
         #elif defined(AVEL_AVX2)
         return _mm256_testz_si256(decay(m), decay(m));
@@ -294,7 +301,9 @@ namespace avel {
 
         using scalar = std::uint32_t;
 
+        #if defined(AVEL_AVX2)
         using primitive = __m256i;
+        #endif
 
         using mask = Vector_mask<scalar, width>;
 
@@ -337,20 +346,18 @@ namespace avel {
         // Assignment operators
         //=================================================
 
-        AVEL_FINL Vector& operator=(const Vector&) = default;
-        AVEL_FINL Vector& operator=(Vector&&) = default;
+        AVEL_FINL Vector& operator=(scalar x) {
+            *this = Vector{x};
+            return *this;
+        }
 
         AVEL_FINL Vector& operator=(primitive p) {
-            this->content = p;
+            content = p;
             return *this;
         }
 
-        #if defined(AVEL_AVX2)
-        AVEL_FINL Vector& operator=(scalar x) {
-            content = _mm256_broadcastd_epi32(_mm_cvtsi32_si128(x));
-            return *this;
-        }
-        #endif
+        AVEL_FINL Vector& operator=(const Vector&) = default;
+        AVEL_FINL Vector& operator=(Vector&&) = default;
 
         //=================================================
         // Comparison operators
@@ -454,7 +461,7 @@ namespace avel {
             return *this;
         }
 
-        AVEL_FINL Vector& operator%=(const Vector rhs) {
+        AVEL_FINL Vector& operator%=(Vector rhs) {
             auto results = div(*this, rhs);
             content = results.rem.content;
             return *this;

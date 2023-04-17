@@ -100,13 +100,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator=(bool b) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            content = b ? 0xFFFF : 0x0000;
-
-            #elif defined(AVEL_AVX2)
-            content = b ? _mm256_set1_epi16(-1) : _mm256_setzero_si256();
-
-            #endif
+            *this = Vector_mask{b};
             return *this;
         }
 
@@ -248,7 +242,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(mask16x16u m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        return popcount(_mm512_mask2int(decay(m)));
+        return popcount(decay(m));
 
         #elif defined(AVEL_AVX2)
         return popcount(_mm256_movemask_epi8(decay(m))) / sizeof(std::uint16_t);
@@ -309,7 +303,9 @@ namespace avel {
 
         using scalar = std::uint16_t;
 
+        #if defined(AVEL_AVX2)
         using primitive = __m256i;
+        #endif
 
         using mask = Vector_mask<scalar, width>;
 

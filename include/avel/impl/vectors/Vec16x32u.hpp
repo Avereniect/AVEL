@@ -38,7 +38,9 @@ namespace avel {
         // Type aliases
         //=================================================
 
+        #if defined(AVEL_AVX512F)
         using primitive = __mmask16;
+        #endif
 
         //=================================================
         // Constructor
@@ -245,7 +247,9 @@ namespace avel {
 
         using scalar = std::uint32_t;
 
+        #if defined(AVEL_AVX512F)
         using primitive = __m512i;
+        #endif
 
         using mask = Vector_mask<scalar, width>;
 
@@ -284,13 +288,13 @@ namespace avel {
         // Assignment operators
         //=================================================
 
-        AVEL_FINL Vector& operator=(primitive p) {
-            this->content = p;
+        AVEL_FINL Vector& operator=(scalar x) {
+            *this = Vector{x};
             return *this;
         }
 
-        AVEL_FINL Vector& operator=(scalar x) {
-            *this = Vector{x};
+        AVEL_FINL Vector& operator=(primitive p) {
+            content = p;
             return *this;
         }
 

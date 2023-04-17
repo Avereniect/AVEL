@@ -111,17 +111,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator=(bool b) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            content = b ? 0xFFFF : 0x0000;
-
-            #elif defined(AVEL_SSE2)
-            content = b ? _mm_set1_epi8(-1) : _mm_setzero_si128();
-
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_u8(b ? -1 : 0);
-            #endif
+            *this = Vector_mask{b};
             return *this;
         }
 

@@ -105,7 +105,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector_mask& operator=(primitive p) {
-            *this = Vector_mask{p};
+            content = p;
             return *this;
         }
 

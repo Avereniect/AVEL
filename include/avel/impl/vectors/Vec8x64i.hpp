@@ -38,7 +38,9 @@ namespace avel {
         // Type aliases
         //=================================================
 
+        #if defined(AVEL_AVX512F)
         using primitive = __mmask8;
+        #endif
 
     private:
 
@@ -270,7 +272,9 @@ namespace avel {
 
         using scalar = std::int64_t;
 
+        #if defined(AVEL_AVX512F)
         using primitive = __m512i;
+        #endif
 
         using mask = Vector_mask<scalar, width>;
 

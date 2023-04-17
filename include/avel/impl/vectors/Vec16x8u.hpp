@@ -111,22 +111,11 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator=(bool b) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            content = b ? 0xFFFF : 0x0000;
-
-            #elif defined(AVEL_SSE2)
-            content = b ? _mm_set1_epi8(-1) : _mm_setzero_si128();
-
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_u8(b ? -1 : 0);
-            #endif
-
+            *this = Vector_mask{b};
             return *this;
         }
 
-        Vector_mask& operator=(primitive p) {
+        AVEL_FINL Vector_mask& operator=(primitive p) {
             content = p;
             return *this;
         }
@@ -494,13 +483,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator=(scalar x) {
-            #if defined(AVEL_SSE2)
-            content = _mm_set1_epi8(x);
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_u8(x);
-            #endif
+            *this = Vector{x};
             return *this;
         }
 
@@ -694,13 +677,13 @@ namespace avel {
 
         AVEL_FINL Vector& operator/=(Vector rhs) {
             auto results = div(*this, rhs);
-            *this = decay(results.quot);
+            content = results.quot.content;
             return *this;
         }
 
-        AVEL_FINL Vector& operator%=(const Vector rhs) {
+        AVEL_FINL Vector& operator%=(Vector rhs) {
             auto results = div(*this, rhs);
-            *this = decay(results.rem);
+            content = results.rem.content;
             return *this;
         }
 

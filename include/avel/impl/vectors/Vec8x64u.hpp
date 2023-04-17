@@ -38,7 +38,9 @@ namespace avel {
         // Type aliases
         //=================================================
 
+        #if defined(AVEL_AVX512F)
         using primitive = __mmask8;
+        #endif
 
     private:
 
@@ -229,7 +231,7 @@ namespace avel {
         return !_kortestz_mask8_u8(decay(m), decay(m));
 
         #elif defined(AVEL_AVX512F)
-        return decay(m);
+        return !_kortestz_mask16_u8(decay(m), decay(m));
         #endif
     }
 
@@ -249,7 +251,7 @@ namespace avel {
         return _kortestz_mask8_u8(decay(m), decay(m));
 
         #elif defined(AVEL_AVX512F)
-        return 0x00 == decay(m);
+        return _kortestz_mask16_u8(decay(m), decay(m));
         #endif
     }
 
@@ -273,7 +275,9 @@ namespace avel {
 
         using scalar = std::uint64_t;
 
+        #if defined(AVEL_AVX512F)
         using primitive = __m512i;
+        #endif
 
         using mask = Vector_mask<scalar, width>;
 
