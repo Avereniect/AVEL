@@ -78,8 +78,8 @@ namespace avel {
 
             #elif defined(AVEL_AVX512F)
             auto array_data = _mm_cvtsi64_si128(bit_cast<std::uint64_t>(arr));
-            auto expanded = _mm256_cvtepi8_epi32(array_data);
-            content = _mm256_cmplt_epu32_mask(_mm256_setzero_si256(), expanded);
+            auto expanded = _mm512_zextsi256_si512(_mm256_cvtepi8_epi32(array_data));
+            content = _mm512_cmplt_epu32_mask(_mm512_setzero_si512(), expanded);
 
             #endif
         }
@@ -842,7 +842,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64u byteswap(vec8x64u v) {
-        #if defined(AVEL_AVX512F)
+        #if defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t index_data[16] {
              7,  6,  5,  4,
              3,  2,  1,  0,
@@ -858,6 +858,30 @@ namespace avel {
         );
 
         return vec8x64u{_mm512_shuffle_epi8(decay(v), indices)};
+
+        #elif defined(AVEL_AVX512F)
+        alignas(32) static constexpr std::uint8_t index_data[32] {
+             7,  6,  5,  4,
+             3,  2,  1,  0,
+            15, 14, 13, 12,
+            11, 10,  9,  8,
+             7,  6,  5,  4,
+             3,  2,  1,  0,
+            15, 14, 13, 12,
+            11, 10,  9,  8
+        };
+
+        auto indices = _mm256_load_si256(reinterpret_cast<const __m256i*>(index_data));
+
+        auto lo = _mm512_extracti64x4_epi64(decay(v), 0x0);
+        auto hi = _mm512_extracti64x4_epi64(decay(v), 0x1);
+
+        auto ret_lo = _mm256_shuffle_epi8(lo, indices);
+        auto ret_hi = _mm256_shuffle_epi8(hi, indices);
+
+        auto ret = _mm512_zextsi256_si512(ret_lo);
+        ret = _mm512_inserti64x4(ret, ret_hi, 0x1);
+        return vec8x64u{ret};
         #endif
     }
 
@@ -1061,7 +1085,7 @@ namespace avel {
         auto tmp1 = _mm512_slli_epi64(tmp0, 32);
         auto tmp2 = _mm512_add_epi32(tmp0, tmp1);
         auto tmp3 = _mm512_slli_epi32(tmp2, 16);
-        auto tmp4 = _mm512_add_epi16(tmp2, tmp3);
+        auto tmp4 = _mm512_add_epi32(tmp2, tmp3);
         return vec8x64u{_mm512_srli_epi64(tmp4, 48)};
 
         #elif defined(AVEL_AVX512F)

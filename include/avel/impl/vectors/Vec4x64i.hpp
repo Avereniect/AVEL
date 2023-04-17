@@ -591,8 +591,14 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
-            #if defined(AVEL_AVX2)
+            #if defined(AVEL_AVX512VL)
             content = _mm256_sra_epi64(content, _mm_cvtsi64_si128(rhs));
+
+            #elif defined(AVEL_AVX2)
+            auto is_negative = _mm256_cmpgt_epi64(_mm256_setzero_si256(), content);
+            content = _mm256_xor_si256(content, is_negative);
+            content = _mm256_srl_epi64(content, _mm_cvtsi64_si128(rhs));
+            content = _mm256_xor_si256(content, is_negative);
             #endif
             return *this;
         }
@@ -605,8 +611,14 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator>>=(Vector rhs) {
-            #if defined(AVEL_AVX2)
+            #if defined(AVEL_AVX512VL)
             content = _mm256_srav_epi64(content, decay(rhs));
+
+            #elif defined(AVEL_AVX2)
+            auto is_negative = _mm256_cmpgt_epi64(_mm256_setzero_si256(), content);
+            content = _mm256_xor_si256(content, is_negative);
+            content = _mm256_srlv_epi64(content, rhs.content);
+            content = _mm256_xor_si256(content, is_negative);
             #endif
             return *this;
         }
@@ -757,7 +769,16 @@ namespace avel {
         static_assert(S <= 64, "Cannot shift by more than scalar width");
         typename std::enable_if<S <= 64, int>::type dummy_variable = 0;
 
+        #if defined(AVEL_AVX512VL)
         return vec4x64i{_mm256_srai_epi64(decay(v), S)};
+
+        #elif defined(AVEL_AVX2)
+        auto is_negative = _mm256_cmpgt_epi64(_mm256_setzero_si256(), decay(v));
+        auto tmp = _mm256_xor_si256(decay(v), is_negative);
+        tmp = _mm256_srli_epi64(tmp, S);
+        tmp = _mm256_xor_si256(tmp, is_negative);
+        return vec4x64i {tmp};
+        #endif
     }
 
 
@@ -847,20 +868,36 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x64i max(vec4x64i a, vec4x64i b) {
+        #if defined(AVEL_AVX512VL)
         return vec4x64i{_mm256_max_epi64(decay(a), decay(b))};
+        #elif defined(AVEL_AVX2)
+        return blend(a < b, b, a);
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x64i min(vec4x64i a, vec4x64i b) {
+        #if defined(AVEL_AVX512VL)
         return vec4x64i{_mm256_min_epi64(decay(a), decay(b))};
+        #elif defined(AVEL_AVX2)
+        return blend(a < b, a, b);
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL std::array<vec4x64i, 2> minmax(vec4x64i a, vec4x64i b) {
+        #if defined(AVEL_AVX512VL)
         return {
             vec4x64i{_mm256_min_epi64(decay(a), decay(b))},
             vec4x64i{_mm256_max_epi64(decay(a), decay(b))}
         };
+        #elif defined(AVEL_AVX2)
+        auto m = a < b;
+        return {
+            blend(m, a, b),
+            blend(m, b, a)
+        };
+        #endif
     }
 
     [[nodiscard]]

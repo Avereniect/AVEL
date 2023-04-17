@@ -76,8 +76,8 @@ namespace avel {
 
             #elif defined(AVEL_AVX512F)
             auto array_data = _mm_cvtsi64_si128(bit_cast<std::uint64_t>(arr));
-            auto expanded = _mm256_cvtepi8_epi32(array_data);
-            content = _mm256_cmplt_epu32_mask(_mm256_setzero_si256(), expanded);
+            auto expanded = _mm512_zextsi256_si512(_mm256_cvtepi8_epi32(array_data));
+            content = _mm512_cmplt_epu32_mask(_mm512_setzero_si512(), expanded);
 
             #endif
         }

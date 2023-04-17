@@ -177,10 +177,7 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL Vector_mask operator!() const {
             #if defined(AVEL_AVX512VL)
-            return Vector_mask{_knot_mask8(content)};
-
-            #elif defined(AVEL_AVX512F)
-            return Vector_mask{_mm256_ternarylogic_epi32(content, content, content, 0x01)};
+            return Vector_mask{static_cast<primitive>(~content)};
 
             #elif defined(AVEL_AVX2)
             primitive tmp = _mm256_undefined_si256();
@@ -317,7 +314,7 @@ namespace avel {
 
         AVEL_FINL explicit Vector(mask m):
         #if defined(AVEL_AVX512VL)
-            content(_mm256_mask_set1_epi32(decay(m), 0x1)) {}
+            content(_mm256_maskz_set1_epi32(decay(m), 0x1)) {}
         #elif defined(AVEL_AVX2)
             content(_mm256_sub_epi32(_mm256_setzero_si256(), decay(m))) {}
         #endif
@@ -570,7 +567,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL Vector operator~() const {
-            #if defined(AVEL_AVX512F)
+            #if defined(AVEL_AVX512VL)
             return Vector{_mm256_ternarylogic_epi32(content, content, content, 0x01)};
 
             #elif defined(AVEL_AVX2)
@@ -876,7 +873,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x32u broadcast_mask(mask8x32u m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
-        return vec8x32u{_mm256_movm_epi32(m)};
+        return vec8x32u{_mm256_movm_epi32(decay(m))};
 
         #elif defined(AVEL_AVX512VL)
         return vec8x32u{_mm256_maskz_set1_epi32(decay(m), -1)};
@@ -1114,15 +1111,15 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x32u popcount(vec8x32u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
-        return vec8x32u{_mm256_popcnt_epi32(v)};
+        return vec8x32u{_mm256_popcnt_epi32(decay(v))};
+
         #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
-        auto tmp0 = _mm256_popcnt_epi16(v);
+        auto tmp0 = _mm256_popcnt_epi16(decay(v));
         auto tmp1 = _mm256_slli_epi32(tmp0, 16);
-
         auto tmp2 = _mm256_add_epi32(tmp0, tmp1);
-
         return vec8x32u{_mm256_srli_epi32(tmp2, 16)};
-        #else
+
+        #elif defined(AVEL_AVX2)
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
         v = v - ((v >> 1) & vec8x32u{0x55555555});                    // reuse input as temporary
         v = (v & vec8x32u{0x33333333}) + ((v >> 2) & vec8x32u{0x33333333});     // temp
@@ -1153,7 +1150,8 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x32u countl_zero(vec8x32u x) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
-        return vec8x32u{_mm256_lzcnt_epi32(x)};
+        return vec8x32u{_mm256_lzcnt_epi32(decay(x))};
+
         #elif defined(AVEL_AVX2)
         //http://www.icodeguru.com/Embedded/Hacker%27s-Delight/040.htm
 

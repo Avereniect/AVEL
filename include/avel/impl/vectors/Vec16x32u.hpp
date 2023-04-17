@@ -60,7 +60,7 @@ namespace avel {
                 "Implementation assumes bools occupy a single byte"
             );
 
-            #if defined(AVEL_AVX512F) && defined(AVEL_AVX512BW)
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             auto array_data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()));
             content = _mm_cmplt_epu8_mask(_mm_setzero_si128(), array_data);
 
@@ -741,7 +741,11 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32u broadcast_mask(mask16x32u m) {
+        #if defined(AVEL_AVX512DQ)
         return vec16x32u{_mm512_movm_epi32(decay(m))};
+        #elif defined(AVEL_AVX512F)
+        return vec16x32u{_mm512_maskz_set1_epi32(decay(m), -1)};
+        #endif
     }
 
     [[nodiscard]]
@@ -937,6 +941,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32u byteswap(vec16x32u v) {
+        #if defined(AVEL_AVX512BW)
         alignas(64) static constexpr std::uint8_t index_data[64] {
             3,   2,  1,  0,
             7,   6,  5,  4,
@@ -959,19 +964,56 @@ namespace avel {
         auto indices = _mm512_load_si512((const __m512i*)index_data);
         auto ret = vec16x32u{_mm512_shuffle_epi8(decay(v), indices)};
         return ret;
+
+        #elif defined(AVEL_AVX512F)
+        alignas(32) static constexpr std::uint8_t index_data[32] {
+            3,   2,  1,  0,
+            7,   6,  5,  4,
+            11, 10,  9,  8,
+            15, 14, 13, 12,
+            3,   2,  1,  0,
+            7,   6,  5,  4,
+            11, 10,  9,  8,
+            15, 14, 13, 12
+        };
+
+        auto indices = _mm256_load_si256(reinterpret_cast<const __m256i*>(index_data));
+
+        auto lo = _mm512_extracti64x4_epi64(decay(v), 0x0);
+        auto hi = _mm512_extracti64x4_epi64(decay(v), 0x1);
+
+        auto ret_lo = _mm256_shuffle_epi8(lo, indices);
+        auto ret_hi = _mm256_shuffle_epi8(hi, indices);
+
+        auto ret = _mm512_zextsi256_si512(ret_lo);
+        ret = _mm512_inserti64x4(ret, ret_hi, 0x1);
+        return vec16x32u{ret};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32u countl_zero(vec16x32u x) {
         #if defined(AVEL_AVX512CD)
         return vec16x32u{_mm512_lzcnt_epi32(decay(x))};
-        #elif defined(AVEL_AVX512F)
+        #elif defined(AVEL_AVX512BW)
+        // TODO: Clean up
         //http://www.icodeguru.com/Embedded/Hacker%27s-Delight/040.htm
 
         x = _mm512_andnot_si512(decay(x >> 1), decay(x));
         auto floats = _mm512_add_ps(_mm512_cvtepi32_ps(decay(x)), _mm512_set1_ps(0.5f));
         auto biased_exponents = (vec16x32u(_mm512_castps_si512(floats)) >> 23);
         auto lzcnt = _mm512_subs_epu16(decay(vec16x32u{158}), decay(biased_exponents));
+        return vec16x32u{lzcnt};
+
+        #elif defined(AVEL_AVX512F)
+        // TODO: Clean up
+        auto high_bit_mask = _mm512_cmplt_epi32_mask(decay(x), _mm512_setzero_si512());
+        x = _mm512_andnot_si512(decay(x >> 1), decay(x));
+        auto floats = _mm512_add_ps(_mm512_cvtepi32_ps(decay(x)), _mm512_set1_ps(0.5f));
+        auto biased_exponents = (vec16x32u(_mm512_castps_si512(floats)) >> 23);
+        auto lzcnt = _mm512_sub_epi32(decay(vec16x32u{158}), decay(biased_exponents));
+        //TODO: Optimize the following line
+        lzcnt = _mm512_mask_blend_epi32(high_bit_mask, lzcnt, _mm512_set1_epi32(0));
         return vec16x32u{lzcnt};
 
         #endif
@@ -1006,7 +1048,7 @@ namespace avel {
         auto y = _mm512_and_si512(z, _mm512_sub_epi32(_mm512_setzero_si512(), z));
         auto floats = _mm512_castps_si512(_mm512_cvtepi32_ps(y));
         auto biased_exponents = _mm512_srli_epi32(floats, 23);
-        biased_exponents = _mm512_min_epi16(_mm512_set1_epi32(158), biased_exponents);
+        biased_exponents = _mm512_min_epi32(_mm512_set1_epi32(158), biased_exponents);
         auto tzcnt = _mm512_sub_epi32(biased_exponents, _mm512_set1_epi32(127));
         tzcnt = _mm512_mask_mov_epi32(tzcnt, is_zero, _mm512_set1_epi32(32));
         return vec16x32u{tzcnt};

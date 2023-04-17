@@ -70,9 +70,15 @@ namespace avel {
                 "Implementation assumes bool occupy a single byte"
             );
 
-            #if defined(AVEL_AVX512BW)
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             auto array_data = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(arr.data()));
             content = _mm256_cmplt_epu8_mask(_mm256_setzero_si256(), array_data);
+
+            #elif defined(AVEL_AVX512BW)
+            auto array_data = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(arr.data()));
+            auto widened = _mm512_zextsi256_si512(array_data);
+            content = _mm512_cmplt_epu8_mask(_mm512_setzero_si512(), widened);
+
             #endif
         }
 

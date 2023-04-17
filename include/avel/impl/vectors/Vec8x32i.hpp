@@ -178,10 +178,7 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL Vector_mask operator!() const {
             #if defined(AVEL_AVX512VL)
-            return Vector_mask{_knot_mask8(content)};
-
-            #elif defined(AVEL_AVX512F)
-            return Vector_mask{_mm256_ternarylogic_epi32(content, content, content, 0x01)};
+            return Vector_mask{static_cast<primitive>(~content)};
 
             #elif defined(AVEL_AVX2)
             primitive tmp = _mm256_undefined_si256();
@@ -325,7 +322,7 @@ namespace avel {
 
         AVEL_FINL explicit Vector(mask m):
         #if defined(AVEL_AVX512VL)
-            content(_mm256_mask_set1_epi32(decay(m), 0x1)) {}
+            content(_mm256_maskz_set1_epi32(decay(m), 0x1)) {}
         #elif defined(AVEL_AVX2)
             content(_mm256_sub_epi32(_mm256_setzero_si256(), decay(m))) {}
         #endif
@@ -575,8 +572,9 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL Vector operator~() const {
-            #if defined(AVEL_AVX512F)
+            #if defined(AVEL_AVX512VL)
             return Vector{_mm256_ternarylogic_epi32(content, content, content, 0x01)};
+
             #elif defined(AVEL_AVX2)
             return Vector{_mm256_andnot_si256(content, _mm256_set1_epi32(-1))};
             #endif

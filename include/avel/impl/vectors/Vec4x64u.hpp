@@ -993,24 +993,35 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x64u max(vec4x64u a, vec4x64u b) {
-        #if defined(AVEL_AVX2)
+        #if defined(AVEL_AVX512VL)
         return vec4x64u{_mm256_max_epu64(decay(a), decay(b))};
+        #elif defined(AVEL_AVX2)
+        return blend(a < b, b, a);
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x64u min(vec4x64u a, vec4x64u b) {
-        #if defined(AVEL_AVX2)
+        #if defined(AVEL_AVX512VL)
         return vec4x64u{_mm256_min_epu64(decay(a), decay(b))};
+        #elif defined(AVEL_AVX2)
+        return blend(a < b, a, b);
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL std::array<vec4x64u, 2> minmax(vec4x64u a, vec4x64u b) {
-        #if defined(AVEL_AVX2)
+        #if defined(AVEL_AVX512VL)
         return {
             vec4x64u{_mm256_min_epu64(decay(a), decay(b))},
             vec4x64u{_mm256_max_epu64(decay(a), decay(b))},
+        };
+
+        #elif defined(AVEL_AVX2)
+        auto m = a < b;
+        return {
+            blend(m, a, b),
+            blend(m, b, a)
         };
         #endif
     }
