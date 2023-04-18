@@ -18,7 +18,7 @@ namespace avel {
     div_type<vec4x64i> div(vec4x64i numerator, vec4x64i denominator);
     vec4x64i broadcast_mask(mask4x64i m);
     vec4x64i blend(mask4x64i m, vec4x64i a, vec4x64i b);
-    vec4x64i negate(vec4x64i m, vec4x64i x);
+    vec4x64i negate(mask4x64i m, vec4x64i x);
 
 
 
@@ -193,33 +193,7 @@ namespace avel {
             #endif
         }
 
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator&(Vector_mask lhs, Vector_mask rhs) {
-            lhs &= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator&&(Vector_mask lhs, Vector_mask rhs) {
-            return lhs & rhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator|(Vector_mask lhs, Vector_mask rhs) {
-            lhs |= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator||(Vector_mask lhs, Vector_mask rhs) {
-            return lhs | rhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator^(Vector_mask lhs, Vector_mask rhs) {
-            lhs ^= rhs;
-            return lhs;
-        }
+        AVEL_VECTOR_MASK_BINARY_BITWISE_OPERATORS
 
         //=================================================
         // Conversion operators
@@ -502,61 +476,13 @@ namespace avel {
         // Arithmetic operators
         //=================================================
 
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator+(Vector lhs, Vector rhs) {
-            lhs += rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator-(Vector lhs, Vector rhs) {
-            lhs -= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-       AVEL_FINL friend Vector operator*(Vector lhs, Vector rhs) {
-            lhs *= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator/(Vector lhs, Vector rhs) {
-            lhs /= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator%(Vector lhs, Vector rhs) {
-            lhs %= rhs;
-            return lhs;
-        }
+        AVEL_VECTOR_ARITHMETIC_OPERATORS
 
         //=================================================
         // Increment/Decrement operators
         //=================================================
 
-        AVEL_FINL Vector& operator++() {
-            *this += Vector{1};
-            return *this;
-        }
-
-        AVEL_FINL Vector operator++(int) {
-            auto temp = *this;
-            *this += Vector{1};
-            return temp;
-        }
-
-        AVEL_FINL Vector& operator--() {
-            *this -= Vector{1};
-            return *this;
-        }
-
-        AVEL_FINL Vector operator--(int) {
-            auto temp = *this;
-            *this -= Vector{1};
-            return temp;
-        }
+        AVEL_VECTOR_INCREMENT_DECREMENT_OPERATORS
 
         //=================================================
         // Bitwise assignment operators
@@ -638,47 +564,7 @@ namespace avel {
             #endif
         }
 
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator&(Vector lhs, Vector rhs) {
-            lhs &= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator|(Vector lhs, Vector rhs) {
-            lhs |= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator^(Vector lhs, Vector rhs) {
-            lhs ^= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator<<(Vector lhs, long long rhs) {
-            lhs <<= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator>>(Vector lhs, long long rhs) {
-            lhs >>= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator<<(Vector lhs, Vector rhs) {
-            lhs <<= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator>>(Vector lhs, Vector rhs) {
-            lhs >>= rhs;
-            return lhs;
-        }
+        AVEL_VECTOR_BINARY_BITWISE_OPERATORS
 
         //=================================================
         // Conversion operators
@@ -987,7 +873,7 @@ namespace avel {
             return vec4x64i{_mm256_set_m128i(decay(hi), decay(lo))};
         } else {
             auto lo = load<vec2x64i>(ptr, n);
-            return vec4x64i{_mm256_zextsi128_si256(decay(lo))};
+            return vec4x64i{_mm256_set_m128i(_mm_setzero_si128(), decay(lo))};
         };
 
         #endif
@@ -1015,7 +901,7 @@ namespace avel {
             return vec4x64i{_mm256_set_m128i(decay(hi), decay(lo))};
         } else {
             auto lo = aligned_load<vec2x64i>(ptr, n);
-            return vec4x64i{_mm256_zextsi128_si256(decay(lo))};
+            return vec4x64i{_mm256_set_m128i(_mm_setzero_si128(), decay(lo))};
         };
 
         #endif
@@ -1317,35 +1203,7 @@ namespace avel {
         return {quotient, remainder};
     }
 
-    [[nodiscard]]
-    AVEL_FINL vec4x64i popcount(vec4x64i v) {
-        return vec4x64i{popcount(vec4x64u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x64i countl_zero(vec4x64i v) {
-        return vec4x64i{countl_zero(vec4x64u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x64i countl_one(vec4x64i v) {
-        return vec4x64i{countl_one(vec4x64u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x64i countr_zero(vec4x64i v) {
-        return vec4x64i{countr_zero(vec4x64u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x64i countr_one(vec4x64i v) {
-        return vec4x64i{countr_one(vec4x64u{v})};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL mask4x64i has_single_bit(vec4x64i v) {
-        return mask4x64i{has_single_bit(vec4x64u{v})};
-    }
+    AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec4x64i, mask4x64i, vec4x64u)
 
 }
 

@@ -122,6 +122,8 @@ namespace avel {
 // Note: The order of inclusion of the following files is meaningful as later
 // files use declarations/definitions contained within earlier files
 
+#include "Vectors_common.hpp"
+
 //Native vectors
 
 #include "Vec1x8u.hpp"
