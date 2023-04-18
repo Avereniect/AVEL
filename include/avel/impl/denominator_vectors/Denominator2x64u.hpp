@@ -137,6 +137,7 @@ namespace avel {
         }
 
         static vec2x64u compute_m(vec2x64u l, vec2x64u d) {
+            #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX)
             //TODO: Use conversion functions once implemented instead
             __uint128_t l_lo = extract<0>(l);
             __uint128_t l_hi = extract<1>(l);
@@ -153,9 +154,10 @@ namespace avel {
             vec2x64u m{{
                 static_cast<std::uint64_t>(tmp1_lo),
                 static_cast<std::uint64_t>(tmp1_hi),
-           }};
+            }};
             m += vec2x64u{1};
             return m;
+            #endif
         }
 
     };

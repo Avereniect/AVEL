@@ -133,6 +133,16 @@ namespace avel {
 
     };
 
+    AVEL_FINL vec8x16i& operator/=(vec8x16i& lhs, Denom8x16i rhs) {
+        lhs = lhs / rhs;
+        return lhs;
+    }
+
+    AVEL_FINL vec8x16i& operator%=(vec8x16i& lhs, Denom8x16i rhs) {
+        lhs = lhs % rhs;
+        return lhs;
+    }
+
 }
 
 #endif //AVEL_DENOMINATOR8X16I_HPP
