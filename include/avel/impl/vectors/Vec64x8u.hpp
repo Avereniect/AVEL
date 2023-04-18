@@ -156,33 +156,7 @@ namespace avel {
             #endif
         }
 
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator&(Vector_mask lhs, Vector_mask rhs) {
-            lhs &= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator&&(Vector_mask lhs, Vector_mask rhs) {
-            return lhs & rhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator|(Vector_mask lhs, Vector_mask rhs) {
-            lhs |= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator||(Vector_mask lhs, Vector_mask rhs) {
-            return lhs | rhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator^(Vector_mask lhs, Vector_mask rhs) {
-            lhs ^= rhs;
-            return lhs;
-        }
+        AVEL_VECTOR_MASK_BINARY_BITWISE_OPERATORS
 
         //=================================================
         // Conversion operators
@@ -426,61 +400,13 @@ namespace avel {
         // Arithmetic operators
         //=================================================
 
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator+(Vector lhs, Vector rhs) {
-            lhs += rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator-(Vector lhs, Vector rhs) {
-            lhs -= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator*(Vector lhs, Vector rhs) {
-            lhs *= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator/(Vector lhs, Vector rhs) {
-            lhs /= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator%(Vector lhs, Vector rhs) {
-            lhs %= rhs;
-            return lhs;
-        }
+        AVEL_VECTOR_ARITHMETIC_OPERATORS
 
         //=================================================
         // Increment/Decrement operators
         //=================================================
 
-        AVEL_FINL Vector& operator++() {
-            *this += Vector{1};
-            return *this;
-        }
-
-        AVEL_FINL Vector operator++(int) {
-            auto temp = *this;
-            *this += Vector{1};
-            return temp;
-        }
-
-        AVEL_FINL Vector& operator--() {
-            *this -= Vector{1};
-            return *this;
-        }
-
-        AVEL_FINL Vector operator--(int) {
-            auto temp = *this;
-            *this -= Vector{1};
-            return temp;
-        }
+        AVEL_VECTOR_INCREMENT_DECREMENT_OPERATORS
 
         //=================================================
         // Bitwise assignment operators
@@ -604,47 +530,7 @@ namespace avel {
             #endif
         }
 
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator&(Vector lhs, Vector rhs) {
-            lhs &= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator|(Vector lhs, Vector rhs) {
-            lhs |= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator^(Vector lhs, Vector rhs) {
-            lhs ^= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator<<(Vector lhs, long long rhs) {
-            lhs <<= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator>>(Vector lhs, long long rhs) {
-            lhs >>= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator<<(Vector lhs, Vector rhs) {
-            lhs <<= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator>>(Vector lhs, Vector rhs) {
-            lhs >>= rhs;
-            return lhs;
-        }
+        AVEL_VECTOR_BINARY_BITWISE_OPERATORS
 
         //=================================================
         // Conversion operators
@@ -1272,6 +1158,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u countl_zero(vec64x8u v) {
+        //TODO: Consider leveraging conversion to 32-bit lzcnt
+        //TODO: Consider leveraging conversion to fp16
         #if defined(AVEL_AVX512BW)
         //Combined high and low nibble lookup table data
         alignas(32) static constexpr std::uint8_t table_data[32] {
@@ -1306,6 +1194,9 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u countl_one(vec64x8u v) {
+        //TODO: Consider leveraging conversion to 32-bit lzcnt
+        //TODO: Consider leveraging conversion to fp16
+
         #if defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 0, 0, 0,
@@ -1343,6 +1234,8 @@ namespace avel {
         auto tz_mask = _mm512_andnot_si512(decay(v), _mm512_add_epi8(decay(v), neg_one));
         return vec64x8u{_mm512_popcnt_epi8(tz_mask)};
 
+        //TODO: Consider leveraging conversion to fp16
+
         #elif defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             8, 0, 1, 0,
@@ -1375,6 +1268,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u countr_one(vec64x8u v) {
+        //TODO: Consider leveraging tzcnt
+        //TODO: Consider leveraging conversion to fp16
         #if defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 0, 2,
@@ -1407,6 +1302,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u bit_width(vec64x8u v) {
+        //TODO: Consider leveraging tzcnt
+        //TODO: Consider leveraging conversion to fp16
         #if defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 2, 2,
@@ -1439,6 +1336,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u bit_floor(vec64x8u v) {
+        //TODO: Consider leveraging tzcnt
+        //TODO: Consider leveraging conversion to fp16
         #if defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 2, 2,
@@ -1471,6 +1370,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u bit_ceil(vec64x8u v) {
+        //TODO: Consider leveraging tzcnt
+        //TODO: Consider leveraging conversion to fp16
         #if defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
              0,  1,  3,  3,

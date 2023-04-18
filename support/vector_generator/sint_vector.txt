@@ -17,7 +17,7 @@ namespace avel {
 
     div_type<$<VECTOR_ALIAS>> div($<VECTOR_ALIAS> numerator, $<VECTOR_ALIAS> denominator);
     $<VECTOR_ALIAS> broadcast_mask($<MASK_ALIAS> m);
-    $<VECTOR_ALIAS> blend($<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b, $<MASK_ALIAS> m);
+    $<VECTOR_ALIAS> blend($<MASK_ALIAS> m, $<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b);
     $<VECTOR_ALIAS> negate($<VECTOR_ALIAS> m, $<VECTOR_ALIAS> x);
 
 
@@ -83,7 +83,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator=(bool b) {
-            $<mask::operator=(bool)>
+            *this = Vector_mask{b};
             return *this;
         }
 
@@ -182,7 +182,7 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    AVEL_FINL std::array<$<MASK_ALIAS>, 1> convert<$<UMASK_ALIAS>, $<MASK_ALIAS>>($<MASK_ALIAS> m) {
+    AVEL_FINL std::array<$<UMASK_ALIAS>, 1> convert<$<UMASK_ALIAS>, $<MASK_ALIAS>>($<MASK_ALIAS> m) {
         return {$<UMASK_ALIAS>{decay(m)}};
     }
 
@@ -579,16 +579,16 @@ $END
 
     template<std::uint32_t N>
     AVEL_FINL $<SCALAR_NAME> extract($<VECTOR_ALIAS> v) {
-        static_assert(N <= $<VECTOR_WIDTH>, "Specified index does not exist");
-        typename std::enable_if<N <= $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
+        static_assert(N < $<VECTOR_WIDTH>, "Specified index does not exist");
+        typename std::enable_if<N < $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
 
         $<extract(vec)>
     }
 
     template<std::uint32_t N>
     AVEL_FINL $<VECTOR_ALIAS> insert($<VECTOR_ALIAS> v, $<SCALAR_NAME> x) {
-        static_assert(N <= $<VECTOR_WIDTH>, "Specified index does not exist");
-        typename std::enable_if<N <= $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
+        static_assert(N < $<VECTOR_WIDTH>, "Specified index does not exist");
+        typename std::enable_if<N < $<VECTOR_WIDTH>, int>::type dummy_variable = 0;
 
         $<insert(vec, scalar)>
     }
@@ -657,17 +657,17 @@ $END
 
     [[nodiscard]]
     AVEL_FINL $<VECTOR_ALIAS> broadcast_mask($<MASK_ALIAS> m) {
-        $<broadcast_mask(mask)>
+        return $<VECTOR_ALIAS>{broadcast_mask($<UMASK_ALIAS>{m})};
     }
 
     [[nodiscard]]
     AVEL_FINL $<VECTOR_ALIAS> blend($<MASK_ALIAS> m, $<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b) {
-        $<blend(mask, vec, vec)>
+        return $<VECTOR_ALIAS>{blend($<UMASK_ALIAS>{m}, $<UVECTOR_ALIAS>{a}, $<UVECTOR_ALIAS>{b})};
     }
 
     [[nodiscard]]
     AVEL_FINL $<VECTOR_ALIAS> byteswap($<VECTOR_ALIAS> v) {
-        $<byteswap(vec)>
+        return $<VECTOR_ALIAS>{byteswap($<UVECTOR_ALIAS>{v})};
     }
 
     [[nodiscard]]
@@ -687,12 +687,7 @@ $END
 
     [[nodiscard]]
     AVEL_FINL $<VECTOR_ALIAS> clamp($<VECTOR_ALIAS> x, $<VECTOR_ALIAS> lo, $<VECTOR_ALIAS> hi) {
-        $<clamp(vec, vec, vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> midpoint($<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b) {
-        $<midpoint(vec, vec)>
+        return min(max(x, lo), hi);
     }
 
     [[nodiscard]]
@@ -701,7 +696,12 @@ $END
     }
 
     [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> negate($<VECTOR_ALIAS> m, $<VECTOR_ALIAS> v) {
+    AVEL_FINL $<VECTOR_ALIAS> midpoint($<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b) {
+        $<midpoint(vec, vec)>
+    }
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> negate($<MASK_ALIAS> m, $<VECTOR_ALIAS> v) {
         $<negate(mask, vec)>
     }
 
@@ -793,6 +793,10 @@ $END
 
 
 
+    AVEL_FINL void store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, std::uint32_t n) {
+        $<store(scalar*, vec, std::uint32_t)>
+    }
+
     template<std::uint32_t N = $<VECTOR_ALIAS>::width>
     AVEL_FINL void store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v) {
         $<store<std::uint32_t>(scalar*, vec)>
@@ -803,11 +807,11 @@ $END
         $<store<VECTOR_WIDTH>(scalar*, vec)>
     }
 
-    AVEL_FINL void store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, std::uint32_t n) {
-        $<store(scalar*, vec, std::uint32_t)>
+
+
+    AVEL_FINL void aligned_store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, std::uint32_t n) {
+        $<aligned_store(scalar*, vec, std::uint32_t)>
     }
-
-
 
     template<std::uint32_t N = $<VECTOR_ALIAS>::width>
     AVEL_FINL void aligned_store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v) {
@@ -819,46 +823,46 @@ $END
         $<aligned_store<VECTOR_WIDTH>(scalar*, vec)>
     }
 
-    AVEL_FINL void aligned_store($<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, std::uint32_t n) {
-        $<aligned_store(scalar*, vec, std::uint32_t)>
-    }
-
 
 $BEGIN<HAS_SCATTER>$
+    AVEL_FINL void scatter(const $<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, $<VECTOR_ALIAS> indices, std::uint32_t n) {
+        $<scatter(const scalar*, vec, vec, std::uint32_t)>
+    }
+
     template<std::uint32_t N = $<VECTOR_ALIAS>::width>
     AVEL_FINL void scatter(const $<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, $<VECTOR_ALIAS> indices) {
         $<scatter(const scalar*, vec, vec)>
     }
 
+    template<>
     AVEL_FINL void scatter<0>(const $<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, $<VECTOR_ALIAS> indices) {
         // Don't have to do anything
     }
 
+    template<>
     AVEL_FINL void scatter<$<VECTOR_ALIAS>::width>(const $<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, $<VECTOR_ALIAS> indices) {
         $<scatter<width>(const scalar*, vec, vec)>
     }
 
-    AVEL_FINL void scatter(const $<SCALAR_NAME>* ptr, $<VECTOR_ALIAS> v, $<VECTOR_ALIAS> indices, std::uint32_t n {
-        $<scatter(const scalar*, vec, vec, std::uint32_t)>
+
+
+    AVEL_FINL void scatter(const $<USCALAR_NAME>* ptr, $<UVECTOR_ALIAS> v, $<VECTOR_ALIAS> indices, std::uint32_t n) {
+        $<scatter(const uscalar*, uvec, vec, std::uint32_t)>
     }
-
-
 
     template<std::uint32_t N = $<VECTOR_ALIAS>::width>
     AVEL_FINL void scatter(const $<USCALAR_NAME>* ptr, $<UVECTOR_ALIAS> v, $<VECTOR_ALIAS> indices) {
         $<scatter(const uscalar*, uvec, vec)>
     }
 
+    template<>
     AVEL_FINL void scatter<0>(const $<USCALAR_NAME>* ptr, $<UVECTOR_ALIAS> v, $<VECTOR_ALIAS> indices) {
         // Don't have to do anything
     }
 
+    template<>
     AVEL_FINL void scatter<$<VECTOR_ALIAS>::width>(const $<USCALAR_NAME>* ptr, $<UVECTOR_ALIAS> v, $<VECTOR_ALIAS> indices) {
         $<scatter<width>(const uscalar*, uvec, vec)>
-    }
-
-    AVEL_FINL void scatter(const $<USCALAR_NAME>* ptr, $<UVECTOR_ALIAS> v, $<VECTOR_ALIAS> indices, std::uint32_t n {
-        $<scatter(const uscalar*, uvec, vec, std::uint32_t)>
     }
 $END
 

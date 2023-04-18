@@ -16,8 +16,9 @@ namespace avel {
     //=====================================================
 
     div_type<vec4x32i> div(vec4x32i numerator, vec4x32i denominator);
+    vec4x32i broadcast_mask(mask4x32i m);
     vec4x32i blend(mask4x32i m, vec4x32i a, vec4x32i b);
-    arr4x32i to_array(vec4x32i);
+    vec4x32i negate(mask4x32i m, vec4x32i x);
 
 
 
@@ -58,7 +59,7 @@ namespace avel {
     public:
 
         //=================================================
-        // Constructor
+        // Constructors
         //=================================================
 
         template<class U>
@@ -124,16 +125,7 @@ namespace avel {
         //=================================================
 
         Vector_mask& operator=(bool x) {
-            #if defined(AVEL_AVX512VL)
-            content = x ? 0xF : 0x0;
-            #elif defined(AVEL_SSE2)
-            content = x ? _mm_set1_epi32(-1) : _mm_setzero_si128();
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_u32(x ? -1 : 0);
-            #endif
-
+            *this = Vector_mask{x};
             return *this;
         }
 
@@ -262,33 +254,7 @@ namespace avel {
             #endif
         }
 
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator&(Vector_mask lhs, Vector_mask rhs) {
-            lhs &= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator&&(Vector_mask lhs, Vector_mask rhs) {
-            return lhs & rhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator|(Vector_mask lhs, Vector_mask rhs) {
-            lhs |= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator||(Vector_mask lhs, Vector_mask rhs) {
-            return lhs | rhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator^(Vector_mask lhs, Vector_mask rhs) {
-            lhs ^= rhs;
-            return lhs;
-        }
+        AVEL_VECTOR_MASK_BINARY_BITWISE_OPERATORS
 
         //=================================================
         // Conversion operators
@@ -434,16 +400,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator=(scalar x) {
-            #if defined(AVEL_AVX2)
-            content = _mm_broadcastd_epi32(_mm_cvtsi32_si128(x));
-            #elif defined(AVEL_SSE2)
-            content = _mm_set1_epi32(x);
-            #endif
-
-            #if defined(AVEL_NEON)
-            *this = vdupq_n_s32(x);
-            #endif
-
+            *this = Vector{x};
             return *this;
         }
 
@@ -615,7 +572,7 @@ namespace avel {
             return *this;
         }
 
-        AVEL_FINL Vector& operator%=(const Vector rhs) {
+        AVEL_FINL Vector& operator%=(Vector rhs) {
             auto results = div(*this, rhs);
             content = results.rem.content;
             return *this;
@@ -625,61 +582,13 @@ namespace avel {
         // Arithmetic operators
         //=================================================
 
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator+(Vector lhs, Vector rhs) {
-            lhs += rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator-(Vector lhs, Vector rhs) {
-            lhs -= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-       AVEL_FINL friend Vector operator*(Vector lhs, Vector rhs) {
-            lhs *= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator/(Vector lhs, Vector rhs) {
-            lhs /= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator%(Vector lhs, Vector rhs) {
-            lhs %= rhs;
-            return lhs;
-        }
+        AVEL_VECTOR_ARITHMETIC_OPERATORS
 
         //=================================================
         // Increment/Decrement operators
         //=================================================
 
-        AVEL_FINL Vector& operator++() {
-            *this += Vector{1};
-            return *this;
-        }
-
-        AVEL_FINL Vector operator++(int) {
-            auto temp = *this;
-            *this += Vector{1};
-            return temp;
-        }
-
-        AVEL_FINL Vector& operator--() {
-            *this -= Vector{1};
-            return *this;
-        }
-
-        AVEL_FINL Vector operator--(int) {
-            auto temp = *this;
-            *this -= Vector{1};
-            return temp;
-        }
+        AVEL_VECTOR_INCREMENT_DECREMENT_OPERATORS
 
         //=================================================
         // Bitwise assignment operators
@@ -777,7 +686,7 @@ namespace avel {
             return *this;
         }
 
-        AVEL_FINL Vector& operator>>=(vec4x32i rhs) {
+        AVEL_FINL Vector& operator>>=(Vector rhs) {
             #if defined(AVEL_AVX2)
             content = _mm_srav_epi32(content, primitive(rhs));
             #elif defined(AVEL_SSE2)
@@ -830,47 +739,7 @@ namespace avel {
             #endif
         }
 
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator&(Vector lhs, Vector rhs) {
-            lhs &= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator|(Vector lhs, Vector rhs) {
-            lhs |= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator^(Vector lhs, Vector rhs) {
-            lhs ^= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator<<(Vector lhs, long long rhs) {
-            lhs <<= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator>>(Vector lhs, long long rhs) {
-            lhs >>= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator<<(Vector lhs, vec4x32i rhs) {
-            lhs <<= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator>>(Vector lhs, vec4x32i rhs) {
-            lhs >>= rhs;
-            return lhs;
-        }
+        AVEL_VECTOR_BINARY_BITWISE_OPERATORS
 
         //=================================================
         // Conversions
@@ -886,7 +755,11 @@ namespace avel {
             #if defined(AVEL_AVX512VL)
             return mask{_mm_test_epi32_mask(content, content)};
 
-            #else
+            #elif defined(AVEL_SSE2)
+            return *this != Vector{0x00};
+            #endif
+
+            #if defined(AVEL_NEON)
             return *this != Vector{0x00};
             #endif
         }
@@ -1012,7 +885,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32i rotl(vec4x32i v, std::uint32_t s) {
+    AVEL_FINL vec4x32i rotl(vec4x32i v, long long s) {
         return vec4x32i(rotl(vec4x32u(v), s));
     }
 
@@ -1030,7 +903,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32i rotr(vec4x32i v, std::uint32_t s) {
+    AVEL_FINL vec4x32i rotr(vec4x32i v, long long s) {
         return vec4x32i(rotr(vec4x32u(v), s));
     }
 
@@ -1097,6 +970,11 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL vec4x32i byteswap(vec4x32i v) {
+        return vec4x32i(byteswap(vec4x32u(v)));
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec4x32i max(vec4x32i a, vec4x32i b) {
         #if defined(AVEL_SSE41)
         return vec4x32i{_mm_max_epi32(decay(a), decay(b))};
@@ -1153,10 +1031,10 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32i average(vec4x32i x, vec4x32i y) {
+    AVEL_FINL vec4x32i average(vec4x32i a, vec4x32i b) {
         #if defined(AVEL_SSE2)
-        auto avg = (x & y) + ((x ^ y) >> 1);
-        auto c = broadcast_mask((x < -y) | (y == vec4x32i{std::int32_t(1 << 31)})) & (x ^ y) & vec4x32i{1};
+        auto avg = (a & b) + ((a ^ b) >> 1);
+        auto c = broadcast_mask((a < -b) | (b == vec4x32i{std::int32_t(1 << 31)})) & (a ^ b) & vec4x32i{1};
 
         return avg + c;
 
@@ -1246,8 +1124,8 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32i neg_abs(vec4x32u x) {
-        return neg_abs(vec4x32i{x});
+    AVEL_FINL vec4x32i neg_abs(vec4x32u v) {
+        return neg_abs(vec4x32i{v});
     }
 
     //=====================================================
@@ -1258,8 +1136,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x32i load<vec4x32i>(const std::int32_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = std::min(4u, n);
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         return vec4x32i{_mm_maskz_load_epi32(mask, ptr)};
 
         #elif defined(AVEL_SSE2)
@@ -1372,11 +1249,10 @@ namespace avel {
 
 
     template<>
+    [[nodiscard]]
     AVEL_FINL vec4x32u gather<vec4x32u>(const std::uint32_t* ptr, vec4x32i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = min(n, vec4x32u::width);
-        auto mask = (1 << n) - 1;
-
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         return vec4x32u{_mm_mmask_i32gather_epi32(_mm_setzero_si128(), mask, decay(indices), ptr, sizeof(std::uint32_t))};
 
         #elif defined(AVEL_AVX2)
@@ -1472,11 +1348,10 @@ namespace avel {
 
 
     template<>
+    [[nodiscard]]
     AVEL_FINL vec4x32i gather<vec4x32i>(const std::int32_t* ptr, vec4x32i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = min(n, vec4x32i::width);
-        auto mask = (1 << n) - 1;
-
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         return vec4x32i{_mm_mmask_i32gather_epi32(_mm_setzero_si128(), mask, decay(indices), ptr, sizeof(std::uint32_t))};
 
         #elif defined(AVEL_AVX2)
@@ -1545,12 +1420,15 @@ namespace avel {
         return vec4x32i{_mm_i32gather_epi32(ptr, decay(indices), sizeof(std::int32_t))};
 
         #elif defined(AVEL_SSE2)
-        auto i = to_array(indices);
+        auto i0 = extract<0>(indices);
+        auto i1 = extract<1>(indices);
+        auto i2 = extract<2>(indices);
+        auto i3 = extract<3>(indices);
 
-        auto a = _mm_cvtsi32_si128(ptr[i[0]]);
-        auto b = _mm_cvtsi32_si128(ptr[i[1]]);
-        auto c = _mm_cvtsi32_si128(ptr[i[2]]);
-        auto d = _mm_cvtsi32_si128(ptr[i[3]]);
+        auto a = _mm_cvtsi32_si128(ptr[i0]);
+        auto b = _mm_cvtsi32_si128(ptr[i1]);
+        auto c = _mm_cvtsi32_si128(ptr[i2]);
+        auto d = _mm_cvtsi32_si128(ptr[i3]);
 
         auto abab = _mm_unpacklo_epi32(a, b);
         auto cdcd = _mm_unpacklo_epi32(c, d);
@@ -1574,8 +1452,7 @@ namespace avel {
 
     AVEL_FINL void store(std::int32_t* ptr, vec4x32i x, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = min(n, vec4x32i::width);
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         _mm_mask_storeu_epi32(ptr, mask, decay(x));
 
         #elif defined(AVEL_SSE2)
@@ -1670,8 +1547,7 @@ namespace avel {
 
     AVEL_FINL void scatter(std::uint32_t* ptr, vec4x32u x, vec4x32i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = min(n, vec4x32u::width);
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         _mm_mask_i32scatter_epi32(ptr, mask, decay(indices), decay(x), sizeof(std::uint32_t));
 
         #elif defined(AVEL_SSE2)
@@ -1728,8 +1604,7 @@ namespace avel {
 
     AVEL_FINL void scatter(std::int32_t* ptr, vec4x32i x, vec4x32i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        n = min(n, vec4x32i::width);
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 4) ? -1 : (1 << n) - 1;
         _mm_mask_i32scatter_epi32(ptr, mask, decay(indices), decay(x), sizeof(std::int32_t));
 
         #elif defined(AVEL_SSE2)
@@ -1811,40 +1686,7 @@ namespace avel {
         };
     }
 
-    [[nodiscard]]
-    AVEL_FINL vec4x32i popcount(vec4x32i v) {
-        return vec4x32i{popcount(vec4x32u(v))};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x32i byteswap(vec4x32i v) {
-        return vec4x32i(byteswap(vec4x32u(v)));
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x32i countl_zero(vec4x32i x) {
-        return vec4x32i{countl_zero(vec4x32u(x))};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x32i countl_one(vec4x32i x) {
-        return vec4x32i{countl_one(vec4x32u(x))};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x32i countr_zero(vec4x32i x) {
-        return vec4x32i{countr_zero(vec4x32u(x))};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x32i countr_one(vec4x32i x) {
-        return vec4x32i{countr_one(vec4x32u(x))};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL mask4x32i has_single_bit(vec4x32i x) {
-        return mask4x32i(has_single_bit(vec4x32u(x)));
-    }
+    AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec4x32i, mask4x32i, vec4x32u)
 
 }
 

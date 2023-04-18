@@ -31,35 +31,7 @@ namespace avel {
 
 
 
-    // Vector, Vector mask, array aliases
-
-    using vec1x8u = Vector<std::uint8_t, 1>;
-    using vec1x8i = Vector<std::int8_t,  1>;
-
-    using vec1x16u = Vector<std::uint16_t, 1>;
-    using vec1x16i = Vector<std::int16_t,  1>;
-
-    using vec1x32u = Vector<std::uint32_t, 1>;
-    using vec1x32i = Vector<std::int32_t,  1>;
-
-    using vec1x64u = Vector<std::uint64_t, 1>;
-    using vec1x64i = Vector<std::int64_t,  1>;
-
-
-
-    using mask1x8u = Vector_mask<std::uint8_t, 1>;
-    using mask1x8i = Vector_mask<std::int8_t,  1>;
-
-    using mask1x16u = Vector_mask<std::uint16_t, 1>;
-    using mask1x16i = Vector_mask<std::int16_t,  1>;
-
-    using mask1x32u = Vector_mask<std::uint32_t, 1>;
-    using mask1x32i = Vector_mask<std::int32_t,  1>;
-
-    using mask1x64u = Vector_mask<std::uint64_t, 1>;
-    using mask1x64i = Vector_mask<std::int64_t,  1>;
-
-
+    // Array aliases
 
     using arr1x8u = std::array<std::uint8_t, 1>;
     using arr1x8i = std::array<std::int8_t,  1>;
@@ -106,10 +78,17 @@ namespace avel {
 
 
     template<class V>
-    V gather(const typename V::scalar* ptr, Vector<typename to_index_type<typename V::scalar>::type, V::width> indices, std::uint32_t n);
+    V gather(
+        const typename V::scalar* ptr,
+        Vector<typename to_index_type<typename V::scalar>::type, V::width> indices,
+        std::uint32_t n
+    );
 
     template<class V, std::uint32_t N = V::width>
-    V gather(const typename V::scalar* ptr, Vector<typename to_index_type<typename V::scalar>::type, V::width> indices) {
+    V gather(
+        const typename V::scalar* ptr,
+        Vector<typename to_index_type<typename V::scalar>::type, V::width> indices
+    ) {
         static_assert(N <= V::width, "Cannot load more elements than width of vector");
         typename std::enable_if<N <= V::width, int>::type dummy_variable = 0;
 
@@ -143,6 +122,8 @@ namespace avel {
 // Note: The order of inclusion of the following files is meaningful as later
 // files use declarations/definitions contained within earlier files
 
+#include "Vectors_common.hpp"
+
 //Native vectors
 
 #include "Vec1x8u.hpp"
@@ -159,6 +140,8 @@ namespace avel {
 
 //#include "Vec1x32f.hpp"
 //#include "Vec1x64f.hpp"
+
+
 
 //128-bit vectors
 
@@ -177,62 +160,53 @@ namespace avel {
 
     //#include "Vec4x32f.hpp"
     //#include "Vec2x64f.hpp"
-
 #endif
 
-/*
+
+
 //256-bit vectors
 
 #if defined(AVEL_AVX)
-    #include "Vec8x32u.hpp"
-    #include "Vec8x32i.hpp"
-
-    #include "Vec4x64u.hpp"
-    #include "Vec4x64i.hpp"
-
-    #include "Vec8x32f.hpp"
-    #include "Vec4x64f.hpp"
-
+    //#include "Vec8x32f.hpp"
+    //#include "Vec4x64f.hpp"
 #endif
-*/
 
 #if defined(AVEL_AVX2)
     #include "Vec32x8u.hpp"
     #include "Vec32x8i.hpp"
 
-    //#include "Vec16x16u.hpp"
-    //#include "Vec16x16i.hpp"
+    #include "Vec16x16u.hpp"
+    #include "Vec16x16i.hpp"
 
-    //#include "Vec8x32u.hpp"
-    //#include "Vec8x32i.hpp"
+    #include "Vec8x32u.hpp"
+    #include "Vec8x32i.hpp"
 
-    //#include "Vec4x64u.hpp"
-    //#include "Vec4x64i.hpp"
-
+    #include "Vec4x64u.hpp"
+    #include "Vec4x64i.hpp"
 #endif
 
 //512-bit vectors
 
 #if defined(AVEL_AVX512F)
+    #include "Vec16x32u.hpp"
+    #include "Vec16x32i.hpp"
 
-    //#include "Vec32x16u.hpp"
-    //#include "Vec32x16i.hpp"
-
-    //#include "Vec16x32u.hpp"
-    //#include "Vec16x32i.hpp"
-
-    //#include "Vec8x64u.hpp"
-    //#include "Vec8x64i.hpp"
+    #include "Vec8x64u.hpp"
+    #include "Vec8x64i.hpp"
 
     //#include "Vec16x32f.hpp"
     //#include "Vec8x64f.hpp"
-
 #endif
 
 #if defined(AVEL_AVX512BW)
     #include "Vec64x8u.hpp"
     #include "Vec64x8i.hpp"
+
+    #include "Vec32x16u.hpp"
+    #include "Vec32x16i.hpp"
 #endif
+
+
 
 /*
  * Should these specializations be made?

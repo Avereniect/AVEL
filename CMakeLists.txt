@@ -46,11 +46,11 @@ foreach (extension IN LISTS AVEL_OPTIONS)
     option(${extension} OFF)
 endforeach()
 
-option(AVEL_USE_PRECOMPILED_HEADERS OFF "Make the Avel.hpp a precompiled header")
+option(AVEL_USE_PRECOMPILED_HEADERS OFF "Make AVEL.hpp a precompiled header")
 
-set(AVEL_L1_CACHE_LINE_SIZE "0" CACHE STRING "Size of L1 cache in bytes")
-set(AVEL_L2_CACHE_LINE_SIZE "0" CACHE STRING "Size of L2 cache in bytes")
-set(AVEL_L3_CACHE_LINE_SIZE "0" CACHE STRING "Size of L3 cache in bytes")
+set(AVEL_L1_CACHE_LINE_SIZE "0" CACHE STRING "Size of L1 cache lines in bytes")
+set(AVEL_L2_CACHE_LINE_SIZE "0" CACHE STRING "Size of L2 cache lines in bytes")
+set(AVEL_L3_CACHE_LINE_SIZE "0" CACHE STRING "Size of L3 cache lines in bytes")
 
 
 
@@ -61,30 +61,27 @@ foreach(extension IN LISTS AVEL_OPTIONS)
     endif()
 endforeach()
 
-target_compile_definitions(AVEL INTERFACE ${AVEL_REQUESTED_EXTENSIONS})
 
-
+set(AVEL_CACHE_LINE_SIZES "")
 
 ## Define macros for cache line sizes
-#if(NOT AVEL_L1_CACHE_LINE_SIZE STREQUAL "0")
-#    target_compile_definitions(AVEL INTERFACE AVEL_L1_CACHE_LINE_SIZE=${AVEL_L1_CACHE_LINE_SIZE})
-#endif()
-#
-#if(NOT AVEL_L2_CACHE_LINE_SIZE STREQUAL "0")
-#    target_compile_definitions(AVEL INTERFACE AVEL_L2_CACHE_LINE_SIZE=${AVEL_L2_CACHE_LINE_SIZE})
-#endif()
-#
-#if(NOT AVEL_L3_CACHE_LINE_SIZE STREQUAL "0")
-#    target_compile_definitions(AVEL INTERFACE AVEL_L3_CACHE_LINE_SIZE=${AVEL_L3_CACHE_LINE_SIZE})
-#endif()
+if(NOT AVEL_L1_CACHE_LINE_SIZE STREQUAL "0")
+    list(APPEND "AVEL_L1_CACHE_LINE_SIZE=${AVEL_L1_CACHE_LINE_SIZE}")
+endif()
 
+if(NOT AVEL_L2_CACHE_LINE_SIZE STREQUAL "0")
+    list(APPEND "AVEL_L2_CACHE_LINE_SIZE=${AVEL_L2_CACHE_LINE_SIZE}")
+endif()
+
+if(NOT AVEL_L3_CACHE_LINE_SIZE STREQUAL "0")
+    list(APPEND "AVEL_L3_CACHE_LINE_SIZE=${AVEL_L3_CACHE_LINE_SIZE}")
+endif()
+
+## Set AVEL compile definitions
+target_compile_definitions(AVEL INTERFACE ${AVEL_REQUESTED_EXTENSIONS} ${AVEL_CACHE_LINE_SIZES})
 
 
 ## Handle precompiled headers
-if(AVEL_USE_PRECOMPILED_HEADERS AND (${CMAKE_VERSION} VERSION_LESS "3.16.0"))
-    message(FATAL_ERROR "Precompiled headers require CMake 3.16.0")
-endif()
-
 if (AVEL_USE_PRECOMPILED_HEADERS)
     target_precompile_headers(AVEL
         INTERFACE
@@ -104,10 +101,19 @@ endif()
 
 
 # AVEL benchmarks
-option(AVEL_BUILD_BENCHMARKS OFF)
+#option(AVEL_BUILD_BENCHMARKS OFF)
 
-if (AVEL_BUILD_BENCHMARKS)
-    add_subdirectory(benchmarks)
-endif()
+#if (AVEL_BUILD_BENCHMARKS)
+#    add_subdirectory(benchmarks)
+#endif()
+
+
+
+# AVEL support
+#option(AVEL_BUILD_SUPPORT OFF)
+
+#if (AVEL_BUILD_SUPPORT)
+#    add_subdirectory(support)
+#endif()
 
 #add_subdirectory(support)

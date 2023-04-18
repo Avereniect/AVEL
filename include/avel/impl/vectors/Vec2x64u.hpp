@@ -121,18 +121,12 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator=(bool x) {
-            #if defined(AVEL_AVX512VL)
-            content = primitive(x ? 0x3 : 0x0);
+            *this = Vector_mask{x};
+            return *this;
+        }
 
-            #elif defined(AVEL_SSE2)
-            content = x ? _mm_set1_epi64x(-1ull) : _mm_setzero_si128();
-
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_u64(x ? -1 : 0);
-            #endif
-
+        AVEL_FINL Vector_mask& operator=(primitive p) {
+            content = p;
             return *this;
         }
 
@@ -254,35 +248,7 @@ namespace avel {
             #endif
         }
 
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator&(Vector_mask lhs, Vector_mask rhs) {
-            lhs &= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator&&(Vector_mask lhs, Vector_mask rhs) {
-            lhs &= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator|(Vector_mask lhs, Vector_mask rhs) {
-            lhs |= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator||(Vector_mask lhs, Vector_mask rhs) {
-            lhs |= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator^(Vector_mask lhs, Vector_mask rhs) {
-            lhs ^= rhs;
-            return lhs;
-        }
+        AVEL_VECTOR_MASK_BINARY_BITWISE_OPERATORS
 
         //=================================================
         // Conversion operators
@@ -302,7 +268,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(mask2x64u m) {
         #if defined(AVEL_AVX512VL)
-        return popcount(_mm512_mask2int(decay(m)));
+        return popcount(decay(m));
 
         #elif defined(AVEL_SSE2)
         return popcount(_mm_movemask_epi8(decay(m))) / sizeof(std::uint64_t);
@@ -324,7 +290,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool any(mask2x64u m) {
         #if defined(AVEL_AVX512VL)
-        return _mm512_mask2int(decay(m));
+        return !_kortestz_mask16_u8(decay(m), decay(m));
 
         #elif defined(AVEL_SSE41)
         return !_mm_test_all_zeros(decay(m), decay(m));
@@ -348,7 +314,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool all(mask2x64u m) {
         #if defined(AVEL_AVX512VL)
-        return 0x03 == _mm512_mask2int(decay(m));
+        return 0x3 == decay(m);
 
         #elif defined(AVEL_SSE2)
         return 0xFFFF == _mm_movemask_epi8(decay(m));
@@ -369,7 +335,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool none(mask2x64u m) {
         #if defined(AVEL_AVX512VL)
-        return _mm512_mask2int(decay(m)) == 0x00;
+        return _kortestz_mask16_u8(decay(m), decay(m));
 
         #elif defined(AVEL_SSE41)
         return _mm_test_all_zeros(decay(m), decay(m));
@@ -475,24 +441,18 @@ namespace avel {
         // Assignment operators
         //=================================================
 
-        Vector& operator=(const Vector&) = default;
-        Vector& operator=(Vector&&) = default;
+        AVEL_FINL Vector& operator=(scalar x) {
+            *this = Vector{x};
+            return *this;
+        }
 
         AVEL_FINL Vector& operator=(primitive p) {
             content = p;
             return *this;
         }
 
-        AVEL_FINL Vector& operator=(scalar x) {
-            #if defined(AVEL_SSE2)
-            content = _mm_set1_epi64x(x);
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_u64(x);
-            #endif
-            return *this;
-        }
+        Vector& operator=(const Vector&) = default;
+        Vector& operator=(Vector&&) = default;
 
         //=================================================
         // Comparison operators
@@ -661,6 +621,8 @@ namespace avel {
             return *this;
         }
 
+        //Definition of operator-() deferred until later
+
         //=================================================
         // Arithmetic assignment operators
         //=================================================
@@ -773,61 +735,13 @@ namespace avel {
         // Arithmetic operators
         //=================================================
 
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator+(Vector lhs, Vector rhs) {
-            lhs += rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator-(Vector lhs, Vector rhs) {
-            lhs -= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-       AVEL_FINL friend Vector operator*(Vector lhs, Vector rhs) {
-            lhs *= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator/(Vector lhs, Vector rhs) {
-            lhs /= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator%(Vector lhs, Vector rhs) {
-            lhs %= rhs;
-            return lhs;
-        }
+        AVEL_VECTOR_ARITHMETIC_OPERATORS
 
         //=================================================
         // Increment/Decrement operators
         //=================================================
 
-        AVEL_FINL Vector& operator++() {
-            *this += Vector{1};
-            return *this;
-        }
-
-        AVEL_FINL Vector operator++(int) {
-            auto temp = *this;
-            *this += Vector{1};
-            return temp;
-        }
-
-        AVEL_FINL Vector& operator--() {
-            *this -= Vector{1};
-            return *this;
-        }
-
-        AVEL_FINL Vector operator--(int) {
-            auto temp = *this;
-            *this -= Vector{1};
-            return temp;
-        }
+        AVEL_VECTOR_INCREMENT_DECREMENT_OPERATORS
 
         //=================================================
         // Bitwise assignment operators
@@ -868,7 +782,7 @@ namespace avel {
 
         AVEL_FINL Vector& operator<<=(long long s) {
             #if defined(AVEL_SSE2)
-            content = _mm_sll_epi64(content, _mm_cvtsi32_si128(s));
+            content = _mm_sll_epi64(content, _mm_cvtsi64_si128(s));
             #endif
 
             #if defined(AVEL_NEON)
@@ -880,7 +794,7 @@ namespace avel {
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
             #if defined(AVEL_SSE2)
-            content = _mm_srl_epi64(content, _mm_cvtsi32_si128(rhs));
+            content = _mm_srl_epi64(content, _mm_cvtsi64_si128(rhs));
             #endif
 
             #if defined(AVEL_NEON)
@@ -964,48 +878,7 @@ namespace avel {
             #endif
         }
 
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator&(Vector lhs, Vector rhs) {
-            lhs &= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator|(Vector lhs, Vector rhs) {
-            lhs |= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator^(Vector lhs, Vector rhs) {
-            lhs ^= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator<<(Vector lhs, long long rhs) {
-            lhs <<= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator>>(Vector lhs, long long rhs) {
-            lhs >>= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator<<(Vector lhs, Vector rhs) {
-            lhs <<= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector operator>>(Vector lhs, Vector rhs) {
-            lhs >>= rhs;
-            return lhs;
-        }
+        AVEL_VECTOR_BINARY_BITWISE_OPERATORS
 
         //=================================================
         // Conversions
@@ -1289,6 +1162,10 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         return count(mask2x64u{x});
 
+        #elif defined(AVEL_SSE41)
+        auto compared = _mm_cmpeq_epi64(decay(x), _mm_setzero_si128());
+        return 2 - popcount(_mm_movemask_epi8(compared)) / sizeof(std::uint64_t);
+
         #elif defined(AVEL_SSE2)
         //TODO: Consider alternative approaches
         auto compared = _mm_cmpeq_epi32(decay(x), _mm_setzero_si128());
@@ -1300,9 +1177,9 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool any(vec2x64u x) {
+        //TODO: Optimize with newer instruction sets
         #if defined(AVEL_SSE41)
-        auto compared = _mm_cmpeq_epi64(decay(x), _mm_setzero_si128());
-        return 0xFFFF != _mm_movemask_epi8(compared);
+        return !_mm_test_all_zeros(decay(x), decay(x));
 
         #elif defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
@@ -1410,9 +1287,45 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL vec2x64u byteswap(vec2x64u v) {
+        #if defined(AVEL_SSSE3)
+        alignas(16) static constexpr std::uint8_t index_data[16] {
+             7,  6,  5,  4,
+             3,  2,  1,  0,
+            15, 14, 13, 12,
+            11, 10,  9,  8
+        };
+
+        auto indices = _mm_load_si128((const __m128i*)index_data);
+        return vec2x64u{_mm_shuffle_epi8(decay(v), indices)};
+
+        #elif defined(AVEL_SSE2)
+        //TODO: Adjust implementation to work on 64-bit integers
+        alignas(16) static constexpr std::uint32_t mask_data[4]{
+            0x00000000,
+            0xFFFFFFFF,
+            0x00000000,
+            0xFFFFFFFF
+        };
+
+        auto t0 = _mm_shufflelo_epi16(decay(v), 0x1B);
+        auto t1 = _mm_shufflehi_epi16(t0, 0x1B);
+        auto t2 = _mm_slli_epi16(t1, 0x8);
+        auto t3 = _mm_srli_epi16(t1, 0x8);
+        return vec2x64u{_mm_or_si128(t2, t3)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto t0 = vrev64q_u8(vreinterpretq_u8_u64(decay(v)));
+        return vec2x64u{vreinterpretq_u64_u8(t0)};
+        #endif
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec2x64u max(vec2x64u a, vec2x64u b) {
         #if defined(AVEL_AVX512VL)
         return vec2x64u{_mm_max_epu64(decay(a), decay(b))};
+
         #elif defined(AVEL_SSE2)
         return blend(a < b, b, a);
         #endif
@@ -1457,7 +1370,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64u clamp(vec2x64u x, vec2x64u lo, vec2x64u hi) {
-        return vec2x64u{min(max(x, lo), hi)};
+        return min(max(x, lo), hi);
     }
 
     [[nodiscard]]
@@ -1487,7 +1400,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec2x64u load<vec2x64u>(const std::uint64_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 2) ? 0x03 : (1 << n) - 1;
         return vec2x64u{_mm_maskz_loadu_epi64(mask, ptr)};
 
         #elif defined(AVEL_SSE2)
@@ -1536,7 +1449,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec2x64u aligned_load<vec2x64u>(const std::uint64_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 2) ? 0x03 : (1 << n) - 1;
         return vec2x64u{_mm_maskz_load_epi64(mask, ptr)};
 
         #elif defined(AVEL_SSE2)
@@ -1570,8 +1483,7 @@ namespace avel {
 
     AVEL_FINL void store(std::uint64_t* ptr, vec2x64u v, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        auto mask = (1 << n) - 1;
-
+        auto mask = (n >= 2) ? 0x03 : (1 << n) - 1;
         _mm_mask_storeu_epi64(ptr, mask, decay(v));
 
         #elif defined(AVEL_SSE2)
@@ -1625,7 +1537,7 @@ namespace avel {
 
     AVEL_FINL void aligned_store(std::uint64_t* ptr, vec2x64u v, std::uint32_t n) {
         #if defined(AVEL_AVX512VL)
-        auto mask = (1 << n) - 1;
+        auto mask = (n >= 2) ? 0x03 : (1 << n) - 1;
         _mm_mask_store_epi64(ptr, mask, decay(v));
 
         #elif defined(AVEL_SSE2)
@@ -1657,7 +1569,7 @@ namespace avel {
     template<>
     AVEL_FINL void aligned_store<vec2x64u::width>(std::uint64_t* ptr, vec2x64u v) {
         #if defined(AVEL_SSE2)
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
+        _mm_store_si128(reinterpret_cast<__m128i*>(ptr), decay(v));
         #endif
 
         #if defined(AVEL_NEON)
@@ -1682,75 +1594,21 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec2x64u> div(vec2x64u numerator, vec2x64u denominator) {
+        auto n0 = extract<0>(numerator);
+        auto n1 = extract<1>(numerator);
+
+        auto d0 = extract<0>(denominator);
+        auto d1 = extract<1>(denominator);
+
         vec2x64u quotient{};
+        quotient = insert<0>(quotient, n0 / d0);
+        quotient = insert<1>(quotient, n1 / d1);
 
-        /*
-        #if defined(AVEL_AVX512VL)
+        vec2x64u remainder{};
+        remainder = insert<0>(remainder, n0 % d0);
+        remainder = insert<1>(remainder, n1 % d1);
 
-        std::int32_t i = ;
-        #elif defined(AVEL_SSE2)
-
-        vec2x64u::primitive t0 = numerator;
-        vec2x64u::primitive t1 = _mm_srli_si128(t0, 8);
-        vec2x64u::primitive t2 = _mm_or_si128(t0, t1);
-
-        vec2x64u::primitive s0 = denominator;
-        vec2x64u::primitive s1 = _mm_srli_si128(s0, 8);
-        vec2x64u::primitive s2 = _mm_and_si128(s0, s1);
-
-        std::int64_t x = countl_zero(std::int64_t(_mm_cvtsi128_si64(t2)));
-        std::int64_t y = countl_zero(std::int64_t(_mm_cvtsi128_si64(s2)));
-
-        std::int32_t i = y - x + 1;
-        #endif
-        */
-
-        std::int32_t i = 64;
-
-        vec2x64u zeroes{};
-        for (; (i-- > 0) && any(numerator != zeroes);) {
-            mask2x64u b = ((numerator >> i) >= denominator);
-            auto tmp0 = broadcast_mask(b);
-            numerator -= (tmp0 & (denominator << i));
-            quotient |= (vec2x64u{b} << i);
-        }
-
-        return {quotient, numerator};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64u byteswap(vec2x64u v) {
-        #if defined(AVEL_SSSE3)
-        alignas(16) static constexpr std::uint8_t index_data[16] {
-             7,  6,  5,  4,
-             3,  2,  1,  0,
-            15, 14, 13, 12,
-            11, 10,  9,  8
-        };
-
-        auto indices = _mm_load_si128((const __m128i*)index_data);
-        return vec2x64u{_mm_shuffle_epi8(decay(v), indices)};
-
-        #elif defined(AVEL_SSE2)
-        //TODO: Adjust implementation to work on 64-bit integers
-        alignas(16) static constexpr std::uint32_t mask_data[4]{
-            0x00000000,
-            0xFFFFFFFF,
-            0x00000000,
-            0xFFFFFFFF
-        };
-
-        auto t0 = _mm_shufflelo_epi16(decay(v), 0x1B);
-        auto t1 = _mm_shufflehi_epi16(t0, 0x1B);
-        auto t2 = _mm_slli_epi16(t1, 0x8);
-        auto t3 = _mm_srli_epi16(t1, 0x8);
-        return vec2x64u{_mm_or_si128(t2, t3)};
-        #endif
-
-        #if defined(AVEL_NEON)
-        auto t0 = vrev64q_u8(vreinterpretq_u8_u64(decay(v)));
-        return vec2x64u{vreinterpretq_u64_u8(t0)};
-        #endif
+        return {quotient, remainder};
     }
 
     [[nodiscard]]
@@ -1759,6 +1617,7 @@ namespace avel {
         return vec2x64u{_mm_popcnt_epi64(decay(v))};
 
         #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
+        //TODO: Check if this is any faster than the scalar approach
         auto tmp0 = _mm_popcnt_epi16(decay(v));
         auto tmp1 = _mm_slli_epi64(tmp0, 32);
         auto tmp2 = _mm_add_epi32(tmp0, tmp1);
@@ -1817,20 +1676,10 @@ namespace avel {
         return vec2x64u{_mm_lzcnt_epi64(decay(x))};
 
         #elif defined(AVEL_SSE2)
-        //http://www.icodeguru.com/Embedded/Hacker%27s-Delight/040.htm
+        auto c0 = countl_zero(extract<0>(x));
+        auto c1 = countl_zero(extract<1>(x));
 
-        auto y = _mm_andnot_si128(decay(x >> 1), decay(x));
-
-        auto lo_double = _mm_cvtsi64_sd(_mm_undefined_pd(), _mm_cvtsi128_si64(y));
-        auto hi_double = _mm_cvtsi64_sd(_mm_undefined_pd(), _mm_cvtsi128_si64(_mm_srli_si128(y, 0x8)));
-
-        auto biases = _mm_set1_pd(0.5);
-        auto doubles = _mm_shuffle_pd(lo_double, hi_double, 0x0);
-        auto biased_doubles = _mm_add_pd(doubles, biases);
-
-        auto biased_exponents = _mm_srli_epi64(_mm_castpd_si128(biased_doubles), 52);
-        auto lzcnt = _mm_subs_epu16(_mm_set1_epi64x(1086), biased_exponents);
-        return vec2x64u{lzcnt};
+        return vec2x64u{_mm_set_epi64x(c1, c0)};
 
         #endif
 
@@ -1853,41 +1702,10 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec2x64u countl_one(vec2x64u x) {
         #if defined(AVEL_AVX512VL)
-        return vec2x64u{countl_zero(~x)};
+        return countl_zero(~x);
 
         #elif defined(AVEL_SSE2)
-        return vec2x64u{countl_zero(~x)};
-
-        /*
-        // Adjust to be suitable for 64-bit integers
-        vec2x64u sum{x == vec2x64u{0xFFFFFFFF}};
-
-        vec2x64u m0{0xFFFF0000u};
-        mask2x64u b0 = (m0 & x) == m0;
-        sum += broadcast_mask(b0) & vec2x64u{16};
-        x <<= broadcast_mask(b0) * vec2x64u{16};
-
-        vec2x64u m1{0xFF000000u};
-        mask2x64u b1 = (m1 & x) == m1;
-        sum += broadcast_mask(b1) & vec2x64u{8};
-        x <<= broadcast_mask(b1) & vec2x64u{8};
-
-        vec2x64u m2{0xF0000000u};
-        mask2x64u b2 = (m2 & x) == m2;
-        sum += broadcast_mask(b2) & vec2x64u{4};
-        x <<= broadcast_mask(b2) & vec2x64u{4};
-
-        vec2x64u m3{0xC0000000u};
-        mask2x64u b3 = (m3 & x) == m3;
-        sum += broadcast_mask(b3) & vec2x64u{2};
-        x <<= broadcast_mask(b3) & vec2x64u{2};
-
-        vec2x64u m4{0x80000000u};
-        mask2x64u b4 = (m4 & x) == m4;
-        sum += broadcast_mask(b3) & vec2x64u{1};
-
-        return sum;
-        */
+        return countl_zero(~x);
 
         #endif
 
@@ -1911,18 +1729,11 @@ namespace avel {
         return blend(zero_mask, vec2x64u{64}, z);
 
         #elif defined(AVEL_SSE2)
-        auto y = decay(x & (vec2x64u{0x00} - x));
+        auto c0 = countr_zero(extract<0>(x));
+        auto c1 = countr_zero(extract<1>(x));
 
-        auto lo_double = _mm_cvtsi64_sd(_mm_undefined_pd(), _mm_cvtsi128_si64(y));
-        auto hi_double = _mm_cvtsi64_sd(_mm_undefined_pd(), _mm_cvtsi128_si64(_mm_srli_si128(y, 0x8)));
-        auto doubles = _mm_shuffle_pd(lo_double, hi_double, 0x0);
+        return vec2x64u{_mm_set_epi64x(c1, c0)};
 
-        auto biased_exponents = (vec2x64u(_mm_castpd_si128(doubles)) >> 52);
-        biased_exponents = _mm_min_epi16(decay(vec2x64u{1086}), decay(biased_exponents));
-        auto tzcnt = biased_exponents - vec2x64u{1023};
-        tzcnt = blend(x == vec2x64u{0x00}, vec2x64u{64}, tzcnt);
-
-        return vec2x64u{tzcnt};
         #endif
 
         #if defined(AVEL_NEON)
@@ -1988,7 +1799,6 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         auto zero_mask = (v == vec2x64u{0});
 
-        //TODO: Optimize body
         --v;
         v |= v >> 1;
         v |= v >> 2;
@@ -1998,8 +1808,7 @@ namespace avel {
         v |= v >> 32;
         ++v;
 
-        //TODO: Optimize?
-        return blend(zero_mask, vec2x64u{1}, v);
+        return v - broadcast_mask(zero_mask);
         #endif
 
         #if defined(AVEL_NEON)

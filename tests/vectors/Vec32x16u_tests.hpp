@@ -1,0 +1,2305 @@
+#ifndef AVEL_VEC32X16U_TESTS_HPP
+#define AVEL_VEC32X16U_TESTS_HPP
+
+namespace avel_tests {
+
+    using namespace avel;
+
+    //=========================================================================
+    // mask32x16u tests
+    //=========================================================================
+
+    //=====================================================
+    // Constructors
+    //=====================================================
+
+    TEST(Mask32x16u, Construct_from_primitive) {
+        mask32x16u mask{mask32x16u::primitive{}};
+
+        EXPECT_FALSE(any(mask));
+        EXPECT_FALSE(all(mask));
+        EXPECT_TRUE(none(mask));
+        EXPECT_EQ(count(mask), 0);
+    }
+
+    TEST(Mask32x16u, Construct_from_bool) {
+        mask32x16u mask0{false};
+        EXPECT_FALSE(any(mask0));
+        EXPECT_FALSE(all(mask0));
+        EXPECT_TRUE(none(mask0));
+        EXPECT_EQ(count(mask0), 0);
+
+        mask32x16u mask1{true};
+        EXPECT_TRUE(all(mask1));
+        EXPECT_TRUE(any(mask1));
+        EXPECT_FALSE(none(mask1));
+        EXPECT_TRUE(count(mask1) == mask32x16u::width);
+    }
+
+    TEST(Mask32x16u, Construct_from_array) {
+        arr32xb false_array{};
+        std::fill_n(false_array.data(), mask32x16u::width, false);
+        mask32x16u mask0{false_array};
+
+        EXPECT_FALSE(any(mask0));
+        EXPECT_FALSE(all(mask0));
+        EXPECT_TRUE(none(mask0));
+        EXPECT_EQ(count(mask0), 0);
+
+
+        arr32xb true_array{};
+        std::fill_n(true_array.data(), mask32x16u::width, true);
+        mask32x16u mask1{true_array};
+
+        EXPECT_TRUE(any(mask1));
+        EXPECT_TRUE(all(mask1));
+        EXPECT_FALSE(none(mask1));
+        EXPECT_TRUE(count(mask1) == mask32x16u::width);
+    }
+
+    TEST(Mask32x16u, Construct_from_array_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32xb>();
+            std::uint32_t cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            auto m = mask32x16u{inputs};
+
+            EXPECT_EQ(cnt, count(m));
+            EXPECT_EQ(cnt == mask32x16u::width, all(m));
+            EXPECT_EQ(cnt != 0, any(m));
+            EXPECT_EQ(cnt == 0, none(m));
+        }
+    }
+
+    //=====================================================
+    // Assignment
+    //=====================================================
+
+    TEST(Mask32x16u, Assign_bool) {
+        mask32x16u mask0{};
+        mask0 = false;
+        EXPECT_FALSE(any(mask0));
+        EXPECT_FALSE(all(mask0));
+        EXPECT_EQ(count(mask0), 0);
+
+        mask32x16u mask1{};
+        mask1 = true;
+        EXPECT_TRUE(all(mask1));
+        EXPECT_TRUE(any(mask1));
+        EXPECT_TRUE(count(mask1) == mask32x16u::width);
+    }
+
+    //=====================================================
+    // Comparison operators
+    //=====================================================
+
+    TEST(Mask32x16u, Equality_comparison) {
+        mask32x16u mask0{false};
+        mask32x16u mask1{false};
+        EXPECT_TRUE(mask0 == mask1);
+
+        mask32x16u mask2{true};
+        mask32x16u mask3{true};
+        EXPECT_TRUE(mask2 == mask3);
+
+        EXPECT_FALSE(mask0 == mask2);
+        EXPECT_FALSE(mask3 == mask1);
+    }
+
+    TEST(Mask32x16u, Equality_comparison_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32xb>();
+            auto inputs1 = random_array<arr32xb>();
+            inputs1[0] = !inputs0[0];
+
+            mask32x16u mask0{inputs0};
+            mask32x16u mask1{inputs0};
+            mask32x16u mask2{inputs1};
+
+            EXPECT_TRUE(mask0 == mask1);
+            EXPECT_FALSE(mask1 == mask2);
+        }
+    }
+
+    TEST(Mask32x16u, Inequality_comparison) {
+        mask32x16u mask0{false};
+        mask32x16u mask1{false};
+        EXPECT_FALSE(mask0 != mask1);
+
+        mask32x16u mask2{true};
+        mask32x16u mask3{true};
+        EXPECT_FALSE(mask2 != mask3);
+
+        EXPECT_TRUE(mask0 != mask2);
+        EXPECT_TRUE(mask3 != mask1);
+    }
+
+    TEST(Mask32x16u, Inequality_comparison_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32xb>();
+            auto inputs1 = random_array<arr32xb>();
+            inputs1[0] = !inputs0[0];
+
+            mask32x16u mask0{inputs0};
+            mask32x16u mask1{inputs1};
+            mask32x16u mask2{inputs1};
+
+            EXPECT_TRUE(mask0 != mask1);
+            EXPECT_FALSE(mask1 != mask2);
+        }
+    }
+
+    //=====================================================
+    // Bitwise assignment
+    //=====================================================
+
+    TEST(Mask32x16u, Bitwise_and_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32xb>();
+            auto inputs1 = random_array<arr32xb>();
+
+            mask32x16u mask0{inputs0};
+            mask32x16u mask1{inputs1};
+
+            mask32x16u results = mask0;
+            results &= mask1;
+
+            arr32xb expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] & inputs1[j];
+            }
+            mask32x16u expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST(Mask32x16u, Bitwise_or_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32xb>();
+            auto inputs1 = random_array<arr32xb>();
+
+            mask32x16u mask0{inputs0};
+            mask32x16u mask1{inputs1};
+
+            mask32x16u results = mask0;
+            results |= mask1;
+
+            arr32xb expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] | inputs1[j];
+            }
+            mask32x16u expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST(Mask32x16u, Bitwise_xor_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32xb>();
+            auto inputs1 = random_array<arr32xb>();
+
+            mask32x16u mask0{inputs0};
+            mask32x16u mask1{inputs1};
+
+            mask32x16u results = mask0;
+            results ^= mask1;
+
+            arr32xb expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] ^ inputs1[j];
+            }
+            mask32x16u expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    //=====================================================
+    // Bitwise/logical operations
+    //=====================================================
+
+    TEST(Mask32x16u, Logical_negation_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32xb>();
+
+            mask32x16u mask0{inputs};
+
+            mask32x16u results = !mask0;
+
+            arr32xb expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = !inputs[j];
+            }
+            mask32x16u expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST(Mask32x16u, Bitwise_and_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32xb>();
+            auto inputs1 = random_array<arr32xb>();
+
+            mask32x16u mask0{inputs0};
+            mask32x16u mask1{inputs1};
+
+            mask32x16u results = mask0 & mask1;
+
+            arr32xb expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] & inputs1[j];
+            }
+            mask32x16u expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST(Mask32x16u, Logical_and_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32xb>();
+            auto inputs1 = random_array<arr32xb>();
+
+            mask32x16u mask0{inputs0};
+            mask32x16u mask1{inputs1};
+
+            mask32x16u results = mask0 && mask1;
+
+            arr32xb expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] && inputs1[j];
+            }
+            mask32x16u expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST(Mask32x16u, Bitwise_or_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32xb>();
+            auto inputs1 = random_array<arr32xb>();
+
+            mask32x16u mask0{inputs0};
+            mask32x16u mask1{inputs1};
+
+            mask32x16u results = mask0 | mask1;
+
+            arr32xb expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] | inputs1[j];
+            }
+            mask32x16u expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST(Mask32x16u, Logical_or_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32xb>();
+            auto inputs1 = random_array<arr32xb>();
+
+            mask32x16u mask0{inputs0};
+            mask32x16u mask1{inputs1};
+
+            mask32x16u results = mask0 || mask1;
+
+            arr32xb expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] || inputs1[j];
+            }
+            mask32x16u expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST(Mask32x16u, Bitwise_xor_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32xb>();
+            auto inputs1 = random_array<arr32xb>();
+
+            mask32x16u mask0{inputs0};
+            mask32x16u mask1{inputs1};
+
+            mask32x16u results = mask0 ^ mask1;
+
+            arr32xb expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] ^ inputs1[j];
+            }
+            mask32x16u expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    //=========================================================================
+    // Vec32x16u tests
+    //=========================================================================
+
+    //=====================================================
+    // Constructors
+    //=====================================================
+
+    TEST(Vec32x16u, Construct_vector_from_mask_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32xb>();
+
+            mask32x16u m0{inputs};
+            vec32x16u v0{m0};
+
+            auto results = to_array(v0);
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                EXPECT_EQ(results[j], inputs[j]);
+            }
+        }
+    }
+
+    TEST(Vec32x16u, Construct_from_scalar_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto x = random_val<vec32x16u::scalar>();
+            vec32x16u results{x};
+
+            arr32x16u arr;
+            std::fill_n(arr.data(), vec32x16u::width, x);
+            vec32x16u expected{arr};
+
+            EXPECT_TRUE(all(results == expected));
+        }
+    }
+
+    TEST(Vec32x16u, Construct_from_array_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = to_array(v);
+
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                EXPECT_EQ(inputs[j], results[j]);
+            }
+        }
+    }
+
+    //=====================================================
+    // Assignment operators
+    //=====================================================
+
+    TEST(Vec32x16u, Assign_primitive) {
+        vec32x16u::primitive x{};
+        vec32x16u v{0x0F};
+        v = x;
+        vec32x16u expected{};
+
+        EXPECT_TRUE(all(v == expected));
+    }
+
+    TEST(Vec32x16u, Assign_scalar_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto scalar = random_val<vec32x16u::scalar>();
+            vec32x16u v;
+            v = scalar;
+
+            auto results = to_array(v);
+            for (std::size_t j = 0; j < results.size(); ++j) {
+                EXPECT_EQ(results[j], scalar);
+            }
+        }
+    }
+
+    //=====================================================
+    // Comparison operators
+    //=====================================================
+
+    TEST(Vec32x16u, Equality_comparison) {
+        mask32x16u mask0{false};
+        mask32x16u mask1{false};
+        EXPECT_EQ(mask0, mask1);
+
+        mask32x16u mask2{true};
+        mask32x16u mask3{true};
+        EXPECT_EQ(mask2, mask3);
+    }
+
+    TEST(Vec32x16u, Equality_comparison_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+            inputs1[0] = ~inputs0[0];
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs0};
+            vec32x16u v2{inputs1};
+
+            EXPECT_TRUE(all(v0 == v1));
+            EXPECT_FALSE(all(v1 == v2));
+        }
+    }
+
+    TEST(Vec32x16u, Inequality_comparison_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+            inputs1[0] = ~inputs0[0];
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs0};
+            vec32x16u v2{inputs1};
+
+            EXPECT_FALSE(any(v0 != v1));
+            EXPECT_TRUE(any(v1 != v2));
+        }
+    }
+
+    TEST(Vec32x16u, Less_than_comparison_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = (v0 < v1);
+
+            arr32xb expected{};
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] < inputs1[j];
+            }
+
+            EXPECT_EQ(results, mask32x16u{expected});
+        }
+    }
+
+    TEST(Vec32x16u, Less_than_or_equal_comparison_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = (v0 <= v1);
+
+            arr32xb expected{};
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] <= inputs1[j];
+            }
+
+            EXPECT_EQ(results, mask32x16u{expected});
+        }
+    }
+
+    TEST(Vec32x16u, Greater_than_comparison_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = (v0 > v1);
+
+            arr32xb expected{};
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] > inputs1[j];
+            }
+
+            EXPECT_EQ(results, mask32x16u{expected});
+        }
+    }
+
+    TEST(Vec32x16u, Greater_than_or_equal_comparison_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = (v0 >= v1);
+
+            arr32xb expected{};
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] >= inputs1[j];
+            }
+
+            EXPECT_EQ(results, mask32x16u{expected});
+        }
+    }
+
+    //=====================================================
+    // Unary arithmetic operators
+    //=====================================================
+
+    TEST(Vec32x16u, Unary_plus) {
+        auto inputs = random_array<arr32x16u>();
+        const vec32x16u v{inputs};
+        vec32x16u results{+v};
+
+        EXPECT_TRUE(all(results == v));
+    }
+
+    TEST(Vec32x16u, Unary_minus) {
+        auto inputs = random_array<arr32x16u>();
+        const vec32x16u v{inputs};
+
+        auto results = -v;
+
+        arr32x16i expected{};
+        for (std::size_t j = 0; j < expected.size(); ++j) {
+            expected[j] = -inputs[j];
+        }
+
+        EXPECT_TRUE(all(results == vec32x16i{expected}));
+    }
+
+    //=====================================================
+    // Arithmetic assignment operators
+    //=====================================================
+
+    TEST(Vec32x16u, Plus_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0;
+            results += v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = inputs0[j] + inputs1[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Minus_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0;
+            results -= v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = inputs0[j] - inputs1[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Times_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0;
+            results *= v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = inputs0[j] * inputs1[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Div_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_denominator_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0;
+            results /= v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = inputs0[j] / inputs1[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Mod_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_denominator_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0;
+            results %= v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = inputs0[j] % inputs1[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    //=====================================================
+    // Arithmetic operators
+    //=====================================================
+
+    TEST(Vec32x16u, Addition_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0 + v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = inputs0[j] + inputs1[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Subtraction_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0 - v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = inputs0[j] - inputs1[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Multiplication_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0 * v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = inputs0[j] * inputs1[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Division_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_denominator_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0 / v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = inputs0[j] / inputs1[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Mod_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_denominator_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0 % v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = inputs0[j] % inputs1[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    //=====================================================
+    // Increment/Decrement operators
+    //=====================================================
+
+    TEST(Vec32x16u, Pre_increment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+            ++v;
+
+            auto results = v;
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = ++inputs[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Post_increment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+            v++;
+
+            auto results = v;
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = ++inputs[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Pre_decrement_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+            --v;
+
+            auto results = v;
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = --inputs[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Post_decrement_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+            v--;
+
+            auto results = v;
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = --inputs[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    //=====================================================
+    // Bitwise assignment operators
+    //=====================================================
+
+    TEST(Vec32x16u, Bitwise_and_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0;
+            results &= v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = inputs0[j] & inputs1[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Bitwise_or_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0;
+            results |= v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = inputs0[j] | inputs1[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Bitwise_xor_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0;
+            results ^= v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = inputs0[j] ^ inputs1[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Left_shift_by_scalar_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            auto v1 = random_shift<vec32x16u::scalar>();
+
+            auto results = v0;
+            results <<= v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                if (v1 >= type_width<vec32x16u::scalar>::value) {
+                    expected[j] = 0x00;
+                } else {
+                    expected[j] = inputs0[j] << v1;
+                }
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Left_shift_by_vector_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_shift_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0;
+            results <<= v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                if (inputs1[j] >= type_width<vec32x16u::scalar>::value) {
+                    expected[j] = 0x00;
+                } else {
+                    expected[j] = inputs0[j] << inputs1[j];
+                }
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Right_shift_by_scalar_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            auto v1 = random_shift<vec32x16u::scalar>();
+
+            auto results = v0;
+            results >>= v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                if (v1 >= type_width<vec32x16u::scalar>::value) {
+                    expected[j] = 0x00;
+                } else {
+                    expected[j] = inputs0[j] >> v1;
+                }
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Right_shift_by_vector_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_shift_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0;
+            results >>= v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                if (inputs1[j] >= type_width<vec32x16u::scalar>::value) {
+                    expected[j] = 0x00;
+                } else {
+                    expected[j] = inputs0[j] >> inputs1[j];
+                }
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    //=====================================================
+    // Bitwise operators
+    //=====================================================
+
+    TEST(Vec32x16u, Bitwise_negation_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = ~v;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = ~inputs[j];
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Left_shift_by_scalar_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            auto v1 = random_shift<vec32x16u::scalar>();
+
+            auto results = v0 << v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                if (v1 >= type_width<vec32x16u::scalar>::value) {
+                    expected[j] = 0x00;
+                } else {
+                    expected[j] = inputs0[j] << v1;
+                }
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Left_shift_by_vector_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_shift_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0 << v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                if (inputs1[j] >= type_width<vec32x16u::scalar>::value) {
+                    expected[j] = 0x00;
+                } else {
+                    expected[j] = inputs0[j] << inputs1[j];
+                }
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Right_shift_by_scalar_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            auto v1 = random_shift<vec32x16u::scalar>();
+
+            auto results = v0 >> v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                if (v1 >= type_width<vec32x16u::scalar>::value) {
+                    expected[j] = 0x00;
+                } else {
+                    expected[j] = inputs0[j] >> v1;
+                }
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Right_shift_by_vector_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_shift_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = v0 >> v1;
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                if (inputs1[j] >= type_width<vec32x16u::scalar>::value) {
+                    expected[j] = 0x00;
+                } else {
+                    expected[j] = inputs0[j] >> inputs1[j];
+                }
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    //=====================================================
+    // Conversion operators
+    //=====================================================
+
+    TEST(Vec32x16u, Conversion_to_mask) {
+        vec32x16u vec{0};
+
+        auto a = vec.operator mask32x16u();
+        mask32x16u b{false};
+
+        EXPECT_TRUE(a == b);
+    }
+
+    TEST(Vec32x16u, Conversion_to_mask_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = mask32x16u{v};
+
+            arr32xb expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = inputs[j];
+            }
+
+            EXPECT_TRUE(results == mask32x16u{expected});
+        }
+    }
+
+    //=====================================================
+    // Arrangement Operations
+    //=====================================================
+
+    TEST(Vec32x16u, Extract_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+            vec32x16u v{inputs};
+
+            EXPECT_EQ(inputs[0x00], extract<0x00>(v));
+            EXPECT_EQ(inputs[0x01], extract<0x01>(v));
+            EXPECT_EQ(inputs[0x02], extract<0x02>(v));
+            EXPECT_EQ(inputs[0x03], extract<0x03>(v));
+            EXPECT_EQ(inputs[0x04], extract<0x04>(v));
+            EXPECT_EQ(inputs[0x05], extract<0x05>(v));
+            EXPECT_EQ(inputs[0x06], extract<0x06>(v));
+            EXPECT_EQ(inputs[0x07], extract<0x07>(v));
+            EXPECT_EQ(inputs[0x08], extract<0x08>(v));
+            EXPECT_EQ(inputs[0x09], extract<0x09>(v));
+            EXPECT_EQ(inputs[0x0a], extract<0x0a>(v));
+            EXPECT_EQ(inputs[0x0b], extract<0x0b>(v));
+            EXPECT_EQ(inputs[0x0c], extract<0x0c>(v));
+            EXPECT_EQ(inputs[0x0d], extract<0x0d>(v));
+            EXPECT_EQ(inputs[0x0e], extract<0x0e>(v));
+            EXPECT_EQ(inputs[0x0f], extract<0x0f>(v));
+
+            EXPECT_EQ(inputs[0x10], extract<0x10>(v));
+            EXPECT_EQ(inputs[0x11], extract<0x11>(v));
+            EXPECT_EQ(inputs[0x12], extract<0x12>(v));
+            EXPECT_EQ(inputs[0x13], extract<0x13>(v));
+            EXPECT_EQ(inputs[0x14], extract<0x14>(v));
+            EXPECT_EQ(inputs[0x15], extract<0x15>(v));
+            EXPECT_EQ(inputs[0x16], extract<0x16>(v));
+            EXPECT_EQ(inputs[0x17], extract<0x17>(v));
+            EXPECT_EQ(inputs[0x18], extract<0x18>(v));
+            EXPECT_EQ(inputs[0x19], extract<0x19>(v));
+            EXPECT_EQ(inputs[0x1a], extract<0x1a>(v));
+            EXPECT_EQ(inputs[0x1b], extract<0x1b>(v));
+            EXPECT_EQ(inputs[0x1c], extract<0x1c>(v));
+            EXPECT_EQ(inputs[0x1d], extract<0x1d>(v));
+            EXPECT_EQ(inputs[0x1e], extract<0x1e>(v));
+            EXPECT_EQ(inputs[0x1f], extract<0x1f>(v));
+        }
+    }
+
+    TEST(Vec32x16u, Insert_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+            vec32x16u v{random_val<vec32x16u::scalar>()};
+
+            v = insert<0x00>(v, inputs[0x00]);
+            v = insert<0x01>(v, inputs[0x01]);
+            v = insert<0x02>(v, inputs[0x02]);
+            v = insert<0x03>(v, inputs[0x03]);
+            v = insert<0x04>(v, inputs[0x04]);
+            v = insert<0x05>(v, inputs[0x05]);
+            v = insert<0x06>(v, inputs[0x06]);
+            v = insert<0x07>(v, inputs[0x07]);
+            v = insert<0x08>(v, inputs[0x08]);
+            v = insert<0x09>(v, inputs[0x09]);
+            v = insert<0x0a>(v, inputs[0x0a]);
+            v = insert<0x0b>(v, inputs[0x0b]);
+            v = insert<0x0c>(v, inputs[0x0c]);
+            v = insert<0x0d>(v, inputs[0x0d]);
+            v = insert<0x0e>(v, inputs[0x0e]);
+            v = insert<0x0f>(v, inputs[0x0f]);
+
+            v = insert<0x10>(v, inputs[0x10]);
+            v = insert<0x11>(v, inputs[0x11]);
+            v = insert<0x12>(v, inputs[0x12]);
+            v = insert<0x13>(v, inputs[0x13]);
+            v = insert<0x14>(v, inputs[0x14]);
+            v = insert<0x15>(v, inputs[0x15]);
+            v = insert<0x16>(v, inputs[0x16]);
+            v = insert<0x17>(v, inputs[0x17]);
+            v = insert<0x18>(v, inputs[0x18]);
+            v = insert<0x19>(v, inputs[0x19]);
+            v = insert<0x1a>(v, inputs[0x1a]);
+            v = insert<0x1b>(v, inputs[0x1b]);
+            v = insert<0x1c>(v, inputs[0x1c]);
+            v = insert<0x1d>(v, inputs[0x1d]);
+            v = insert<0x1e>(v, inputs[0x1e]);
+            v = insert<0x1f>(v, inputs[0x1f]);
+
+            EXPECT_TRUE(all(v == vec32x16u{inputs}));
+        }
+    }
+
+    //=====================================================
+    // Bit Manipulation Instructions
+    //=====================================================
+
+    TEST(Vec32x16u, Bit_shift_left) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            EXPECT_TRUE(all(bit_shift_left<0x00>(v) == (v << 0x00)));
+            EXPECT_TRUE(all(bit_shift_left<0x01>(v) == (v << 0x01)));
+            EXPECT_TRUE(all(bit_shift_left<0x02>(v) == (v << 0x02)));
+            EXPECT_TRUE(all(bit_shift_left<0x03>(v) == (v << 0x03)));
+            EXPECT_TRUE(all(bit_shift_left<0x04>(v) == (v << 0x04)));
+            EXPECT_TRUE(all(bit_shift_left<0x05>(v) == (v << 0x05)));
+            EXPECT_TRUE(all(bit_shift_left<0x06>(v) == (v << 0x06)));
+            EXPECT_TRUE(all(bit_shift_left<0x07>(v) == (v << 0x07)));
+            EXPECT_TRUE(all(bit_shift_left<0x08>(v) == (v << 0x08)));
+            EXPECT_TRUE(all(bit_shift_left<0x09>(v) == (v << 0x09)));
+            EXPECT_TRUE(all(bit_shift_left<0x0a>(v) == (v << 0x0a)));
+            EXPECT_TRUE(all(bit_shift_left<0x0b>(v) == (v << 0x0b)));
+            EXPECT_TRUE(all(bit_shift_left<0x0c>(v) == (v << 0x0c)));
+            EXPECT_TRUE(all(bit_shift_left<0x0d>(v) == (v << 0x0d)));
+            EXPECT_TRUE(all(bit_shift_left<0x0e>(v) == (v << 0x0e)));
+            EXPECT_TRUE(all(bit_shift_left<0x0f>(v) == (v << 0x0f)));
+
+            EXPECT_TRUE(all(bit_shift_left<0x10>(v) == (v << 0x10)));
+        }
+    }
+
+    TEST(Vec32x16u, Bit_shift_right) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            EXPECT_TRUE(all(bit_shift_right<0x00>(v) == (v >> 0x00)));
+            EXPECT_TRUE(all(bit_shift_right<0x01>(v) == (v >> 0x01)));
+            EXPECT_TRUE(all(bit_shift_right<0x02>(v) == (v >> 0x02)));
+            EXPECT_TRUE(all(bit_shift_right<0x03>(v) == (v >> 0x03)));
+            EXPECT_TRUE(all(bit_shift_right<0x04>(v) == (v >> 0x04)));
+            EXPECT_TRUE(all(bit_shift_right<0x05>(v) == (v >> 0x05)));
+            EXPECT_TRUE(all(bit_shift_right<0x06>(v) == (v >> 0x06)));
+            EXPECT_TRUE(all(bit_shift_right<0x07>(v) == (v >> 0x07)));
+            EXPECT_TRUE(all(bit_shift_right<0x08>(v) == (v >> 0x08)));
+            EXPECT_TRUE(all(bit_shift_right<0x09>(v) == (v >> 0x09)));
+            EXPECT_TRUE(all(bit_shift_right<0x0a>(v) == (v >> 0x0a)));
+            EXPECT_TRUE(all(bit_shift_right<0x0b>(v) == (v >> 0x0b)));
+            EXPECT_TRUE(all(bit_shift_right<0x0c>(v) == (v >> 0x0c)));
+            EXPECT_TRUE(all(bit_shift_right<0x0d>(v) == (v >> 0x0d)));
+            EXPECT_TRUE(all(bit_shift_right<0x0e>(v) == (v >> 0x0e)));
+            EXPECT_TRUE(all(bit_shift_right<0x0f>(v) == (v >> 0x0f)));
+
+            EXPECT_TRUE(all(bit_shift_right<0x10>(v) == (v >> 0x10)));
+        }
+    }
+
+    TEST(Vec32x16u, Rotl) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            EXPECT_TRUE(all(rotl<0x00>(v) == (rotl(v, 0x00))));
+            EXPECT_TRUE(all(rotl<0x01>(v) == (rotl(v, 0x01))));
+            EXPECT_TRUE(all(rotl<0x02>(v) == (rotl(v, 0x02))));
+            EXPECT_TRUE(all(rotl<0x03>(v) == (rotl(v, 0x03))));
+            EXPECT_TRUE(all(rotl<0x04>(v) == (rotl(v, 0x04))));
+            EXPECT_TRUE(all(rotl<0x05>(v) == (rotl(v, 0x05))));
+            EXPECT_TRUE(all(rotl<0x06>(v) == (rotl(v, 0x06))));
+            EXPECT_TRUE(all(rotl<0x07>(v) == (rotl(v, 0x07))));
+            EXPECT_TRUE(all(rotl<0x08>(v) == (rotl(v, 0x08))));
+            EXPECT_TRUE(all(rotl<0x09>(v) == (rotl(v, 0x09))));
+            EXPECT_TRUE(all(rotl<0x0a>(v) == (rotl(v, 0x0a))));
+            EXPECT_TRUE(all(rotl<0x0b>(v) == (rotl(v, 0x0b))));
+            EXPECT_TRUE(all(rotl<0x0c>(v) == (rotl(v, 0x0c))));
+            EXPECT_TRUE(all(rotl<0x0d>(v) == (rotl(v, 0x0d))));
+            EXPECT_TRUE(all(rotl<0x0e>(v) == (rotl(v, 0x0e))));
+            EXPECT_TRUE(all(rotl<0x0f>(v) == (rotl(v, 0x0f))));
+
+            EXPECT_TRUE(all(rotl<0x10>(v) == (rotl(v, 0x10))));
+        }
+    }
+
+    TEST(Vec32x16u, Rotl_scalar_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            auto v1 = random64u();
+
+            auto results = rotl(v0, v1);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = rotl(inputs0[j], v1);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Rotl_vector_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = rotl(v0, v1);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = rotl(inputs0[j], inputs1[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Rotr) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+
+            vec32x16u v{inputs0};
+
+            EXPECT_TRUE(all(rotr<0x00>(v) == (rotr(v, 0x00))));
+            EXPECT_TRUE(all(rotr<0x01>(v) == (rotr(v, 0x01))));
+            EXPECT_TRUE(all(rotr<0x02>(v) == (rotr(v, 0x02))));
+            EXPECT_TRUE(all(rotr<0x03>(v) == (rotr(v, 0x03))));
+            EXPECT_TRUE(all(rotr<0x04>(v) == (rotr(v, 0x04))));
+            EXPECT_TRUE(all(rotr<0x05>(v) == (rotr(v, 0x05))));
+            EXPECT_TRUE(all(rotr<0x06>(v) == (rotr(v, 0x06))));
+            EXPECT_TRUE(all(rotr<0x07>(v) == (rotr(v, 0x07))));
+            EXPECT_TRUE(all(rotr<0x08>(v) == (rotr(v, 0x08))));
+            EXPECT_TRUE(all(rotr<0x09>(v) == (rotr(v, 0x09))));
+            EXPECT_TRUE(all(rotr<0x0a>(v) == (rotr(v, 0x0a))));
+            EXPECT_TRUE(all(rotr<0x0b>(v) == (rotr(v, 0x0b))));
+            EXPECT_TRUE(all(rotr<0x0c>(v) == (rotr(v, 0x0c))));
+            EXPECT_TRUE(all(rotr<0x0d>(v) == (rotr(v, 0x0d))));
+            EXPECT_TRUE(all(rotr<0x0e>(v) == (rotr(v, 0x0e))));
+            EXPECT_TRUE(all(rotr<0x0f>(v) == (rotr(v, 0x0f))));
+
+            EXPECT_TRUE(all(rotr<0x10>(v) == (rotr(v, 0x10))));
+        }
+    }
+
+    TEST(Vec32x16u, Rotr_scalar_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            auto v1 = random64u();
+
+            auto results = rotr(v0, v1);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = rotr(inputs0[j], v1);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Rotr_vector_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = rotr(v0, v1);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = rotr(inputs0[j], inputs1[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    //=====================================================
+    // General vector functions
+    //=====================================================
+
+    TEST(Vec32x16u, Count_random) {
+        auto predicate = [] (vec32x16u::scalar x) {
+            return x != 0;
+        };
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+            auto cnt = std::count_if(inputs.begin(), inputs.end(), predicate);
+
+            vec32x16u v{inputs};
+
+            auto results = count(v);
+
+            EXPECT_EQ(cnt, results);
+        }
+    }
+
+    TEST(Vec32x16u, Any_edge_cases) {
+        EXPECT_FALSE(any(vec32x16u{0x00}));
+        EXPECT_TRUE(any(vec32x16u{0x01}));
+    }
+
+    TEST(Vec32x16u, Any_random) {
+        auto predicate = [] (vec32x16u::scalar x) {
+            return x != 0;
+        };
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+            auto cnt = std::count_if(inputs.begin(), inputs.end(), predicate);
+
+            vec32x16u v{inputs};
+
+            EXPECT_EQ(cnt != 0, any(v));
+        }
+    }
+
+    TEST(Vec32x16u, All_edge_cases) {
+        EXPECT_FALSE(all(vec32x16u{0x00}));
+        EXPECT_TRUE(all(vec32x16u{0x01}));
+    }
+
+    TEST(Vec32x16u, All_random) {
+        auto predicate = [] (vec32x16u::scalar x) {
+            return x != 0;
+        };
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+            auto cnt = std::count_if(inputs.begin(), inputs.end(), predicate);
+
+            vec32x16u v{inputs};
+
+            auto results = all(v);
+
+            EXPECT_EQ(cnt == vec32x16u::width, results);
+        }
+    }
+
+    TEST(Vec32x16u, None_edge_cases) {
+        EXPECT_TRUE(none(vec32x16u{0x00}));
+        EXPECT_FALSE(none(vec32x16u{0x01}));
+    }
+
+    TEST(Vec32x16u, None_random) {
+        auto predicate = [] (vec32x16u::scalar x) {
+            return x != 0;
+        };
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+            auto cnt = std::count_if(inputs.begin(), inputs.end(), predicate);
+
+            vec32x16u v{inputs};
+
+            EXPECT_EQ(cnt == 0, none(v));
+        }
+    }
+
+    TEST(Vec32x16u, Broadcast_mask_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32xb>();
+
+            mask32x16u v{inputs};
+
+            auto results = broadcast_mask(v);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                if (inputs[j]) {
+                    expected[j] = vec32x16u::scalar(-1);
+                } else {
+                    expected[j] = vec32x16u::scalar(0);
+                }
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Keep_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32xb>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            mask32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = keep(v0, v1);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = keep(inputs0[j], inputs1[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Clear_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32xb>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            mask32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = clear(v0, v1);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = clear(inputs0[j], inputs1[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Blend_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32xb>();
+            auto inputs1 = random_array<arr32x16u>();
+            auto inputs2 = random_array<arr32x16u>();
+
+            mask32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+            vec32x16u v2{inputs2};
+
+            auto results = blend(v0, v1, v2);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = blend(inputs0[j], inputs1[j], inputs2[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Max_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = max(v0, v1);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = max(inputs0[j], inputs1[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Min_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = min(v0, v1);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = min(inputs0[j], inputs1[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Minmax_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = minmax(v0, v1);
+
+            arr32x16u expected0{};
+            arr32x16u expected1{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                auto min_max = minmax(inputs0[j], inputs1[j]);
+                expected0[j] = min_max[0];
+                expected1[j] = min_max[1];
+            }
+
+            EXPECT_TRUE(all(results[0] == vec32x16u{expected0}));
+            EXPECT_TRUE(all(results[1] == vec32x16u{expected1}));
+        }
+    }
+
+    TEST(Vec32x16u, Clamp_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+            auto inputs2 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+            vec32x16u v2{inputs2};
+
+            auto ranges = minmax(v1, v2);
+
+            auto results = clamp(v0, ranges[0], ranges[1]);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                auto range = minmax(inputs1[j], inputs2[j]);
+                expected[j] = clamp(inputs0[j], range[0], range[1]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Average_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = average(v0, v1);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = average(inputs0[j], inputs1[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Midpoint_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr32x16u>();
+            auto inputs1 = random_array<arr32x16u>();
+
+            vec32x16u v0{inputs0};
+            vec32x16u v1{inputs1};
+
+            auto results = midpoint(v0, v1);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = midpoint(inputs0[j], inputs1[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Neg_abs_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = neg_abs(v);
+
+            arr32x16i expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = neg_abs(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16i{expected}));
+        }
+    }
+
+    //=====================================================
+    // Load/Store operations
+    //=====================================================
+
+    TEST(Vec32x16u, Load_n_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            for (std::size_t j = 0; j <= vec32x16u::width; ++j) {
+                auto results = load<vec32x16u>(inputs.data(), j);
+
+                auto loaded_data = to_array(results);
+                for (std::size_t k = 0; k < vec32x16u::width; k++) {
+                    if (k < j) {
+                        EXPECT_EQ(inputs[k], loaded_data[k]);
+                    } else {
+                        EXPECT_EQ(0x0, loaded_data[k]);
+                    }
+                }
+            }
+        }
+    }
+
+    TEST(Vec32x16u, Load_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            EXPECT_TRUE(all(load<vec32x16u, 0x00>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x00)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x01>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x01)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x02>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x02)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x03>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x03)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x04>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x04)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x05>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x05)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x06>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x06)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x07>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x07)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x08>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x08)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x09>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x09)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x0a>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x0a)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x0b>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x0b)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x0c>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x0c)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x0d>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x0d)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x0e>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x0e)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x0f>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x0f)));
+
+            EXPECT_TRUE(all(load<vec32x16u, 0x10>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x10)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x11>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x11)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x12>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x12)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x13>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x13)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x14>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x14)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x15>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x15)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x16>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x16)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x17>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x17)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x18>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x18)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x19>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x19)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x1a>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x1a)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x1b>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x1b)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x1c>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x1c)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x1d>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x1d)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x1e>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x1e)));
+            EXPECT_TRUE(all(load<vec32x16u, 0x1f>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x1f)));
+
+            EXPECT_TRUE(all(load<vec32x16u, 0x20>(inputs.data()) == load<vec32x16u>(inputs.data(), 0x20)));
+        }
+    }
+
+    TEST(Vec32x16u, Aligned_load_n_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            alignas(alignof(vec32x16u)) auto inputs = random_array<arr32x16u>();
+
+            for (std::size_t j = 0; j <= vec32x16u::width; ++j) {
+                auto results = aligned_load<vec32x16u>(inputs.data(), j);
+
+                auto loaded_data = to_array(results);
+                for (std::size_t k = 0; k < vec32x16u::width; k++) {
+                    if (k < j) {
+                        EXPECT_EQ(inputs[k], loaded_data[k]);
+                    } else {
+                        EXPECT_EQ(0x0, loaded_data[k]);
+                    }
+                }
+            }
+        }
+    }
+
+    TEST(Vec32x16u, Aligned_load_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            alignas(alignof(vec32x16u)) auto inputs = random_array<arr32x16u>();
+
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x00>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x00)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x01>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x01)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x02>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x02)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x03>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x03)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x04>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x04)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x05>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x05)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x06>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x06)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x07>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x07)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x08>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x08)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x09>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x09)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x0a>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x0a)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x0b>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x0b)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x0c>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x0c)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x0d>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x0d)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x0e>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x0e)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x0f>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x0f)));
+
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x10>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x10)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x11>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x11)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x12>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x12)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x13>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x13)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x14>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x14)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x15>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x15)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x16>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x16)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x17>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x17)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x18>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x18)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x19>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x19)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x1a>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x1a)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x1b>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x1b)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x1c>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x1c)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x1d>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x1d)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x1e>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x1e)));
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x1f>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x1f)));
+
+            EXPECT_TRUE(all(aligned_load<vec32x16u, 0x20>(inputs.data()) == aligned_load<vec32x16u>(inputs.data(), 0x20)));
+        }
+    }
+
+    TEST(Vec32x16u, Store_n) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            for (std::size_t j = 0; j <= vec32x16u::width; ++j) {
+                vec32x16u::scalar arr[vec32x16u::width]{};
+                store(arr, v, j);
+
+                for (std::size_t k = 0; k < inputs.size(); ++k) {
+                    if (k < j) {
+                        EXPECT_EQ(inputs[k], arr[k]);
+                    } else {
+                        EXPECT_EQ(0x00, arr[k]);
+                    }
+                }
+            }
+        }
+    }
+
+    TEST(Vec32x16u, Store_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            vec32x16u::scalar arr[vec32x16u::width]{};
+
+            store<0x00>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x00));
+            store<0x01>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x01));
+            store<0x02>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x02));
+            store<0x03>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x03));
+            store<0x04>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x04));
+            store<0x05>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x05));
+            store<0x06>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x06));
+            store<0x07>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x07));
+            store<0x08>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x08));
+            store<0x09>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x09));
+            store<0x0a>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0a));
+            store<0x0b>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0b));
+            store<0x0c>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0c));
+            store<0x0d>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0d));
+            store<0x0e>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0e));
+            store<0x0f>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0f));
+
+            store<0x10>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x10));
+            store<0x11>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x11));
+            store<0x12>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x12));
+            store<0x13>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x13));
+            store<0x14>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x14));
+            store<0x15>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x15));
+            store<0x16>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x16));
+            store<0x17>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x17));
+            store<0x18>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x18));
+            store<0x19>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x19));
+            store<0x1a>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x1a));
+            store<0x1b>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x1b));
+            store<0x1c>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x1c));
+            store<0x1d>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x1d));
+            store<0x1e>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x1e));
+            store<0x1f>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x1f));
+
+            store<0x20>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x20));
+        }
+    }
+
+    TEST(Vec32x16u, Aligned_store_n_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            for (std::size_t j = 0; j <= vec32x16u::width; ++j) {
+                alignas(alignof(vec32x16u)) vec32x16u::scalar arr[vec32x16u::width]{};
+                aligned_store(arr, v, j);
+
+                for (std::size_t k = 0; k < inputs.size(); ++k) {
+                    if (k < j) {
+                        EXPECT_EQ(inputs[k], arr[k]);
+                    } else {
+                        EXPECT_EQ(0x00, arr[k]);
+                    }
+                }
+            }
+        }
+    }
+
+    TEST(Vec32x16u, Aligned_store_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            alignas(alignof(vec32x16u)) vec32x16u::scalar arr[vec32x16u::width]{};
+
+            aligned_store<0x00>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x00));
+            aligned_store<0x01>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x01));
+            aligned_store<0x02>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x02));
+            aligned_store<0x03>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x03));
+            aligned_store<0x04>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x04));
+            aligned_store<0x05>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x05));
+            aligned_store<0x06>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x06));
+            aligned_store<0x07>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x07));
+            aligned_store<0x08>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x08));
+            aligned_store<0x09>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x09));
+            aligned_store<0x0a>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0a));
+            aligned_store<0x0b>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0b));
+            aligned_store<0x0c>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0c));
+            aligned_store<0x0d>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0d));
+            aligned_store<0x0e>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0e));
+            aligned_store<0x0f>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0f));
+
+            aligned_store<0x10>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x10));
+            aligned_store<0x11>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x11));
+            aligned_store<0x12>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x12));
+            aligned_store<0x13>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x13));
+            aligned_store<0x14>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x14));
+            aligned_store<0x15>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x15));
+            aligned_store<0x16>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x16));
+            aligned_store<0x17>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x17));
+            aligned_store<0x18>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x18));
+            aligned_store<0x19>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x19));
+            aligned_store<0x1a>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x1a));
+            aligned_store<0x1b>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x1b));
+            aligned_store<0x1c>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x1c));
+            aligned_store<0x1d>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x1d));
+            aligned_store<0x1e>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x1e));
+            aligned_store<0x1f>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x1f));
+
+            aligned_store<0x20>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x20));
+        }
+    }
+
+    TEST(Vec32x16u, To_array_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = to_array(v);
+
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                EXPECT_EQ(results[j], inputs[j]);
+            }
+        }
+    }
+
+    //=====================================================
+    // Integer functions
+    //=====================================================
+
+    TEST(Vec32x16u, Div_uniform) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto numerator = random_val<vec32x16u::scalar>();
+            auto denominator = random_denominator<vec32x16u::scalar>();
+
+            auto quotient  = (numerator / denominator);
+            auto remainder = (numerator % denominator);
+
+            vec32x16u n{numerator};
+            vec32x16u d{denominator};
+
+            auto div_result = div(n, d);
+
+            auto q = to_array(div_result.quot);
+            auto r = to_array(div_result.rem);
+
+            for (std::size_t j = 0; j < q.size(); ++j) {
+                EXPECT_EQ(q[j], quotient);
+                EXPECT_EQ(r[j], remainder);
+            }
+        }
+    }
+
+    TEST(Vec32x16u, Div_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto numerators = random_array<arr32x16u>();
+            auto denominators = random_denominator_array<arr32x16u>();
+
+            arr32x16u quotients{};
+            arr32x16u remainders{};
+
+            for (std::size_t j = 0; j < quotients.size(); ++j) {
+                quotients[j]  = (numerators[j] / denominators[j]);
+                remainders[j] = (numerators[j] % denominators[j]);
+            }
+
+            vec32x16u n{numerators};
+            vec32x16u d{denominators};
+
+            auto div_result = div(n, d);
+
+            auto q = to_array(div_result.quot);
+            auto r = to_array(div_result.rem);
+
+            for (std::size_t j = 0; j < quotients.size(); ++j) {
+                EXPECT_EQ(q[j], quotients[j]);
+                EXPECT_EQ(r[j], remainders[j]);
+            }
+        }
+    }
+
+    TEST(Vec32x16u, Popcount_edge_cases) {
+        vec32x16u v{0x0};
+        vec32x16u c = popcount(v);
+        EXPECT_TRUE(all(c == v));
+    }
+
+    TEST(Vec32x16u, Popcount_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = popcount(v);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = popcount(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Byteswap_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = byteswap(v);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = byteswap(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Countl_zero_edge_cases) {
+        for (std::size_t i = 0; i < (type_width<vec32x16u::scalar>::value - 1); ++i) {
+            vec32x16u::scalar v = (vec32x16u::scalar(0x1) << i) - 1;
+            auto results = countl_zero(vec32x16u{v});
+            auto expected = vec32x16u(type_width<vec32x16u::scalar>::value - i);
+            EXPECT_TRUE(all(results == expected));
+        }
+        EXPECT_TRUE(all(countl_zero(vec32x16u(-1)) == vec32x16u{0}));
+    }
+
+    TEST(Vec32x16u, Countl_zero_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = countl_zero(v);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = countl_zero(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Countl_one_edge_cases) {
+        EXPECT_TRUE(all(countl_one(vec32x16u{0x00}) == vec32x16u{0}));
+        for (std::size_t i = 0; i < (type_width<vec32x16u::scalar>::value - 1); ++i) {
+            vec32x16u::scalar v = vec32x16u::scalar(-1) << i;
+            auto results = countl_one(vec32x16u{v});
+            auto expected = vec32x16u(type_width<vec32x16u::scalar>::value - i);
+            EXPECT_TRUE(all(results == expected));
+        }
+    }
+
+    TEST(Vec32x16u, Countl_one_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = countl_one(v);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = countl_one(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Countr_zero_edge_cases) {
+        for (std::size_t i = 0; i < (type_width<vec32x16u::scalar>::value - 1); ++i) {
+            vec32x16u::scalar v = vec32x16u::scalar(-1) << i;
+            auto results = countr_zero(vec32x16u{v});
+            auto expected = vec32x16u(i);
+            EXPECT_TRUE(all(results == expected));
+        }
+        EXPECT_TRUE(all(countr_zero(vec32x16u{0x00}) == vec32x16u{type_width<vec32x16u::scalar>::value}));
+    }
+
+    TEST(Vec32x16u, Countr_zero_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = countr_zero(v);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = countr_zero(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Countr_one_edge_cases) {
+        EXPECT_TRUE(all(countr_one(vec32x16u{0x00}) == vec32x16u{0}));
+
+        for (std::size_t i = 0; i < (type_width<vec32x16u::scalar>::value - 1); ++i) {
+            vec32x16u::scalar v = (vec32x16u::scalar(1) << i) - 1;
+            auto results = countr_one(vec32x16u{v});
+            auto expected = vec32x16u(i);
+            EXPECT_TRUE(all(results == expected));
+        }
+        EXPECT_TRUE(all(countr_one(vec32x16u{vec32x16u::scalar(-1)}) == vec32x16u{type_width<vec32x16u::scalar>::value}));
+    }
+
+    TEST(Vec32x16u, Countr_one_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = countr_one(v);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = countr_one(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Bit_width_edge_cases) {
+        EXPECT_TRUE(all(bit_width(vec32x16u{0x00}) == vec32x16u{0x00}));
+
+        for (std::size_t i = 0; i < type_width<vec32x16u::scalar>::value; ++i) {
+            vec32x16u::scalar v = vec32x16u::scalar(1) << i;
+            auto results = bit_width(vec32x16u{v});
+            auto expected = vec32x16u(i + 1);
+            EXPECT_TRUE(all(results == expected));
+        }
+    }
+
+    TEST(Vec32x16u, Bit_width_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = bit_width(v);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = bit_width(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Bit_floor_edge_cases) {
+        EXPECT_TRUE(all(vec32x16u{0} == bit_floor(vec32x16u{0x00})));
+
+        for (std::size_t i = 0; i < (type_width<vec32x16u::scalar>::value - 1); ++i) {
+            vec32x16u::scalar v = vec32x16u::scalar(1) << i;
+            auto results = bit_floor(vec32x16u{v});
+            auto expected = vec32x16u{v};
+            EXPECT_TRUE(all(results == expected));
+        }
+    }
+
+    TEST(Vec32x16u, Bit_floor_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = bit_floor(v);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = bit_floor(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Bit_ceil_edge_cases) {
+        EXPECT_TRUE(all(vec32x16u{1} == bit_ceil(vec32x16u{0x00})));
+
+        for (std::size_t i = 0; i < (type_width<vec32x16u::scalar>::value - 1); ++i) {
+            vec32x16u::scalar v = vec32x16u::scalar(1) << i;
+            auto results = bit_ceil(vec32x16u{v});
+            auto expected = vec32x16u{v};
+            EXPECT_TRUE(all(results == expected));
+        }
+    }
+
+    TEST(Vec32x16u, Bit_ceil_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = bit_ceil(v);
+
+            arr32x16u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = bit_ceil(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec32x16u{expected}));
+        }
+    }
+
+    TEST(Vec32x16u, Has_single_bit_edge_cases) {
+        EXPECT_TRUE(none(has_single_bit(vec32x16u{0x00})));
+
+        for (std::size_t i = 0; i < (type_width<vec32x16u::scalar>::value - 1); ++i) {
+            vec32x16u::scalar v = vec32x16u::scalar(1) << i;
+            auto results = has_single_bit(vec32x16u{v});
+            EXPECT_TRUE(all(results));
+        }
+    }
+
+    TEST(Vec32x16u, Has_single_bit_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32x16u>();
+
+            vec32x16u v{inputs};
+
+            auto results = has_single_bit(v);
+
+            arr32xb expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = has_single_bit(inputs[j]);
+            }
+
+            EXPECT_TRUE(results == mask32x16u{expected});
+        }
+    }
+
+}
+
+#endif //AVEL_VEC32X16U_TESTS_HPP
