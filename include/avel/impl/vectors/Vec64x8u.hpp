@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec64x8u> div(vec64x8u numerator, vec64x8u denominator);
-    vec64x8u broadcast_mask(mask64x8u m);
+    vec64x8u set_bits(mask64x8u m);
     vec64x8u blend(vec64x8u a, vec64x8u b, mask64x8u m);
     vec64x8u countl_one(vec64x8u v);
 
@@ -863,7 +863,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec64x8u broadcast_mask(mask64x8u m) {
+    AVEL_FINL vec64x8u set_bits(mask64x8u m) {
         #if defined(AVEL_AVX512BW)
         return vec64x8u{_mm512_movm_epi8(decay(m))};
         #endif
@@ -935,7 +935,7 @@ namespace avel {
     AVEL_FINL vec64x8u midpoint(vec64x8u a, vec64x8u b) {
         #if defined(AVEL_AVX512BW)
         auto t1 = _mm512_avg_epu8(decay(a), decay(b));
-        auto t5 = _mm512_and_si512(_mm512_ternarylogic_epi32(decay(a), decay(b), decay(broadcast_mask(b < a)), 0x14), _mm512_set1_epi8(0x1));
+        auto t5 = _mm512_and_si512(_mm512_ternarylogic_epi32(decay(a), decay(b), decay(set_bits(b < a)), 0x14), _mm512_set1_epi8(0x1));
         auto t6 = _mm512_sub_epi8(t1, t5);
         return vec64x8u{t6};
         #endif

@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec1x8i> div(vec1x8i numerator, vec1x8i denominator);
-    vec1x8i broadcast_mask(mask1x8i m);
+    vec1x8i set_bits(mask1x8i m);
     vec1x8i blend(mask1x8i m, vec1x8i a, vec1x8i b);
     vec1x8i negate(mask1x8i m, vec1x8i x);
 
@@ -468,7 +468,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x8i broadcast_mask(mask1x8i m) {
+    AVEL_FINL vec1x8i set_bits(mask1x8i m) {
         return vec1x8i{static_cast<vec1x8i::scalar>(-decay(m))};
     }
 

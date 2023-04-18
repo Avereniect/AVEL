@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec16x32u> div(vec16x32u numerator, vec16x32u denominator);
-    vec16x32u broadcast_mask(mask16x32u m);
+    vec16x32u set_bits(mask16x32u m);
     vec16x32u blend(mask16x32u m, vec16x32u a, vec16x32u b);
     vec16x32u countl_one(vec16x32u x);
 
@@ -630,7 +630,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x32u broadcast_mask(mask16x32u m) {
+    AVEL_FINL vec16x32u set_bits(mask16x32u m) {
         #if defined(AVEL_AVX512DQ)
         return vec16x32u{_mm512_movm_epi32(decay(m))};
         #elif defined(AVEL_AVX512F)
@@ -688,7 +688,7 @@ namespace avel {
     AVEL_FINL vec16x32u midpoint(vec16x32u a, vec16x32u b) {
         #if defined(AVEL_AVX512F)
         vec16x32u t0 = a & b & vec16x32u{0x1};
-        vec16x32u t1 = (a | b) & vec16x32u{0x1} & broadcast_mask(a > b);
+        vec16x32u t1 = (a | b) & vec16x32u{0x1} & set_bits(a > b);
         vec16x32u t2 = t0 | t1;
         return (a >> 1) + (b >> 1) + t2;
         #endif
@@ -801,9 +801,9 @@ namespace avel {
         std::int32_t i = 32;
         for (; (i-- > 0) && any(x >= y);) {
             mask16x32u b = ((x >> i) >= y);
-            x -= (broadcast_mask(b) & (y << i));
+            x -= (set_bits(b) & (y << i));
             quotient += quotient;
-            quotient -= broadcast_mask(b);
+            quotient -= set_bits(b);
         }
 
         quotient <<= (i + 1);
@@ -996,7 +996,7 @@ namespace avel {
         v |= v >> 4;
         v |= v >> 8;
         v |= v >> 16;
-        v = _mm512_andnot_si512(decay(broadcast_mask(zero_mask)), decay(v));
+        v = _mm512_andnot_si512(decay(set_bits(zero_mask)), decay(v));
         ++v;
 
         return v;

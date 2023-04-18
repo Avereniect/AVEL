@@ -6,12 +6,12 @@ namespace avel_tests {
     using namespace avel;
 
     //=====================================================
-    // broadcast_mask
+    // set_bits
     //=====================================================
 
-    TEST(Scalar8u, Broadcast_mask) {
-        EXPECT_EQ(std::uint8_t{0x00}, broadcast_mask<std::uint8_t>(false));
-        EXPECT_EQ(std::uint8_t{0xFF}, broadcast_mask<std::uint8_t>(true));
+    TEST(Scalar8u, Set_bits) {
+        EXPECT_EQ(std::uint8_t{0x00}, set_bits<std::uint8_t>(false));
+        EXPECT_EQ(std::uint8_t{0xFF}, set_bits<std::uint8_t>(true));
     }
 
     //=====================================================

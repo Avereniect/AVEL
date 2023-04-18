@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec2x64i> div(vec2x64i numerator, vec2x64i denominator);
-    vec2x64i broadcast_mask(mask2x64i m);
+    vec2x64i set_bits(mask2x64i m);
     vec2x64i blend(mask2x64i m, vec2x64i a, vec2x64i b);
     vec2x64i negate(mask2x64i m, vec2x64i x);
 
@@ -1144,7 +1144,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec2x64i broadcast_mask(mask2x64i m) {
+    AVEL_FINL vec2x64i set_bits(mask2x64i m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         return vec2x64i{_mm_movm_epi64(decay(m))};
 
@@ -1261,7 +1261,7 @@ namespace avel {
     AVEL_FINL vec2x64i average(vec2x64i x, vec2x64i y) {
         #if defined(AVEL_SSE2)
         auto avg = (x & y) + ((x ^ y) >> 1);
-        auto c = broadcast_mask((x < -y) | (y == vec2x64i{std::int64_t(1) << 63})) & (x ^ y) & vec2x64i{1};
+        auto c = set_bits((x < -y) | (y == vec2x64i{std::int64_t(1) << 63})) & (x ^ y) & vec2x64i{1};
 
         return avg + c;
 
@@ -1269,7 +1269,7 @@ namespace avel {
 
         #if defined(AVEL_NEON)
         auto avg = (x & y) + ((x ^ y) >> 1);
-        auto c = broadcast_mask((x < -y) | (y == vec2x64i{std::int64_t(1) << 63})) & (x ^ y) & vec2x64i{1};
+        auto c = set_bits((x < -y) | (y == vec2x64i{std::int64_t(1) << 63})) & (x ^ y) & vec2x64i{1};
 
         return avg + c;
 
@@ -1289,14 +1289,14 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
         auto average = ((a ^ b) >> 1) + (a & b);
-        auto bias = (broadcast_mask(b < a) & (a ^ b) & vec2x64i{0x1});
+        auto bias = (set_bits(b < a) & (a ^ b) & vec2x64i{0x1});
         return average + bias;
 
         #endif
 
         #if defined(AVEL_NEON)
         vec2x64i avg{vsraq_n_s64(vandq_s64(decay(a), decay(b)), veorq_s64(decay(a), decay(b)), 1)};
-        auto bias = (broadcast_mask(b < a) & (a ^ b) & vec2x64i{0x1});
+        auto bias = (set_bits(b < a) & (a ^ b) & vec2x64i{0x1});
         return avg + bias;
 
         #endif
@@ -1309,12 +1309,12 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
 
-        auto mask = broadcast_mask(m);
+        auto mask = set_bits(m);
         return (x ^ mask) - mask;
         #endif
 
         #if defined(AVEL_NEON)
-        auto mask = broadcast_mask(m);
+        auto mask = set_bits(m);
         return (x ^ mask) - mask;
         #endif
     }

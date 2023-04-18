@@ -6,7 +6,7 @@
 namespace avel {
 
     template<class T>
-    T broadcast_mask(bool m);
+    T set_bits(bool m);
 
 }
 

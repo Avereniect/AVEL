@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec8x16i> div(vec8x16i numerator, vec8x16i denominator);
-    vec8x16i broadcast_mask(mask8x16i m);
+    vec8x16i set_bits(mask8x16i m);
     vec8x16i blend(mask8x16i m, vec8x16i a, vec8x16i b);
     vec8x16i negate(mask8x16i m, vec8x16i x);
 
@@ -935,8 +935,8 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x16i broadcast_mask(mask8x16i m) {
-        return vec8x16i{broadcast_mask(mask8x16u{m})};
+    AVEL_FINL vec8x16i set_bits(mask8x16i m) {
+        return vec8x16i{set_bits(mask8x16u{m})};
     }
 
     [[nodiscard]]
@@ -1020,14 +1020,14 @@ namespace avel {
     AVEL_FINL vec8x16i average(vec8x16i a, vec8x16i b) {
         #if defined(AVEL_SSE2)
         auto avg = (a & b) + ((a ^ b) >> 1);
-        auto c = broadcast_mask((a < -b) | (b == vec8x16i{std::int16_t(1 << 15)})) & (a ^ b) & vec8x16i{1};
+        auto c = set_bits((a < -b) | (b == vec8x16i{std::int16_t(1 << 15)})) & (a ^ b) & vec8x16i{1};
         return avg + c;
 
         #endif
 
         #if defined(AVEL_NEON)
         auto avg = vec8x16i{vhaddq_s16(decay(a), decay(b))};
-        auto c = broadcast_mask((a < -b) | (b == vec8x16i{std::int16_t(1 << 15)})) & (a ^ b) & vec8x16i{1};
+        auto c = set_bits((a < -b) | (b == vec8x16i{std::int16_t(1 << 15)})) & (a ^ b) & vec8x16i{1};
 
         return avg + c;
 
@@ -1068,7 +1068,7 @@ namespace avel {
 
         #if defined(AVEL_NEON)
         vec8x16i t0 = vec8x16i{vhaddq_s16(decay(a), decay(b))};
-        vec8x16i t1 = (a ^ b) & vec8x16i{0x1} & broadcast_mask(b < a);
+        vec8x16i t1 = (a ^ b) & vec8x16i{0x1} & set_bits(b < a);
         return t0 + t1;
 
         #endif
@@ -1084,7 +1084,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_SSE2) || defined(AVEL_NEON)
-        auto mask = broadcast_mask(m);
+        auto mask = set_bits(m);
         return (v ^ mask) - mask;
         #endif
     }

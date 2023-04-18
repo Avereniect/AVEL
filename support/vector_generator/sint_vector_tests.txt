@@ -96,11 +96,11 @@ namespace avel_tests {
     TEST($<Mask_alias>, Equality_comparison) {
         $<mask_alias> mask0{false};
         $<mask_alias> mask1{false};
-        EXPECT_TRUE(mask0 == mask1);
+        EXPECT_EQ(mask0, mask1);
 
         $<mask_alias> mask2{true};
         $<mask_alias> mask3{true};
-        EXPECT_TRUE(mask2 == mask3);
+        EXPECT_EQ(mask2, mask3);
 
         EXPECT_FALSE(mask0 == mask2);
         EXPECT_FALSE(mask3 == mask1);
@@ -222,15 +222,15 @@ namespace avel_tests {
 
     TEST($<Mask_alias>, Logical_negation_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<$<bool_array_alias>>();
+            auto inputs0 = random_array<$<bool_array_alias>>();
 
-            $<mask_alias> mask0{inputs};
+            $<mask_alias> mask0{inputs0};
 
             $<mask_alias> results = !mask0;
 
             $<bool_array_alias> expected;
             for (std::size_t j = 0; j < expected.size(); ++j) {
-                expected[j] = !inputs[j];
+                expected[j] = !inputs0[j];
             }
             $<mask_alias> expected_mask{expected};
 
@@ -375,14 +375,14 @@ namespace avel_tests {
 
     TEST($<Vector_alias>, Construct_from_array_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<$<array_alias>>();
+            auto data = random_array<$<array_alias>>();
 
-            $<vector_alias> v{inputs};
+            $<vector_alias> v{data};
 
             auto results = to_array(v);
 
-            for (std::size_t j = 0; j < inputs.size(); ++j) {
-                EXPECT_EQ(inputs[j], results[j]);
+            for (std::size_t j = 0; j < data.size(); ++j) {
+                EXPECT_EQ(data[j], results[j]);
             }
         }
     }
@@ -395,7 +395,7 @@ namespace avel_tests {
         $<vector_alias>::primitive x{};
         $<vector_alias> v{0x0F};
         v = x;
-        $<vector_alias> expected{};
+        $<vector_alias> expected{0x00};
 
         EXPECT_TRUE(all(v == expected));
     }
@@ -539,24 +539,24 @@ namespace avel_tests {
 
     TEST($<Vector_alias>, Unary_plus) {
         auto inputs = random_array<$<array_alias>>();
-        const $<vector_alias> v{inputs};
-        $<vector_alias> results{+v};
+        const $<vector_alias> u{inputs};
+        $<vector_alias> v{+u};
 
-        EXPECT_TRUE(all(results == v));
+        EXPECT_TRUE(all(u == v));
     }
 
     TEST($<Vector_alias>, Unary_minus) {
         auto inputs = random_array<$<array_alias>>();
-        const $<vector_alias> v{inputs};
+        const $<vector_alias> input{inputs};
 
-        auto results = -v;
+        auto results = -input;
 
-        $<signed_array_alias> expected{};
+        $<array_alias> expected{};
         for (std::size_t j = 0; j < expected.size(); ++j) {
             expected[j] = -inputs[j];
         }
 
-        EXPECT_TRUE(all(results == $<signed_vector_alias>{expected}));
+        EXPECT_TRUE(all(results == $<vector_alias>{expected}));
     }
 
     //=====================================================
@@ -770,10 +770,10 @@ namespace avel_tests {
         for (std::size_t i = 0; i < iterations; ++i) {
             auto inputs = random_array<$<array_alias>>();
 
-            $<vector_alias> v{inputs};
-            ++v;
+            $<vector_alias> input{inputs};
+            ++input;
 
-            auto results = v;
+            auto results = input;
             $<array_alias> expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = ++inputs[j];
@@ -787,10 +787,10 @@ namespace avel_tests {
         for (std::size_t i = 0; i < iterations; ++i) {
             auto inputs = random_array<$<array_alias>>();
 
-            $<vector_alias> v{inputs};
-            v++;
+            $<vector_alias> input{inputs};
+            input++;
 
-            auto results = v;
+            auto results = input;
             $<array_alias> expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = ++inputs[j];
@@ -804,10 +804,10 @@ namespace avel_tests {
         for (std::size_t i = 0; i < iterations; ++i) {
             auto inputs = random_array<$<array_alias>>();
 
-            $<vector_alias> v{inputs};
-            --v;
+            $<vector_alias> input{inputs};
+            --input;
 
-            auto results = v;
+            auto results = input;
             $<array_alias> expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = --inputs[j];
@@ -821,10 +821,10 @@ namespace avel_tests {
         for (std::size_t i = 0; i < iterations; ++i) {
             auto inputs = random_array<$<array_alias>>();
 
-            $<vector_alias> v{inputs};
-            v--;
+            $<vector_alias> input{inputs};
+            input--;
 
-            auto results = v;
+            auto results = input;
             $<array_alias> expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = --inputs[j];
@@ -958,7 +958,11 @@ namespace avel_tests {
             $<array_alias> expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 if (v1 >= type_width<$<vector_alias>::scalar>::value) {
-                    expected[j] = 0x00;
+                    if (inputs0[j] < 0) {
+                        expected[j] = $<vector_alias>::scalar(-1);
+                    } else {
+                        expected[j] = 0x00;
+                    }
                 } else {
                     expected[j] = inputs0[j] >> v1;
                 }
@@ -982,7 +986,11 @@ namespace avel_tests {
             $<array_alias> expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 if (inputs1[j] >= type_width<$<vector_alias>::scalar>::value) {
-                    expected[j] = 0x00;
+                    if (inputs0[j] < 0) {
+                        expected[j] = $<vector_alias>::scalar(-1);
+                    } else {
+                        expected[j] = 0x00;
+                    }
                 } else {
                     expected[j] = inputs0[j] >> inputs1[j];
                 }
@@ -1000,9 +1008,9 @@ namespace avel_tests {
         for (std::size_t i = 0; i < iterations; ++i) {
             auto inputs = random_array<$<array_alias>>();
 
-            $<vector_alias> v{inputs};
+            $<vector_alias> v0{inputs};
 
-            auto results = ~v;
+            auto results = ~v0;
 
             $<array_alias> expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
@@ -1070,7 +1078,11 @@ namespace avel_tests {
             $<array_alias> expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 if (v1 >= type_width<$<vector_alias>::scalar>::value) {
-                    expected[j] = 0x00;
+                    if (inputs0[j] < 0) {
+                        expected[j] = $<vector_alias>::scalar(-1);
+                    } else {
+                        expected[j] = 0x00;
+                    }
                 } else {
                     expected[j] = inputs0[j] >> v1;
                 }
@@ -1093,7 +1105,11 @@ namespace avel_tests {
             $<array_alias> expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 if (inputs1[j] >= type_width<$<vector_alias>::scalar>::value) {
-                    expected[j] = 0x00;
+                    if (inputs0[j] < 0) {
+                        expected[j] = $<vector_alias>::scalar(-1);
+                    } else {
+                        expected[j] = 0x00;
+                    }
                 } else {
                     expected[j] = inputs0[j] >> inputs1[j];
                 }
@@ -1191,7 +1207,7 @@ namespace avel_tests {
 
             $<vector_alias> v{inputs};
 
-            EXPECT_TRUE(all(rotl<0x0>(v) == (rotl(v, 0x0))));
+            EXPECT_TRUE(all(rotl<0x00>(v) == (rotl(v, 0x00))));
             $<rotl_tests>
         }
     }
@@ -1239,8 +1255,8 @@ namespace avel_tests {
 
             $<vector_alias> v{inputs0};
 
-            EXPECT_TRUE(all(rotr<0x0>(v) == (rotr(v, 0x0))));
             $<rotr_tests>
+            EXPECT_TRUE(all(rotr<0x00>(v) == (rotr(v, 0x00))));
         }
     }
 
@@ -1366,18 +1382,18 @@ namespace avel_tests {
 
     TEST($<Vector_alias>, set_bits_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<$<bool_array_alias>>();
+            auto inputs0 = random_array<$<bool_array_alias>>();
 
-            $<mask_alias> v{inputs};
+            $<mask_alias> v0{inputs0};
 
-            auto results = set_bits(v);
+            auto results = set_bits(v0);
 
             $<array_alias> expected{};
-            for (std::size_t j = 0; j < inputs.size(); ++j) {
-                if (inputs[j]) {
-                    expected[j] = $<vector_alias>::scalar(-1);
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                if (inputs0[j]) {
+                    expected[j] = -1;
                 } else {
-                    expected[j] = $<vector_alias>::scalar(0);
+                    expected[j] = 0x00;
                 }
             }
 
@@ -1456,7 +1472,7 @@ namespace avel_tests {
 
             $<array_alias> expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
-                expected[j] = max(inputs0[j], inputs1[j]);
+                expected[j] = std::max(inputs0[j], inputs1[j]);
             }
 
             EXPECT_TRUE(all(results == $<vector_alias>{expected}));
@@ -1475,7 +1491,7 @@ namespace avel_tests {
 
             $<array_alias> expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
-                expected[j] = min(inputs0[j], inputs1[j]);
+                expected[j] = std::min(inputs0[j], inputs1[j]);
             }
 
             EXPECT_TRUE(all(results == $<vector_alias>{expected}));
@@ -1495,9 +1511,9 @@ namespace avel_tests {
             $<array_alias> expected0{};
             $<array_alias> expected1{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
-                auto min_max = minmax(inputs0[j], inputs1[j]);
-                expected0[j] = min_max[0];
-                expected1[j] = min_max[1];
+                auto xy = minmax(inputs0[j], inputs1[j]);
+                expected0[j] = xy[0];
+                expected1[j] = xy[1];
             }
 
             EXPECT_TRUE(all(results[0] == $<vector_alias>{expected0}));
@@ -1513,16 +1529,16 @@ namespace avel_tests {
 
             $<vector_alias> v0{inputs0};
             $<vector_alias> v1{inputs1};
-            $<vector_alias> v2{inputs2};
+            $<vector_alias> input2{inputs2};
 
-            auto ranges = minmax(v1, v2);
+            auto xy = minmax(v1, input2);
 
-            auto results = clamp(v0, ranges[0], ranges[1]);
+            auto results = clamp(v0, xy[0], xy[1]);
 
             $<array_alias> expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
-                auto range = minmax(inputs1[j], inputs2[j]);
-                expected[j] = clamp(inputs0[j], range[0], range[1]);
+                auto xy = minmax(inputs1[j], inputs2[j]);
+                expected[j] = clamp(inputs0[j], xy[0], xy[1]);
             }
 
             EXPECT_TRUE(all(results == $<vector_alias>{expected}));
@@ -1567,6 +1583,42 @@ namespace avel_tests {
         }
     }
 
+    TEST($<Vector_alias>, Negate_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<$<bool_array_alias>>();
+            auto inputs1 = random_array<$<array_alias>>();
+
+            $<mask_alias> v0{inputs0};
+            $<vector_alias> v1{inputs1};
+
+            auto results = negate(v0, v1);
+
+            $<array_alias> expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = negate(inputs0[j], inputs1[j]);
+            }
+
+            EXPECT_TRUE(all(results == $<vector_alias>{expected}));
+        }
+    }
+
+    TEST($<Vector_alias>, Abs_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<$<array_alias>>();
+
+            $<vector_alias> v{inputs};
+
+            auto results = abs(v);
+
+            $<array_alias> expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = avel::abs(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == $<vector_alias>{expected}));
+        }
+    }
+
     TEST($<Vector_alias>, Neg_abs_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             auto inputs = random_array<$<array_alias>>();
@@ -1575,12 +1627,12 @@ namespace avel_tests {
 
             auto results = neg_abs(v);
 
-            $<signed_array_alias> expected{};
+            $<array_alias> expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = neg_abs(inputs[j]);
             }
 
-            EXPECT_TRUE(all(results == $<signed_vector_alias>{expected}));
+            EXPECT_TRUE(all(results == $<vector_alias>{expected}));
         }
     }
 
@@ -1592,11 +1644,11 @@ namespace avel_tests {
         for (std::size_t i = 0; i < iterations; ++i) {
             auto inputs = random_array<$<array_alias>>();
 
-            for (std::size_t j = 0; j <= $<vector_alias>::width; ++j) {
+            for (std::uint32_t j = 0; j < $<vector_alias>::width; ++j) {
                 auto results = load<$<vector_alias>>(inputs.data(), j);
 
                 auto loaded_data = to_array(results);
-                for (std::size_t k = 0; k < $<vector_alias>::width; k++) {
+                for (std::uint32_t k = 0; k < $<vector_alias>::width; k++) {
                     if (k < j) {
                         EXPECT_EQ(inputs[k], loaded_data[k]);
                     } else {
@@ -1620,11 +1672,11 @@ namespace avel_tests {
         for (std::size_t i = 0; i < iterations; ++i) {
             alignas(alignof($<vector_alias>)) auto inputs = random_array<$<array_alias>>();
 
-            for (std::size_t j = 0; j <= $<vector_alias>::width; ++j) {
+            for (std::uint32_t j = 0; j < $<vector_alias>::width; ++j) {
                 auto results = aligned_load<$<vector_alias>>(inputs.data(), j);
 
                 auto loaded_data = to_array(results);
-                for (std::size_t k = 0; k < $<vector_alias>::width; k++) {
+                for (std::uint32_t k = 0; k < $<vector_alias>::width; k++) {
                     if (k < j) {
                         EXPECT_EQ(inputs[k], loaded_data[k]);
                     } else {
@@ -1654,11 +1706,11 @@ namespace avel_tests {
         }
 
         for (std::size_t i = 0; i < iterations; ++i) {
-            $<signed_array_alias> index_array{};
+            $<array_alias> index_array{};
             for (std::size_t j = 0; j < index_array.size(); ++j) {
-                index_array[j] = random_val<$<vector_alias>::scalar>() % test_data_size;
+                index_array[j] = random_val<$<unsigned_vector_alias>::scalar>() % test_data_size;
             }
-            auto indices = load<$<signed_vector_alias>>(index_array.data());
+            auto indices = load<$<vector_alias>>(index_array.data());
 
             for (std::size_t j = 0; j <= $<vector_alias>::width; ++j) {
                 auto results = gather<$<vector_alias>>(test_data.data(), indices, j);
@@ -1685,13 +1737,13 @@ namespace avel_tests {
         }
 
         for (std::size_t i = 0; i < iterations; ++i) {
-            $<signed_array_alias> index_array{};
+            $<array_alias> index_array{};
             for (std::size_t j = 0; j < $<vector_alias>::width; ++j) {
                 index_array[j] = random_val<$<vector_alias>::scalar>() % test_data_size;
             }
-            auto indices = load<$<signed_vector_alias>>(index_array.data());
+            auto indices = load<$<vector_alias>>(index_array.data());
 
-            EXPECT_TRUE(all(gather<$<vector_alias>>, 0x00>(test_data.data(), indices) == gather<$<vector_alias>>(test_data.data(), indices, 0x00)));
+            EXPECT_TRUE(all(gather<$<vector_alias>, 0x00>(test_data.data(), indices) == gather<$<vector_alias>>(test_data.data(), indices, 0x00)));
             $<gather_tests>
         }
     }
@@ -1702,7 +1754,7 @@ namespace avel_tests {
 
             $<vector_alias> v{inputs};
 
-            for (std::size_t j = 0; j <= $<vector_alias>::width; ++j) {
+            for (std::size_t j = 0; j < $<vector_alias>::width; ++j) {
                 $<vector_alias>::scalar arr[$<vector_alias>::width]{};
                 store(arr, v, j);
 
@@ -1736,7 +1788,7 @@ namespace avel_tests {
 
             $<vector_alias> v{inputs};
 
-            for (std::size_t j = 0; j <= $<vector_alias>::width; ++j) {
+            for (std::size_t j = 0; j < $<vector_alias>::width; ++j) {
                 alignas(alignof($<vector_alias>)) $<vector_alias>::scalar arr[$<vector_alias>::width]{};
                 aligned_store(arr, v, j);
 
@@ -1776,14 +1828,14 @@ namespace avel_tests {
 
             $<vector_alias> input0{input_array0};
 
-            $<signed_array_alias> index_array{};
+            $<array_alias> index_array{};
             for (std::size_t j = 0; j < index_array.size(); ++j) {
-                index_array[j] = (random_val<$<vector_alias>::scalar>() % block_size) + (j * block_size);
+                index_array[j] = (random_val<$<unsigned_vector_alias>::scalar>() % block_size) + (j * block_size);
             }
 
-            $<signed_vector_alias> indices{index_array};
+            $<vector_alias> indices{index_array};
 
-            for (std::size_t j = 0; j <= $<vector_alias>::width; ++j) {
+            for (std::size_t j = 0; j <= $<unsigned_vector_alias>::width; ++j) {
                 scatter(test_data.data(), input0, indices, j);
 
                 for (std::size_t k = 0; k < input_array0.size(); ++k) {
@@ -1807,12 +1859,12 @@ namespace avel_tests {
 
             $<vector_alias> input0{input_array0};
 
-            $<signed_array_alias> index_array{};
+            $<array_alias> index_array{};
             for (std::size_t j = 0; j < index_array.size(); ++j) {
-                index_array[j] = (random_val<$<vector_alias>::scalar>() % block_size) + (j * block_size);
+                index_array[j] = (random_val<$<unsigned_vector_alias>::scalar>() % block_size) + (j * block_size);
             }
 
-            $<signed_vector_alias> indices{index_array};
+            $<vector_alias> indices{index_array};
 
             scatter<0x0>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x00));
             $<scatter_tests>
@@ -1861,7 +1913,7 @@ namespace avel_tests {
     }
 
     TEST($<Vector_alias>, Div_random) {
-        for (std::size_t i = 0; i < iterations; ++i) {
+        for (unsigned i = 0; i < iterations; ++i) {
             auto numerators = random_array<$<array_alias>>();
             auto denominators = random_denominator_array<$<array_alias>>();
 
@@ -1888,7 +1940,7 @@ namespace avel_tests {
         }
     }
 
-    TEST($<Vector_alias>, Popcount_edge_cases) {
+    TEST($<Vector_alias>, Popcount) {
         $<vector_alias> v{0x0};
         $<vector_alias> c = popcount(v);
         EXPECT_TRUE(all(c == v));
@@ -1931,9 +1983,7 @@ namespace avel_tests {
     TEST($<Vector_alias>, Countl_zero_edge_cases) {
         for (std::size_t i = 0; i < (type_width<$<vector_alias>::scalar>::value - 1); ++i) {
             $<vector_alias>::scalar v = ($<vector_alias>::scalar(0x1) << i) - 1;
-            auto results = countl_zero($<vector_alias>{v});
-            auto expected = $<vector_alias>(type_width<$<vector_alias>::scalar>::value - i);
-            EXPECT_TRUE(all(results == expected));
+            EXPECT_TRUE(all(countl_zero($<vector_alias>{v}) == $<vector_alias>(type_width<$<vector_alias>::scalar>::value - i)));
         }
         EXPECT_TRUE(all(countl_zero($<vector_alias>(-1)) == $<vector_alias>{0}));
     }
@@ -1959,9 +2009,7 @@ namespace avel_tests {
         EXPECT_TRUE(all(countl_one($<vector_alias>{0x00}) == $<vector_alias>{0}));
         for (std::size_t i = 0; i < (type_width<$<vector_alias>::scalar>::value - 1); ++i) {
             $<vector_alias>::scalar v = $<vector_alias>::scalar(-1) << i;
-            auto results = countl_one($<vector_alias>{v});
-            auto expected = $<vector_alias>(type_width<$<vector_alias>::scalar>::value - i);
-            EXPECT_TRUE(all(results == expected));
+            EXPECT_TRUE(all(countl_one($<vector_alias>{v}) == $<vector_alias>(type_width<$<vector_alias>::scalar>::value - i)));
         }
     }
 
@@ -1985,9 +2033,7 @@ namespace avel_tests {
     TEST($<Vector_alias>, Countr_zero_edge_cases) {
         for (std::size_t i = 0; i < (type_width<$<vector_alias>::scalar>::value - 1); ++i) {
             $<vector_alias>::scalar v = $<vector_alias>::scalar(-1) << i;
-            auto results = countr_zero($<vector_alias>{v});
-            auto expected = $<vector_alias>(i);
-            EXPECT_TRUE(all(results == expected));
+            EXPECT_TRUE(all(countr_zero($<vector_alias>{v}) == $<vector_alias>(i)));
         }
         EXPECT_TRUE(all(countr_zero($<vector_alias>{0x00}) == $<vector_alias>{type_width<$<vector_alias>::scalar>::value}));
     }
@@ -2014,9 +2060,7 @@ namespace avel_tests {
 
         for (std::size_t i = 0; i < (type_width<$<vector_alias>::scalar>::value - 1); ++i) {
             $<vector_alias>::scalar v = ($<vector_alias>::scalar(1) << i) - 1;
-            auto results = countr_one($<vector_alias>{v});
-            auto expected = $<vector_alias>(i);
-            EXPECT_TRUE(all(results == expected));
+            EXPECT_TRUE(all(countr_one($<vector_alias>{v}) == $<vector_alias>(i)));
         }
         EXPECT_TRUE(all(countr_one($<vector_alias>{$<vector_alias>::scalar(-1)}) == $<vector_alias>{type_width<$<vector_alias>::scalar>::value}));
     }
@@ -2038,97 +2082,12 @@ namespace avel_tests {
         }
     }
 
-    TEST($<Vector_alias>, Bit_width_edge_cases) {
-        EXPECT_TRUE(all(bit_width($<vector_alias>{0x00}) == $<vector_alias>{0x00}));
-
-        for (std::size_t i = 0; i < type_width<$<vector_alias>::scalar>::value; ++i) {
-            $<vector_alias>::scalar v = $<vector_alias>::scalar(1) << i;
-            auto results = bit_width($<vector_alias>{v});
-            auto expected = $<vector_alias>(i + 1);
-            EXPECT_TRUE(all(results == expected));
-        }
-    }
-
-    TEST($<Vector_alias>, Bit_width_random) {
-        for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<$<array_alias>>();
-
-            $<vector_alias> v{inputs};
-
-            auto results = bit_width(v);
-
-            $<array_alias> expected{};
-            for (std::size_t j = 0; j < inputs.size(); ++j) {
-                expected[j] = bit_width(inputs[j]);
-            }
-
-            EXPECT_TRUE(all(results == $<vector_alias>{expected}));
-        }
-    }
-
-    TEST($<Vector_alias>, Bit_floor_edge_cases) {
-        EXPECT_TRUE(all($<vector_alias>{0} == bit_floor($<vector_alias>{0x00})));
-
-        for (std::size_t i = 0; i < (type_width<$<vector_alias>::scalar>::value - 1); ++i) {
-            $<vector_alias>::scalar v = $<vector_alias>::scalar(1) << i;
-            auto results = bit_floor($<vector_alias>{v});
-            auto expected = $<vector_alias>{v};
-            EXPECT_TRUE(all(results == expected));
-        }
-    }
-
-    TEST($<Vector_alias>, Bit_floor_random) {
-        for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<$<array_alias>>();
-
-            $<vector_alias> v{inputs};
-
-            auto results = bit_floor(v);
-
-            $<array_alias> expected{};
-            for (std::size_t j = 0; j < inputs.size(); ++j) {
-                expected[j] = bit_floor(inputs[j]);
-            }
-
-            EXPECT_TRUE(all(results == $<vector_alias>{expected}));
-        }
-    }
-
-    TEST($<Vector_alias>, Bit_ceil_edge_cases) {
-        EXPECT_TRUE(all($<vector_alias>{1} == bit_ceil($<vector_alias>{0x00})));
-
-        for (std::size_t i = 0; i < (type_width<$<vector_alias>::scalar>::value - 1); ++i) {
-            $<vector_alias>::scalar v = $<vector_alias>::scalar(1) << i;
-            auto results = bit_ceil($<vector_alias>{v});
-            auto expected = $<vector_alias>{v};
-            EXPECT_TRUE(all(results == expected));
-        }
-    }
-
-    TEST($<Vector_alias>, Bit_ceil_random) {
-        for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<$<array_alias>>();
-
-            $<vector_alias> v{inputs};
-
-            auto results = bit_ceil(v);
-
-            $<array_alias> expected{};
-            for (std::size_t j = 0; j < inputs.size(); ++j) {
-                expected[j] = bit_ceil(inputs[j]);
-            }
-
-            EXPECT_TRUE(all(results == $<vector_alias>{expected}));
-        }
-    }
-
     TEST($<Vector_alias>, Has_single_bit_edge_cases) {
         EXPECT_TRUE(none(has_single_bit($<vector_alias>{0x00})));
 
         for (std::size_t i = 0; i < (type_width<$<vector_alias>::scalar>::value - 1); ++i) {
             $<vector_alias>::scalar v = $<vector_alias>::scalar(1) << i;
-            auto results = has_single_bit($<vector_alias>{v});
-            EXPECT_TRUE(all(results));
+            EXPECT_TRUE(all(has_single_bit($<vector_alias>{v})));
         }
     }
 

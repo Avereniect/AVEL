@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<$<VECTOR_ALIAS>> div($<VECTOR_ALIAS> numerator, $<VECTOR_ALIAS> denominator);
-    $<VECTOR_ALIAS> broadcast_mask($<MASK_ALIAS> m);
+    $<VECTOR_ALIAS> set_bits($<MASK_ALIAS> m);
     $<VECTOR_ALIAS> blend($<MASK_ALIAS> m, $<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b);
     $<VECTOR_ALIAS> negate($<VECTOR_ALIAS> m, $<VECTOR_ALIAS> x);
 
@@ -656,8 +656,8 @@ $END
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL $<VECTOR_ALIAS> broadcast_mask($<MASK_ALIAS> m) {
-        return $<VECTOR_ALIAS>{broadcast_mask($<UMASK_ALIAS>{m})};
+    AVEL_FINL $<VECTOR_ALIAS> set_bits($<MASK_ALIAS> m) {
+        return $<VECTOR_ALIAS>{set_bits($<UMASK_ALIAS>{m})};
     }
 
     [[nodiscard]]

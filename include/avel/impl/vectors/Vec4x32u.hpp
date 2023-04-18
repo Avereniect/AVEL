@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec4x32u> div(vec4x32u numerator, vec4x32u denominator);
-    vec4x32u broadcast_mask(mask4x32u m);
+    vec4x32u set_bits(mask4x32u m);
     vec4x32u blend(mask4x32u m, vec4x32u a, vec4x32u b);
     vec4x32u countl_one(vec4x32u x);
 
@@ -1160,7 +1160,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32u broadcast_mask(mask4x32u m) {
+    AVEL_FINL vec4x32u set_bits(mask4x32u m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         return vec4x32u{_mm_movm_epi32(decay(m))};
 
@@ -1184,12 +1184,12 @@ namespace avel {
         return vec4x32u{_mm_maskz_mov_epi32(decay(m), decay(v))};
 
         #elif defined(AVEL_SSE2)
-        return broadcast_mask(m) & v;
+        return set_bits(m) & v;
 
         #endif
 
         #if defined(AVEL_NEON)
-        return broadcast_mask(m) & v;
+        return set_bits(m) & v;
         #endif
 
     }
@@ -1300,13 +1300,13 @@ namespace avel {
     AVEL_FINL vec4x32u midpoint(vec4x32u a, vec4x32u b) {
         #if defined(AVEL_SSE2)
         vec4x32u avg = ((a ^ b) >> 1) + (a & b);
-        vec4x32u c = broadcast_mask(b < a) & (a ^ b) & vec4x32u{0x1};
+        vec4x32u c = set_bits(b < a) & (a ^ b) & vec4x32u{0x1};
         return avg + c;
         #endif
 
         #if defined(AVEL_NEON)
         vec4x32u t0 = vec4x32u{vhaddq_u32(decay(a), decay(b))};
-        vec4x32u t1 = (a ^ b) & vec4x32u{0x1} & broadcast_mask(a > b);
+        vec4x32u t1 = (a ^ b) & vec4x32u{0x1} & set_bits(a > b);
         return t0 + t1;
 
         #endif
@@ -1645,7 +1645,7 @@ namespace avel {
         //TODO: Optimize body with masked instructions
         for (; (i-- > 0) && any(mask4x32u(x));) {
             mask4x32u b = ((x >> i) >= y);
-            x -= (broadcast_mask(b) & (y << i));
+            x -= (set_bits(b) & (y << i));
             quotient |= (vec4x32u{b} << i);
         }
 
@@ -1777,27 +1777,27 @@ namespace avel {
 
         vec4x32u m0{0xFFFF0000u};
         mask4x32u b0 = (m0 & x) == m0;
-        sum += broadcast_mask(b0) & vec4x32u{16};
-        x <<= broadcast_mask(b0) * vec4x32u{16};
+        sum += set_bits(b0) & vec4x32u{16};
+        x <<= set_bits(b0) * vec4x32u{16};
 
         vec4x32u m1{0xFF000000u};
         mask4x32u b1 = (m1 & x) == m1;
-        sum += broadcast_mask(b1) & vec4x32u{8};
-        x <<= broadcast_mask(b1) & vec4x32u{8};
+        sum += set_bits(b1) & vec4x32u{8};
+        x <<= set_bits(b1) & vec4x32u{8};
 
         vec4x32u m2{0xF0000000u};
         mask4x32u b2 = (m2 & x) == m2;
-        sum += broadcast_mask(b2) & vec4x32u{4};
-        x <<= broadcast_mask(b2) & vec4x32u{4};
+        sum += set_bits(b2) & vec4x32u{4};
+        x <<= set_bits(b2) & vec4x32u{4};
 
         vec4x32u m3{0xC0000000u};
         mask4x32u b3 = (m3 & x) == m3;
-        sum += broadcast_mask(b3) & vec4x32u{2};
-        x <<= broadcast_mask(b3) & vec4x32u{2};
+        sum += set_bits(b3) & vec4x32u{2};
+        x <<= set_bits(b3) & vec4x32u{2};
 
         vec4x32u m4{0x80000000u};
         mask4x32u b4 = (m4 & x) == m4;
-        sum += broadcast_mask(b4) & vec4x32u{1};
+        sum += set_bits(b4) & vec4x32u{1};
 
         return sum;
         */
@@ -1904,7 +1904,7 @@ namespace avel {
         x |= x >> 4;
         x |= x >> 8;
         x |= x >> 16;
-        x = _mm_andnot_si128(decay(broadcast_mask(zero_mask)), decay(x));
+        x = _mm_andnot_si128(decay(set_bits(zero_mask)), decay(x));
         ++x;
 
         return x;
@@ -1914,7 +1914,7 @@ namespace avel {
         #if defined(AVEL_NEON)
         auto sh = (vec4x32u{32} - countl_zero(x - vec4x32u{1}));
         auto result = vec4x32u{1} << sh;
-        return result - broadcast_mask(x == vec4x32u{0x00});
+        return result - set_bits(x == vec4x32u{0x00});
         #endif
     };
 

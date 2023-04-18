@@ -15,7 +15,7 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    AVEL_FINL std::uint64_t broadcast_mask<std::uint64_t>(bool x) {
+    AVEL_FINL std::uint64_t set_bits<std::uint64_t>(bool x) {
         return -std::uint64_t(x);
     }
 
@@ -366,7 +366,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::uint64_t midpoint(std::uint64_t a, std::uint64_t b) {
         std::uint64_t t0 = a & b & std::uint64_t{0x1};
-        std::uint64_t t1 = (a | b) & std::uint64_t{0x1} & avel::broadcast_mask<std::uint64_t>(a > b);
+        std::uint64_t t1 = (a | b) & std::uint64_t{0x1} & avel::set_bits<std::uint64_t>(a > b);
         std::uint64_t t2 = t0 | t1;
         return (a >> 1) + (b >> 1) + t2;
     }

@@ -1636,13 +1636,13 @@ namespace avel_tests {
         }
     }
 
-    TEST(Vec4x64u, Broadcast_mask_random) {
+    TEST(Vec4x64u, Set_bits_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
             auto inputs = random_array<arr4xb>();
 
             mask4x64u v{inputs};
 
-            auto results = broadcast_mask(v);
+            auto results = set_bits(v);
 
             arr4x64u expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {

@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec4x64u> div(vec4x64u numerator, vec4x64u denominator);
-    vec4x64u broadcast_mask(mask4x64u m);
+    vec4x64u set_bits(mask4x64u m);
     vec4x64u blend(mask4x64u m, vec4x64u a, vec4x64u b);
     vec4x64u countl_one(vec4x64u x);
 
@@ -810,7 +810,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x64u broadcast_mask(mask4x64u m) {
+    AVEL_FINL vec4x64u set_bits(mask4x64u m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         return vec4x64u{_mm256_movm_epi64(decay(m))};
 
@@ -829,7 +829,7 @@ namespace avel {
         return vec4x64u{_mm256_maskz_mov_epi64(decay(m), decay(v))};
 
         #elif defined(AVEL_AVX2)
-        return broadcast_mask(m) & v;
+        return set_bits(m) & v;
 
         #endif
     }
@@ -924,7 +924,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x64u midpoint(vec4x64u a, vec4x64u b) {
         vec4x64u t0 = a & b & vec4x64u{0x1};
-        vec4x64u t1 = (a | b) & vec4x64u{0x1} & broadcast_mask(a > b);
+        vec4x64u t1 = (a | b) & vec4x64u{0x1} & set_bits(a > b);
         vec4x64u t2 = t0 | t1;
         return (a >> 1) + (b >> 1) + t2;
     }
@@ -1186,7 +1186,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
         auto sh = (vec4x64u{64} - countl_zero(v - vec4x64u{1}));
         auto result = vec4x64u{1} << sh;
-        return result - broadcast_mask(v == vec4x64u{0x00});
+        return result - set_bits(v == vec4x64u{0x00});
 
         #elif defined(AVEL_AVX2)
         auto zero_mask = (v == vec4x64u{0});
@@ -1200,7 +1200,7 @@ namespace avel {
         v |= v >> 32;
         ++v;
 
-        return v - broadcast_mask(zero_mask);
+        return v - set_bits(zero_mask);
         #endif
     }
 

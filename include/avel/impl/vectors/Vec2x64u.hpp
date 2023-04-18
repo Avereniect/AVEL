@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec2x64u> div(vec2x64u numerator, vec2x64u denominator);
-    vec2x64u broadcast_mask(mask2x64u m);
+    vec2x64u set_bits(mask2x64u m);
     vec2x64u blend(mask2x64u m, vec2x64u a, vec2x64u b);
     vec2x64u countl_one(vec2x64u x);
 
@@ -1224,7 +1224,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec2x64u broadcast_mask(mask2x64u m) {
+    AVEL_FINL vec2x64u set_bits(mask2x64u m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         return vec2x64u{_mm_movm_epi64(decay(m))};
 
@@ -1247,12 +1247,12 @@ namespace avel {
         return vec2x64u{_mm_maskz_mov_epi64(decay(m), decay(v))};
 
         #elif defined(AVEL_SSE2)
-        return broadcast_mask(m) & v;
+        return set_bits(m) & v;
 
         #endif
 
         #if defined(AVEL_NEON)
-        return broadcast_mask(m) & v;
+        return set_bits(m) & v;
         #endif
 
     }
@@ -1400,7 +1400,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec2x64u midpoint(vec2x64u a, vec2x64u b) {
         vec2x64u t0 = a & b & vec2x64u{0x1};
-        vec2x64u t1 = (a | b) & vec2x64u{0x1} & broadcast_mask(a > b);
+        vec2x64u t1 = (a | b) & vec2x64u{0x1} & set_bits(a > b);
         vec2x64u t2 = t0 | t1;
         return (a >> 1) + (b >> 1) + t2;
     }
@@ -1807,7 +1807,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
         auto sh = (vec2x64u{64} - countl_zero(v - vec2x64u{1}));
         auto result = vec2x64u{1} << sh;
-        return result - broadcast_mask(v == vec2x64u{0x00});
+        return result - set_bits(v == vec2x64u{0x00});
 
         #elif defined(AVEL_SSE2)
         auto zero_mask = (v == vec2x64u{0});
@@ -1821,13 +1821,13 @@ namespace avel {
         v |= v >> 32;
         ++v;
 
-        return v - broadcast_mask(zero_mask);
+        return v - set_bits(zero_mask);
         #endif
 
         #if defined(AVEL_NEON)
         auto sh = (vec2x64u{64} - countl_zero(v - vec2x64u{1}));
         auto result = vec2x64u{1} << sh;
-        return result - broadcast_mask(v == vec2x64u{0x00});
+        return result - set_bits(v == vec2x64u{0x00});
         #endif
     };
 

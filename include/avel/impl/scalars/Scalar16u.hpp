@@ -15,7 +15,7 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    AVEL_FINL std::uint16_t broadcast_mask<std::uint16_t>(bool x) {
+    AVEL_FINL std::uint16_t set_bits<std::uint16_t>(bool x) {
         return -std::uint16_t(x);
     }
 

@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec16x8u> div(vec16x8u numerator, vec16x8u denominator);
-    vec16x8u broadcast_mask(mask16x8u m);
+    vec16x8u set_bits(mask16x8u m);
     vec16x8u blend(mask16x8u m, vec16x8u a, vec16x8u b);
     vec16x8u countl_one(vec16x8u x);
 
@@ -1525,7 +1525,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x8u broadcast_mask(mask16x8u m) {
+    AVEL_FINL vec16x8u set_bits(mask16x8u m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return vec16x8u{_mm_movm_epi8(decay(m))};
 
@@ -1545,12 +1545,12 @@ namespace avel {
         return vec16x8u{_mm_maskz_mov_epi8(decay(m), decay(v))};
 
         #elif defined(AVEL_SSE2)
-        return broadcast_mask(m) & v;
+        return set_bits(m) & v;
 
         #endif
 
         #if defined(AVEL_NEON)
-        return broadcast_mask(m) & v;
+        return set_bits(m) & v;
         #endif
 
     }
@@ -1655,13 +1655,13 @@ namespace avel {
     AVEL_FINL vec16x8u midpoint(vec16x8u a, vec16x8u b) {
         #if defined(AVEL_AVX512VL)
         auto t1 = _mm_avg_epu8(decay(a), decay(b));
-        auto t5 = _mm_and_si128(_mm_ternarylogic_epi32(decay(a), decay(b), decay(broadcast_mask(b < a)), 0x14), _mm_set1_epi8(0x1));
+        auto t5 = _mm_and_si128(_mm_ternarylogic_epi32(decay(a), decay(b), decay(set_bits(b < a)), 0x14), _mm_set1_epi8(0x1));
         auto t6 = _mm_sub_epi8(t1, t5);
         return vec16x8u{t6};
 
         #elif defined(AVEL_SSE2)
         auto t1 = _mm_avg_epu8(decay(a), decay(b));
-        auto t3 = _mm_andnot_si128(decay(broadcast_mask(b <= a)), _mm_xor_si128(decay(a), decay(b)));
+        auto t3 = _mm_andnot_si128(decay(set_bits(b <= a)), _mm_xor_si128(decay(a), decay(b)));
         auto t5 = _mm_and_si128(t3, _mm_set1_epi8(0x1));
         auto t6 = _mm_sub_epi8(t1, t5);
         return vec16x8u{t6};
@@ -1670,7 +1670,7 @@ namespace avel {
 
         #if defined(AVEL_NEON)
         vec16x8u t0 = vec16x8u{vhaddq_u8(decay(a), decay(b))};
-        vec16x8u t1 = (a ^ b) & vec16x8u{0x1} & broadcast_mask(b < a);
+        vec16x8u t1 = (a ^ b) & vec16x8u{0x1} & set_bits(b < a);
         return t0 + t1;
 
         #endif
@@ -2503,8 +2503,8 @@ namespace avel {
         }
 
         b = (bit_shift_right<7>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<7>(y));
-        quotient -= broadcast_mask(b);
+        x -= (set_bits(b) & bit_shift_left<7>(y));
+        quotient -= set_bits(b);
 
         if (none(x >= y)) {
             i = 7;
@@ -2512,9 +2512,9 @@ namespace avel {
         }
 
         b = (bit_shift_right<6>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<6>(y));
+        x -= (set_bits(b) & bit_shift_left<6>(y));
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient -= set_bits(b);
 
         if (none(x >= y)) {
             i = 6;
@@ -2522,9 +2522,9 @@ namespace avel {
         }
 
         b = (bit_shift_right<5>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<5>(y));
+        x -= (set_bits(b) & bit_shift_left<5>(y));
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient -= set_bits(b);
 
         if (none(x >= y)) {
             i = 5;
@@ -2532,9 +2532,9 @@ namespace avel {
         }
 
         b = (bit_shift_right<4>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<4>(y));
+        x -= (set_bits(b) & bit_shift_left<4>(y));
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient -= set_bits(b);
 
         if (none(x >= y)) {
             i = 4;
@@ -2542,9 +2542,9 @@ namespace avel {
         }
 
         b = (bit_shift_right<3>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<3>(y));
+        x -= (set_bits(b) & bit_shift_left<3>(y));
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient -= set_bits(b);
 
         if (none(x >= y)) {
             i = 3;
@@ -2552,9 +2552,9 @@ namespace avel {
         }
 
         b = (bit_shift_right<2>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<2>(y));
+        x -= (set_bits(b) & bit_shift_left<2>(y));
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient -= set_bits(b);
 
         if (none(x >= y)) {
             i = 2;
@@ -2562,9 +2562,9 @@ namespace avel {
         }
 
         b = (bit_shift_right<1>(x) >= y);
-        x -= (broadcast_mask(b) & bit_shift_left<1>(y));
+        x -= (set_bits(b) & bit_shift_left<1>(y));
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient -= set_bits(b);
 
         if (none(x >= y)) {
             i = 1;
@@ -2572,9 +2572,9 @@ namespace avel {
         }
 
         b = (x >= y);
-        x -= (broadcast_mask(b) & y);
+        x -= (set_bits(b) & y);
         quotient += quotient;
-        quotient -= broadcast_mask(b);
+        quotient -= set_bits(b);
 
         avel_div16x8u_early_end:
         quotient = _mm_sll_epi16(decay(quotient), _mm_cvtsi32_si128(i));
@@ -2882,17 +2882,17 @@ namespace avel {
 
         vec16x8u m0{0xF0u};
         mask16x8u b0 = (m0 & x) == m0;
-        sum += broadcast_mask(b0) & vec16x8u{4};
-        x <<= broadcast_mask(b0) & vec16x8u{4};
+        sum += set_bits(b0) & vec16x8u{4};
+        x <<= set_bits(b0) & vec16x8u{4};
 
         vec16x8u m1{0xC0u};
         mask16x8u b1 = (m1 & x) == m1;
-        sum += broadcast_mask(b1) & vec16x8u{2};
-        x <<= broadcast_mask(b1) & vec16x8u{2};
+        sum += set_bits(b1) & vec16x8u{2};
+        x <<= set_bits(b1) & vec16x8u{2};
 
         vec16x8u m2{0x80u};
         mask16x8u b2 = (m2 & x) == m2;
-        sum -= broadcast_mask(b2);
+        sum -= set_bits(b2);
 
         return sum;
         */
@@ -2944,25 +2944,25 @@ namespace avel {
         // Newer implementation that replaced shifts with adds which have a
         // better throughput
         vec16x8u ret{0};
-        ret -= broadcast_mask(v == vec16x8u{0x00});
+        ret -= set_bits(v == vec16x8u{0x00});
         ret += ret;
 
         v &= vec16x8u{0x00} - v;
 
         mask16x8u b;
         b = mask16x8u(v & vec16x8u{0xF0u});
-        ret -= broadcast_mask(b);
+        ret -= set_bits(b);
         ret += ret;
         b = mask16x8u(v & vec16x8u{0xCCu});
-        ret -= broadcast_mask(b);
+        ret -= set_bits(b);
         ret += ret;
         b = mask16x8u(v & vec16x8u{0xAAu});
-        ret -= broadcast_mask(b);
+        ret -= set_bits(b);
 
         return ret;
 
         /* Older implementation
-        vec16x8u ret = vec16x8u{8} & broadcast_mask(x == vec16x8u{0x00});
+        vec16x8u ret = vec16x8u{8} & set_bits(x == vec16x8u{0x00});
 
         x &= vec16x8u{0x00} - x;
 
@@ -3104,7 +3104,7 @@ namespace avel {
         return vec16x8u{8} - countl_zero(v);
 
         /* Old implementation
-        vec16x8u ret = vec16x8u{8} + broadcast_mask(x == vec16x8u{0});
+        vec16x8u ret = vec16x8u{8} + set_bits(x == vec16x8u{0});
 
         mask16x8u mask0 = (x & vec16x8u{0xf0}) == vec16x8u{0};
         ret -= keep(mask0, vec16x8u{4});
@@ -3242,14 +3242,14 @@ namespace avel {
         v |= bit_shift_right<4>(v);
         ++v;
 
-        return v - broadcast_mask(zero_mask);
+        return v - set_bits(zero_mask);
 
         #endif
 
         #if defined(AVEL_NEON)
         auto sh = (vec16x8u{8} - countl_zero(v - vec16x8u{1}));
         auto result = vec16x8u{1} << sh;
-        return result - broadcast_mask(v == vec16x8u{0x00});
+        return result - set_bits(v == vec16x8u{0x00});
         #endif
     }
 

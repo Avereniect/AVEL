@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec32x8u> div(vec32x8u numerator, vec32x8u denominator);
-    vec32x8u broadcast_mask(mask32x8u m);
+    vec32x8u set_bits(mask32x8u m);
     vec32x8u blend(vec32x8u a, vec32x8u b, mask32x8u m);
     vec32x8u countl_one(vec32x8u v);
 
@@ -1073,7 +1073,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec32x8u broadcast_mask(mask32x8u m) {
+    AVEL_FINL vec32x8u set_bits(mask32x8u m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return vec32x8u{_mm256_movm_epi8(decay(m))};
 
@@ -1089,7 +1089,7 @@ namespace avel {
         return vec32x8u{_mm256_maskz_mov_epi8(decay(m), decay(v))};
 
         #elif defined(AVEL_AVX2)
-        return broadcast_mask(m) & v;
+        return set_bits(m) & v;
 
         #endif
     }
@@ -1161,13 +1161,13 @@ namespace avel {
     AVEL_FINL vec32x8u midpoint(vec32x8u a, vec32x8u b) {
         #if defined(AVEL_AVX512VL)
         auto t1 = _mm256_avg_epu8(decay(a), decay(b));
-        auto t5 = _mm256_and_si256(_mm256_ternarylogic_epi32(decay(a), decay(b), decay(broadcast_mask(b < a)), 0x14), _mm256_set1_epi8(0x1));
+        auto t5 = _mm256_and_si256(_mm256_ternarylogic_epi32(decay(a), decay(b), decay(set_bits(b < a)), 0x14), _mm256_set1_epi8(0x1));
         auto t6 = _mm256_sub_epi8(t1, t5);
         return vec32x8u{t6};
 
         #elif defined(AVEL_AVX2)
         auto t1 = _mm256_avg_epu8(decay(a), decay(b));
-        auto t3 = _mm256_andnot_si256(decay(broadcast_mask(b <= a)), _mm256_xor_si256(decay(a), decay(b)));
+        auto t3 = _mm256_andnot_si256(decay(set_bits(b <= a)), _mm256_xor_si256(decay(a), decay(b)));
         auto t5 = _mm256_and_si256(t3, _mm256_set1_epi8(0x1));
         auto t6 = _mm256_sub_epi8(t1, t5);
         return vec32x8u{t6};
@@ -1359,7 +1359,7 @@ namespace avel {
         //TODO: Optimize loop
         for (; (i-- > 0) && any(mask32x8u(x));) {
             mask32x8u b = ((x >> i) >= y);
-            x -= (broadcast_mask(b) & (y << i));
+            x -= (set_bits(b) & (y << i));
             quotient |= (vec32x8u{b} << i);
         }
 

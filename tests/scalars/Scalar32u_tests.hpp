@@ -5,12 +5,12 @@ namespace avel_tests {
 
     using namespace avel;
 
-    TEST(Scalar32u, Broadcast_mask_false) {
-        EXPECT_EQ(broadcast_mask<std::uint32_t>(false), 0x00000000);
+    TEST(Scalar32u, Set_bits_false) {
+        EXPECT_EQ(set_bits<std::uint32_t>(false), 0x00000000);
     }
 
-    TEST(Scalar32u, Broadcast_mask_true) {
-        EXPECT_EQ(broadcast_mask<std::uint32_t>(true), 0xFFFFFFFF);
+    TEST(Scalar32u, Set_bits_true) {
+        EXPECT_EQ(set_bits<std::uint32_t>(true), 0xFFFFFFFF);
     }
 
     TEST(Scalar32u, Pop_count_contiguous_low) {

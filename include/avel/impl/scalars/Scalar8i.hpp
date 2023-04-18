@@ -9,7 +9,7 @@ namespace avel {
 
     template<>
     [[nodiscard]]
-    AVEL_FINL std::int8_t broadcast_mask<std::int8_t>(bool x) {
+    AVEL_FINL std::int8_t set_bits<std::int8_t>(bool x) {
         return -std::int8_t(x);
     }
 

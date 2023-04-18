@@ -17,7 +17,7 @@ namespace avel {
 
     div_type<vec64x8i> div(vec64x8i numerator, vec64x8i denominator);
     vec64x8i blend(vec64x8i a, vec64x8i b, mask64x8i m);
-    vec64x8i broadcast_mask(mask64x8i m);
+    vec64x8i set_bits(mask64x8i m);
     vec64x8i negate(mask64x8i m, vec64x8i x);
 
 
@@ -665,7 +665,7 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec64x8i bit_shift_right<8>(vec64x8i v) {
-        return broadcast_mask(v < vec64x8i{0x00});
+        return set_bits(v < vec64x8i{0x00});
     }
 
     template<std::uint32_t S>
@@ -727,8 +727,8 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec64x8i broadcast_mask(mask64x8i m) {
-        return vec64x8i{broadcast_mask(mask64x8u{m})};
+    AVEL_FINL vec64x8i set_bits(mask64x8i m) {
+        return vec64x8i{set_bits(mask64x8u{m})};
     }
 
     [[nodiscard]]
@@ -783,7 +783,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec64x8i average(vec64x8i x, vec64x8i y) {
         auto avg = (x & y) + ((x ^ y) >> 1);
-        auto c = broadcast_mask((x < -y) | (y == vec64x8i(0x80))) & (x ^ y) & vec64x8i{1};
+        auto c = set_bits((x < -y) | (y == vec64x8i(0x80))) & (x ^ y) & vec64x8i{1};
 
         return avg + c;
     }

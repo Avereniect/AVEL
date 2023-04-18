@@ -16,7 +16,7 @@ namespace avel {
     //=====================================================
 
     div_type<vec4x64i> div(vec4x64i numerator, vec4x64i denominator);
-    vec4x64i broadcast_mask(mask4x64i m);
+    vec4x64i set_bits(mask4x64i m);
     vec4x64i blend(mask4x64i m, vec4x64i a, vec4x64i b);
     vec4x64i negate(mask4x64i m, vec4x64i x);
 
@@ -728,8 +728,8 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x64i broadcast_mask(mask4x64i m) {
-        return vec4x64i{broadcast_mask(mask4x64u{m})};
+    AVEL_FINL vec4x64i set_bits(mask4x64i m) {
+        return vec4x64i{set_bits(mask4x64u{m})};
     }
 
     [[nodiscard]]
@@ -795,7 +795,7 @@ namespace avel {
     AVEL_FINL vec4x64i average(vec4x64i a, vec4x64i b) {
         #if defined(AVEL_AVX2)
         auto avg = (a & b) + ((a ^ b) >> 1);
-        auto c = broadcast_mask((a < -b) | (b == vec4x64i{std::int64_t(1) << 63})) & (a ^ b) & vec4x64i{1};
+        auto c = set_bits((a < -b) | (b == vec4x64i{std::int64_t(1) << 63})) & (a ^ b) & vec4x64i{1};
 
         return avg + c;
 
@@ -815,7 +815,7 @@ namespace avel {
 
         #elif defined(AVEL_AVX2)
         auto average = ((a ^ b) >> 1) + (a & b);
-        auto bias = (broadcast_mask(b < a) & (a ^ b) & vec4x64i{0x1});
+        auto bias = (set_bits(b < a) & (a ^ b) & vec4x64i{0x1});
         return average + bias;
 
         #endif
@@ -827,7 +827,7 @@ namespace avel {
         return vec4x64i{_mm256_mask_sub_epi64(decay(v), decay(m), _mm256_setzero_si256(), decay(v))};
 
         #elif defined(AVEL_AVX2)
-        auto mask = broadcast_mask(m);
+        auto mask = set_bits(m);
         return (v ^ mask) - mask;
 
         #endif

@@ -321,7 +321,7 @@
 
 
 ### General Vector Operations
-* `vector broadcast_mask(mask m)`
+* `vector set_bits(mask m)`
   * for each lane, sets all bits to 0 if `m` is false or to 1 if `m` is true
 
 * `vector keep(mask m, vector v)`
