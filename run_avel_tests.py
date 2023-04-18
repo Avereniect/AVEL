@@ -24,10 +24,10 @@ from itertools import product
 Path to compilers and names used for their build directories
 """
 compilers = [
-    ['/usr/bin/g++-12', 'gnu-12'],
+    # ['/usr/bin/g++-12', 'gnu-12'],
     # ['/usr/bin/g++-11', 'gnu-11'],
     # ['/usr/bin/g++-10', 'gnu-10'],
-    # ['/usr/bin/g++-9',  'gnu-9'],
+    ['/usr/bin/g++-9',  'gnu-9'],
     # ['/usr/bin/clang++-14', 'clang-14'],
     # ['/usr/bin/clang++-13', 'clang-13'],
     # ['/usr/bin/clang++-12', 'clang-12'],
@@ -70,7 +70,7 @@ Map associating feature macros with their implied features, according to AVEL
 features_arm = {
     'AVEL_ARM': ['', []],
     'AVEL_NEON': ['', ['AVEL_ARM']],
-    'AVEL_ARRCH64': ['', ['AVEL_ARM']]
+    'AVEL_AARCH64': ['', ['AVEL_ARM']]
 }
 
 target_features = features_x86
@@ -121,11 +121,11 @@ def construct_expression(line):
     line = line.replace('#if', '')
     line = line.replace('#elif', '')
 
-    line = line.replace('||', 'or')
-    line = line.replace('&&', 'and')
+    line = line.replace('||', ' or ')
+    line = line.replace('&&', ' and ')
 
-    line = line.replace('|', 'or')
-    line = line.replace('&', 'and')
+    line = line.replace('|', ' or ')
+    line = line.replace('&', ' and ')
 
     line = line.replace('__cplusplus', '201103')
 

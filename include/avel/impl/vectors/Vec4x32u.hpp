@@ -1111,6 +1111,10 @@ namespace avel {
         auto compared = _mm_cmpeq_epi32(decay(x), _mm_setzero_si128());
         return 4 - (popcount(_mm_movemask_epi8(compared)) / sizeof(vec4x32u::scalar));
         #endif
+
+        #if defined(AVEL_NEON)
+        return count(mask4x32u{x});
+        #endif
     }
 
     [[nodiscard]]
@@ -1122,6 +1126,10 @@ namespace avel {
         auto compared = _mm_cmpeq_epi32(decay(x), _mm_setzero_si128());
         return 0xFFFF != _mm_movemask_epi8(compared);
         #endif
+
+        #if defined(AVEL_NEON)
+        return any(mask4x32u{x});
+        #endif
     }
 
     [[nodiscard]]
@@ -1129,6 +1137,10 @@ namespace avel {
         #if defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi32(decay(x), _mm_setzero_si128());
         return 0x00 == _mm_movemask_epi8(compared);
+        #endif
+
+        #if defined(AVEL_NEON)
+        return all(mask4x32u{x});
         #endif
     }
 
@@ -1140,6 +1152,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
         return 0xFFFF == _mm_movemask_epi8(compared);
+        #endif
+
+        #if defined(AVEL_NEON)
+        return none(mask4x32u{x});
         #endif
     }
 
@@ -1412,7 +1428,7 @@ namespace avel {
 
         #endif
 
-        #if defined(AVEL_NEON) && __cplusplus >= 202002L
+        #if defined(AVEL_NEON) && __cplusplus >= 202002
             return vec4x32u{vld1q_u32(assume_aligned<alignof(vec4x32u)>(ptr))};
         #elif defined(AVEL_NEON) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
             auto* p = reinterpret_cast<const std::uint32_t*>(__builtin_assume_aligned(ptr, alignof(vec4x32u)));

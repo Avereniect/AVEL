@@ -1579,7 +1579,7 @@ namespace avel {
         return vec8x16u{_mm_load_si128(reinterpret_cast<const __m128i*>(ptr))};
         #endif
 
-        #if defined(AVEL_NEON) && __cplusplus >= 202002L
+        #if defined(AVEL_NEON) && __cplusplus >= 202002
             return vec8x16u{vld1q_u16(assume_aligned<alignof(vec8x16u)>(ptr))};
         #elif defined(AVEL_NEON) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
             auto* p = reinterpret_cast<const std::uint16_t*>(__builtin_assume_aligned(ptr, alignof(vec8x16u)));
@@ -2174,7 +2174,7 @@ namespace avel {
 
 
         #if defined(AVEL_NEON)&& defined(AVEL_AARCH64)
-        auto reversed_bytes = vrev16q_u8(vreinterpretq_u8_u16(decay(x)));
+        auto reversed_bytes = vrev16q_u8(vreinterpretq_u8_u16(decay(v)));
         auto reversed_bits = vrbitq_u8(reversed_bytes);
         return vec8x16u{vclzq_u16(vreinterpretq_u16_u8(reversed_bits))};
 

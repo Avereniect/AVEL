@@ -4,7 +4,7 @@
 #include <cmath>
 #include <array>
 
-#if defined(AVEL_NEON) && (__cplusplus >= 202002L)
+#if defined(AVEL_NEON) && (__cplusplus >= 202002)
 #include <memory> //Necessary to use std::assume_aligned
 #endif
 

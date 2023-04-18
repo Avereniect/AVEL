@@ -1,7 +1,7 @@
 #ifndef AVEL_MISC_HPP
 #define AVEL_MISC_HPP
 
-#if __cplusplus >= 202002L
+#if __cplusplus >= 202002
     #include <bit>
 #endif
 
@@ -38,7 +38,7 @@ namespace avel {
         static_assert(std::is_trivially_copyable<T>::value, "Target type must be trivially copyable");
         static_assert(std::is_trivially_copyable<U>::value, "Source type must be trivially copyable");
 
-        #if __cplusplus >= 202002L
+        #if __cplusplus >= 202002
         return std::bit_cast<T>(u);
 
         #elif defined(AVEL_GCC)

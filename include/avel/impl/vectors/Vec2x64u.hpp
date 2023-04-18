@@ -1033,10 +1033,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        auto left_shifted  = vshlq_n_u64(decay(v), S - 64);
-        auto right_shifted = vshlq_n_u64(decay(v), S);
-
-        return vec2x64u{vorrq_u64(left_shifted, right_shifted)};
+        return (v << S) | (v >> (64 - S));
         #endif
     }
 
@@ -1173,6 +1170,10 @@ namespace avel {
         return 2 - popcount(_mm_movemask_epi8(compared)) / sizeof(std::uint64_t);
 
         #endif
+
+        #if defined(AVEL_NEON)
+        return count(mask2x64u{x});
+        #endif
     }
 
     [[nodiscard]]
@@ -1186,6 +1187,10 @@ namespace avel {
         return 0xFFFF != _mm_movemask_epi8(compared);
 
         #endif
+
+        #if defined(AVEL_NEON)
+        return any(mask2x64u{x});
+        #endif
     }
 
     [[nodiscard]]
@@ -1195,6 +1200,10 @@ namespace avel {
         return 0x00 == _mm_movemask_epi8(compared);
 
         #elif defined(AVEL_SSE2)
+        return all(mask2x64u{x});
+        #endif
+
+        #if defined(AVEL_NEON)
         return all(mask2x64u{x});
         #endif
     }
@@ -1207,6 +1216,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         auto compared = _mm_cmpeq_epi8(decay(x), _mm_setzero_si128());
         return 0xFFFF == _mm_movemask_epi8(compared);
+        #endif
+
+        #if defined(AVEL_NEON)
+        return none(mask2x64u{x});
         #endif
     }
 
@@ -1468,7 +1481,7 @@ namespace avel {
         return vec2x64u{_mm_load_si128(reinterpret_cast<const __m128i*>(ptr))};
         #endif
 
-        #if defined(AVEL_NEON) && __cplusplus >= 202002L
+        #if defined(AVEL_NEON) && __cplusplus >= 202002
             return vec2x64u{vld1q_u64(assume_aligned<alignof(vec2x64u)>(ptr))};
         #elif defined(AVEL_NEON) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
             auto* p = reinterpret_cast<const std::uint64_t*>(__builtin_assume_aligned(ptr, alignof(vec2x64u)));

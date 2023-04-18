@@ -117,8 +117,8 @@ namespace avel {
         std::uint64_t sum = (x == 0xFFFFFFFFFFFFFFFFul);
 
         bool b0 = (0xFFFFFFFF00000000u & x) == 0xFFFFFFFF00000000u;
-        sum += (b0 * 16);
-        x <<= (b0 * 16);
+        sum += (b0 * 32);
+        x <<= (b0 * 32);
 
         bool b1 = (0xFFFF000000000000u & x) == 0xFFFF000000000000u;
         sum += (b1 * 16);
@@ -164,16 +164,18 @@ namespace avel {
 
         x &= -x;
 
-        b = bool(x & 0xAAAAAAAAu);
+        b = bool(x & 0xAAAAAAAAAAAAAAAAull);
         ret |= b;
-        b = bool(x & 0xCCCCCCCCu);
+        b = bool(x & 0xCCCCCCCCCCCCCCCCull);
         ret |= (b << 1);
-        b = bool(x & 0xF0F0F0F0u);
+        b = bool(x & 0xF0F0F0F0F0F0F0F0ull);
         ret |= (b << 2);
-        b = bool(x & 0xFF00FF00u);
+        b = bool(x & 0xFF00FF00FF00FF00ull);
         ret |= (b << 3);
-        b = bool(x & 0xFFFF0000u);
+        b = bool(x & 0xFFFF0000FFFF0000ull);
         ret |= (b << 4);
+        b = bool(x & 0xFFFFFFFF00000000ull);
+        ret |= (b << 5);
 
         return ret;
         #endif

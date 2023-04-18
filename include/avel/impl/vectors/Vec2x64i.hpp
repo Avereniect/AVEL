@@ -1295,9 +1295,9 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        vec2x64i avg{vsra_n_s64(vand_s64(a, b), veor_s64(a, b), 1)};
+        vec2x64i avg{vsraq_n_s64(vandq_s64(decay(a), decay(b)), veorq_s64(decay(a), decay(b)), 1)};
         auto bias = (broadcast_mask(b < a) & (a ^ b) & vec2x64i{0x1});
-        return average + bias;
+        return avg + bias;
 
         #endif
     }
@@ -1314,7 +1314,6 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-
         auto mask = broadcast_mask(m);
         return (x ^ mask) - mask;
         #endif

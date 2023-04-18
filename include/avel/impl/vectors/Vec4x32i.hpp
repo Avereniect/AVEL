@@ -1041,8 +1041,8 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        auto avg = vec4x32i{vhaddq_s32(decay(x), decay(y))};
-        auto c = broadcast_mask((x < -y) | (y == vec4x32i{std::int32_t(1 << 31)})) & (x ^ y) & vec4x32i{1};
+        auto avg = vec4x32i{vhaddq_s32(decay(a), decay(b))};
+        auto c = broadcast_mask((a < -b) | (b == vec4x32i{std::int32_t(1 << 31)})) & (a ^ b) & vec4x32i{1};
 
         return avg + c;
 

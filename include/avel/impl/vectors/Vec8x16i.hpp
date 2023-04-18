@@ -385,7 +385,7 @@ namespace avel {
             content(_mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()))) {}
         #endif
         #if defined(AVEL_NEON)
-            content(vld1q_s16(array.data()) {}
+            content(vld1q_s16(arr.data())) {}
         #endif
 
         Vector() = default;
@@ -772,6 +772,10 @@ namespace avel {
             #elif defined(AVEL_SSE2)
             return *this != Vector{0x00};
             #endif
+
+            #if defined(AVEL_NEON)
+            return *this != Vector{0x00};
+            #endif
         }
 
     };
@@ -1022,8 +1026,8 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        auto avg = vec8x16i{vhaddq_s16(decay(x), decay(y))};
-        auto c = broadcast_mask((x < -y) | (y == vec8x16i{std::int16_t(1 << 15)})) & (x ^ y) & vec8x16i{1};
+        auto avg = vec8x16i{vhaddq_s16(decay(a), decay(b))};
+        auto c = broadcast_mask((a < -b) | (b == vec8x16i{std::int16_t(1 << 15)})) & (a ^ b) & vec8x16i{1};
 
         return avg + c;
 
