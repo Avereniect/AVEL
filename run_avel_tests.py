@@ -1,4 +1,17 @@
 #!/usr/bin/python3
+"""
+Testing script which is used to run AVEL's tests.
+
+Identifies CPU feature combinations used within the avel/impl/vector folder and
+only enables the relevant tests to cut down on testing times
+
+Example usages:
+Run all tests for x86 CPUs: run_avel_tests.py -A"x86"
+Run all tests for ARM CPUs: run_avel_tests.py -A"x86"
+Run all tests for x86 CPUs using Intel SDE as launcher: run_avel_tests -A"x86" -L"sde64 -- <exec>"
+Run tests for x86 CPU's, starting on the second compiler, on the third case: run_avel_tests -A"x86" -C"1:2"
+
+"""
 
 import os
 import sys
@@ -7,9 +20,11 @@ import re
 import copy
 from itertools import product
 
-# Path to compilers and names used for their build directories
+"""
+Path to compilers and names used for their build directories
+"""
 compilers = [
-    ['/usr/bin/g++-12', 'gnu-12'],
+    # ['/usr/bin/g++-12', 'gnu-12'],
     # ['/usr/bin/g++-11', 'gnu-11'],
     # ['/usr/bin/g++-10', 'gnu-10'],
     # ['/usr/bin/g++-9',  'gnu-9'],
@@ -17,10 +32,12 @@ compilers = [
     # ['/usr/bin/clang++-13', 'clang-13'],
     # ['/usr/bin/clang++-12', 'clang-12'],
     # ['/usr/bin/clang++-11', 'clang-11'],
-    # ['/opt/intel/oneapi/compiler/2023.0.0/linux/bin/icpx', 'icpx-2023.0.0']
+    ['/opt/intel/oneapi/compiler/2023.0.0/linux/bin/icpx', 'icpx-2023.0.0']
 ]
 
-# Map associating feature macros with their implied features, according to AVEL
+"""
+Map associating feature macros with their implied features, according to AVEL
+"""
 features_x86 = {
     'AVEL_X86': ['', []],
     'AVEL_POPCNT': ['-mpopcnt', ['AVEL_X86']],
@@ -47,7 +64,10 @@ features_x86 = {
     'AVEL_GFNI': ['-mgfni', ['AVEL_AVX512F']]
 }
 
-feature_arm = {
+"""
+Map associating feature macros with their implied features, according to AVEL
+"""
+features_arm = {
     'AVEL_ARM': ['', []],
     'AVEL_NEON': ['', ['AVEL_ARM']],
     'AVEL_ARRCH64': ['', ['AVEL_ARM']]
@@ -61,10 +81,22 @@ compiler_macros = [
     'AVEL_ICPX'
 ]
 
-launcher = ''
+
+"""
+Map containing command line parameters
+"""
+parameters = {}
 
 
 def compiler_path_to_macro(compiler_path):
+    """
+    Attempts to convert a compiler's path the AVEL macro corresponding to that
+    compiler
+    :param compiler_path: Path to compiler
+    :return: string containing macro that AVEL uses to indicate which compiler
+    is being used
+    """
+
     if 'g++' in compiler_path:
         return 'AVEL_GCC'
     elif 'clang++' in compiler_path:
@@ -76,13 +108,17 @@ def compiler_path_to_macro(compiler_path):
         exit(1)
 
 
-# Converts a preprocessor line to a boolean expression which can be evaluated
-# via the eval() function
-#
-# Returns a tuple containing the boolean expression as a string and a list of
-# strings which contain the names of the variables used in the expression
-#
 def construct_expression(line):
+    """
+    Converts a preprocessor line to a boolean expression which can be evaluated
+    via the eval() function
+
+    :param line: A string containing a line from the AVEL code base which checks
+    if a certain combination of features are satisfied
+    :return: A tuple containing the boolean expression as a string and a list of
+    strings which contain the names of the variables used in the expression
+    """
+
     line = line.replace('#if', '')
     line = line.replace('#elif', '')
 
@@ -111,6 +147,13 @@ def construct_expression(line):
 
 
 def substitute_variable(expression, variable_name, value):
+    """
+
+    :param expression:
+    :param variable_name:
+    :param value:
+    :return:
+    """
     search_pattern = r'\b' + variable_name + r'\b'
     return re.sub(search_pattern, value, expression)
 
@@ -277,12 +320,12 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
         return failed
 
     run_command = ''
-    if launcher == '':
+    if 'launcher' not in parameters or parameters['launcher'] == '':
         run_command = './test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name)
-    elif '<exec>' in launcher:
-        run_command = launcher.replace('<exec>', './test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name))
+    elif '<exec>' in parameters['launcher']:
+        run_command = parameters['launcher'].replace('<exec>', './test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name))
     else:
-        run_command = launcher + ' ./test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name)
+        run_command = parameters['launcher'] + ' ./test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name)
 
     ret = os.system(run_command)
     if ret != 0:
@@ -336,7 +379,7 @@ def expand_assignments(assignments):
     return ret
 
 
-def test_on_compiler(compiler_path, build_dir_name, names_and_features):
+def test_on_compiler(compiler_index, starting_case, compiler_path, build_dir_name, names_and_features):
     substitute_compiler_macros(compiler_path_to_macro(compiler_path), names_and_features)
 
     # Gather all expressions
@@ -365,8 +408,12 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
     feature_order = dict(zip(target_features.keys(), range(0, len(target_features))))
     expression_solutions = sorted(expression_solutions, key=lambda x: [feature_order[x] for x in x.keys()])
 
-    failed = False
+    count = 0
     for partial_solution in expression_solutions:
+        if count < starting_case:
+            count += 1
+            continue
+
         # Construct feature combinations to test with
         full_variable_assignments = dict(zip(target_features.keys(), ['False'] * len(target_features)))
         for variable in partial_solution:
@@ -382,8 +429,9 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
                     break
 
         # Run tests with specified features enabled
-        failed |= run_test(compiler_path, build_dir_name, full_variable_assignments, test_groups)
+        failed = run_test(compiler_path, build_dir_name, full_variable_assignments, test_groups)
         if failed:
+            print('Failed on test case', compiler_index, ':', count)
             return failed
 
         # Remove feature combinations that were satisfied by the previous test
@@ -393,13 +441,41 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
             names_and_features[vec_name] = \
                 {k: v for k, v in feature_map.items() if not evaluate_expression(k, full_variable_assignments)}
 
-    return failed
+        count += 1
+
+    return False
+
+
+def parse_command_line_arguments(arguments):
+    results = {}
+    for argument in arguments:
+        if argument.startswith('-A'):
+            tail = argument.lstrip('-A')
+            results['arch'] = tail
+            continue
+
+        if argument.startswith('-L'):
+            tail = argument.lstrip('-L')
+            results['launcher'] = tail
+            continue
+
+        if argument.startswith('-C'):
+            tail = argument.lstrip('-C')
+            results['case'] = tail
+            continue
+
+        print('Unrecognized parameter: ', argument)
+        exit(1)
+
+    global parameters
+    parameters = results
 
 
 def main():
-    global target_features
+    parse_command_line_arguments(sys.argv[1:])
 
-    if len(sys.argv) == 1:
+    if 'arch' not in parameters:
+        print('Target architecture not specified!')
         print('Pass \'x86\' or \'arm\' as first parameter')
         print(
             'Optionally pass a command as a second parameter that will be used as a launcher for the test executable.'
@@ -408,24 +484,40 @@ def main():
         )
         exit(1)
 
-    if len(sys.argv) > 1:
-        if sys.argv[1] == 'x86':
-            target_features = features_x86
-        elif sys.argv[1] == 'arm':
-            target_features = feature_arm
-        else:
-            print('Unrecognized command line parameter: ', sys.argv[1])
-            exit(1)
-
+    global target_features
+    if parameters['arch'] == 'x86':
+        target_features = features_x86
+    elif parameters['arch'] == 'arm':
+        target_features = features_arm
     else:
-        print('Pass "x86" or "arm" as a parameter')
+        print('Unrecognized architecture: ', parameters['arch'])
         exit(1)
 
-    global launcher
-    if len(sys.argv) > 2:
-        launcher = sys.argv[2]
+    # Identify test case
+    starting_compiler_index = 0
+    starting_test_case_index = 0
 
-    failed = False
+    if 'case' in parameters:
+        case = parameters['case']
+        colon_index = case.find(':')
+        if colon_index == -1:
+            print('Test case parameter should be two integers delimited by a \':\'')
+            exit(1)
+
+        compiler_index_string = case[0:colon_index]
+        test_case_index_string = case[colon_index + 1:]
+
+        try:
+            starting_compiler_index = int(compiler_index_string)
+        except ValueError:
+            print('Test case parameter should be two integers delimited by a \':\'')
+            exit(1)
+
+        try:
+            starting_test_case_index = int(test_case_index_string)
+        except ValueError:
+            print('Test case parameter should be two integers delimited by a \':\'')
+            exit(1)
 
     # Unroll feature implications
     for key in target_features:
@@ -438,10 +530,24 @@ def main():
     names_and_features = identify_vector_features()
 
     # Run tests
-    for (path, build_dir_name) in compilers:
-        failed |= test_on_compiler(path, build_dir_name, copy.deepcopy(names_and_features))
+    for (compiler_index, compiler) in enumerate(compilers):
+        if compiler_index < starting_compiler_index:
+            continue
+
+        (compiler_path, build_directory) = compiler
+
+        test_case_index = starting_test_case_index if compiler_index == compiler_index else 0
+
+        failed = test_on_compiler(
+            compiler_index,
+            test_case_index,
+            compiler_path,
+            build_directory,
+            copy.deepcopy(names_and_features)
+        )
+
         if failed:
-            print("\nTesting script: Encountered failed tests")
+            print("\nTesting script: Testing script did not complete")
             return
 
     print("\nTesting script: All tests passed")

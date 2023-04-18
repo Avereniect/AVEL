@@ -24,6 +24,7 @@ set(AVEL_TEST_GROUPS
     AVEL_ENABLE_VEC1X64U_TESTS;
 
 
+
     AVEL_ENABLE_VEC16X8U_TESTS;
     AVEL_ENABLE_VEC16X8I_TESTS;
 
@@ -35,6 +36,7 @@ set(AVEL_TEST_GROUPS
 
     AVEL_ENABLE_VEC2X64U_TESTS;
     AVEL_ENABLE_VEC2X64I_TESTS;
+
 
 
     AVEL_ENABLE_VEC32X8U_TESTS;
@@ -50,6 +52,7 @@ set(AVEL_TEST_GROUPS
     AVEL_ENABLE_VEC4X64I_TESTS;
 
 
+
     AVEL_ENABLE_VEC64X8U_TESTS;
     AVEL_ENABLE_VEC64X8I_TESTS;
 
@@ -63,17 +66,20 @@ set(AVEL_TEST_GROUPS
     AVEL_ENABLE_VEC8X64I_TESTS;
 )
 
-foreach(extension IN LISTS AVEL_TEST_GROUPS)
-    if(DEFINED ${extension} AND ${extension})
-        list(APPEND AVEL_REQUESTED_TEST_GROUPS "${extension}=1 ")
-    else()
-        list(APPEND AVEL_REQUESTED_TEST_GROUPS "${extension}=0 ")
+## Create test group options
+foreach (test_group IN LISTS AVEL_TEST_GROUPS)
+    if (NOT DEFINED())
+        set(${test_group} ON)
     endif()
 endforeach()
 
-## Create test group options
-foreach (extension IN LISTS AVEL_TEST_GROUPS)
-    option(${extension} OFF)
+## Create list of requested test groups
+foreach(test_group IN LISTS AVEL_TEST_GROUPS)
+    if (${test_group})
+        list(APPEND AVEL_REQUESTED_TEST_GROUPS "${test_group}=1 ")
+    else()
+        list(APPEND AVEL_REQUESTED_TEST_GROUPS "${test_group}=0 ")
+    endif()
 endforeach()
 
 
@@ -139,9 +145,16 @@ target_compile_features(AVEL_TESTS PRIVATE "cxx_std_11")
 target_compile_options(AVEL_TESTS PRIVATE "")
 target_link_options(AVEL_TESTS PRIVATE "")
 
-target_precompile_headers(AVEL_TESTS
-    PRIVATE
-    AVEL_tests.hpp
-)
-
 target_include_directories(AVEL_TESTS PRIVATE ./include/)
+
+## Handle precompiled headers
+if(AVEL_USE_PRECOMPILED_HEADERS AND (${CMAKE_VERSION} VERSION_LESS "3.16.0"))
+    message(FATAL_ERROR "Precompiled headers require CMake 3.16.0")
+endif()
+
+if(AVEL_USE_PRECOMPILED_HEADERS)
+    target_precompile_headers(AVEL_TESTS
+        PRIVATE
+        AVEL_tests.hpp
+    )
+endif()
