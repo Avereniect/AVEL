@@ -8,7 +8,7 @@
 ## Vector Mask Classes:
 * associated type alias `maskNxT = avel::Vector_mask<..., width`
 * associated type alias `arrbxN = std::array<bool, width>`
-* `std::is_trivial<Vecor_mask>` will evaluate to true
+* is trivial
 
 * `static constexpr std::uint32_t width = ...`
   * number of lanes in vector mask
@@ -64,6 +64,7 @@
 * `explicit operator primitive()`
   * returns a copy of the internal instance of the backing type for use with 
     native intrinsics
+  * consider using `avel::decay` as a more convenient alternative
 
 ### Free Mask Functions
 * `std::uint32_t count(mask m)`
@@ -306,7 +307,7 @@
   * likely to perform suboptimally on x86 on 8-bit elements
   * likely to perform poorly without AVX2 support
 
-* `vector rotr<S>(vector x)``
+* `vector rotr<S>(vector x)`
   * performs a bitwise right rotation on all lanes in `x` by `S` bits
   * may perform marginally better than rotating by a runtime scalar
 
@@ -318,7 +319,6 @@
   * for each lane, performs a bitwise right rotation on `x` by `s` bits
   * likely to perform suboptimally on x86 on 8-bit elements
   * likely to perform poorly without AVX2 support
-
 
 ### General Vector Operations
 * `vector set_bits(mask m)`
@@ -472,7 +472,7 @@
     other to minimize the work done
   * elements `x` should not be substantially larger magnitudes than 
     corresponding elements in `y` to maximize performance
-  * consider use of denominator classes for improved performance
+  * consider use of `avel::Denominator` classes for improved performance
 
 * `vector popcount(vector v)`
   * for each lane, computes the number of set bits in `v`

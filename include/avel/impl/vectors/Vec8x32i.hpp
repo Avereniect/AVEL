@@ -15,7 +15,7 @@ namespace avel {
     // Forward declarations
     //=====================================================
 
-    div_type<vec8x32i> div(vec8x32i numerator, vec8x32i denominator);
+    div_type<vec8x32i> div(vec8x32i x, vec8x32i y);
     vec8x32i set_bits(mask8x32i m);
     vec8x32i blend(mask8x32i m, vec8x32i a, vec8x32i b);
     vec8x32i negate(mask8x32i m, vec8x32i x);
@@ -864,7 +864,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x32u gather<vec8x32u>(const std::uint32_t* ptr, vec8x32i indices) {
        #if defined(AVEL_AVX2)
-        return vec8x32u{_mm256_i32gather_epi32(avel::bit_cast<const int*>(ptr), indices, sizeof(std::uint32_t))};
+        return vec8x32u{_mm256_i32gather_epi32(avel::bit_cast<const int*>(ptr), decay(indices), sizeof(std::uint32_t))};
 
        #elif defined(AVEL_AVX2)
         std::uint32_t c7 = ptr[extract<7>(indices)];
@@ -920,7 +920,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x32i gather<vec8x32i>(const std::int32_t* ptr, vec8x32i indices) {
         #if defined(AVEL_AVX2)
-        return vec8x32i{_mm256_i32gather_epi32(ptr, indices, sizeof(std::int32_t))};
+        return vec8x32i{_mm256_i32gather_epi32(ptr, decay(indices), sizeof(std::int32_t))};
 
         #elif defined(AVEL_AVX2)
         auto i = to_array(indices);

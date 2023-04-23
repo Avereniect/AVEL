@@ -15,7 +15,7 @@ namespace avel {
     // Forward declarations
     //=====================================================
 
-    div_type<vec8x64i> div(vec8x64i numerator, vec8x64i denominator);
+    div_type<vec8x64i> div(vec8x64i x, vec8x64i y);
     vec8x64i set_bits(mask8x64i m);
     vec8x64i blend(mask8x64i m, vec8x64i a, vec8x64i b);
     vec8x64i negate(mask8x64i m, vec8x64i x);
@@ -901,7 +901,7 @@ namespace avel {
     }
 
 
-    AVEL_FINL void scatter(const std::int64_t* ptr, vec8x64i v, vec8x64i indices, std::uint32_t n) {
+    AVEL_FINL void scatter(std::int64_t* ptr, vec8x64i v, vec8x64i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512F)
         auto mask = (n >= 8) ? -1 : (1 << n) - 1;
         _mm512_mask_i64scatter_epi64(ptr, mask, decay(indices), decay(v), sizeof(std::int64_t));
@@ -909,17 +909,17 @@ namespace avel {
     }
 
     template<std::uint32_t N = vec8x64i::width>
-    AVEL_FINL void scatter(const std::int64_t* ptr, vec8x64i v, vec8x64i indices) {
+    AVEL_FINL void scatter(std::int64_t* ptr, vec8x64i v, vec8x64i indices) {
         scatter(ptr, v, indices, N);
     }
 
     template<>
-    AVEL_FINL void scatter<0>(const std::int64_t* ptr, vec8x64i v, vec8x64i indices) {
+    AVEL_FINL void scatter<0>(std::int64_t* ptr, vec8x64i v, vec8x64i indices) {
         // Don't have to do anything
     }
 
     template<>
-    AVEL_FINL void scatter<vec8x64i::width>(const std::int64_t* ptr, vec8x64i v, vec8x64i indices) {
+    AVEL_FINL void scatter<vec8x64i::width>(std::int64_t* ptr, vec8x64i v, vec8x64i indices) {
         #if defined(AVEL_AVX512F)
         _mm512_i64scatter_epi64(ptr, decay(indices), decay(v), sizeof(std::int64_t));
         #endif
@@ -927,7 +927,7 @@ namespace avel {
 
 
 
-    AVEL_FINL void scatter(const std::uint64_t* ptr, vec8x64u v, vec8x64i indices, std::uint32_t n) {
+    AVEL_FINL void scatter(std::uint64_t* ptr, vec8x64u v, vec8x64i indices, std::uint32_t n) {
         #if defined(AVEL_AVX512F)
         auto mask = (n >= 8) ? -1 : (1 << n) - 1;
         _mm512_mask_i64scatter_epi64(ptr, mask, decay(indices), decay(v), sizeof(std::int64_t));
@@ -935,17 +935,17 @@ namespace avel {
     }
 
     template<std::uint32_t N = vec8x64i::width>
-    AVEL_FINL void scatter(const std::uint64_t* ptr, vec8x64u v, vec8x64i indices) {
+    AVEL_FINL void scatter(std::uint64_t* ptr, vec8x64u v, vec8x64i indices) {
         scatter(ptr, v, indices, N);
     }
 
     template<>
-    AVEL_FINL void scatter<0>(const std::uint64_t* ptr, vec8x64u v, vec8x64i indices) {
+    AVEL_FINL void scatter<0>(std::uint64_t* ptr, vec8x64u v, vec8x64i indices) {
         // Don't have to do anything
     }
 
     template<>
-    AVEL_FINL void scatter<vec8x64i::width>(const std::uint64_t* ptr, vec8x64u v, vec8x64i indices) {
+    AVEL_FINL void scatter<vec8x64i::width>(std::uint64_t* ptr, vec8x64u v, vec8x64i indices) {
         #if defined(AVEL_AVX512F)
         _mm512_i64scatter_epi64(ptr, decay(indices), decay(v), sizeof(std::int64_t));
         #endif

@@ -101,11 +101,11 @@ endif()
 
 
 # AVEL benchmarks
-#option(AVEL_BUILD_BENCHMARKS OFF)
+option(AVEL_BUILD_BENCHMARKS OFF)
 
-#if (AVEL_BUILD_BENCHMARKS)
-#    add_subdirectory(benchmarks)
-#endif()
+if (AVEL_BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
+endif()
 
 
 

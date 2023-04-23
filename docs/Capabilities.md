@@ -1,10 +1,9 @@
 # Capabilities
-* the use of AVEL requires that you specify which ISA extensions you'd like 
-  to be used via defining a set of macros before AVEL's headers are included
-* alternatively, they may be defined at the project level by defining 
-  the CMake variables by the same name
-* most feature sets imply other feature sets, with these implications being 
-  transitive 
+The use of AVEL requires that you specify which ISA extensions you'd like to be
+used via defining a set of macros before any of AVEL's headers are included.
+Alternatively, they may be defined at the project level by defining the CMake 
+variables by the same name. Most feature sets imply other feature sets, with 
+these implications being transitive.  
 
 ## x86 ISA Macros
 * `AVEL_GFNI`

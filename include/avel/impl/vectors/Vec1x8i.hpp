@@ -15,7 +15,7 @@ namespace avel {
     // Forward declarations
     //=====================================================
 
-    div_type<vec1x8i> div(vec1x8i numerator, vec1x8i denominator);
+    div_type<vec1x8i> div(vec1x8i a, vec1x8i y);
     vec1x8i set_bits(mask1x8i m);
     vec1x8i blend(mask1x8i m, vec1x8i a, vec1x8i b);
     vec1x8i negate(mask1x8i m, vec1x8i x);

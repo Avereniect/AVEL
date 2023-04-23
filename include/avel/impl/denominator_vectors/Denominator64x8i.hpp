@@ -35,7 +35,7 @@ namespace avel {
 
         explicit Denominator(vec64x8i d, vec64x8i l):
             mp(compute_m(l, d)),
-            d_sign(d >> 31),
+            d_sign(bit_shift_right<7>(d)),
             sh(l - vec64x8i{1}),
             d(d) {}
 

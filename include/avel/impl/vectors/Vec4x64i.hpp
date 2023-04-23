@@ -15,7 +15,7 @@ namespace avel {
     // Forward declarations
     //=====================================================
 
-    div_type<vec4x64i> div(vec4x64i numerator, vec4x64i denominator);
+    div_type<vec4x64i> div(vec4x64i x, vec4x64i y);
     vec4x64i set_bits(mask4x64i m);
     vec4x64i blend(mask4x64i m, vec4x64i a, vec4x64i b);
     vec4x64i negate(mask4x64i m, vec4x64i x);
@@ -963,7 +963,7 @@ namespace avel {
 
     template<>
     AVEL_FINL vec4x64u gather<vec4x64u::width>(const std::uint64_t* ptr, vec4x64i indices) {
-        return vec4x64u{_mm256_i64gather_epi64(ptr, decay(indices), sizeof(std::uint64_t))};
+        return vec4x64u{_mm256_i64gather_epi64(reinterpret_cast<const long long*>(ptr), decay(indices), sizeof(std::uint64_t))};
     }
 
 
@@ -1015,7 +1015,7 @@ namespace avel {
 
     template<>
     AVEL_FINL vec4x64i gather<vec4x64i::width>(std::int64_t* ptr, vec4x64i indices) {
-        return vec4x64i{_mm256_i64gather_epi64(ptr, decay(indices), sizeof(std::int64_t))};
+        return vec4x64i{_mm256_i64gather_epi64(reinterpret_cast<long long*>(ptr), decay(indices), sizeof(std::int64_t))};
     }
 
 

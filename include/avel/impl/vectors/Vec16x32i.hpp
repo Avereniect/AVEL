@@ -15,7 +15,7 @@ namespace avel {
     // Forward declarations
     //=====================================================
 
-    div_type<vec16x32i> div(vec16x32i numerator, vec16x32i denominator);
+    div_type<vec16x32i> div(vec16x32i x, vec16x32i y);
     vec16x32i set_bits(mask16x32i m);
     vec16x32i blend(mask16x32i m, vec16x32i a, vec16x32i b);
     vec16x32i negate(vec16x32i m, vec16x32i x);
@@ -742,7 +742,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec16x32u gather<vec16x32u>(const std::uint32_t* ptr, vec16x32i indices) {
         #if defined(AVEL_AVX512F)
-        return vec16x32u{_mm512_i32gather_epi32(indices, ptr, sizeof(std::uint32_t))};
+        return vec16x32u{_mm512_i32gather_epi32(decay(indices), ptr, sizeof(std::uint32_t))};
         #endif
     }
 
@@ -761,7 +761,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec16x32i gather<vec16x32i>(const std::int32_t* ptr, vec16x32i indices) {
         #if defined(AVEL_AVX512F)
-        return vec16x32i{_mm512_i32gather_epi32(indices, ptr, sizeof(std::int32_t))};
+        return vec16x32i{_mm512_i32gather_epi32(decay(indices), ptr, sizeof(std::int32_t))};
         #endif
     }
 
@@ -824,7 +824,7 @@ namespace avel {
 
     AVEL_FINL void scatter(std::uint32_t* ptr, vec16x32u indices, vec16x32u v) {
         #if defined(AVEL_AVX512F)
-        _mm512_i32scatter_epi32(avel::bit_cast<int*>(ptr), indices, decay(v), sizeof(std::uint32_t));
+        _mm512_i32scatter_epi32(avel::bit_cast<int*>(ptr), decay(indices), decay(v), sizeof(std::uint32_t));
         #endif
     }
 
@@ -843,7 +843,7 @@ namespace avel {
 
     AVEL_FINL void scatter(std::int32_t* ptr, vec16x32i indices, vec16x32i v) {
         #if defined(AVEL_AVX512F)
-        _mm512_i32scatter_epi32(ptr, indices, v, sizeof(std::int32_t));
+        _mm512_i32scatter_epi32(ptr, decay(indices), decay(v), sizeof(std::int32_t));
         #endif
     }
 
