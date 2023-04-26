@@ -742,7 +742,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec32x16i load<vec32x16i>(const std::int16_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512BW)
-        auto mask = (n >= 32) ? -1 : (1 << n)  - 1;
+        auto mask = (n >= 32) ? std::uint32_t(-1) : (std::uint32_t(1) << n) - 1;
         return vec32x16i{_mm512_maskz_loadu_epi16(mask, ptr)};
         #endif
     }
@@ -775,7 +775,7 @@ namespace avel {
 
     AVEL_FINL void store(std::int16_t* ptr, vec32x16i v, std::uint32_t n) {
         #if defined(AVEL_AVX512BW)
-        auto mask = (n >= 32) ? -1 : (1 << n)  - 1;
+        auto mask = (n >= 32) ? std::uint32_t(-1) : (std::uint32_t(1) << n) - 1;
         _mm512_mask_storeu_epi16(ptr, mask, decay(v));
         #endif
     }
@@ -796,7 +796,7 @@ namespace avel {
 
     AVEL_FINL void aligned_store(std::int16_t* ptr, vec32x16i v, std::uint32_t n) {
         #if defined(AVEL_AVX512BW)
-        auto mask = (n >= 32) ? -1 : (1 << n)  - 1;
+        auto mask = (n >= 32) ? std::uint32_t(-1) : (std::uint32_t(1) << n) - 1;
         _mm512_mask_storeu_epi16(ptr, mask, decay(v));
         #endif
     }

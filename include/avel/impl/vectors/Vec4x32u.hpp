@@ -1556,93 +1556,24 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec4x32u> div(vec4x32u x, vec4x32u y) {
-        vec4x32u quotient{};
+        #if defined(AVEL_AVX512VL)
+        auto x_widened = _mm256_cvtepu32_pd(decay(x));
+        auto y_widened = _mm256_cvtepu32_pd(decay(y));
 
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
-        auto t0 = _mm_lzcnt_epi32(decay(y));
-        auto t1 = _mm_lzcnt_epi32(decay(x));
-        auto t2 = _mm_subs_epu16(t0, t1);
-        auto t3 = _mm_add_epi32(t2, _mm_set1_epi32(1));
+        auto quotient = _mm256_cvttpd_epu32(_mm256_div_pd(x_widened, y_widened));
 
-        auto s0 = t3;
-        auto s1 = _mm_bsrli_si128(s0, 8);
-        auto s2 = _mm_max_epi32(s0, s1);
-        auto s3 = _mm_bsrli_si128(s2, 4);
-        auto s4 = _mm_max_epi32(s2, s3);
+        auto offset = _mm_mullo_epi32(decay(y), quotient);
+        auto remainder = _mm_sub_epi32(decay(x), offset);
 
-        std::int32_t i = _mm_cvtsi128_si32(s4);
-
-        //TODO: Optimize case were a denominator is zero?
-        #elif defined(AVEL_SSE41)
-
-        auto n0 = decay(x);
-        auto n1 = _mm_bsrli_si128(n0, 8);
-        auto n2 = _mm_max_epu32(n0, n1);
-        auto n3 = _mm_bsrli_si128(n2, 4);
-        auto n4 = _mm_max_epu32(n2, n3);
-
-        auto d0 = decay(y);
-        auto d1 = _mm_bsrli_si128(d0, 8);
-        auto d2 = _mm_min_epu32(d0, d1);
-        auto d3 = _mm_bsrli_si128(d2, 4);
-        auto d4 = _mm_min_epu32(d2, d3);
-
-        std::int32_t t0 = countl_zero(_mm_cvtsi128_si32(n4));
-        std::int32_t t1 = countl_zero(_mm_cvtsi128_si32(d4));
-
-        //TODO: Optimize case were a denominator is zero?
-        //TODO: Correct this calculation
-        std::int32_t i = std::max(t1 - t0 + 1, 0);
+        return {
+            vec4x32u{quotient},
+            vec4x32u{remainder}
+        };
 
         #elif defined(AVEL_SSE2)
-
-        //8-bit max/min suffice since all that matters is keeping the leading
-        //bit in each 32-bit int set
-
-        auto n0 = decay(x);
-        auto n1 = _mm_bsrli_si128(n0, 8);
-        auto n2 = _mm_max_epu8(n0, n1);
-        auto n3 = _mm_bsrli_si128(n2, 4);
-        auto n4 = _mm_max_epu8(n2, n3);
-
-        auto d0 = decay(y);
-        auto d1 = _mm_bsrli_si128(d0, 8);
-        auto d2 = _mm_min_epu8(d0, d1);
-        auto d3 = _mm_bsrli_si128(d2, 4);
-        auto d4 = _mm_min_epu8(d2, d3);
-
-        std::int32_t t0 = countl_zero(_mm_cvtsi128_si32(n4));
-        std::int32_t t1 = countl_zero(_mm_cvtsi128_si32(d4));
-
-        //TODO: Optimize case were a denominator is zero?
-        //TODO: Correct this calculation
-        std::int32_t i = std::max(t1 - t0 + 1, 0);
-        #endif
-
-        #if defined(AVEL_AARCH64)
-        std::uint32_t i = 32;
-        /*
-        //TODO: Correct this optimization
-        auto n0 = vclzq_u32(decay(x));
-        auto d0 = vclzq_u32(decay(y));
-
-        std::int32_t i = vminvq_u32(d0) - vminvq_u32(n0) + 1;
-        */
-
-        #elif defined(AVEL_NEON)
-        std::uint32_t i = 32;
-
-        /*
-        auto n0 = vclzq_u32(decay(x));
-        auto d0 = vclzq_u32(decay(y));
-
-        //TODO: Implement
-
-        std::int32_t i =  32;
-        */
-        #endif
-
         //TODO: Optimize body with masked instructions
+        vec4x32u quotient{0x0};
+        std::uint32_t i = 32;
         for (; (i-- > 0) && any(mask4x32u(x));) {
             mask4x32u b = ((x >> i) >= y);
             x -= (set_bits(b) & (y << i));
@@ -1650,6 +1581,11 @@ namespace avel {
         }
 
         return {quotient, x};
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Scalarize
+        #endif
     }
 
     [[nodiscard]]
@@ -1711,10 +1647,15 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32u byteswap(vec4x32u x) {
+    AVEL_FINL vec4x32u byteswap(vec4x32u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
-        auto reversed_halves = _mm_shldi_epi32(decay(x), decay(x), 0x10);
-        return vec4x32u{_mm_shldi_epi16(reversed_halves, reversed_halves, 0x8)};
+        // Reverse 16-bit halves within 32-bit ints
+        auto t0 = _mm_shldi_epi32(decay(v), decay(v), 16);
+
+        // Reverse 8-bit halves within 16-bit ints
+        auto t1 = _mm_shldi_epi16(t0, t0, 8);
+
+        return vec4x32u{t1};
 
         #elif defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t index_data[16] {
@@ -1725,10 +1666,10 @@ namespace avel {
         };
 
         auto indices = _mm_load_si128((const __m128i*)index_data);
-        return vec4x32u{_mm_shuffle_epi8(decay(x), indices)};
+        return vec4x32u{_mm_shuffle_epi8(decay(v), indices)};
 
         #elif defined(AVEL_SSE2)
-        auto t0 = _mm_shufflelo_epi16(decay(x), 0xB1);
+        auto t0 = _mm_shufflelo_epi16(decay(v), 0xB1);
         auto t1 = _mm_shufflehi_epi16(t0, 0xB1);
         auto t2 = _mm_slli_epi16(t1, 0x8);
         auto t3 = _mm_srli_epi16(t1, 0x8);
@@ -1737,7 +1678,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        return vec4x32u{vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(decay(x))))};
+        return vec4x32u{vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(decay(v))))};
         #endif
     }
 

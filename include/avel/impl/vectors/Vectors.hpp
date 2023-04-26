@@ -117,6 +117,23 @@ namespace avel {
     template<class V0, class V1 = V0, class = typename std::enable_if<!std::is_same<V0, V1>::value>::type>
     std::array<V0, V1::width / V0::width + bool(V1::width % V0::width)> convert(V1 v);
 
+    //=====================================================
+    // Specializations
+    //=====================================================
+
+    ///
+    /// Version of bit_cast which is specific to vectors,
+    /// simplifying the implementation under certain circumstances.
+    ///
+    /// \tparam V0 AVEL vector or vector mask type
+    /// \tparam V1 AVEL vector or vector mask type
+    /// \param v1 Object to cast
+    /// \return Object with equivalent bit-wise representation
+    template<class V0, class V1, typename = typename std::is_same<typename V0::primitive, typename V1::primitive>::value>
+    V0 bit_cast(V1 v1) {
+        return V0{decay(v1)};
+    }
+
 }
 
 // Note: The order of inclusion of the following files is meaningful as later

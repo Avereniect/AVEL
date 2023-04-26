@@ -660,8 +660,8 @@ namespace avel {
             auto rhs_lo = _mm_cvtsi128_si64(decay(rhs));
             auto rhs_hi = _mm_extract_epi64(decay(rhs), 0x1);
 
-            auto out_lo = lhs_lo * rhs_lo;
-            auto out_hi = lhs_hi * rhs_hi;
+            auto out_lo = std::uint64_t(lhs_lo) * std::uint64_t(rhs_lo);
+            auto out_hi = std::uint64_t(lhs_hi) * std::uint64_t(rhs_hi);
 
             auto out = _mm_cvtsi64_si128(out_lo);
             out = _mm_insert_epi64(out, out_hi, 0x1);
@@ -675,8 +675,8 @@ namespace avel {
             auto rhs_lo = _mm_cvtsi128_si64(decay(rhs));
             auto rhs_hi = _mm_cvtsi128_si64(_mm_srli_si128(decay(rhs), 0x8));
 
-            auto out_lo = _mm_cvtsi64_si128(lhs_lo * rhs_lo);
-            auto out_hi = _mm_cvtsi64_si128(lhs_hi * rhs_hi);
+            auto out_lo = _mm_cvtsi64_si128(std::uint64_t(lhs_lo) * std::uint64_t(rhs_lo));
+            auto out_hi = _mm_cvtsi64_si128(std::uint64_t(lhs_hi) * std::uint64_t(rhs_hi));
 
             content = _mm_or_si128(out_lo, _mm_slli_si128(out_hi, 0x8));
             #endif

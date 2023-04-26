@@ -1011,7 +1011,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec32x8i load<vec32x8i>(const std::int8_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        auto mask = (n >= 32) ? std::uint32_t(-1) : (1 << n) - 1;
+        auto mask = (n >= 32) ? std::uint32_t(-1) : (std::uint32_t(1) << n) - 1;
         return vec32x8i{_mm256_maskz_loadu_epi8(mask, ptr)};
 
         #elif defined(AVEL_AVX2)
@@ -1060,7 +1060,7 @@ namespace avel {
 
     AVEL_FINL void store(std::int8_t* ptr, vec32x8i v, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        auto mask = (n >= 32) ? vec32x8i::width : (1 << n) - 1;
+        auto mask = (n >= 32) ? std::uint32_t(-1) : (std::uint32_t(1) << n) - 1;
         _mm256_mask_storeu_epi8(ptr, mask, decay(v));
 
         #elif defined(AVEL_AVX2)

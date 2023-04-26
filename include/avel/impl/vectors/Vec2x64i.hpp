@@ -700,14 +700,15 @@ namespace avel {
             content = _mm_mullo_epi64(content, decay(rhs));
 
             #elif defined(AVEL_SSE41)
+            //TODO: Make consistent with vec2x64u counterpart
             std::uint64_t lhs0 = _mm_extract_epi64(content, 0x0);
             std::uint64_t lhs1 = _mm_extract_epi64(content, 0x1);
 
             std::uint64_t rhs0 = _mm_extract_epi64(decay(rhs), 0x0);
             std::uint64_t rhs1 = _mm_extract_epi64(decay(rhs), 0x1);
 
-            content = _mm_insert_epi64(content, lhs0 * rhs0, 0x0);
-            content = _mm_insert_epi64(content, lhs1 * rhs1, 0x1);
+            content = _mm_insert_epi64(content, std::uint64_t(lhs0) * std::uint64_t(rhs0), 0x0);
+            content = _mm_insert_epi64(content, std::uint64_t(lhs1) * std::uint64_t(rhs1), 0x1);
 
             #elif defined(AVEL_SSE2)
             alignas(16) std::uint64_t lhs_array[2];

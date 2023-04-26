@@ -1185,7 +1185,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec32x8u load<vec32x8u>(const std::uint8_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        std::uint32_t mask = (n >= 32) ? std::uint32_t(-1) : (1 << n) - 1;
+        std::uint32_t mask = (n >= 32) ? std::uint32_t(-1) : (std::uint32_t(1) << n) - 1;
         return vec32x8u{_mm256_maskz_loadu_epi8(mask, ptr)};
 
         #elif defined(AVEL_AVX2)
@@ -1243,7 +1243,7 @@ namespace avel {
 
     AVEL_FINL void store(std::uint8_t* ptr, vec32x8u v, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        auto mask = (std::uint64_t(1) << n) - 1;
+        auto mask = (n >= 32) ? std::uint32_t(-1) : (std::uint32_t(1) << n) - 1;
         _mm256_mask_storeu_epi8(ptr, mask, decay(v));
 
         #elif defined(AVEL_AVX2)
@@ -1282,7 +1282,7 @@ namespace avel {
 
     AVEL_FINL void aligned_store(std::uint8_t* ptr, vec32x8u v, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        auto mask = (std::uint64_t(1) << n) - 1;
+        auto mask = (n >= 32) ? std::uint32_t(-1) : (std::uint32_t(1) << n) - 1;
         _mm256_mask_storeu_epi8(ptr, mask, decay(v));
 
         #elif defined(AVEL_AVX2)

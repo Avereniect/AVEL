@@ -461,10 +461,10 @@ namespace avel {
             #elif defined(AVEL_AVX2)
             //TODO: Consider alternative approach based on emulation using
             // 32-bit multiplication
-            std::uint64_t c0 = _mm256_extract_epi64(content, 0) * _mm256_extract_epi64(decay(rhs), 0);
-            std::uint64_t c1 = _mm256_extract_epi64(content, 1) * _mm256_extract_epi64(decay(rhs), 1);
-            std::uint64_t c2 = _mm256_extract_epi64(content, 2) * _mm256_extract_epi64(decay(rhs), 2);
-            std::uint64_t c3 = _mm256_extract_epi64(content, 3) * _mm256_extract_epi64(decay(rhs), 3);
+            auto c0 = std::uint64_t(_mm256_extract_epi64(content, 0)) * std::uint64_t(_mm256_extract_epi64(decay(rhs), 0));
+            auto c1 = std::uint64_t(_mm256_extract_epi64(content, 1)) * std::uint64_t(_mm256_extract_epi64(decay(rhs), 1));
+            auto c2 = std::uint64_t(_mm256_extract_epi64(content, 2)) * std::uint64_t(_mm256_extract_epi64(decay(rhs), 2));
+            auto c3 = std::uint64_t(_mm256_extract_epi64(content, 3)) * std::uint64_t(_mm256_extract_epi64(decay(rhs), 3));
 
             auto result = _mm256_set_epi64x(c3, c2, c1, c0);
 

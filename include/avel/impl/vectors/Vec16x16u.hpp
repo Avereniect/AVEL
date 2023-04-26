@@ -1037,7 +1037,29 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec16x16u> div(vec16x16u x, vec16x16u y) {
-        //TODO: Optimize
+        auto zeros = _mm256_setzero_si256();
+
+        auto x_lo = _mm256_cvtepi32_ps(_mm256_unpacklo_epi16(decay(x), zeros));
+        auto x_hi = _mm256_cvtepi32_ps(_mm256_unpackhi_epi16(decay(x), zeros));
+
+        auto y_lo = _mm256_cvtepi32_ps(_mm256_unpacklo_epi16(decay(y), zeros));
+        auto y_hi = _mm256_cvtepi32_ps(_mm256_unpackhi_epi16(decay(y), zeros));
+
+        auto ret_lo = _mm256_cvttps_epi32(_mm256_div_ps(x_lo, y_lo));
+        auto ret_hi = _mm256_cvttps_epi32(_mm256_div_ps(x_hi, y_hi));
+
+        auto quotient = _mm256_packus_epi32(ret_lo, ret_hi);
+
+        auto offset = _mm256_mullo_epi16(decay(y), quotient);
+        auto remainder = _mm256_sub_epi16(decay(x), offset);
+
+        return {
+            vec16x16u{quotient},
+            vec16x16u{remainder}
+        };
+
+
+        /*
         vec16x16u quotient{0x00};
         std::int32_t i = 16;
         for (; (i-- > 0) && any(x >= y);) {
@@ -1049,6 +1071,7 @@ namespace avel {
 
         quotient <<= (i + 1);
         return {quotient, x};
+        */
     }
 
     [[nodiscard]]
