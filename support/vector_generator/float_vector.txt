@@ -476,12 +476,12 @@ $END
 
     [[nodiscard]]
     AVEL_FINL $<VECTOR_ALIAS> blend($<MASK_ALIAS> m, $<VECTOR_ALIAS> a, $<VECTOR_ALIAS> b) {
-        return $<VECTOR_ALIAS>{blend($<UMASK_ALIAS>{m}, $<UVECTOR_ALIAS>{a}, $<UVECTOR_ALIAS>{b})};
+        $<blend(mask, vec, vec)>
     }
 
     [[nodiscard]]
     AVEL_FINL $<VECTOR_ALIAS> byteswap($<VECTOR_ALIAS> v) {
-        return $<VECTOR_ALIAS>{byteswap($<UVECTOR_ALIAS>{v})};
+        return bit_cast<$<VECTOR_ALIAS>>(byteswap(bit_cast<$<UVECTOR_ALIAS>>(v)));
     }
 
     [[nodiscard]]
