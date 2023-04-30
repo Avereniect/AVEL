@@ -83,7 +83,8 @@
 * associated type alias `vecNxT = avel::Vector<scalar, width>`
 * associated type alias `arrNxT = std::array<scalar, width>`
 
-* `static constexpr std::uint32_t width = ...`
+### Static Constants
+* `static constexpr std::uint32_t width`
   * number of lanes in vector
 
 ### Type aliases
@@ -91,35 +92,35 @@
   * the type of the vector's elements
 
 * `using primitive = ...`
-  * backing type
+  * the vector's backing type
 
 * `using mask = Vector_mask<scalar, width>;`
-  * corresponding instantiation of `Vector_mask`
+  * corresponding instantiation of `avel::Vector_mask`
 
 * `using rebind_type<U>`
-  * corresponding instantiation of `Vector<U, width>`
+  * corresponding instantiation of `avel::Vector<U, width>`
 
 * `using rebind_width<M>`
-  * corresponding instantiation of `Vector<scalar, M>`
+  * corresponding instantiation of `avel::Vector<scalar, M>`
 
 ### Constructors
-* `Vector(Vector<U, N> v)` where U is convertible to T
-  * for each lane, converts `v` to be of type `T` in manner 
-    consistent with `avel::convert` function
+* `Vector(Vector<U, N> v)` where `U` is convertible to `T`
+  * construct a vector where each lane is a conversion of the value in `v` to type `T`
+  * semantics of conversion are consistent with `avel::convert`
 
 * `Vector(mask m)`
-  * for each lane, produces `1` if `m` is set and `0` otherwise
+  * construct a vector where each lane is `1.0` if `m` is `true` and `0.0` otherwise
 
 * `explicit Vector(scalar x)`
-  * set each lane to be a copy of `x`
+  * constructs a vector whose lanes are all copies of `x`
 
 * `explicit Vector(primitive p)`
-  * assigns internal variable to be `p`
+  * constructs a vector by copying the contents of `p`
 
-* defaulted default/copy/move constructors
+* defaulted default, copy, move constructors
 
 * `Vector(const arrNxT arr)`
-  * loads elements from `arr` into lanes of vector
+  * constructs a vector by loading the elements from `arr`
 
 ### Assignment Operators 
 * `Vector& operator=(primitive p)`
@@ -128,26 +129,36 @@
 * `vector& operator=(scalar x)`
   * set each lane to be a copy of `x`
 
+* defaulted copy/move assignment operators
+
 ### Comparison Operators
 * `mask operator==(Vector lhs, Vector rhs) const`
-  * for each lane, performed an equality comparison between `lhs` and `rhs`
+  * for each lane, performs an equality comparison between `lhs` and `rhs`
 
 * `mask operator!=(Vector lhs, Vector rhs) const`
-  * for each lane, performed an inequality comparison between `lhs` and `rhs`
+  * for each lane, performs an inequality comparison between `lhs` and `rhs`
 
 * `mask operator<(Vector lhs, Vector rhs) const`
-  * for each lane, performed a less-than comparison between `lhs` and `rhs`
+  * for each lane, performs a less-than comparison between `lhs` and `rhs`
 
 * `mask operator<=(Vector lhs, Vector rhs) const`
-  * for each lane, performed a less-than-or-equal comparison between `lhs` and 
+  * for each lane, performs a less-than-or-equal comparison between `lhs` and 
     `rhs`
 
 * `mask operator>(Vector lhs, Vector rhs) const`
-  * for each lane, performed a greater-than comparison between `lhs` and `rhs`
+  * for each lane, performs a greater-than comparison between `lhs` and `rhs`
 
 * `mask operator>=(Vector lhs, Vector rhs) const`
-  * for each lane, performed a greater-than-or-equal comparison between `lhs` 
+  * for each lane, performs a greater-than-or-equal comparison between `lhs` 
     and `rhs`
+
+### Unary Arithmetic Operators
+* `Vector operator+() const`
+  * returns the input unchanged
+
+* `Vector<signed T, width> operator-() const`
+  * for each lane, produces the negated value of the current value
+  * for vectors of unsigned integers, treats input as signed integer
 
 ### Arithmetic Assignment Operators
 * `Vector& operator+=(Vector rhs)`
@@ -162,12 +173,12 @@
 * `Vector& operator/=(Vector rhs)`
   * for each lane, divides the current value in `this` by `rhs`
   * consider use of denominator classes
-  * output is unspecified for a particular lane if the denominator is 0
+  * division by 0 leads to unspecified behavior
 
 * `Vector& operator%=(Vector rhs)`
   * for each lane, computes the remainder of the dividing `this` by `rhs`
   * consider use of denominator classes
-  * output is unspecified for a particular lane if the denominator is 0
+  * division by 0 leads to unspecified behavior
 
 ### Arithmetic Operators
 * `Vector operator+(Vector rhs) const`
@@ -181,11 +192,11 @@
 
 * `Vector operator/(Vector rhs) const`
   * for each lane, produces the quotient of `this` and rhs
-  * output is unspecified for a particular lane if the denominator is 0
+  * division by 0 leads to unspecified behavior
 
 * `Vector operator%(Vector rhs) const`
   * for each lane, produces the modulus of `this` and rhs
-  * output is unspecified for a particular lane if the denominator is 0
+  * division by 0 leads to unspecified behavior
 
 ### Increment/Decrement Operators
 * `Vector& operator++()`
@@ -232,14 +243,6 @@
 
 * `explicit operator mask() const`
   * for each lane, produces true if the element is non-zero and false otherwise
-
-### Unary Arithmetic Operators
-* `Vector operator+() const`
-  * returns the input unchanged
-
-* `Vector<signed T, width> operator-() const`
-  * for each lane, produces the negated value of the current value
-  * for vectors of unsigned integers, treats input as signed integer
 
 ### Bitwise Assignment Operators
 * `Vector operator>>=(long long rhs) const`
@@ -464,8 +467,7 @@
 * `avel::div_type<vector> div(vector x, vector y)`
   * performs an integer division of `x` by `y` yielding both quotient and 
     remainder
-  * it is unspecified what happens to a particular lane if `y` equals zero
-    * otherwise equivalent to C++11's `std::div`
+  * division by 0 leads to unspecified behavior
   * note that the algorithm is implemented in software due to lack of hardware 
     integer division instructions
   * elements in each input vector should be of a similar magnitude to each 

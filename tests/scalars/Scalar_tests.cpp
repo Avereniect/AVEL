@@ -14,5 +14,5 @@
 #include "Scalar64u_tests.hpp"
 #include "Scalar64i_tests.hpp"
 
-//#include "scalars/Scalar32f_tests.hpp"
-//#include "scalars/Scalar64f_tests.hpp"
+#include "Scalar32f_tests.hpp"
+//#include "Scalar64f_tests.hpp"

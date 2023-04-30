@@ -348,14 +348,12 @@ $END
         }
 
         AVEL_FINL Vector& operator/=(Vector rhs) {
-            auto results = div(*this, rhs);
-            content = results.quot.content;
+            $<vector::operator/=(vec)>
             return *this;
         }
 
         //AVEL_FINL Vector& operator%=(Vector rhs) {
-        //    auto results = div(*this, rhs);
-        //    content = results.rem.content;
+        //    *this = fmod(*this, rhs);
         //    return *this;
         //}
 
@@ -698,11 +696,46 @@ $END
     // Rounding
     //=====================================================
 
+    [[nodiscard]]
+    AVE_FINL $<VECTOR_ALIAS> ceil($<VECTOR_ALIAS> v) {
+        $<ceil(vec)>
+    }
 
+    [[nodiscard]]
+    AVE_FINL $<VECTOR_ALIAS> floor($<VECTOR_ALIAS> v) {
+        $<floor(vec)>
+    }
+
+    [[nodiscard]]
+    AVE_FINL $<VECTOR_ALIAS> trunc($<VECTOR_ALIAS> v) {
+        $<trunc(vec)>
+    }
+
+    [[nodiscard]]
+    AVE_FINL $<VECTOR_ALIAS> round($<VECTOR_ALIAS> v) {
+        $<trunc(vec)>
+    }
+
+    [[nodiscard]]
+    AVE_FINL $<VECTOR_ALIAS> nearbyint($<VECTOR_ALIAS> v) {
+        $<trunc(vec)>
+    }
+
+    [[nodiscard]]
+    AVE_FINL $<VECTOR_ALIAS> rint($<VECTOR_ALIAS> v) {
+        $<trunc(vec)>
+    }
 
     //=====================================================
     // Floating-point Manipulation
     //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL $<VECTOR_ALIAS> frexp($<VECTOR_ALIAS> num, $<INT_VECTOR_ALIAS>* exp) {
+
+    }
+
+
 
     //=====================================================
     // Floating-point Classification
@@ -738,33 +771,6 @@ $END
         $<signbit(vec)>
     }
 
-    //=====================================================
-    // Comparison Operations
-    //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL $<MASK_ALIAS> isgreater($<VECTOR_ALIAS> v) {
-        $<isgreater(vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<MASK_ALIAS> isgreaterequal($<VECTOR_ALIAS> v) {
-        $<isgreaterequal(vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<MASK_ALIAS> isless($<VECTOR_ALIAS> v) {
-        $<isless(vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<MASK_ALIAS> islessequal($<VECTOR_ALIAS> v) {
-        $<islessequal(vec)>
-    }
-
-    [[nodiscard]]
-    AVEL_FINL $<MASK_ALIAS> isunordered($<VECTOR_ALIAS> v) {
-        $<isunordered(vec)>
-    }
-
 }
+
+#endif // $<HEADER_GUARD>
