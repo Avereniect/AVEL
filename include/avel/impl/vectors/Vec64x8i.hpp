@@ -924,8 +924,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec64x8i> div(vec64x8i x, vec64x8i y) {
-        mask64x8i remainder_sign_mask = (x < vec64x8i{0x00});
-        mask64x8i quotient_sign_mask = remainder_sign_mask ^ (y < vec64x8i{0x00});
+        mask64x8i remainder_sign_mask{_mm512_movepi8_mask(decay(x))};
+        mask64x8i quotient_sign_mask = remainder_sign_mask ^ mask64x8i{_mm512_movepi8_mask(decay(y))};
 
         vec64x8u numerator{abs(x)};
         vec64x8u denominator{abs(y)};

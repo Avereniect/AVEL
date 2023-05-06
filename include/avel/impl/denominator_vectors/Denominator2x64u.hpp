@@ -22,11 +22,12 @@ namespace avel {
         // -ctors
         //=================================================
 
-        explicit Denominator(Denom64u denom):
-            m(denom.m),
-            sh1(denom.sh1),
-            sh2(denom.sh2),
-            d(denom.d) {}
+        // TODO: Uncomment and fix
+        //explicit Denominator(Denom64u denom):
+        //    m(denom.m),
+        //    sh1(denom.sh1),
+        //    sh2(denom.sh2),
+        //    d(denom.d) {}
 
         explicit Denominator(vec2x64u d):
             Denominator(d, vec2x64u{64} - countl_zero(d - vec2x64u{1})) {}
@@ -138,7 +139,6 @@ namespace avel {
 
         static vec2x64u compute_m(vec2x64u l, vec2x64u d) {
             #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX)
-            //TODO: Use conversion functions once implemented instead
             __uint128_t l_lo = extract<0>(l);
             __uint128_t l_hi = extract<1>(l);
 

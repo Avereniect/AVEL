@@ -29,8 +29,7 @@ namespace avel {
 
         explicit Denominator(std::uint16_t d, std::uint16_t l):
             m((std::uint32_t((1 << l) - d) << 16) / std::uint32_t(d) + 1),
-            sh1(min(l, std::uint16_t(1))),
-            sh2(l - sh1),
+            sh2(l - 1),
             d(d) {}
 
     public:
@@ -41,8 +40,12 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend div_type<std::uint16_t> div(std::uint16_t n, Denominator denom) {
+            if (denom.d == 1) {
+                return {n, 0};
+            }
+
             std::uint16_t t1 = std::uint32_t(denom.m) * std::uint32_t(n) >> 16;
-            std::uint16_t q = (t1 + ((n - t1) >> denom.sh1)) >> denom.sh2;
+            std::uint16_t q = (t1 + ((n - t1) >> 1)) >> denom.sh2;
             std::uint16_t r = n - (q * denom.d);
             return {q, r};
         }
@@ -64,7 +67,6 @@ namespace avel {
         //=================================================
 
         std::uint16_t m = 0;
-        bool sh1 = false;
         std::uint16_t sh2 = 0;
         std::uint16_t d = 0;
 

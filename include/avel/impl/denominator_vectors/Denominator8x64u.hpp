@@ -22,11 +22,12 @@ namespace avel {
         // -ctors
         //=================================================
 
-        explicit Denominator(Denom64u denom):
-            m(denom.m),
-            sh1(denom.sh1),
-            sh2(denom.sh2),
-            d(denom.d) {}
+        // TODO: Uncomment and fix
+        //explicit Denominator(Denom64u denom):
+        //    m(denom.m),
+        //    sh1(denom.sh1),
+        //    sh2(denom.sh2),
+        //    d(denom.d) {}
 
         explicit Denominator(vec8x64u d):
             Denominator(d, vec8x64u{64} - countl_zero(d - vec8x64u{1})) {}

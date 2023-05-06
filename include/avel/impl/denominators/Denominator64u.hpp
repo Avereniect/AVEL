@@ -29,8 +29,7 @@ namespace avel {
 
         explicit Denominator(std::uint64_t d, std::uint64_t l):
             m(compute_m(l, d)),
-            sh1(min(l, std::uint64_t(1))),
-            sh2(l - sh1),
+            sh2(l - 1),
             d(d) {}
 
     public:
@@ -41,6 +40,10 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend div_type<std::uint64_t> div(std::uint64_t n, Denominator denom) {
+            if (denom.d == 1) {
+                return {n, 0};
+            }
+
             #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
             //This compiles down to an x86 mul instruction when optimized
             __uint128_t t0 = __uint128_t(denom.m) * __uint128_t(n);
@@ -65,7 +68,7 @@ namespace avel {
 
             std::uint64_t t1 = multhi;
             #endif
-            std::uint64_t q = (t1 + ((n - t1) >> denom.sh1)) >> denom.sh2;
+            std::uint64_t q = (t1 + ((n - t1) >> 1)) >> denom.sh2;
             std::uint64_t r = n - (q * denom.d);
             return {q, r};
         }
@@ -87,7 +90,6 @@ namespace avel {
         //=================================================
 
         std::uint64_t m = 0;
-        bool sh1 = false;
         std::uint64_t sh2 = 0;
         std::uint64_t d = 0;
 
