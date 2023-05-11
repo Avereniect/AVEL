@@ -456,27 +456,16 @@ namespace avel {
             content = _mm512_cvtepi16_epi8(c);
 
             #elif defined(AVEL_AVX2)
-            auto lhs_lo = _mm256_cvtepu8_epi16(_mm256_extracti128_si256(content, 0x0));
-            auto lhs_hi = _mm256_cvtepu8_epi16(_mm256_extracti128_si256(content, 0x1));
+            auto even_mask = _mm256_set1_epi16(0x00FF);
 
-            auto rhs_lo = _mm256_cvtepu8_epi16(_mm256_extracti128_si256(decay(rhs), 0x0));
-            auto rhs_hi = _mm256_cvtepu8_epi16(_mm256_extracti128_si256(decay(rhs), 0x1));
+            auto products_even = _mm256_mullo_epi16(content, decay(rhs));
+            auto products_odd  = _mm256_mullo_epi16(
+                _mm256_srli_epi16(content, 8),
+                _mm256_andnot_si256(even_mask, decay(rhs))
+            );
 
-            auto products_lo = _mm256_mullo_epi16(lhs_lo, rhs_lo);
-            auto products_hi = _mm256_mullo_epi16(lhs_hi, rhs_hi);
-
-            auto shuffled_lo = _mm256_permute2x128_si256(products_lo, products_hi, 0x20);
-            auto shuffled_hi = _mm256_permute2x128_si256(products_lo, products_hi, 0x31);
-
-            auto byte_mask = _mm256_set1_epi16(0x00FF);
-
-            auto masked_lo = _mm256_and_si256(shuffled_lo, byte_mask);
-            auto masked_hi = _mm256_and_si256(shuffled_hi, byte_mask);
-
-
-            auto packed = _mm256_packus_epi16(masked_lo, masked_hi);
-
-            content = packed;
+            auto products = _mm256_blendv_epi8(products_odd, products_even, even_mask);
+            content = products;
             #endif
 
             return *this;

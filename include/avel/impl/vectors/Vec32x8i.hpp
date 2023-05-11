@@ -454,33 +454,14 @@ namespace avel {
             #elif defined(AVEL_AVX2)
             auto even_mask = _mm256_set1_epi16(0x00FF);
 
-            auto even_product = _mm256_and_si256(even_mask, _mm256_mullo_epi16(content, decay(rhs)));
-            auto odd_product  = _mm256_slli_epi16(
-                _mm256_mullo_epi16(
-                    _mm256_srli_epi16(content, 0x8),
-                    _mm256_srli_epi16(decay(rhs), 0x8)
-                ),
-                0x8
+            auto products_even = _mm256_mullo_epi16(content, decay(rhs));
+            auto products_odd  = _mm256_mullo_epi16(
+                _mm256_srli_epi16(content, 8),
+                _mm256_andnot_si256(even_mask, decay(rhs))
             );
 
-            auto product = _mm256_or_si256(even_product, odd_product);
-            content = product;
-
-            /* //Old bugged implementation
-            auto byte_mask = _mm256_set1_epi16(0x00FF);
-
-            auto lhs_even = _mm256_and_si256(byte_mask, content);
-            auto lhs_odd  = _mm256_andnot_si256(byte_mask, content);
-
-            auto rhs_even = _mm256_and_si256(byte_mask, decay(rhs));
-            auto rhs_odd  = _mm256_andnot_si256(byte_mask, decay(rhs));
-
-            auto product_even = _mm256_mullo_epi16(lhs_even, rhs_even);
-            auto product_odd  = _mm256_mullo_epi16(lhs_odd,  rhs_odd );
-            product_odd = _mm256_slli_epi16(product_odd, 0x8);
-
-            content = _mm256_blendv_epi8(product_odd, product_even, byte_mask);
-            */
+            auto products = _mm256_blendv_epi8(products_odd, products_even, even_mask);
+            content = products;
             #endif
 
             return *this;
