@@ -1,0 +1,3 @@
+name: AVEL Tests
+run-name: ${{ github.actor }} is running AVEL's tests
+on: [push]
