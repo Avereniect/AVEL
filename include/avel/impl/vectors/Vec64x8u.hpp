@@ -1555,7 +1555,10 @@ namespace avel {
     AVEL_FINL vec64x8u countr_one(vec64x8u v) {
         //TODO: Consider leveraging tzcnt
         //TODO: Consider leveraging conversion to fp16
-        #if defined(AVEL_AVX512BW)
+        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
+        //TODO: Implement
+
+        #elif defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 0, 2,
             0, 1, 0, 3,
@@ -1590,35 +1593,16 @@ namespace avel {
         //TODO: Consider leveraging 32-bit tzcnt
         //TODO: Consider leveraging conversion to fp16
 
-        #if defined(AVEL_AVX512VBMI)
-        alignas(128) static constexpr std::uint8_t table[128] {
-            0, 1, 2, 2, 3, 3, 3, 3,
-            4, 4, 4, 4, 4, 4, 4, 4,
-            5, 5, 5, 5, 5, 5, 5, 5,
-            5, 5, 5, 5, 5, 5, 5, 5,
-            6, 6, 6, 6, 6, 6, 6, 6,
-            6, 6, 6, 6, 6, 6, 6, 6,
-            6, 6, 6, 6, 6, 6, 6, 6,
-            6, 6, 6, 6, 6, 6, 6, 6,
-            7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7
-        };
-
-        auto table0 = _mm512_load_si512(table +  0);
-        auto table1 = _mm512_load_si512(table + 64);
+        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
+        auto table0 = _mm512_load_si512(bit_width_table_data + 0x00);
+        auto table1 = _mm512_load_si512(bit_width_table_data + 0x40);
 
         auto partial_result = _mm512_permutex2var_epi8(table0, decay(v), table1);
 
-        auto high_bit_mask = _mm512_movepi8_mask(decay(v));
+        auto is_high_bit_set_mask = _mm512_movepi8_mask(decay(v));
 
         auto ret = _mm512_mask_blend_epi8(
-            high_bit_mask,
+            is_high_bit_set_mask,
             partial_result,
             _mm512_set1_epi8(8)
         );
@@ -1659,7 +1643,18 @@ namespace avel {
     AVEL_FINL vec64x8u bit_floor(vec64x8u v) {
         //TODO: Consider leveraging tzcnt
         //TODO: Consider leveraging conversion to fp16
-        #if defined(AVEL_AVX512BW)
+
+        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
+        auto table_half0 = _mm512_load_si512(bit_floor_table_data + 0x00);
+        auto table_half1 = _mm512_load_si512(bit_floor_table_data + 0x40);
+
+        auto table_results = _mm512_permutex2var_epi8(table_half0, decay(v), table_half1);
+
+        auto is_high_bit_set_mask = _mm512_movepi8_mask(decay(v));
+        auto result = _mm512_mask_blend_epi8(is_high_bit_set_mask, table_results, _mm512_set1_epi8(0x80));
+        return vec64x8u{result};
+
+        #elif defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 2, 2,
             4, 4, 4, 4,
@@ -1693,7 +1688,22 @@ namespace avel {
     AVEL_FINL vec64x8u bit_ceil(vec64x8u v) {
         //TODO: Consider leveraging tzcnt
         //TODO: Consider leveraging conversion to fp16
-        #if defined(AVEL_AVX512BW)
+
+        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
+        auto ones = _mm512_set1_epi8(0x01);
+        auto v_clamped = _mm512_max_epu8(decay(v), ones);
+        auto table_indices = _mm512_sub_epi8(v_clamped, ones);
+
+        auto table_half0 = _mm512_load_si512(bit_ceil_table_data + 0x00);
+        auto table_half1 = _mm512_load_si512(bit_ceil_table_data + 0x40);
+
+        auto table_results = _mm512_permutex2var_epi8(table_half0, table_indices, table_half1);
+
+        auto is_result_non_zero_mask = _knot_mask64(_mm512_movepi8_mask(table_indices));
+        auto result = _mm512_maskz_mov_epi8(is_result_non_zero_mask, table_results);
+        return vec64x8u{result};
+
+        #elif defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
              0,  1,  3,  3,
              7,  7,  7,  7,
