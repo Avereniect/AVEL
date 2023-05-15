@@ -473,15 +473,23 @@ def parse_command_line_arguments(arguments):
 def main():
     parse_command_line_arguments(sys.argv[1:])
 
+    if not parameters:
+        print("Recognized parameters:")
+        print("  -A    (Required) The target architecture to run tests on. Should be either \'x86\' or \'arm\'")
+        print("  -L    (Optional) Command which is invoked to run executable. If this parameter contains \'<exec>\' t"
+              "en it will be replaced with the path of the test executable. Otherwise, the path of test executable "
+              "will be appended to the end of this parameter. If this parameter is not specified, the test executable "
+              "is invoked directly.")
+        print("  -C    (Optional) The test case to start from. Should be a pair of integer values seperated by a colon."
+              " Values are printed out when the test script runs into issues. This parameter allows tests which have "
+              "passed in previous runs to be skipped. If this parameter is not specified, result is equivalent to "
+              "\'0:0\'.")
+
+        exit(1)
+
     if 'arch' not in parameters:
         print('Target architecture not specified!')
-
-        print('Pass \'x86\' or \'arm\' as first parameter')
-        print(
-            'Optionally pass a command as a second parameter that will be used as a launcher for the test executable.'
-            '\nIf the second parameter contains \'<exec>\' then it will be replaced with the test executable path.'
-            '\nOtherwise, the test executable path will simply be appended to the end of the command'
-        )
+        print('Specify the -A parameter to be either \'x86\' or \'arm\'')
         exit(1)
 
     global target_features
