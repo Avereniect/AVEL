@@ -1,3 +1,16 @@
 name: AVEL Tests
 run-name: ${{ github.actor }} is running AVEL's tests
 on: [push]
+jobs:
+  AVEL-x86-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Intel SDE
+        uses: petarpetrovt/setup-sde@v2.1
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - run: python3 run_avel_tests.py -A"x86" -L"${SDE_PATH} -- <exec>"
+  AVEL-ARM-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Not yet implemented"
