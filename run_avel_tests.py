@@ -244,24 +244,25 @@ def identify_vector_features():
 
 
 def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
-    print('\nRunning test:')
-    print('Flags:')
-    for variable, value in feature_assignments.items():
-        if value == 'True':
-            print(target_features[variable][0])
+    # print('\nRunning test:')
+    # print('Flags:')
+    # for variable, value in feature_assignments.items():
+    #     if value == 'True':
+    #         pass
+    #         print(target_features[variable][0])
 
-    print()
-    print('Feature variables:')
-    for variable, value in feature_assignments.items():
-        if value == 'True':
-            print(variable)
+    # print()
+    # print('Feature variables:')
+    # for variable, value in feature_assignments.items():
+    #     if value == 'True':
+    #         print(variable)
 
-    print()
-    print('Test group variables:')
+    # print()
+    # print('Test group variables:')
     for test_group_name, value in test_groups.items():
         if value:
             variable = 'AVEL_ENABLE_' + test_group_name.upper() + '_TESTS'
-            print(variable)
+            # print(variable)
 
     flags = '-w -std=c++11'
     cmake_variables = ''
@@ -293,7 +294,7 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
         '-DAVEL_BUILD_TESTS:BOOL=ON{} ' \
         '-DCMAKE_CXX_FLAGS="{}"'
     cmake_command = cmake_command_format_string.format(build_path, compiler_path, cmake_variables, flags)
-    print(cmake_command)
+    # print(cmake_command)
 
     ret = os.system(cmake_command)
     if ret != 0:
@@ -302,7 +303,8 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
         print("Testing failed for")
         print("Compiler:", compiler_path)
         print("Compiler flags:", flags)
-        print("CMake Variables:", cmake_variables)
+        print("CMake variables:", cmake_variables)
+        print("CMake command:", cmake_command)
         failed = True
         return failed
 
@@ -314,7 +316,8 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
         print("Testing failed for")
         print("Compiler:", compiler_path)
         print("Compiler flags:", flags)
-        print("CMake Variables:", cmake_variables)
+        print("CMake variables:", cmake_variables)
+        print("CMake command:", cmake_command)
         failed = True
         return failed
 
@@ -333,7 +336,8 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
         print("Testing failed for")
         print("Compiler:", compiler_path)
         print("Compiler flags:", flags)
-        print("CMake Variables:", cmake_variables)
+        print("CMake variables:", cmake_variables)
+        print("CMake command:", cmake_command)
         failed = True
         return failed
 
