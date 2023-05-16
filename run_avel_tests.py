@@ -318,6 +318,7 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
         print("Compiler flags:", flags)
         print("CMake variables:", cmake_variables)
         print("CMake command:", cmake_command)
+        print("Make command:", make_command)
         failed = True
         return failed
 
@@ -338,6 +339,7 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
         print("Compiler flags:", flags)
         print("CMake variables:", cmake_variables)
         print("CMake command:", cmake_command)
+        print("Run command:", run_command)
         failed = True
         return failed
 
