@@ -430,7 +430,7 @@ def test_on_compiler(compiler_index, starting_case, compiler_path, build_dir_nam
         # Run tests with specified features enabled
         failed = run_test(compiler_path, build_dir_name, full_variable_assignments, test_groups)
         if failed:
-            print('Failed on test case', compiler_index, ':', count)
+            print('Failed on test case', str(compiler_index) + ':' + str(count))
             return failed
 
         # Remove feature combinations that were satisfied by the previous test
@@ -555,8 +555,8 @@ def main():
         )
 
         if failed:
-            print("\nTesting script: Testing script did not complete")
-            return
+            print("\nTesting script: Tests failed")
+            exit(1)
 
     print("\nTesting script: All tests passed")
 

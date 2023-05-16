@@ -9,7 +9,9 @@ jobs:
         uses: petarpetrovt/setup-sde@v2.1
       - name: Check out repository code
         uses: actions/checkout@v3
-      - run: python3 run_avel_tests.py -A"x86" -L"${SDE_PATH} -- <exec>"
+      - name: Install gtest manually
+        run: sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make && sudo cp lib/*.a /usr/lib && sudo ln -s /usr/lib/libgtest.a /usr/local/lib/libgtest.a && sudo ln -s /usr/lib/libgtest_main.a /usr/local/lib/libgtest_main.a
+      - run: python3 run_avel_tests.py -A"x86"
   AVEL-ARM-tests:
     runs-on: ubuntu-latest
     steps:
