@@ -18,7 +18,11 @@ import sys
 import shutil
 import re
 import copy
+from math import ceil
+from multiprocessing import cpu_count
+from threading import Thread, Lock
 from itertools import product
+from functools import reduce
 
 """
 Path to compilers and names used for their build directories
@@ -36,7 +40,7 @@ compilers = [
 ]
 
 """
-Map associating feature macros with their implied features, according to AVEL
+Map associating feature macros with their directly implied features, according to AVEL
 """
 features_x86 = {
     'AVEL_X86': ['', []],
@@ -82,9 +86,21 @@ compiler_macros = [
 ]
 
 """
-Map containing command line parameters
+Dictionary containing command line parameters
 """
 parameters = {}
+
+
+def unroll_feature_implications():
+    """
+    Applies transitive implications to the target_features map, making each feature contains its indirect implications
+    in addition to its direct implications
+    """
+    for key in target_features:
+        implications = target_features[key][1]
+        for implication in implications:
+            implied_features = target_features[implication][1]
+            target_features[key][1] += implied_features
 
 
 def compiler_path_to_macro(compiler_path):
@@ -107,7 +123,7 @@ def compiler_path_to_macro(compiler_path):
         exit(1)
 
 
-def construct_expression(line):
+def macro_to_boolean_expression(line):
     """
     Converts a preprocessor line to a boolean expression which can be evaluated
     via the eval() function
@@ -201,7 +217,7 @@ def identify_feature_combinations(file_path):
         if not is_feature_check_macro(line):
             continue
 
-        (expression, variables) = construct_expression(line)
+        (expression, variables) = macro_to_boolean_expression(line)
 
         expressions_and_variables[expression] = variables
 
@@ -243,27 +259,11 @@ def identify_vector_features():
     return names_and_features
 
 
-def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
-    # print('\nRunning test:')
-    # print('Flags:')
-    # for variable, value in feature_assignments.items():
-    #     if value == 'True':
-    #         pass
-    #         print(target_features[variable][0])
+test_exit_codes = []
+test_run_infos = []
 
-    # print()
-    # print('Feature variables:')
-    # for variable, value in feature_assignments.items():
-    #     if value == 'True':
-    #         print(variable)
 
-    # print()
-    # print('Test group variables:')
-    for test_group_name, value in test_groups.items():
-        if value:
-            variable = 'AVEL_ENABLE_' + test_group_name.upper() + '_TESTS'
-            # print(variable)
-
+def run_test(compiler_path, build_dir_name, feature_assignments, test_groups, test_index):
     flags = '-w -std=c++11'
     cmake_variables = ''
 
@@ -294,33 +294,22 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
         '-DAVEL_BUILD_TESTS:BOOL=ON{} ' \
         '-DCMAKE_CXX_FLAGS="{}"'
     cmake_command = cmake_command_format_string.format(build_path, compiler_path, cmake_variables, flags)
-    # print(cmake_command)
 
-    ret = os.system(cmake_command)
-    if ret != 0:
-        print()
-        print("Testing script: ")
-        print("Testing failed for")
-        print("Compiler:", compiler_path)
-        print("Compiler flags:", flags)
-        print("CMake variables:", cmake_variables)
-        print("CMake command:", cmake_command)
-        failed = True
-        return failed
+    exit_code = os.system(cmake_command)
+    if exit_code != 0:
+        return
+
+    run_info = [None, None, None, None, None]
+    run_info[0] = flags
+    run_info[1] = cmake_variables
+    run_info[2] = cmake_command
 
     make_command = 'make AVEL_TESTS -C ./test_build_dirs/{}'.format(build_dir_name)
-    ret = os.system(make_command)
-    if ret != 0:
-        print()
-        print("Testing script: ")
-        print("Testing failed for")
-        print("Compiler:", compiler_path)
-        print("Compiler flags:", flags)
-        print("CMake variables:", cmake_variables)
-        print("CMake command:", cmake_command)
-        print("Make command:", make_command)
-        failed = True
-        return failed
+    run_info[3] = make_command
+
+    exit_code = os.system(make_command)
+    if exit_code != 0:
+        return
 
     run_command = ''
     if 'launcher' not in parameters or parameters['launcher'] == '':
@@ -330,24 +319,16 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups):
     else:
         run_command = parameters['launcher'] + ' ./test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name)
 
-    ret = os.system(run_command)
-    if ret != 0:
-        print()
-        print("Testing script: ")
-        print("Testing failed for")
-        print("Compiler:", compiler_path)
-        print("Compiler flags:", flags)
-        print("CMake variables:", cmake_variables)
-        print("CMake command:", cmake_command)
-        print("Run command:", run_command)
-        failed = True
-        return failed
+    run_info[4] = run_command
+
+    exit_code = os.system(run_command)
+    if exit_code != 0:
+        return
 
     shutil.rmtree(build_path)
 
-    print()
-
-    return False
+    test_exit_codes[test_index] = True
+    test_run_infos[test_index] = run_info
 
 
 def substitute_compiler_macros(compiler_macro, names_and_features):
@@ -384,7 +365,24 @@ def expand_assignments(assignments):
     return ret
 
 
-def test_on_compiler(compiler_index, starting_case, compiler_path, build_dir_name, names_and_features):
+work_queue = []
+work_queue_lock = Lock()
+
+
+def thread_worker():
+    while True:
+        work_queue_lock.acquire()
+        if not work_queue:
+            work_queue_lock.release()
+            return
+
+        task = work_queue.pop()
+        work_queue_lock.release()
+
+        run_test(*task)
+
+
+def test_on_compiler(compiler_path, build_dir_name, names_and_features):
     substitute_compiler_macros(compiler_path_to_macro(compiler_path), names_and_features)
 
     # Gather all expressions
@@ -413,12 +411,9 @@ def test_on_compiler(compiler_index, starting_case, compiler_path, build_dir_nam
     feature_order = dict(zip(target_features.keys(), range(0, len(target_features))))
     expression_solutions = sorted(expression_solutions, key=lambda x: [feature_order[x] for x in x.keys()])
 
-    count = 0
-    for partial_solution in expression_solutions:
-        if count < starting_case:
-            count += 1
-            continue
+    run_test_parameters = []
 
+    for index, partial_solution in enumerate(expression_solutions):
         # Construct feature combinations to test with
         full_variable_assignments = dict(zip(target_features.keys(), ['False'] * len(target_features)))
         for variable in partial_solution:
@@ -434,10 +429,13 @@ def test_on_compiler(compiler_index, starting_case, compiler_path, build_dir_nam
                     break
 
         # Run tests with specified features enabled
-        failed = run_test(compiler_path, build_dir_name, full_variable_assignments, test_groups)
-        if failed:
-            print('Failed on test case', str(compiler_index) + ':' + str(count))
-            return failed
+        run_test_parameters.append([
+            compiler_path,
+            build_dir_name + '/' + str(index) + '/',
+            full_variable_assignments,
+            test_groups,
+            index
+        ])
 
         # Remove feature combinations that were satisfied by the previous test
         for vec_name in names_and_features:
@@ -446,12 +444,77 @@ def test_on_compiler(compiler_index, starting_case, compiler_path, build_dir_nam
             names_and_features[vec_name] = \
                 {k: v for k, v in feature_map.items() if not evaluate_expression(k, full_variable_assignments)}
 
-        count += 1
+    # Create list of booleans based on test mask
+    format_string = '#0' + str(2 + len(expression_solutions)) + 'b'
+    test_enabled_list = test_enabled_list = [b == '0' for b in format(parameters['test_mask'], format_string)[2:][::-1]]
 
-    return False
+    # Launch a thread for each test case that is enabled
+    global test_exit_codes
+    test_exit_codes = [False] * len(expression_solutions)
+
+    global test_run_infos
+    test_run_infos = [None] * len(expression_solutions)
+
+    # Enqueue test cases into work queue
+    for params, test_enabled in zip(run_test_parameters, test_enabled_list):
+        if test_enabled:
+            work_queue.append(params)
+    
+    # Compute number of threads to run in parallel
+    memory_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
+    memory_gigs = memory_bytes / (1024 * 1024 * 1024)
+
+    # 2 gigs for OS, 3 gigs for test at peak. Values derived empirically from Ubuntu 22.10 machine
+    thread_count = min(int(ceil((memory_gigs - 2) / 3)), cpu_count())
+
+    # Print Debug info
+    print(
+        'Testing script: Running {} tests on {}/{} threads on machine with {}GiB of memory'.format(
+            len(work_queue),
+            thread_count,
+            cpu_count(),
+            memory_gigs)
+    )
+
+    # Launch workers threads
+    threads = []
+    for i in range(0, thread_count):
+        th = Thread(target=thread_worker, args=[])
+        threads.append(th)
+        th.start()
+
+    # Wait for threads to complete their work
+    for th in threads:
+        th.join()
+
+    # Print results of tests if any failed
+    print('Testing script:')
+    for result, run_infos in zip(test_exit_codes, test_run_infos):
+        if result:
+            continue
+
+        print('Testing failed for:')
+        print('Compiler:', compiler_path)
+        print('Compiler flags: ', run_infos[0])
+        print('CMake variables: ', run_infos[1])
+        print('CMake command: ', run_infos[2])
+        print('Make command: ', run_infos[3])
+        print('run command: ', run_infos[4])
+        print()
+
+    is_run_successful = all(test_exit_codes)
+    success_string = reduce(lambda byte, bit: byte*2 + bit, test_exit_codes, 0)
+
+    return is_run_successful, success_string
 
 
 def parse_command_line_arguments(arguments):
+    """
+    Populates the global parameters map with the contents
+
+    :param arguments: List of strings containing command line arguments passed to script
+    :return: dictionary associating recognized parameters to values specified at command line
+    """
     results = {}
     for argument in arguments:
         if argument.startswith('-A'):
@@ -464,9 +527,9 @@ def parse_command_line_arguments(arguments):
             results['launcher'] = tail
             continue
 
-        if argument.startswith('-C'):
-            tail = argument.lstrip('-C')
-            results['case'] = tail
+        if argument.startswith('-T'):
+            tail = argument.lstrip('-T')
+            results['test_start'] = tail
             continue
 
         print('Unrecognized parameter: ', argument)
@@ -476,20 +539,18 @@ def parse_command_line_arguments(arguments):
     parameters = results
 
 
-def main():
-    parse_command_line_arguments(sys.argv[1:])
-
+def validate_command_line_arguments():
+    # Handle case where script is invoked with no recognized parameters
     if not parameters:
-        print("Recognized parameters:")
-        print("  -A    (Required) The target architecture to run tests on. Should be either \'x86\' or \'arm\'")
-        print("  -L    (Optional) Command which is invoked to run executable. If this parameter contains \'<exec>\' t"
-              "en it will be replaced with the path of the test executable. Otherwise, the path of test executable "
-              "will be appended to the end of this parameter. If this parameter is not specified, the test executable "
-              "is invoked directly.")
-        print("  -C    (Optional) The test case to start from. Should be a pair of integer values seperated by a colon."
-              " Values are printed out when the test script runs into issues. This parameter allows tests which have "
-              "passed in previous runs to be skipped. If this parameter is not specified, result is equivalent to "
-              "\'0:0\'.")
+        print('Recognized parameters:')
+        print('  -A    (Required) The target architecture to run tests on. Should be either \'x86\' or \'arm\'')
+        print('  -L    (Optional) Command which is invoked to run executable. If this parameter contains \'<exec>\' t'
+              'en it will be replaced with the path of the test executable. Otherwise, the path of test executable '
+              'will be appended to the end of this parameter. If this parameter is not specified, the test executable '
+              'is invoked directly.')
+        print('  -T   (Optional) A pair of hexadecimal strings seperated by a color. Indicate which tests have '
+              'previously passed, allowing the script to avoid rerunning tests that have completed in previous runs. '
+              'The script will print out this value upon completion if any tests failed.')
 
         exit(1)
 
@@ -507,64 +568,62 @@ def main():
         print('Unrecognized architecture: ', parameters['arch'])
         exit(1)
 
-    # Identify test case
-    starting_compiler_index = 0
-    starting_test_case_index = 0
+    if 'test_start' in parameters:
+        delimited = parameters['test_start'].split(':')
+        if len(delimited) != 2:
+            print('Expect exactly one colon in parameter -T:{}'.format(parameters['test_start']))
 
-    if 'case' in parameters:
-        case = parameters['case']
-        colon_index = case.find(':')
-        if colon_index == -1:
-            print('Test case parameter should be two integers delimited by a \':\'')
-            exit(1)
-
-        compiler_index_string = case[0:colon_index]
-        test_case_index_string = case[colon_index + 1:]
+        starting_compiler_index_str, test_mask_str = delimited
 
         try:
-            starting_compiler_index = int(compiler_index_string)
+            starting_compiler_index = int(starting_compiler_index_str, 16)
+            parameters['starting_compiler_index'] = starting_compiler_index
+
         except ValueError:
-            print('Test case parameter should be two integers delimited by a \':\'')
+            print('-{} could not be parsed as a hexadecimal string'.format(starting_compiler_index_str))
             exit(1)
 
         try:
-            starting_test_case_index = int(test_case_index_string)
-        except ValueError:
-            print('Test case parameter should be two integers delimited by a \':\'')
-            exit(1)
+            test_mask = int(test_mask_str, 16)
+            parameters['test_mask'] = test_mask
 
-    # Unroll feature implications
-    for key in target_features:
-        implications = target_features[key][1]
-        for implication in implications:
-            implied_features = target_features[implication][1]
-            target_features[key][1] += implied_features
+        except ValueError:
+            print('{} could not be parsed as a hexadecimal string'.format(test_mask_str))
+            exit(1)
+    else:
+        parameters['starting_compiler_index'] = 0
+        parameters['test_mask'] = 0
+
+
+def main():
+    parse_command_line_arguments(sys.argv[1:])
+    validate_command_line_arguments()
+
+    unroll_feature_implications()
 
     # Identify features used by vector implementations
-    names_and_features = identify_vector_features()
+    vector_names_and_required_features = identify_vector_features()
 
     # Run tests
     for (compiler_index, compiler) in enumerate(compilers):
-        if compiler_index < starting_compiler_index:
+        if compiler_index < parameters['starting_compiler_index']:
             continue
 
         (compiler_path, build_directory) = compiler
 
-        test_case_index = starting_test_case_index if compiler_index == compiler_index else 0
-
-        failed = test_on_compiler(
-            compiler_index,
-            test_case_index,
+        success, success_string = test_on_compiler(
             compiler_path,
             build_directory,
-            copy.deepcopy(names_and_features)
+            copy.deepcopy(vector_names_and_required_features)
         )
 
-        if failed:
-            print("\nTesting script: Tests failed")
+        if not success:
+            print()
+            print('Testing script: Tests failed')
+            print('Run again with 0x{:x}:0x{:x} to skip tests that have already passed'.format(compiler_index, success_string))
             exit(1)
 
-    print("\nTesting script: All tests passed")
+    print('\nTesting script: All tests passed')
 
 
 if __name__ == '__main__':
