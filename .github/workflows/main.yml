@@ -5,18 +5,15 @@ jobs:
   AVEL-x86-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Intel SDE
-        run: wget https://downloadmirror.intel.com/777395/sde-external-9.21.1-2023-04-24-lin.tar.xz &&
-             tar -xf sde-external-9.21.1-2023-04-24-lin.tar.xz &&
-             SDE_PATH="./sde-external-9.21.1-2023-04-24-lin/sde64"
       - name: Check out repository code
         uses: actions/checkout@v3
+      - name: Set up Intel SDE
+        run: wget https://downloadmirror.intel.com/777395/sde-external-9.21.1-2023-04-24-lin.tar.xz &&
+             tar -xf sde-external-9.21.1-2023-04-24-lin.tar.xz
       - name: Install gtest manually
         run: sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make && sudo cp lib/*.a /usr/lib && sudo ln -s /usr/lib/libgtest.a /usr/local/lib/libgtest.a && sudo ln -s /usr/lib/libgtest_main.a /usr/local/lib/libgtest_main.a
-      - name: Debug info
-        run: ls -la
       - name: Run AVEL test script
-        run: python3 run_avel_tests.py -A"x86" -L"${SDE_PATH} -- <exec>"
+        run: python3 run_avel_tests.py -A"x86" -L"./sde-external-9.21.1-2023-04-24-lin/sde64 -icl -- <exec>"
 
 #  AVEL-ARM-tests:
 #    runs-on: ubuntu-latest
