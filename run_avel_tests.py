@@ -7,9 +7,9 @@ Identifies CPU feature combinations used within the avel/impl/vector folder and
 only enables the relevant tests to cut down on testing times
 
 Example usages:
-Run all tests for x86 CPUs: run_avel_tests.py -A"x86"
-Run all tests for ARM CPUs: run_avel_tests.py -A"x86"
-Run all tests for x86 CPUs using Intel SDE as launcher: run_avel_tests -A"x86" -L"sde64 -- <exec>"
+Run all tests for x86 CPUs: run_avel_tests.py -A"x86" -C"/usr/bin/g++-9"
+Run all tests for ARM CPUs: run_avel_tests.py -A"arm" -C"/usr/bin/g++-9"
+Run all tests for x86 CPUs using Intel SDE: run_avel_tests -A"x86" -C"/usr/bin/g++-9" -L"sde64 -- <exec>"
 
 """
 
@@ -263,7 +263,7 @@ def identify_vector_features():
     return names_and_features
 
 
-def run_test(compiler_path, build_dir_name, feature_assignments, test_groups, test_index):
+def run_test_case(compiler_path, build_dir_name, feature_assignments, test_groups, test_index):
     flags = '-w -std=c++11'
     cmake_variables = ''
 
@@ -295,14 +295,16 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups, te
         '-DCMAKE_CXX_FLAGS="{}"'
     cmake_command = cmake_command_format_string.format(build_path, compiler_path, cmake_variables, flags)
 
-    exit_code = os.system(cmake_command)
-    if exit_code != 0:
-        return
-
     run_info = [None, None, None, None, None]
+    test_run_infos[test_index] = run_info
+
     run_info[0] = flags
     run_info[1] = cmake_variables
     run_info[2] = cmake_command
+
+    exit_code = os.system(cmake_command)
+    if exit_code != 0:
+        return
 
     make_command = 'make AVEL_TESTS -C ./test_build_dirs/{}'.format(build_dir_name)
     run_info[3] = make_command
@@ -329,7 +331,6 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups, te
     shutil.rmtree(build_path)
 
     test_exit_codes[test_index] = True
-    test_run_infos[test_index] = run_info
 
 
 def substitute_compiler_macros(compiler_macro, names_and_features):
@@ -380,7 +381,7 @@ def thread_worker():
         task = work_queue.pop(0)
         work_queue_lock.release()
 
-        run_test(*task)
+        run_test_case(*task)
 
 
 def test_on_compiler(compiler_path, build_dir_name, names_and_features):
@@ -447,7 +448,7 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
 
     # Create list of booleans based on test mask
     format_string = '#0' + str(2 + len(expression_solutions)) + 'b'
-    test_enabled_list = test_enabled_list = [b == '0' for b in format(parameters['test_mask'], format_string)[2:][::-1]]
+    test_enabled_list = [b == '0' for b in format(parameters['test_mask'], format_string)[2:][::-1]]
 
     # Launch a thread for each test case that is enabled
     global test_exit_codes
