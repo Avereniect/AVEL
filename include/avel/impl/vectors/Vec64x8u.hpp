@@ -1555,10 +1555,7 @@ namespace avel {
     AVEL_FINL vec64x8u countr_one(vec64x8u v) {
         //TODO: Consider leveraging tzcnt
         //TODO: Consider leveraging conversion to fp16
-        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
-        //TODO: Implement
-
-        #elif defined(AVEL_AVX512BW)
+        #if defined(AVEL_AVX512BW)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             0, 1, 0, 2,
             0, 1, 0, 3,

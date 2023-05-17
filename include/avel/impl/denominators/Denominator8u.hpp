@@ -6,7 +6,7 @@ namespace avel {
     using Denom8u = Denominator<std::uint8_t>;
 
     template<>
-    class alignas(4) Denominator<std::uint8_t> {
+    class Denominator<std::uint8_t> {
     public:
 
         template<class U>

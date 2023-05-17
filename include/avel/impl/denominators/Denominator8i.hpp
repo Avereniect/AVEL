@@ -6,7 +6,7 @@ namespace avel {
     using Denom8i = Denominator<std::int8_t>;
 
     template<>
-    class alignas(4) Denominator<std::int8_t> {
+    class Denominator<std::int8_t> {
     public:
 
         template<class U>
@@ -23,7 +23,7 @@ namespace avel {
         //=================================================
 
         explicit Denominator(std::int8_t d):
-            Denominator(d, max(8 - countl_zero(std::int8_t(abs(d) - 1)), 1)) {}
+            Denominator(d, max(bit_width(std::int8_t(abs(d) - 1)), std::int8_t(1))) {}
 
     private:
 

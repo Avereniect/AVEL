@@ -6,7 +6,7 @@ namespace avel {
     using Denom64i = Denominator<std::int64_t>;
 
     template<>
-    class alignas(32) Denominator<std::int64_t> {
+    class Denominator<std::int64_t> {
     public:
 
         template<class U>
@@ -23,7 +23,7 @@ namespace avel {
         //=================================================
 
         explicit Denominator(std::int64_t d):
-            Denominator(d, max(64 - countl_zero(abs(d) - 1l), 1l)) {}
+            Denominator(d, max(bit_width(abs(d) - 1l), std::int64_t(1))) {}
 
     private:
 

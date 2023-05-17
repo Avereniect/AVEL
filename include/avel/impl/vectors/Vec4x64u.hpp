@@ -858,7 +858,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x64u byteswap(vec4x64u v) {
         #if defined(AVEL_AVX2)
-        alignas(16) static constexpr std::uint8_t index_data[32] {
+        alignas(32) static constexpr std::uint8_t index_data[32] {
              7,  6,  5,  4,
              3,  2,  1,  0,
             15, 14, 13, 12,
