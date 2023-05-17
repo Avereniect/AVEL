@@ -377,7 +377,7 @@ def thread_worker():
             work_queue_lock.release()
             return
 
-        task = work_queue.pop()
+        task = work_queue.pop(0)
         work_queue_lock.release()
 
         run_test(*task)
@@ -492,7 +492,7 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
     # Print results of tests if any failed
     print('Testing script:')
     for result, run_infos in zip(test_exit_codes, test_run_infos):
-        if result or not test_run_infos:
+        if result or not run_infos:
             continue
 
         print('Testing failed for:')
