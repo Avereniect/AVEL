@@ -281,7 +281,7 @@ corresponding operations on `T` with some notable exceptions:
 ## Usage Examples
 
 ### Populating Vectors
-```
+```c++
 #define AVEL_AUTO_DETECT
 #include <avel/Vectors.hpp>
 
