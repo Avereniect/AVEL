@@ -6,7 +6,7 @@ namespace avel {
     using Denom32u = Denominator<std::uint32_t>;
 
     template<>
-    class alignas(16) Denominator<std::uint32_t> {
+    class Denominator<std::uint32_t> {
     public:
 
         template<class U>

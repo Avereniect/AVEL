@@ -6,7 +6,7 @@ namespace avel {
     using Denom32i = Denominator<std::int32_t>;
 
     template<>
-    class alignas(16) Denominator<std::int32_t> {
+    class Denominator<std::int32_t> {
     public:
 
         template<class U>
@@ -23,7 +23,7 @@ namespace avel {
         //=================================================
 
         explicit Denominator(std::int32_t d):
-            Denominator(d, max(32 - countl_zero(abs(d) - 1), 1)) {}
+            Denominator(d, max(bit_width(abs(d) - 1), std::int32_t(1))) {}
 
     private:
 

@@ -6,7 +6,7 @@ namespace avel {
     using Denom64u = Denominator<std::uint64_t>;
 
     template<>
-    class alignas(32) Denominator<std::uint64_t> {
+    class Denominator<std::uint64_t> {
     public:
 
         template<class U>
