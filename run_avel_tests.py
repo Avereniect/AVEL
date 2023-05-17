@@ -1,4 +1,5 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
+
 """
 Testing script which is used to run AVEL's tests.
 
@@ -9,7 +10,6 @@ Example usages:
 Run all tests for x86 CPUs: run_avel_tests.py -A"x86"
 Run all tests for ARM CPUs: run_avel_tests.py -A"x86"
 Run all tests for x86 CPUs using Intel SDE as launcher: run_avel_tests -A"x86" -L"sde64 -- <exec>"
-Run tests for x86 CPU's, starting on the second compiler, on the third case: run_avel_tests -A"x86" -C"1:2"
 
 """
 
@@ -18,26 +18,12 @@ import sys
 import shutil
 import re
 import copy
+
 from math import ceil
 from multiprocessing import cpu_count
 from threading import Thread, Lock
 from itertools import product
 from functools import reduce
-
-"""
-Path to compilers and names used for their build directories
-"""
-compilers = [
-    # ['/usr/bin/g++-12', 'gnu-12'],
-    # ['/usr/bin/g++-11', 'gnu-11'],
-    # ['/usr/bin/g++-10', 'gnu-10'],
-    ['/usr/bin/g++-9',  'gnu-9'],
-    # ['/usr/bin/clang++-14', 'clang-14'],
-    # ['/usr/bin/clang++-13', 'clang-13'],
-    # ['/usr/bin/clang++-12', 'clang-12'],
-    # ['/usr/bin/clang++-11', 'clang-11'],
-    # ['/opt/intel/oneapi/compiler/2023.0.0/linux/bin/icpx', 'icpx-2023.0.0']
-]
 
 """
 Map associating feature macros with their directly implied features, according to AVEL
@@ -79,6 +65,9 @@ features_arm = {
 
 target_features = features_x86
 
+"""
+List of AVEL's compiler macros
+"""
 compiler_macros = [
     'AVEL_GCC',
     'AVEL_CLANG',
@@ -89,6 +78,21 @@ compiler_macros = [
 Dictionary containing command line parameters
 """
 parameters = {}
+
+"""
+Path to compilers and names used for their build directories
+"""
+compilers = []
+
+"""
+List that is used to store status codes produced by test cases after running
+"""
+test_exit_codes = []
+
+"""
+List that is used to store information about tests cases to print out in case of failure
+"""
+test_run_infos = []
 
 
 def unroll_feature_implications():
@@ -119,7 +123,7 @@ def compiler_path_to_macro(compiler_path):
     elif 'icpx' in compiler_path:
         return 'AVEL_ICPX'
     else:
-        print('Unrecognized compiler name')
+        print('Compiler not recognized as g++, clang++, or icpx.')
         exit(1)
 
 
@@ -259,10 +263,6 @@ def identify_vector_features():
     return names_and_features
 
 
-test_exit_codes = []
-test_run_infos = []
-
-
 def run_test(compiler_path, build_dir_name, feature_assignments, test_groups, test_index):
     flags = '-w -std=c++11'
     cmake_variables = ''
@@ -315,7 +315,8 @@ def run_test(compiler_path, build_dir_name, feature_assignments, test_groups, te
     if 'launcher' not in parameters or parameters['launcher'] == '':
         run_command = './test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name)
     elif '<exec>' in parameters['launcher']:
-        run_command = parameters['launcher'].replace('<exec>', './test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name))
+        run_command = parameters['launcher'].replace('<exec>',
+                                                     './test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name))
     else:
         run_command = parameters['launcher'] + ' ./test_build_dirs/{}/tests/AVEL_TESTS'.format(build_dir_name)
 
@@ -459,7 +460,7 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
     for params, test_enabled in zip(run_test_parameters, test_enabled_list):
         if test_enabled:
             work_queue.append(params)
-    
+
     # Compute number of threads to run in parallel
     memory_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
     memory_gigs = memory_bytes / (1024 * 1024 * 1024)
@@ -469,11 +470,12 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
 
     # Print Debug info
     print(
-        'Testing script: Running {} tests on {}/{} threads on machine with {}GiB of memory'.format(
+        'Testing script: Running {} tests on {}/{} threads on machine with {:.3f}GiB of memory'.format(
             len(work_queue),
             thread_count,
             cpu_count(),
-            memory_gigs)
+            memory_gigs),
+        flush=True
     )
 
     # Launch workers threads
@@ -490,7 +492,7 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
     # Print results of tests if any failed
     print('Testing script:')
     for result, run_infos in zip(test_exit_codes, test_run_infos):
-        if result:
+        if result or not test_run_infos:
             continue
 
         print('Testing failed for:')
@@ -503,7 +505,7 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
         print()
 
     is_run_successful = all(test_exit_codes)
-    success_string = reduce(lambda byte, bit: byte*2 + bit, test_exit_codes, 0)
+    success_string = reduce(lambda byte, bit: byte * 2 + bit, test_exit_codes, 0)
 
     return is_run_successful, success_string
 
@@ -532,6 +534,11 @@ def parse_command_line_arguments(arguments):
             results['test_start'] = tail
             continue
 
+        if argument.startswith('-C'):
+            tail = argument.lstrip('-C')
+            results['compiler_list_str'] = tail
+            continue
+
         print('Unrecognized parameter: ', argument)
         exit(1)
 
@@ -544,6 +551,7 @@ def validate_command_line_arguments():
     if not parameters:
         print('Recognized parameters:')
         print('  -A    (Required) The target architecture to run tests on. Should be either \'x86\' or \'arm\'')
+        print('  -C    (Required) A colon-delimited list of paths to compilers to run the tests with.')
         print('  -L    (Optional) Command which is invoked to run executable. If this parameter contains \'<exec>\' t'
               'en it will be replaced with the path of the test executable. Otherwise, the path of test executable '
               'will be appended to the end of this parameter. If this parameter is not specified, the test executable '
@@ -554,6 +562,7 @@ def validate_command_line_arguments():
 
         exit(1)
 
+    # Handle arch argument
     if 'arch' not in parameters:
         print('Target architecture not specified!')
         print('Specify the -A parameter to be either \'x86\' or \'arm\'')
@@ -568,10 +577,23 @@ def validate_command_line_arguments():
         print('Unrecognized architecture: ', parameters['arch'])
         exit(1)
 
+    # Handle compiler paths argument
+    if 'compiler_list_str' not in parameters:
+        print('No compiler specified')
+        exit(1)
+
+    global compilers
+    compilers = []
+
+    compiler_paths = parameters['compiler_list_str'].split(':')
+    for compiler_path in compiler_paths:
+        compilers.append([compiler_path, str(hash(compiler_path))])
+
+    # Handle test start argument
     if 'test_start' in parameters:
         delimited = parameters['test_start'].split(':')
         if len(delimited) != 2:
-            print('Expect exactly one colon in parameter -T:{}'.format(parameters['test_start']))
+            print('Expected exactly one colon in parameter -T:{}'.format(parameters['test_start']))
 
         starting_compiler_index_str, test_mask_str = delimited
 
@@ -620,7 +642,11 @@ def main():
         if not success:
             print()
             print('Testing script: Tests failed')
-            print('Run again with 0x{:x}:0x{:x} to skip tests that have already passed'.format(compiler_index, success_string))
+            print('Run again with 0x{:x}:0x{:x} to skip tests that have already passed'.format(
+                compiler_index,
+                success_string
+            ))
+
             exit(1)
 
     print('\nTesting script: All tests passed')
