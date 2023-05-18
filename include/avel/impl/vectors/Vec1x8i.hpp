@@ -368,7 +368,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator<<=(long long rhs) {
-            content = (rhs >= 8) ? 0x00 : (content << rhs);
+            content = (rhs >= 8) ? 0x00 : (std::uint8_t(content) << rhs);
             return *this;
         }
 
@@ -378,7 +378,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator<<=(Vector rhs) {
-            content = (decay(rhs) >= 8) ? 0x00 : (content << decay(rhs));
+            content = (decay(rhs) >= 8) ? 0x00 : (std::uint32_t(content) << decay(rhs));
             return *this;
         }
 

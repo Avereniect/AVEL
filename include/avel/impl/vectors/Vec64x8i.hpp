@@ -376,25 +376,21 @@ namespace avel {
             #endif
             return *this;
         }
-
         AVEL_FINL Vector& operator*=(Vector rhs) {
             #if defined(AVEL_AVX512BW)
             auto even_mask = _mm512_set1_epi16(0x00FF);
 
-            auto even_product = _mm512_and_si512(even_mask, _mm512_mullo_epi16(content, decay(rhs)));
-            auto odd_product  = _mm512_slli_epi16(
-                _mm512_mullo_epi16(
-                    _mm512_srli_epi16(content, 0x8),
-                    _mm512_srli_epi16(decay(rhs), 0x8)
-                ),
-                0x8
+            auto products_even = _mm512_and_si512(even_mask, _mm512_mullo_epi16(content, decay(rhs)));
+            auto products_odd  = _mm512_mullo_epi16(
+                _mm512_srli_epi16(content, 8),
+                _mm512_andnot_si512(even_mask, decay(rhs))
             );
 
-            auto product = _mm512_or_si512(even_product, odd_product);
-            content = product;
+            auto products = _mm512_or_si512(products_even, products_odd);
+            content = products;
+
             //TODO: Explicitly use vpternlogd
             #endif
-
             return *this;
         }
 
@@ -924,8 +920,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec64x8i> div(vec64x8i x, vec64x8i y) {
-        mask64x8i remainder_sign_mask = (x < vec64x8i{0x00});
-        mask64x8i quotient_sign_mask = remainder_sign_mask ^ (y < vec64x8i{0x00});
+        mask64x8i remainder_sign_mask{_mm512_movepi8_mask(decay(x))};
+        mask64x8i quotient_sign_mask = remainder_sign_mask ^ mask64x8i{_mm512_movepi8_mask(decay(y))};
 
         vec64x8u numerator{abs(x)};
         vec64x8u denominator{abs(y)};

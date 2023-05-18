@@ -6,7 +6,7 @@ namespace avel {
     using Denom2x64u = Denominator<vec2x64u>;
 
     template<>
-    class alignas(64) Denominator<vec2x64u> {
+    class Denominator<vec2x64u> {
     public:
 
         template<class U>
@@ -24,7 +24,6 @@ namespace avel {
 
         explicit Denominator(Denom64u denom):
             m(denom.m),
-            sh1(denom.sh1),
             sh2(denom.sh2),
             d(denom.d) {}
 
@@ -138,7 +137,6 @@ namespace avel {
 
         static vec2x64u compute_m(vec2x64u l, vec2x64u d) {
             #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX)
-            //TODO: Use conversion functions once implemented instead
             __uint128_t l_lo = extract<0>(l);
             __uint128_t l_hi = extract<1>(l);
 

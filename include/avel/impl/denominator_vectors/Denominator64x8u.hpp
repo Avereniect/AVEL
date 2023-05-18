@@ -2,13 +2,13 @@
 #define AVEL_DENOMINATOR64X8U_HPP
 
 namespace avel {
-    
+
     using Denom64x8u = Denominator<vec64x8u>;
-    
+
     template<>
-    class alignas(64) Denominator<vec64x8u> {
+    class  Denominator<vec64x8u> {
     public:
-        
+
         template<class U>
         friend class Denominator;
 
@@ -24,7 +24,6 @@ namespace avel {
 
         explicit Denominator(Denom8u denom):
             m(denom.m),
-            sh1(denom.sh1),
             sh2(denom.sh2),
             d(denom.d) {}
 

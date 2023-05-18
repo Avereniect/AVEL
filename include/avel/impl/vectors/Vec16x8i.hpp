@@ -565,39 +565,34 @@ namespace avel {
             auto c = _mm256_mullo_epi16(a, b);
             content = _mm256_cvtepi16_epi8(c);
 
-            #elif defined(AVEL_AVX2)
-            auto lhs_whole = _mm256_cvtepu8_epi16(content);
-            auto rhs_whole = _mm256_cvtepu8_epi16(rhs.content);
+            #elif defined(AVEL_SSE41)
+            auto even_mask = _mm_set1_epi16(0x00FF);
 
-            auto mask = _mm256_set1_epi16(0x00FF);
-            auto product = _mm256_mullo_epi16(lhs_whole, rhs_whole);
-            auto masked = _mm256_and_si256(product, mask);
-
-
-            auto packed = _mm256_packus_epi16(
-                masked,
-                _mm256_permute2x128_si256(masked, masked, 0xF1)
+            auto products_even = _mm_mullo_epi16(content, decay(rhs));
+            auto products_odd  = _mm_mullo_epi16(
+                _mm_srli_epi16(content, 8),
+                _mm_andnot_si128(even_mask, decay(rhs))
             );
 
-            content = _mm256_castsi256_si128(packed);
+            auto products = _mm_blendv_epi8(products_odd, products_even, even_mask);
+            content = products;
 
             #elif defined(AVEL_SSE2)
             auto even_mask = _mm_set1_epi16(0x00FF);
 
-            auto product_even = _mm_mullo_epi16(content, decay(rhs));
-            auto product_even_masked = _mm_and_si128(even_mask, product_even);
+            auto products_even = _mm_and_si128(even_mask, _mm_mullo_epi16(content, decay(rhs)));
+            auto products_odd  = _mm_mullo_epi16(
+                _mm_srli_epi16(content, 8),
+                _mm_andnot_si128(even_mask, decay(rhs))
+            );
 
-            auto lhs_shifted = _mm_srli_epi16(content, 8);
-            auto rhs_masked = _mm_andnot_si128(even_mask, decay(rhs));
-            auto product_odd = _mm_mullo_epi16(lhs_shifted, rhs_masked);
-
-            auto result = _mm_or_si128(product_even_masked, product_odd);
-            content = result;
+            auto products = _mm_or_si128(products_odd, products_even);
+            content = products;
 
             #endif
 
             #if defined(AVEL_NEON)
-            content = vmulq_s8(content, decay(rhs));
+            content = vmulq_u8(content, decay(rhs));
 
             #endif
             return *this;

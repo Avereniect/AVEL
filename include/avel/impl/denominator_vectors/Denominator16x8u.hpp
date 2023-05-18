@@ -6,7 +6,7 @@ namespace avel {
     using Denom16x8u = Denominator<vec16x8u>;
     
     template<>
-    class alignas(64) Denominator<vec16x8u> {
+    class Denominator<vec16x8u> {
     public:
         
         template<class U>
@@ -24,7 +24,6 @@ namespace avel {
 
         explicit Denominator(Denom8u denom):
             m(denom.m),
-            sh1(denom.sh1),
             sh2(denom.sh2),
             d(denom.d) {}
 
