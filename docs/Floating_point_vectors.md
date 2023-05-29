@@ -188,8 +188,8 @@
 
 ### CMath Functions
 #### General Floating-Point Operations
-* `vector fmin(vector a, vector b)`
 * `vector fmax(vector a, vector b)`
+* `vector fmin(vector a, vector b)`
 
 #### Rounding Operations
 * `vector ceil(vector v)`
@@ -207,16 +207,13 @@
   * for each lane, returns a normalized fraction and write the exponent of `num` into `exp`
 
 * `vector ldexp(vector num, ivector exp)`
-  * for each lane, returns 
-
-* `vector modf(vector v, vector* iptr)`
-  * a
+  * for each lane, returns
 
 * `vector scalbn(vector v, ivector num)`
   * a
 
-* `ivector ilogb(vector v)`
-  * a
+  * `ivector ilogb(vector v)`
+    * a
 
 * `vector logb(vector v)`
   * a
