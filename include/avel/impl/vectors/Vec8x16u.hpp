@@ -363,14 +363,46 @@ namespace avel {
         #endif
     }
 
-    //=====================================================
-    // Mask conversions
-    //=====================================================
+    template<std::uint32_t N>
+    AVEL_FINL bool extract(mask8x16u m) {
+        static_assert(N < mask8x16u::width, "Specified index does not exist");
+        typename std::enable_if<N < mask8x16u::width, int>::type dummy_variable = 0;
 
-    template<>
-    [[nodiscard]]
-    AVEL_FINL std::array<mask8x16u, 1> convert<mask8x16u, mask8x16u>(mask8x16u m) {
-        return {m};
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        return decay(m) & (1 << N);
+
+        #elif defined(AVEL_SSE2)
+        auto mask = _mm_movemask_epi8(decay(m));
+        return mask & (1 << (N * 2));
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
+        #endif
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL mask8x16u insert(mask8x16u v, bool b) {
+        static_assert(N < mask8x16u::width, "Specified index does not exist");
+        typename std::enable_if<N < mask8x16u::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        std::uint8_t bits = decay(v);
+        bits &= ~(1 << N);
+        bits |= b << N;
+        return mask8x16u{bits};
+
+        #elif defined(AVEL_SSE2)
+        std::int16_t x = b ? -1 : 0;
+        auto ret = _mm_insert_epi16(decay(v), x, N);
+        return mask8x16u{ret};
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
+        #endif
     }
 
 

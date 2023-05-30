@@ -307,6 +307,22 @@ namespace avel {
         return none(mask4x32u{m});
     }
 
+    template<std::uint32_t N>
+    AVEL_FINL bool extract(mask4x32i m) {
+        static_assert(N < mask4x32i::width, "Specified index does not exist");
+        typename std::enable_if<N < mask4x32i::width, int>::type dummy_variable = 0;
+
+        return extract<N>(mask4x32u{m});
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL mask4x32i insert(mask4x32i v, bool b) {
+        static_assert(N < mask4x32i::width, "Specified index does not exist");
+        typename std::enable_if<N < mask4x32i::width, int>::type dummy_variable = 0;
+
+        return mask4x32i{insert<N>(mask4x32u{v}, b)};
+    }
+
 
 
 

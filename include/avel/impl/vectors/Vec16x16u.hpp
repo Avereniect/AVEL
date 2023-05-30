@@ -257,6 +257,40 @@ namespace avel {
         #endif
     }
 
+    template<std::uint32_t N>
+    AVEL_FINL bool extract(mask16x16u m) {
+        static_assert(N < mask16x16u::width, "Specified index does not exist");
+        typename std::enable_if<N < mask16x16u::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        return decay(m) & (1 << N);
+
+        #elif defined(AVEL_AVX2)
+        auto mask = _mm256_movemask_epi8(decay(m));
+        return mask & (1 << (N * 8));
+
+        #endif
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL mask16x16u insert(mask16x16u v, bool b) {
+        static_assert(N < mask16x16u::width, "Specified index does not exist");
+        typename std::enable_if<N < mask16x16u::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        std::uint16_t bits = decay(v);
+        bits &= ~(1 << N);
+        bits |= b << N;
+        return mask16x16u{bits};
+
+        #elif defined(AVEL_AVX2)
+        return mask16x16u{_mm256_insert_epi16(decay(v), b ? -1 : 0, N)};
+
+        #endif
+    }
+
+
+
 
 
 

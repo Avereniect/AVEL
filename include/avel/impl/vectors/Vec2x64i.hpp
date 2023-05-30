@@ -308,12 +308,28 @@ namespace avel {
         return none(mask2x64u{m});
     }
 
+    template<std::uint32_t N>
+    AVEL_FINL bool extract(mask2x64i m) {
+        static_assert(N < mask2x64i::width, "Specified index does not exist");
+        typename std::enable_if<N < mask2x64i::width, int>::type dummy_variable = 0;
+
+        return extract<N>(mask2x64u{m});
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL mask2x64i insert(mask2x64i v, bool b) {
+        static_assert(N < mask2x64i::width, "Specified index does not exist");
+        typename std::enable_if<N < mask2x64i::width, int>::type dummy_variable = 0;
+
+        return mask2x64i{insert<N>(mask2x64u{v}, b)};
+    }
+
 
 
 
 
     template<>
-    class alignas(16) Vector<std::int64_t, 2> {
+    class Vector<std::int64_t, 2> {
     public:
 
         //=================================================

@@ -79,6 +79,15 @@
 * `bool none(mask m)`
   * return true if all lane in `m` are set to false
 
+* `template<std::uint32_t N>`
+  `bool extract(mask v)`
+  * returns the contents of the `N`th lane of the vector `v`
+
+* `template<std::uint32_t N`
+  `mask insert(mask v, bool b)`
+  * replace the contents of the `N`th lane with `b` in the vector `b`
+  * the contents of all other lanes are left untouched
+
 ## Vector Classes:
 * associated type alias `vecNxT = avel::Vector<scalar, width>`
 * associated type alias `arrNxT = std::array<scalar, width>`

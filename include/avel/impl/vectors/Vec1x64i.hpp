@@ -182,6 +182,22 @@ namespace avel {
         return none(mask1x64u{m});
     }
 
+    template<std::uint32_t N>
+    AVEL_FINL bool extract(mask1x64i m) {
+        static_assert(N < 1, "Specified index does not exist");
+        typename std::enable_if<N < 1, int>::type dummy_variable = 0;
+
+        return decay(m);
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL mask1x64i insert(mask1x64i v, bool b) {
+        static_assert(N < 1, "Specified index does not exist");
+        typename std::enable_if<N < 1, int>::type dummy_variable = 0;
+
+        return mask1x64i{b};
+    }
+
 
 
 
@@ -732,16 +748,16 @@ namespace avel {
 
     template<std::uint32_t N>
     AVEL_FINL std::int64_t extract(vec1x64i v) {
-        static_assert(N <= 1, "Specified index does not exist");
-        typename std::enable_if<N <= 1, int>::type dummy_variable = 0;
+        static_assert(N < 1, "Specified index does not exist");
+        typename std::enable_if<N < 1, int>::type dummy_variable = 0;
 
         return decay(v);
     }
 
     template<std::uint32_t N>
     AVEL_FINL vec1x64i insert(vec1x64i v, std::int64_t x) {
-        static_assert(N <= 1, "Specified index does not exist");
-        typename std::enable_if<N <= 1, int>::type dummy_variable = 0;
+        static_assert(N < 1, "Specified index does not exist");
+        typename std::enable_if<N < 1, int>::type dummy_variable = 0;
 
         return vec1x64i{x};
     }

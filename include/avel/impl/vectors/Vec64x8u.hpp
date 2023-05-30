@@ -200,6 +200,29 @@ namespace avel {
         #endif
     }
 
+    template<std::uint32_t N>
+    AVEL_FINL bool extract(mask64x8u m) {
+        static_assert(N < mask64x8u::width, "Specified index does not exist");
+        typename std::enable_if<N < mask64x8u::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512BW)
+        return decay(m) & (std::uint64_t{1} << N);
+        #endif
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL mask64x8u insert(mask64x8u v, bool b) {
+        static_assert(N < mask64x8u::width, "Specified index does not exist");
+        typename std::enable_if<N < mask64x8u::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512BW)
+        std::uint64_t bits = decay(v);
+        bits &= ~(std::uint64_t(1) << N);
+        bits |= b << N;
+        return mask64x8u{__mmask64(bits)};
+        #endif
+    }
+
 
 
 
