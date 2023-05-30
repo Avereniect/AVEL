@@ -1,6 +1,13 @@
 name: AVEL Tests
 run-name: ${{ github.actor }} is running AVEL's tests
-on: [push]
+on:
+  push:
+    paths:
+      - 'tests/**'
+      - 'include/**'
+      - '.github/workflows/**'
+      - 'run_avel_tests.py'
+      - 'CMakeLists.txt'
 jobs:
   AVEL-x86-tests-GCC-9:
     runs-on: ubuntu-latest
