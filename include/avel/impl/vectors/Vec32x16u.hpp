@@ -774,7 +774,7 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec32x16u load<vec32x16u>(const std::uint16_t* ptr, std::uint32_t n) {
-        auto mask = (n >= 32) ? std::uint32_t(-1) : (1 << n) - 1;
+        auto mask = (n >= 32) ? std::uint32_t(-1) : (std::uint32_t(1) << n) - 1;
         return vec32x16u{_mm512_maskz_loadu_epi16(mask, ptr)};
     }
 
@@ -787,7 +787,7 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec32x16u aligned_load<vec32x16u>(const std::uint16_t* ptr, std::uint32_t n) {
-        auto mask = (n >= 32) ? std::uint32_t(-1) : (1 << n) - 1;
+        auto mask = (n >= 32) ? std::uint32_t(-1) : (std::uint32_t(1) << n) - 1;
         return vec32x16u{_mm512_maskz_loadu_epi16(mask, ptr)};
     }
 
@@ -800,7 +800,7 @@ namespace avel {
 
 
     AVEL_FINL void store(std::uint16_t* ptr, vec32x16u v, std::uint32_t n) {
-        auto mask = (n >= 32) ? std::uint32_t(-1) : (1 << n) - 1;
+        auto mask = (n >= 32) ? std::uint32_t(-1) : (std::uint32_t(1) << n) - 1;
         _mm512_mask_storeu_epi16(ptr, mask, decay(v));
     }
 
@@ -819,7 +819,7 @@ namespace avel {
 
 
     AVEL_FINL void aligned_store(std::uint16_t* ptr, vec32x16u v, std::uint32_t n) {
-        auto mask = (n >= 32) ? std::uint32_t(-1) : (1 << n) - 1;
+        auto mask = (n >= 32) ? std::uint32_t(-1) : (std::uint32_t(1) << n) - 1;
         _mm512_mask_storeu_epi16(ptr, mask, decay(v));
     }
 
@@ -850,6 +850,28 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec32x16u> div(vec32x16u x, vec32x16u y) {
+        auto zeros = _mm512_setzero_si512();
+
+        auto x_lo = _mm512_cvtepi32_ps(_mm512_unpacklo_epi16(decay(x), zeros));
+        auto x_hi = _mm512_cvtepi32_ps(_mm512_unpackhi_epi16(decay(x), zeros));
+
+        auto y_lo = _mm512_cvtepu32_ps(_mm512_unpacklo_epi16(decay(y), zeros));
+        auto y_hi = _mm512_cvtepu32_ps(_mm512_unpackhi_epi16(decay(y), zeros));
+
+        auto ret_lo = _mm512_cvttps_epi32(_mm512_div_ps(x_lo, y_lo));
+        auto ret_hi = _mm512_cvttps_epi32(_mm512_div_ps(x_hi, y_hi));
+
+        auto quotient = _mm512_packus_epi32(ret_lo, ret_hi);
+
+        auto offset = _mm512_mullo_epi16(decay(y), quotient);
+        auto remainder = _mm512_sub_epi16(decay(x), offset);
+
+        return {
+            vec32x16u{quotient},
+            vec32x16u{remainder}
+        };
+
+        /* Older long-division approach
         vec32x16u quotient{0x00};
         std::int32_t i = 16;
         for (; (i-- > 0) && any(x >= y);) {
@@ -861,6 +883,7 @@ namespace avel {
 
         quotient <<= (i + 1);
         return {quotient, x};
+        */
     }
 
     [[nodiscard]]

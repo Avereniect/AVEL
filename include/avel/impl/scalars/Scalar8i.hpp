@@ -44,6 +44,11 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL std::int8_t bit_width(std::int8_t x) {
+        return bit_width(std::uint8_t(x));
+    }
+
+    [[nodiscard]]
     AVEL_FINL bool has_single_bit(std::int8_t x) {
         return has_single_bit(std::uint8_t(x));
     }

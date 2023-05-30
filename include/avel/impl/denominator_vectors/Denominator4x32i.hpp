@@ -6,7 +6,7 @@ namespace avel {
     using Denom4x32i = Denominator<vec4x32i>;
 
     template<>
-    class alignas(16) Denominator<vec4x32i> {
+    class Denominator<vec4x32i> {
     public:
 
         template<class U>

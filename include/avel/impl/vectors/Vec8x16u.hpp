@@ -1724,7 +1724,51 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec8x16u> div(vec8x16u x, vec8x16u y) {
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_SSE41)
+        auto zeros = _mm_setzero_si128();
+
+        auto x_lo = _mm_cvtepi32_ps(_mm_unpacklo_epi16(decay(x), zeros));
+        auto x_hi = _mm_cvtepi32_ps(_mm_unpackhi_epi16(decay(x), zeros));
+
+        auto y_lo = _mm_cvtepi32_ps(_mm_unpacklo_epi16(decay(y), zeros));
+        auto y_hi = _mm_cvtepi32_ps(_mm_unpackhi_epi16(decay(y), zeros));
+
+        auto quotient_lo = _mm_cvttps_epi32(_mm_div_ps(x_lo, y_lo));
+        auto quotient_hi = _mm_cvttps_epi32(_mm_div_ps(x_hi, y_hi));
+
+        auto quotient = _mm_packus_epi32(quotient_lo, quotient_hi);
+
+        auto offset = _mm_mullo_epi16(decay(y), quotient);
+        auto remainder = _mm_sub_epi16(decay(x), offset);
+
+        return {
+            vec8x16u{quotient},
+            vec8x16u{remainder}
+        };
+
+        #elif defined(AVEL_SSE2)
+        auto even_mask = _mm_set1_epi32(0x0000FFFF);
+        auto zeros = _mm_setzero_si128();
+
+        auto x_even = _mm_cvtepi32_ps(_mm_and_si128(even_mask, decay(x)));
+        auto x_odd  = _mm_cvtepi32_ps(_mm_srli_epi32(decay(x), 16));
+
+        auto y_even = _mm_cvtepi32_ps(_mm_and_si128(even_mask, decay(y)));
+        auto y_odd  = _mm_cvtepi32_ps(_mm_srli_epi32(decay(y), 16));
+
+        auto quotient_even = _mm_cvttps_epi32(_mm_div_ps(x_even, y_even));
+        auto quotient_odd  = _mm_cvttps_epi32(_mm_div_ps(x_odd,  y_odd ));
+
+        auto quotient = _mm_or_si128(quotient_even, _mm_slli_epi32(quotient_odd, 16));
+
+        auto offset = _mm_mullo_epi16(decay(y), quotient);
+        auto remainder = _mm_sub_epi16(decay(x), offset);
+
+        return {
+            vec8x16u{quotient},
+            vec8x16u{remainder}
+        };
+
         /*
         vec8x16u quotient{0x00};
         vec8x16u remainder{0x00};
@@ -1877,6 +1921,7 @@ namespace avel {
         return {quotient, x};
         */
 
+        /*
         vec8x16u quotient{0x00};
         std::int32_t i = 16;
         for (; (i-- > 0) && any(x >= y);) {
@@ -1889,6 +1934,7 @@ namespace avel {
         quotient <<= (i + 1);
 
         return {quotient, x};
+        */
         #endif
 
 

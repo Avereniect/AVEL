@@ -986,17 +986,33 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL div_type<vec8x32u> div(vec8x32u numerator, vec8x32u denominator) {
+    AVEL_FINL div_type<vec8x32u> div(vec8x32u x, vec8x32u y) {
+        #if defined(AVEL_AVX512VL)
+        auto x_widened = _mm512_cvtepu32_pd(decay(x));
+        auto y_widened = _mm512_cvtepu32_pd(decay(y));
+
+        auto quotient = _mm512_cvttpd_epu32(_mm512_div_pd(x_widened, y_widened));
+
+        auto offset = _mm256_mullo_epi32(decay(y), quotient);
+        auto remainder = _mm256_sub_epi32(decay(x), offset);
+
+        return {
+            vec8x32u{quotient},
+            vec8x32u{remainder}
+        };
+
+        #elif defined(AVEL_AVX2)
         //TODO: Optimize
         vec8x32u quotient{};
         std::int32_t i = 32;
-        for (; (i-- > 0) && any(mask8x32u(numerator));) {
-            mask8x32u b = ((numerator >> i) >= denominator);
-            numerator -= (set_bits(b) & (denominator << i));
+        for (; (i-- > 0) && any(mask8x32u(x));) {
+            mask8x32u b = ((x >> i) >= y);
+            x -= (set_bits(b) & (y << i));
             quotient |= (vec8x32u{b} << i);
         }
 
-        return {quotient, numerator};
+        return {quotient, x};
+        #endif
     }
 
     [[nodiscard]]
@@ -1022,6 +1038,17 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x32u byteswap(vec8x32u v) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VBMI2)
+        // Reverse 16-bit halves within 32-bit ints
+        auto t0 = _mm256_shldi_epi32(decay(v), decay(v), 16);
+
+        // Reverse 8-bit halves within 16-bit ints
+        auto t1 = _mm256_shldi_epi16(t0, t0, 8);
+
+        return vec8x32u{t1};
+
+
+        #elif defined(AVEL_AVX2)
         alignas(32) static constexpr std::uint8_t index_data[32] {
             3,   2,  1,  0,
             7,   6,  5,  4,
@@ -1036,6 +1063,7 @@ namespace avel {
         auto indices = _mm256_load_si256((const __m256i*)index_data);
         auto ret = vec8x32u{_mm256_shuffle_epi8(decay(v), indices)};
         return ret;
+        #endif
     }
 
     [[nodiscard]]
