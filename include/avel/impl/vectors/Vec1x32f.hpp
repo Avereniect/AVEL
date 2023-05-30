@@ -1,0 +1,4 @@
+#ifndef AVEL_VEC1X32F_HPP
+#define AVEL_VEC1X32F_HPP
+
+#endif //AVEL_VEC1X32F_HPP
