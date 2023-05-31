@@ -898,8 +898,12 @@ namespace avel {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             return mask{_mm_test_epi16_mask(content, content)};
 
-            #else
+            #elif defined(AVEL_SSE2)
             return *this != Vector{0x00};
+            #endif
+
+            #if defined(AVEL_NEON)
+            return mask{vtstq_u16(content, content)};
             #endif
         }
 

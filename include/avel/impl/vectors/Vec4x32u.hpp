@@ -878,7 +878,7 @@ namespace avel {
             #endif
 
             #if defined(AVEL_NEON)
-            return *this != Vector{0x00};
+            return mask{vtstq_u32(content, content)};
             #endif
         }
 
