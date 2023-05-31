@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 
 # Script that identifies the features which have been used by AVEL in its
-# implementation, so we know which feature combinations to check for in the
-# run_avel_tests.py script
+# implementation.
 
 import os
 

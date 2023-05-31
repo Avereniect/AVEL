@@ -15,6 +15,7 @@ namespace avel {
     AVEL_FINL vec4x32f trunc(vec4x32f x);
     AVEL_FINL vec4x32f abs(vec4x32f v);
     AVEL_FINL vec4x32f blend(mask4x32f, vec4x32f, vec4x32f);
+    AVEL_FINL vec4x32f keep(mask4x32f, vec4x32f);
     AVEL_FINL vec4x32f round(vec4x32f);
     AVEL_FINL mask4x32f isunordered(vec4x32f, vec4x32f);
     AVEL_FINL mask4x32f signbit(vec4x32f x);
@@ -66,12 +67,14 @@ namespace avel {
             content(content) {}
 
         AVEL_FINL explicit Vector_mask(bool b):
-        #if defined(AVEL_SSE)
-            content() {} //TODO: Implement
+        #if defined(AVEL_AVX512VL)
+            content(b ? 0xf : 0x0) {}
+        #elif defined(AVEL_SSE)
+            content(_mm_castsi128_ps(_mm_set1_epi32(b ? -1 : 0))) {} //TODO: Implement
         #endif
-            #if defined(AVEL_NEON)
+        #if defined(AVEL_NEON)
             content(vmovq_n_u32(b ? -1 : 0)) {}
-            #endif
+        #endif
 
         AVEL_FINL explicit Vector_mask(const std::array<bool, 4>& arr) {
             static_assert(
@@ -118,13 +121,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator=(bool b) {
-            #if defined(AVEL_SSE)
-            //TODO: Implement
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_u32(b ? -1 : 0);
-            #endif
+            *this = Vector_mask{b};
             return *this;
         }
 
@@ -138,7 +135,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) {
             #if defined(AVEL_AVX512VL)
-            return (_cvtmask16_u32(lhs.content) == _cvtmask16_u32(rhs.content));
+            return lhs.content == rhs.content;
+
             #elif defined(AVEL_SSE)
             return 0xF == _mm_movemask_ps(_mm_cmpeq_ps(lhs.content, rhs.content));
             #endif
@@ -156,7 +154,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) {
             #if defined(AVEL_AVX512VL)
-            return (_cvtmask16_u32(lhs.content) != _cvtmask16_u32(rhs.content));
+            return lhs.content != rhs.content;
+
             #elif defined(AVEL_SSE)
             return 0xF != _mm_movemask_ps(_mm_cmpeq_ps(lhs.content, rhs.content));
             #endif
@@ -182,7 +181,8 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator&=(Vector_mask rhs) {
             #if defined(AVEL_AVX512VL)
-            content = _kand_mask8(content, rhs.content);
+            content &= rhs.content;
+
             #elif defined(AVEL_SSE)
             content = _mm_and_ps(content, rhs.content);
             #endif
@@ -195,7 +195,8 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator|=(Vector_mask rhs) {
             #if defined(AVEL_AVX512VL)
-            content = _kor_mask8(content, rhs.content);
+            content |= rhs.content;
+
             #elif defined(AVEL_SSE)
             content = _mm_or_ps(content, rhs.content);
             #endif
@@ -208,7 +209,8 @@ namespace avel {
 
         AVEL_FINL Vector_mask& operator^=(Vector_mask rhs) {
             #if defined(AVEL_AVX512VL)
-            content = _kxor_mask8(content, rhs.content);
+            content ^= rhs.content;
+
             #elif defined(AVEL_SSE)
             content = _mm_xor_ps(content, rhs.content);
             #endif
@@ -225,7 +227,8 @@ namespace avel {
 
         AVEL_FINL Vector_mask operator!() const {
             #if defined(AVEL_AVX512VL)
-            return Vector_mask{_knot_mask8(content)};
+            return Vector_mask{primitive(content ^ 0xf)};
+
             #elif defined(AVEL_SSE)
             return Vector_mask{_mm_sub_ps(_mm_setzero_ps(), content)};
             #endif
@@ -281,7 +284,8 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(mask4x32f m) {
         #if defined(AVEL_AVX512VL)
-        return popcount(_mm512_mask2int(decay(m)));
+        return popcount(decay(m));
+
         #elif defined(AVEL_SSE)
         return popcount(_mm_movemask_ps(decay(m)));
         #endif
@@ -400,7 +404,7 @@ namespace avel {
             Vector(convert<Vector>(v)[0]) {}
 
         AVEL_FINL explicit Vector(mask m):
-            content(blend(m, Vector{1.0f}, Vector{0.0f})) {}
+            content(keep(m, Vector{1.0f})) {}
 
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}
@@ -457,7 +461,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator==(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm_cmp_ps_mask(lhs, rhs, _CMP_EQ_OQ)};
+            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_EQ_OQ)};
+
             #elif defined(AVEL_SSE)
             return mask{_mm_cmpeq_ps(decay(lhs), decay(rhs))};
             #endif
@@ -470,7 +475,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator!=(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm_cmp_ps_mask(lhs, rhs, _CMP_NEQ_OQ)};
+            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_NEQ_OQ)};
+
             #elif defined(AVEL_SSE)
             return mask{_mm_cmpneq_ps(decay(lhs), decay(rhs))};
             #endif
@@ -483,7 +489,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator<(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm_cmp_ps_mask(lhs, rhs, _CMP_LT_OQ)};
+            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_LT_OQ)};
+
             #elif defined(AVEL_SSE)
             return mask{_mm_cmplt_ps(decay(lhs), decay(rhs))};
             #endif
@@ -496,7 +503,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator<=(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm_cmp_ps_mask(lhs, rhs, _CMP_LE_OQ)};
+            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_LE_OQ)};
+
             #elif defined(AVEL_SSE)
             return mask{_mm_cmple_ps(decay(lhs), decay(rhs))};
             #endif
@@ -509,7 +517,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator>(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm_cmp_ps_mask(lhs, rhs, _CMP_GT_OQ)};
+            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_GT_OQ)};
+
             #elif defined(AVEL_SSE)
             return mask{_mm_cmpgt_ps(decay(lhs), decay(rhs))};
             #endif
@@ -522,7 +531,8 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator>=(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm_cmp_ps_mask(lhs, rhs, _CMP_GE_OQ)};
+            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_GE_OQ)};
+
             #elif defined(AVEL_SSE)
             return mask{_mm_cmpge_ps(decay(lhs), decay(rhs))};
             #endif
@@ -542,7 +552,13 @@ namespace avel {
 
         AVEL_FINL Vector operator-() const {
             //TODO: Consider flipping sign bit manually?
+            #if defined(AVEL_SSE)
             return Vector{0.0f} - *this;
+            #endif
+
+            #if defined(AVEL_NEON)
+            return vector{vnegq_f32(content)};
+            #endif
         }
 
         //=================================================
@@ -590,14 +606,13 @@ namespace avel {
 
             #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
             content = vdivq_f32(content, decay(rhs));
+
             #elif defined(AVEL_NEON)
             //TODO: Implement a better emulation
-
             auto recip = vrecpeq_f32(decay(rhs));
             content = vmul_f32(content, recip);
 
             #endif
-
             return *this;
         }
 
@@ -681,7 +696,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL explicit operator mask() const {
-            return *this != Vector{};
+            return *this != Vector{0.0f};
         }
 
     };
@@ -696,28 +711,38 @@ namespace avel {
         typename std::enable_if<N <= vec4x32f::width, int>::type dummy_variable = 0;
 
         #if defined(AVEL_SSE41)
-        return _mm_extract_ps(decay(v), N);
+        return avel::bit_cast<float>(_mm_extract_ps(decay(v), N));
 
         #elif defined(AVEL_SSE)
         switch (N) {
-            case 3: {
-                return _mm_cvtss_f32(_mm_shuffle_ps(v, v, 0x03));
-            }
-            case 2: {
-                return _mm_cvtss_f32(_mm_shuffle_ps(v, v, 0x02));
-            }
-            case 1: {
-                return _mm_cvtss_f32(_mm_shuffle_ps(v, v, 0x01));
-            }
-            case 0: {
-                return _mm_cvtss_f32(decay(v));
-            }
+            case 3: return _mm_cvtss_f32(_mm_shuffle_ps(v, v, 0x03));
+            case 2: return _mm_cvtss_f32(_mm_shuffle_ps(v, v, 0x02));
+            case 1: return _mm_cvtss_f32(_mm_shuffle_ps(v, v, 0x01));
+            case 0: return _mm_cvtss_f32(decay(v));
         }
 
         #endif
 
         #if defined(AVEL_NEON)
         return vgetq_lane_f32(decay(v), N);
+        #endif
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL vec4x32f insert(vec4x32f v, float x) {
+        static_assert(N < vec4x32f::width, "Specified index does not exist");
+        typename std::enable_if<N < vec4x32f::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_SSE)
+        //TODO: Don't rely on compiler-specific subscripting
+        auto tmp = decay(v);
+        tmp[N] = x;
+        return vec4x32f{tmp};
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec4x32f{vsetq_lane_f32(x, decay(v), N)};
         #endif
     }
 
@@ -733,6 +758,10 @@ namespace avel {
         #elif defined(AVEL_SSE)
         return vec4x32f{_mm_and_ps(decay(m), decay(v))};
         #endif
+
+        #if defined(AVEL_NEON)
+        return vec4x32f{vbslq_f32(decay(m), decay(v), vdupq_n_f32(0.0f))};
+        #endif
     }
 
     [[nodiscard]]
@@ -742,6 +771,10 @@ namespace avel {
 
         #elif defined(AVEL_SSE)
         return vec4x32f{_mm_andnot_ps(decay(m), decay(v))};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec4x32f{vbslq_f32(decay(m), vdupq_n_f32(0.0f), decay(v))};
         #endif
     }
 
@@ -759,6 +792,10 @@ namespace avel {
         return vec4x32f{_mm_or_ps(x, y)};
 
         #endif
+
+        #if defined(AVEL_NEON)
+        return vec4x32f{vbslq_f32(decay(m), decay(a), decay(b))};
+        #endif
     }
 
     [[nodiscard]]
@@ -771,12 +808,20 @@ namespace avel {
         #if defined(AVEL_SSE)
         return vec4x32f{_mm_max_ps(decay(a), decay(b))};
         #endif
+
+        #if defined(AVEL_NEON)
+        return vec4x32f{vmaxq_f32(decay(a), decay(b))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x32f min(vec4x32f a, vec4x32f b) {
         #if defined(AVEL_SSE)
         return vec4x32f{_mm_min_ps(decay(a), decay(b))};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec4x32f{vminq_f32(decay(a), decay(b))};
         #endif
     }
 
@@ -786,6 +831,13 @@ namespace avel {
         return std::array<vec4x32f, 2>{
             vec4x32f{_mm_min_ps(decay(a), decay(b))},
             vec4x32f{_mm_max_ps(decay(a), decay(b))}
+        };
+        #endif
+
+        #if defined(AVEL_NEON)
+        return std::array<vec4x32f, 2>{
+            vec4x32f{vminq_f32(decay(a), decay(b))},
+            vec4x32f{vmaxq_f32(decay(a), decay(b))}
         };
         #endif
     }
@@ -800,12 +852,20 @@ namespace avel {
         #if defined(AVEL_SSE)
         return vec4x32f{_mm_andnot_ps(_mm_set1_ps(float_sign_bit_mask), decay(v))};
         #endif
+
+        #if defined(AVEL_NEON)
+        return vec4x32f{vabsq_f32(decay(v))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x32f neg_abs(vec4x32f v) {
         #if defined(AVEL_SSE)
         return vec4x32f{_mm_and_ps(_mm_set1_ps(float_sign_bit_mask), decay(v))};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec4x32f{vsubq_f32(vdupq_n_f32(0.0f), vabsq_f32(decay(v)))};
         #endif
     }
 
@@ -819,6 +879,10 @@ namespace avel {
         #if defined(AVEL_SSE)
         return vec4x32f{_mm_loadu_ps(ptr)};
         #endif
+
+        #if defined(AVEL_NEON)
+        return vec4x32f{vld1q_f32(ptr)};
+        #endif
     }
 
     template<>
@@ -826,6 +890,15 @@ namespace avel {
     AVEL_FINL vec4x32f aligned_load<vec4x32f>(const float* ptr) {
         #if defined(AVEL_SSE)
         return vec4x32f{_mm_load_ps(ptr)};
+        #endif
+
+        #if defined(AVEL_NEON) && __cplusplus >= 202002
+            return vec4x32f{vld1q_f32(std::assume_aligned<alignof(vec4x32f)>(ptr))};
+        #elif defined(AVEL_NEON) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
+            auto* p = reinterpret_cast<const float*>(__builtin_assume_aligned(ptr, alignof(vec4x32f)));
+            return vec4x32f{vld1q_f32(p)};
+        #elif defined(AVEL_NEON)
+            return vec4x32f{vld1q_f32(ptr)};
         #endif
     }
 
@@ -851,11 +924,28 @@ namespace avel {
         return vec4x32f{abcd};
 
         #endif
+
+        #if defined(AVEL_NEON)
+        auto ret = vdupq_n_f32(0.0f);
+        switch (n) {
+            default: ret = vsetq_lane_f32(ptr[extract<3>(indices)], ret, 0x3);
+            case 3:  ret = vsetq_lane_f32(ptr[extract<2>(indices)], ret, 0x2);
+            case 2:  ret = vsetq_lane_f32(ptr[extract<1>(indices)], ret, 0x1);
+            case 1:  ret = vsetq_lane_f32(ptr[extract<0>(indices)], ret, 0x0);
+            case 0:  ; //Do nothing
+        }
+
+        return vec4x32u{ret};
+        #endif
     }
 
     AVEL_FINL void store(float* ptr, vec4x32f v) {
         #if defined(AVEL_SSE)
         _mm_storeu_ps(ptr, decay(v));
+        #endif
+
+        #if defined(AVEL_NEON)
+        vst1q_f32(ptr, decay(v));
         #endif
     }
 
@@ -863,11 +953,15 @@ namespace avel {
         #if defined(AVEL_SSE)
         _mm_store_ps(ptr, decay(v));
         #endif
+
+        #if defined(AVEL_NEON)
+        vst1q_f32(ptr, decay(v));
+        #endif
     }
 
     AVEL_FINL void scatter(float* ptr, vec4x32i indices, vec4x32f v) {
         #if defined(AVEL_AVX512VL)
-        _mm_i32scatter_ps(ptr, indices, v, sizeof(float));
+        _mm_i32scatter_ps(ptr, decay(indices), decay(v), sizeof(float));
 
         #elif defined(AVEL_AVX)
         auto i = to_array(indices);
@@ -884,6 +978,17 @@ namespace avel {
         _mm_store_ss(ptr + i[1], _mm_shuffle_ps(decay(v), decay(v), 0x01));
         _mm_store_ss(ptr + i[2], _mm_shuffle_ps(decay(v), decay(v), 0x02));
         _mm_store_ss(ptr + i[3], _mm_shuffle_ps(decay(v), decay(v), 0x03));
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        switch (n) {
+            default: ptr[extract<3>(indices)] = vgetq_lane_f32(decay(x), 0x3);
+            case 3:  ptr[extract<2>(indices)] = vgetq_lane_f32(decay(x), 0x2);
+            case 2:  ptr[extract<1>(indices)] = vgetq_lane_f32(decay(x), 0x1);
+            case 1:  ptr[extract<0>(indices)] = vgetq_lane_f32(decay(x), 0x0);
+            case 0: ; //Do nothing
+        }
 
         #endif
     }
@@ -910,6 +1015,11 @@ namespace avel {
         auto mask = _mm_cmpeq_ps(decay(result), decay(neg_inf));
         return vec4x32f{_mm_or_ps(decay(result), mask)};
         #endif
+
+        #if defined(AVEL_NEON)
+        //TODO:Verify correctness under edge cases
+        return vec4x32f{vmax_f32(decay(a), decay(b))};
+        #endif
     }
 
     [[nodiscard]]
@@ -923,6 +1033,11 @@ namespace avel {
         auto mask = _mm_cmpeq_ps(decay(result), decay(inf));
         return vec4x32f{_mm_or_ps(decay(result), mask)};
         #endif
+
+        #if defined(AVEL_NEON)
+        //TODO:Verify correctness under edge cases
+        return vec4x32f{vmin_f32(decay(a), decay(b))};
+        #endif
     }
 
     //=====================================================
@@ -933,6 +1048,13 @@ namespace avel {
     AVEL_FINL vec4x32f sqrt(vec4x32f x) {
         #if defined(AVEL_SSE)
         return vec4x32f{_mm_sqrt_ps(decay(x))};
+        #endif
+
+        #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
+        return vec4x32f{vsqrtq_f32(decay(x))};
+
+        #elif defined(AVEL_NEON)
+        //TODO: Utilize software emulation
         #endif
     }
 
@@ -956,6 +1078,14 @@ namespace avel {
         return aligned_load<vec4x32f>(arr.data());
 
         #endif
+
+        #if defined(AVEL_NEON) && defined(AVEL_AARCH32)
+        return vec4x32f{vrndpq_f32(decay(x))};
+
+        #elif defined(AVEL_NEON)
+        //TODO: Perform software emulation
+        return vec4x32f{};
+        #endif
     }
 
     [[nodiscard]]
@@ -974,12 +1104,20 @@ namespace avel {
         return aligned_load<vec4x32f>(arr.data());
 
         #endif
+
+        #if defined(AVEL_NEON) && defined(AVEL_AARCH32)
+        return vec4x32f{vrndmq_f32(decay(x))};
+
+        #elif defined(AVEL_NEON)
+        //TODO: Perform software emulation
+        return vec4x32f{};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x32f trunc(vec4x32f x) {
         #if defined(AVEL_SSE41)
-        return vec4x32f{_mm_round_ps(x, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
+        return vec4x32f{_mm_round_ps(decay(x), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
 
         #elif defined(AVEL_SSE)
         vec4x32u x_bits = bit_cast<vec4x32u>(x);
@@ -996,6 +1134,14 @@ namespace avel {
 
         return r;
 
+        #endif
+
+        #if defined(AVEL_NEON) && defined(AVEL_AARCH32)
+        return vec4x32f{vrndq_f32(decay(x))};
+
+        #elif defined(AVEL_NEON)
+        //TODO: Perform software emulation
+        return vec4x32f{};
         #endif
     }
 
@@ -1014,12 +1160,20 @@ namespace avel {
 
         return aligned_load<vec4x32f>(arr.data());
         #endif
+
+        #if defined(AVEL_NEON) && defined(AVEL_AARCH32)
+        return vec4x32f{vrndaq_f32(decay(x))};
+
+        #elif defined(AVEL_NEON)
+        //TODO: Perform software emulation
+        return vec4x32f{};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x32f nearbyint(vec4x32f v) {
         #if defined(AVEL_SSE41)
-        return vec4x32f{_mm_round_ps(v, _MM_FROUND_CUR_DIRECTION)};
+        return vec4x32f{_mm_round_ps(decay(v), _MM_FROUND_CUR_DIRECTION)};
 
         #elif defined(AVEL_SSE)
         int mode = std::fegetround();
@@ -1033,6 +1187,14 @@ namespace avel {
             //TODO: Find proper solution. Not sure how to handle such a case
         }
         #endif
+
+        #if defined(AVEL_NEON) && defined(AVEL_AARCH32)
+        return vec4x32f{vrndiq_f32(decay(x))};
+
+        #elif defined(AVEL_NEON)
+        //TODO: Perform software emulation
+        return vec4x32f{};
+        #endif
     }
 
     //=====================================================
@@ -1040,13 +1202,46 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec4x32f frexp(vec4x32f v, vec4x32f* exp) {
+    AVEL_FINL vec4x32f frexp(vec4x32f v, vec4x32i* exp) {
+        #if defined(AVEL_AVX512VL)
+        auto exponents = _mm_getexp_ps(decay(v));
+        *exp = _mm_cvttps_epu32(exponents);
+
+        auto ret = _mm_getmant_ps(decay(v), _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+        return vec4x32f{ret};
+
+        #elif defined(AVEL_SSE2)
         //TODO: Implement
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
+
+        #endif
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32f ldexp(vec4x32f arg, vec4x32f exp) {
+    AVEL_FINL vec4x32f ldexp(vec4x32f arg, vec4x32i exp) {
         //TODO: Implement
+        #if defined(AVEL_SSE2)
+        auto bits = _mm_castps_si128(decay(arg));
+        auto cleared_exponents = _mm_andnot_si128(_mm_set1_epi32(float_exponent_mask_bits), bits);
+
+        //TODO: Handle case where exp is too large
+        auto exponents = _mm_srli_epi32(bits, 23);
+        auto modified_exponents = _mm_adds_epu8(exponents, decay(exp));
+
+        //TODO: Handle edge cases
+        auto reconstructed_exponents = _mm_slli_epi32(modified_exponents, 23);
+        auto reconstructed_floats = _mm_or_si128(reconstructed_exponents, cleared_exponents);
+        
+        return vec4x32f{_mm_castsi128_ps(reconstructed_floats)};
+        #endif
+
+        #if defined(AVEL_NEON)
+
+        #endif
     }
 
     [[nodiscard]]
@@ -1056,12 +1251,80 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32f ilog(vec4x32f x) {
+        #if defined(AVEL_AVX512VL)
+        //TODO: Handle edge cases
+        return vec4x32f{_mm_cvtepi32_ps(_mm_getexp_ps(decay(x)))};
+
+        #elif defined(AVEL_SSE2)
+        auto subnormal_threshold = vec4x32f{1.17549435082228750797e-38f};
+        auto is_subnormal = x < subnormal_threshold;
+
+        // Multiply subnormal value so that desired info can be extracted from
+        // exponent bits
+        auto useful_x = blend(
+            is_subnormal,
+            x * vec4x32f{8388608.0f},
+            x
+        );
+
+        auto bits = _mm_castps_si128(decay(useful_x));
+
+        auto byte_mask = _mm_set1_epi32(0xff);
+        auto exponent_bits = _mm_and_si128(_mm_srli_epi32(bits, 23), byte_mask);
+
+        auto is_non_normal = _mm_cmpeq_epi32(exponent_bits, byte_mask);
+        //TODO: Use this to handle infinities and NaNs
+
+        auto bias = vec4x32i{127};
+        bias += keep(mask4x32i{is_subnormal}, vec4x32i{22});
+
+        auto ret = _mm_sub_epi32(exponent_bits, bias);
+        return vec4x32f{ret};
+
+        #endif
+
+        #if defined(AVEL_NEON)
         //TODO: Implement
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x32f logb(vec4x32f x) {
+        #if defined(AVEL_AVX512VL)
+        //TODO: Handle edge cases
+        return vec4x32f{_mm_getexp_ps(decay(x))};
+
+        #elif defined(AVEL_SSE2)
+        auto subnormal_threshold = vec4x32f{1.17549435082228750797e-38f};
+        auto is_subnormal = x < subnormal_threshold;
+
+        // Multiply subnormal value so that desired info can be extracted from
+        // exponent bits
+        auto useful_x = blend(
+            is_subnormal,
+            x * vec4x32f{8388608.0f},
+            x
+        );
+
+        auto bits = _mm_castps_si128(decay(useful_x));
+
+        auto byte_mask = _mm_set1_epi32(0xff);
+        auto exponent_bits = _mm_and_si128(_mm_srli_epi32(bits, 23), byte_mask);
+
+        auto is_non_normal = _mm_cmpeq_epi32(exponent_bits, byte_mask);
+        //TODO: Use this to handle infinities and NaNs
+
+        auto bias = vec4x32i{127};
+        bias += keep(mask4x32i{is_subnormal}, vec4x32i{22});
+
+        auto unbiased_exponents = _mm_sub_epi32(exponent_bits, bias);
+        auto ret = _mm_cvtepi32_ps(unbiased_exponents);
+        return vec4x32f{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
         //TODO: Implement
+        #endif
     }
 
     [[nodiscard]]
@@ -1069,6 +1332,13 @@ namespace avel {
         #if defined(AVEL_SSE)
         auto mask = _mm_set1_ps(float_sign_bit_mask);
         auto ret = _mm_or_ps(_mm_and_ps(mask, decay(sign)), _mm_andnot_ps(mask, decay(mag)));
+
+        return vec4x32f{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto mask = vdupq_n_f32(float_sign_bit_mask);
+        auto ret = 	vbslq_f32(mask, decay(mag), decay(sign));
 
         return vec4x32f{ret};
         #endif
@@ -1087,10 +1357,10 @@ namespace avel {
         const vec4x32u fp_zero{int(FP_ZERO)};
 
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
-        mask4x32u infinite_mask {_mm_fpclass_ps_mask(v, 0x08 | 0x10)};
-        mask4x32u nan_mask      {_mm_fpclass_ps_mask(v, 0x01 | 0x80)};
-        mask4x32u subnormal_mask{_mm_fpclass_ps_mask(v, 0x20)};
-        mask4x32u zero_mask     {_mm_fpclass_ps_mask(v, 0x02 | 0x04)};
+        mask4x32u infinite_mask {_mm_fpclass_ps_mask(decay(v), 0x08 | 0x10)};
+        mask4x32u nan_mask      {_mm_fpclass_ps_mask(decay(v), 0x01 | 0x80)};
+        mask4x32u subnormal_mask{_mm_fpclass_ps_mask(decay(v), 0x20)};
+        mask4x32u zero_mask     {_mm_fpclass_ps_mask(decay(v), 0x02 | 0x04)};
         mask4x32u normal_mask   {!(infinite_mask | nan_mask | subnormal_mask | zero_mask)};
 
         //TODO: Optimize blends
@@ -1139,8 +1409,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask4x32f isinf(vec4x32f v) {
-        #if defined(AVEL_SSE)
-        // TODO: Implement
+        #if defined(AVEL_AVX512VL)
+        vec4x32f inf{INFINITY};
+        return abs(v) == inf;
+
+        #elif defined(AVEL_SSE)
+        vec4x32f inf{INFINITY};
+        return abs(v) == inf;
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto infinity = vdupq_n_f32(INFINITY);
+        auto ret = 	vcageq_f32(decay(v), INFINITY);
+        return mask4x32f{ret};
         #endif
     }
 
@@ -1154,6 +1436,10 @@ namespace avel {
         auto tmp = _mm_cmpunord_ps(decay(v), decay(v));
         return mask4x32f{tmp};
         #endif
+
+        #if defined(AVEL_NEON)
+        return v != v;
+        #endif
     }
 
     [[nodiscard]]
@@ -1166,6 +1452,18 @@ namespace avel {
         #elif defined(AVEL_SSE)
         vec4x32f tmp{_mm_and_ps(decay(v), _mm_set1_ps(float_sign_bit_mask))};
         return  (tmp != vec4x32f{0.0f}) & (tmp != vec4x32f{float_exponent_mask});
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto infinity = vdupq_n_f32(INFINITY);
+        auto ret = vcaltq_f32(decay(v), infinty);
+        return mask4x32f{ret};
+
+        // Older implementation based on extracting exponent
+        auto bits = vreinterpretq_u32_f32(decay(v));
+        auto exponents = vandq_u32(vshrq_n_u32(bits, 23), vdupq_n_u32(0x000000ff));
+        auto ret = 	vmvnq_u32(vceqq_u32(exponents));
+        return mask4x32f{ret};
         #endif
     }
 
@@ -1184,6 +1482,12 @@ namespace avel {
         auto t1 = (t0 != vec4x32u{0x00});
         auto t2 = bit_cast<vec4x32f>(t1);
         return mask4x32f{decay(t2)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto t0 = vreinterpretq_u32_s32(decay(arg));
+        auto t1 = vshrq_n_s32(t0);
+        return mask4x32f{vreinterpretq_u32_s32(t1)};
         #endif
     }
 
@@ -1219,10 +1523,16 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL mask4x32f isunordered(vec4x32f x, vec4x32f y) {
         #if defined(AVEL_AVX512VL)
-        return mask4x32f{_mm_cmp_ps_mask(x, y, _CMP_ORD_Q)};
+        return mask4x32f{_mm_cmp_ps_mask(decay(x), decay(y), _CMP_ORD_Q)};
 
         #elif defined(AVEL_SSE)
         return mask4x32f{_mm_cmpunord_ps(decay(x), decay(y))};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto a = vceqq_f32(decay(x), decay(x));
+        auto b = vceqq_f32(decay(y), decay(y));
+        return mask4x32f{vtstq_u32(a, b)};
         #endif
     }
 

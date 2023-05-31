@@ -211,12 +211,23 @@
 
 * `vector scalbn(vector v, ivector num)`
   * a
+  * a
+  * a
+  * a
 
-  * `ivector ilogb(vector v)`
-    * a
+* `ivector ilogb(vector v)`
+  * for each lanes, returns `v`'s unbiased exponent as an integral value
+  * produces `FP_ILOGB0` if `v` is `0.0f`
+  * produces `FP_ILOGB0` if `v` is `NAN`
+  * produces `INT_MAX` if `v` is `+INF`
+  * produces `INT_MAX` if `v` is `-INF`
 
 * `vector logb(vector v)`
-  * a
+  * for each lane, returns `v`'s unbiased exponent as a floating-point value
+  * produces `NAN` if `v` is `0.0f`
+  * produces `NAN` if `v` is `NAN`
+  * produces `+INF` if `v` is `+INF`
+  * produces `+INF` if `v` is `-INF`
 
 * `vector copysign(vector mag, vector sign)`
   * for each lane, returns a value equal in magnitude to `mag` and with the 
