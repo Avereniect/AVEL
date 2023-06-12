@@ -1158,7 +1158,8 @@ namespace avel_tests {
             auto inputs = random_array<arr1x16i>();
             vec1x16i v{inputs};
 
-            EXPECT_EQ(inputs[0x0], extract<0x0>(v));
+            EXPECT_EQ(inputs[0x00], extract<0x00>(v));
+
         }
     }
 
@@ -1167,7 +1168,8 @@ namespace avel_tests {
             auto inputs = random_array<arr1x16i>();
             vec1x16i v{random_val<vec1x16i::scalar>()};
 
-            v = insert<0x0>(v, inputs[0x0]);
+            v = insert<0x00>(v, inputs[0x00]);
+
 
             EXPECT_TRUE(all(v == vec1x16i{inputs}));
         }
@@ -1199,8 +1201,8 @@ namespace avel_tests {
             EXPECT_TRUE(all(bit_shift_left<0x0d>(v) == (v << 0x0d)));
             EXPECT_TRUE(all(bit_shift_left<0x0e>(v) == (v << 0x0e)));
             EXPECT_TRUE(all(bit_shift_left<0x0f>(v) == (v << 0x0f)));
-
             EXPECT_TRUE(all(bit_shift_left<0x10>(v) == (v << 0x10)));
+
         }
     }
 
@@ -1226,8 +1228,8 @@ namespace avel_tests {
             EXPECT_TRUE(all(bit_shift_right<0x0d>(v) == (v >> 0x0d)));
             EXPECT_TRUE(all(bit_shift_right<0x0e>(v) == (v >> 0x0e)));
             EXPECT_TRUE(all(bit_shift_right<0x0f>(v) == (v >> 0x0f)));
-
             EXPECT_TRUE(all(bit_shift_right<0x10>(v) == (v >> 0x10)));
+
         }
     }
 
@@ -1253,8 +1255,8 @@ namespace avel_tests {
             EXPECT_TRUE(all(rotl<0x0d>(v) == (rotl(v, 0x0d))));
             EXPECT_TRUE(all(rotl<0x0e>(v) == (rotl(v, 0x0e))));
             EXPECT_TRUE(all(rotl<0x0f>(v) == (rotl(v, 0x0f))));
-
             EXPECT_TRUE(all(rotl<0x10>(v) == (rotl(v, 0x10))));
+
         }
     }
 
@@ -1317,8 +1319,8 @@ namespace avel_tests {
             EXPECT_TRUE(all(rotr<0x0d>(v) == (rotr(v, 0x0d))));
             EXPECT_TRUE(all(rotr<0x0e>(v) == (rotr(v, 0x0e))));
             EXPECT_TRUE(all(rotr<0x0f>(v) == (rotr(v, 0x0f))));
-
             EXPECT_TRUE(all(rotr<0x10>(v) == (rotr(v, 0x10))));
+
         }
     }
 
@@ -1727,6 +1729,7 @@ namespace avel_tests {
 
             EXPECT_TRUE(all(load<vec1x16i, 0x00>(inputs.data()) == load<vec1x16i>(inputs.data(), 0x00)));
             EXPECT_TRUE(all(load<vec1x16i, 0x01>(inputs.data()) == load<vec1x16i>(inputs.data(), 0x01)));
+
         }
     }
 
@@ -1755,6 +1758,7 @@ namespace avel_tests {
 
             EXPECT_TRUE(all(aligned_load<vec1x16i, 0x00>(inputs.data()) == aligned_load<vec1x16i>(inputs.data(), 0x00)));
             EXPECT_TRUE(all(aligned_load<vec1x16i, 0x01>(inputs.data()) == aligned_load<vec1x16i>(inputs.data(), 0x01)));
+
         }
     }
 
@@ -1789,6 +1793,7 @@ namespace avel_tests {
 
             store<0x00>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x00));
             store<0x01>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x01));
+
         }
     }
 
@@ -1823,6 +1828,7 @@ namespace avel_tests {
 
             aligned_store<0x00>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x00));
             aligned_store<0x01>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x01));
+
         }
     }
 
@@ -1898,15 +1904,19 @@ namespace avel_tests {
     TEST(Vec1x16i, Isqrt_edge_cases) {
         vec1x16i v0{0x00};
         vec1x16i v1{0x01};
+        vec1x16i v2{std::numeric_limits<vec1x16i::scalar>::max()};
 
         auto results0 = isqrt(v0);
         auto results1 = isqrt(v1);
+        auto results2 = isqrt(v2);
 
         auto expected0 = v0;
         auto expected1 = v1;
+        auto expected2 = vec1x16i(avel::isqrt(std::numeric_limits<vec1x16i::scalar>::max()));
 
         EXPECT_TRUE(all(results0 == expected0));
         EXPECT_TRUE(all(results1 == expected1));
+        EXPECT_TRUE(all(results2 == expected2));
     }
 
     TEST(Vec1x16i, Isqrt_squares) {
@@ -1923,21 +1933,21 @@ namespace avel_tests {
 
             arr1x16i expected0{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
-                expected0[j] = isqrt(inputs[j] - 1);
+                expected0[j] = isqrt(vec1x16i::scalar(inputs[j] - 1));
             }
 
             EXPECT_TRUE(all(results0 == vec1x16i{expected0}));
 
             arr1x16i expected1{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
-                expected1[j] = isqrt(inputs[j] + 0);
+                expected1[j] = isqrt(vec1x16i::scalar(inputs[j] + 0));
             }
 
             EXPECT_TRUE(all(results1 == vec1x16i{expected1}));
 
             arr1x16i expected2{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
-                expected2[j] = isqrt(inputs[j] + 1);
+                expected2[j] = isqrt(vec1x16i::scalar(inputs[j] + 1));
             }
 
             EXPECT_TRUE(all(results2 == vec1x16i{expected2}));
@@ -2131,4 +2141,4 @@ namespace avel_tests {
 
 }
 
-#endif //AVEL_VEC1X16I_TESTS_HPP
+#endif

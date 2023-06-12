@@ -112,6 +112,9 @@ namespace avel_tests {
     template<class I>
     inline I random_val();
 
+    template<class I>
+    inline I random_square();
+
     //=====================================================
     // Random integer generation
     //=====================================================
@@ -161,6 +164,58 @@ namespace avel_tests {
         return random8u() & 0x1;
     }
 
+
+
+    template<>
+    inline std::uint8_t random_square<std::uint8_t>() {
+        auto tmp = random8u() & 0x0f;
+        return tmp * tmp;
+    }
+
+    template<>
+    inline std::int8_t random_square<std::int8_t>() {
+        auto tmp = random8u() % 11;
+        return tmp * tmp;
+    }
+
+    template<>
+    inline std::uint16_t random_square<std::uint16_t>() {
+        auto tmp = random16u() & 0x00ff;
+        return tmp * tmp;
+    }
+
+    template<>
+    inline std::int16_t random_square<std::int16_t>() {
+        auto tmp = random16u() % 181;
+        return tmp * tmp;
+    }
+
+    template<>
+    inline std::uint32_t random_square<std::uint32_t>() {
+        auto tmp = random32u() & 0x0000ffff;
+        return tmp * tmp;
+    }
+
+    template<>
+    inline std::int32_t random_square<std::int32_t>() {
+        auto tmp = random32u() % 46340;
+        return tmp * tmp;
+    }
+
+    template<>
+    inline std::uint64_t random_square<std::uint64_t>() {
+        auto tmp = random64u() & 0x00000000ffffffff;
+        return tmp * tmp;
+     }
+
+    template<>
+    inline std::int64_t random_square<std::int64_t>() {
+        auto tmp = random64u() % 3037000499;
+        return tmp * tmp;
+    }
+
+
+
     template<class I>
     inline I random_shift() {
         constexpr auto bound = sizeof(I) * CHAR_BIT + 1;
@@ -187,6 +242,17 @@ namespace avel_tests {
 
         for (int i = 0; i < ret.size(); ++i) {
             ret[i] = random_val<typename A::value_type>();
+        }
+
+        return ret;
+    }
+
+    template<class A>
+    inline A random_squares_array() {
+        A ret{};
+
+        for (int i = 0; i < ret.size(); ++i) {
+            ret[i] = random_square<typename A::value_type>();
         }
 
         return ret;

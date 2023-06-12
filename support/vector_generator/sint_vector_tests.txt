@@ -1928,6 +1928,76 @@ $END
         }
     }
 
+    TEST($<Vector_alias>, Isqrt_edge_cases) {
+        $<vector_alias> v0{0x00};
+        $<vector_alias> v1{0x01};
+        $<vector_alias> v2{std::numeric_limits<$<vector_alias>::scalar>::max()};
+
+        auto results0 = isqrt(v0);
+        auto results1 = isqrt(v1);
+        auto results2 = isqrt(v2);
+
+        auto expected0 = v0;
+        auto expected1 = v1;
+        auto expected2 = $<vector_alias>(avel::isqrt(std::numeric_limits<$<vector_alias>::scalar>::max()));
+
+        EXPECT_TRUE(all(results0 == expected0));
+        EXPECT_TRUE(all(results1 == expected1));
+        EXPECT_TRUE(all(results2 == expected2));
+    }
+
+    TEST($<Vector_alias>, Isqrt_squares) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_squares_array<$<array_alias>>();
+
+            $<vector_alias> v1{inputs};
+            $<vector_alias> v0 = v1 - $<vector_alias>{1};
+            $<vector_alias> v2 = v1 + $<vector_alias>{1};
+
+            auto results0 = isqrt(v0);
+            auto results1 = isqrt(v1);
+            auto results2 = isqrt(v2);
+
+            $<array_alias> expected0{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected0[j] = isqrt($<vector_alias>::scalar(inputs[j] - 1));
+            }
+
+            EXPECT_TRUE(all(results0 == $<vector_alias>{expected0}));
+
+            $<array_alias> expected1{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected1[j] = isqrt($<vector_alias>::scalar(inputs[j] + 0));
+            }
+
+            EXPECT_TRUE(all(results1 == $<vector_alias>{expected1}));
+
+            $<array_alias> expected2{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected2[j] = isqrt($<vector_alias>::scalar(inputs[j] + 1));
+            }
+
+            EXPECT_TRUE(all(results2 == $<vector_alias>{expected2}));
+        }
+    }
+
+    TEST($<Vector_alias>, Isqrt) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<$<array_alias>>();
+
+            $<vector_alias> v{inputs};
+
+            auto results = isqrt(v);
+
+            $<array_alias> expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = isqrt(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == $<vector_alias>{expected}));
+        }
+    }
+
     TEST($<Vector_alias>, Popcount_edge_cases) {
         $<vector_alias> v{0x0};
         $<vector_alias> c = popcount(v);
