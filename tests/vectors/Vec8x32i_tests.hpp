@@ -2123,7 +2123,73 @@ namespace avel_tests {
         }
     }
 
-    TEST(Vec8x32i, Popcount) {
+    TEST(Vec8x32i, Isqrt_edge_cases) {
+        vec8x32i v0{0x00};
+        vec8x32i v1{0x01};
+
+        auto results0 = isqrt(v0);
+        auto results1 = isqrt(v1);
+
+        auto expected0 = v0;
+        auto expected1 = v1;
+
+        EXPECT_TRUE(all(results0 == expected0));
+        EXPECT_TRUE(all(results1 == expected1));
+    }
+
+    TEST(Vec8x32i, Isqrt_squares) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_squares_array<arr8x32i>();
+
+            vec8x32i v1{inputs};
+            vec8x32i v0 = v1 - vec8x32i{1};
+            vec8x32i v2 = v1 + vec8x32i{1};
+
+            auto results0 = isqrt(v0);
+            auto results1 = isqrt(v1);
+            auto results2 = isqrt(v2);
+
+            arr8x32i expected0{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected0[j] = isqrt(inputs[j] - 1);
+            }
+
+            EXPECT_TRUE(all(results0 == vec8x32i{expected0}));
+
+            arr8x32i expected1{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected1[j] = isqrt(inputs[j] + 0);
+            }
+
+            EXPECT_TRUE(all(results1 == vec8x32i{expected1}));
+
+            arr8x32i expected2{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected2[j] = isqrt(inputs[j] + 1);
+            }
+
+            EXPECT_TRUE(all(results2 == vec8x32i{expected2}));
+        }
+    }
+
+    TEST(Vec8x32i, Isqrt) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr8x32i>();
+
+            vec8x32i v{inputs};
+
+            auto results = isqrt(v);
+
+            arr8x32i expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = isqrt(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec8x32i{expected}));
+        }
+    }
+
+    TEST(Vec8x32i, Popcount_edge_cases) {
         vec8x32i v{0x0};
         vec8x32i c = popcount(v);
         EXPECT_TRUE(all(c == v));

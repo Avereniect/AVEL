@@ -1628,6 +1628,20 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL vec4x32u isqrt(vec4x32u v) {
+        vec4x32u ret{0};
+
+        for (int i = 16; i -- > 0;) {
+            vec4x32u candidate = ret | vec4x32u(1 << i);
+
+            // Specialize this line for different instruction sets
+            ret = blend(v >= candidate * candidate, candidate, ret);
+        }
+
+        return ret;
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec4x32u popcount(vec4x32u x) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
         return vec4x32u{_mm_popcnt_epi32(decay(x))};

@@ -789,6 +789,11 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL vec1x32u isqrt(vec1x32u v) {
+        return vec1x32u{isqrt(decay(v))};
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec1x32u popcount(vec1x32u v) {
         return vec1x32u{popcount(decay(v))};
     }

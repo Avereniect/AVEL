@@ -5,7 +5,7 @@ namespace avel {
 
     //=====================================================
     // Bit manipulation
-    //=====================================================
+    //=====================================================zz
 
     template<>
     [[nodiscard]]
@@ -16,6 +16,25 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::int8_t popcount(std::int8_t x) {
         return popcount(std::uint8_t(x));
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::int8_t isqrt(std::int8_t x) {
+        if (x < 1) {
+            return 0;
+        }
+
+        std::int8_t ret = 0;
+
+        for (int i = 4; i -- > 0;) {
+            std::int8_t candidate = ret | (1 << i);
+
+            if (x >= candidate * candidate) {
+                ret = candidate;
+            }
+        }
+
+        return ret;
     }
 
     [[nodiscard]]

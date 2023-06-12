@@ -989,6 +989,11 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL vec8x64u isqrt(vec8x64u v) {
+        return{};
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec8x64u popcount(vec8x64u v) {
         #if defined(AVEL_AVX512VPOPCNTDQ)
         return vec8x64u{_mm512_popcnt_epi64(decay(v))};

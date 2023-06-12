@@ -827,6 +827,11 @@ namespace avel {
         return ret;
     }
 
+    [[nodiscard]]
+    AVEL_FINL vec1x32i isqrt(vec1x32i v) {
+        return vec1x32i{isqrt(decay(v))};
+    }
+
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec1x32i, mask1x32i, vec1x32u)
 
 }

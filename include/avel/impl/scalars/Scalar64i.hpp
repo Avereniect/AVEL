@@ -19,6 +19,25 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL std::int64_t isqrt(std::int64_t x) {
+        if (x < 1) {
+            return 0;
+        }
+
+        std::int64_t ret = 0;
+
+        for (int i = 32; i -- > 0;) {
+            std::int64_t candidate = ret | (1 << i);
+
+            if (x >= candidate * candidate) {
+                ret = candidate;
+            }
+        }
+
+        return ret;
+    }
+
+    [[nodiscard]]
     AVEL_FINL std::int64_t byteswap(std::int64_t x) {
         return std::int64_t(byteswap(std::uint64_t(x)));
     }

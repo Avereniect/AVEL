@@ -2007,6 +2007,11 @@ namespace avel {
         };
     }
 
+    [[nodiscard]]
+    AVEL_FINL vec16x8i isqrt(vec16x8i v) {
+        return vec16x8i{};
+    }
+
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec16x8i, mask16x8i, vec16x8u)
 
 }

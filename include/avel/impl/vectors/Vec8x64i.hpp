@@ -1023,6 +1023,11 @@ namespace avel {
         return {quotient, remainder};
     }
 
+    [[nodiscard]]
+    AVEL_FINL vec8x64i isqrt(vec8x64i v) {
+        return{};
+    }
+
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec8x64i, mask8x64i, vec8x64u)
 
 }

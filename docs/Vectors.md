@@ -483,6 +483,11 @@
     corresponding elements in `y` to maximize performance
   * consider use of `avel::Denominator` classes for improved performance
 
+* `vector isqrt(vector v)`
+  * for each lane, computes the integer square root of `v`
+    * rounds towards zero
+  * if the inputs are negative, then the value of `0` is returned
+
 * `vector popcount(vector v)`
   * for each lane, computes the number of set bits in `v`
 

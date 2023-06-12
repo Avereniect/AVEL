@@ -950,6 +950,11 @@ namespace avel {
         };
     }
 
+    [[nodiscard]]
+    AVEL_FINL vec64x8i isqrt(vec64x8i v) {
+        return{};
+    }
+
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec64x8i, mask64x8i, vec64x8u)
 
 }

@@ -1439,6 +1439,28 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL vec64x8u isqrt(vec64x8u v) {
+        #if defined(AVEL_AVX512VBMI)
+        auto table0 = ;
+        auto table1 = ;
+
+        auto indices = _mm512_srli_epi16(decay(v), 1);
+
+        auto lookup_value = _mm512_permutex2var_epi8(table0, indices, table1);
+
+        auto is_root_self = _mm512_cmple_epi8_mask(decay(v), _mm512_set1_epi8(0x1));
+
+        auto result = _mm512_mask_blend_epi8(is_root_self, lookup_value, decay(v));
+
+        return{};
+
+        #elif deifned(AVEL_AVX512BW)
+        return{};
+
+        #endif
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec64x8u popcount(vec64x8u v) {
         #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512BITALG)
         return vec64x8u{_mm512_popcnt_epi8(decay(v))};

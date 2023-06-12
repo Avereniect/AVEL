@@ -1859,7 +1859,73 @@ namespace avel_tests {
         }
     }
 
-    TEST(Vec1x8i, Popcount) {
+    TEST(Vec1x8i, Isqrt_edge_cases) {
+        vec1x8i v0{0x00};
+        vec1x8i v1{0x01};
+
+        auto results0 = isqrt(v0);
+        auto results1 = isqrt(v1);
+
+        auto expected0 = v0;
+        auto expected1 = v1;
+
+        EXPECT_TRUE(all(results0 == expected0));
+        EXPECT_TRUE(all(results1 == expected1));
+    }
+
+    TEST(Vec1x8i, Isqrt_squares) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_squares_array<arr1x8i>();
+
+            vec1x8i v1{inputs};
+            vec1x8i v0 = v1 - vec1x8i{1};
+            vec1x8i v2 = v1 + vec1x8i{1};
+
+            auto results0 = isqrt(v0);
+            auto results1 = isqrt(v1);
+            auto results2 = isqrt(v2);
+
+            arr1x8i expected0{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected0[j] = isqrt(inputs[j] - 1);
+            }
+
+            EXPECT_TRUE(all(results0 == vec1x8i{expected0}));
+
+            arr1x8i expected1{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected1[j] = isqrt(inputs[j] + 0);
+            }
+
+            EXPECT_TRUE(all(results1 == vec1x8i{expected1}));
+
+            arr1x8i expected2{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected2[j] = isqrt(inputs[j] + 1);
+            }
+
+            EXPECT_TRUE(all(results2 == vec1x8i{expected2}));
+        }
+    }
+
+    TEST(Vec1x8i, Isqrt_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr1x8i>();
+
+            vec1x8i v{inputs};
+
+            auto results = isqrt(v);
+
+            arr1x8i expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = isqrt(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec1x8i{expected}));
+        }
+    }
+
+    TEST(Vec1x8i, Popcount_edge_cases) {
         vec1x8i v{0x0};
         vec1x8i c = popcount(v);
         EXPECT_TRUE(all(c == v));

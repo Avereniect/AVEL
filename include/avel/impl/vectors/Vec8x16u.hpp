@@ -2023,6 +2023,20 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL vec8x16u isqrt(vec8x16u v) {
+        vec8x16u ret{0};
+
+        for (int i = 8; i -- > 0;) {
+            vec8x16u candidate = ret | vec8x16u(1 << i);
+
+            // Specialize this line for different instruction sets
+            ret = blend(v >= candidate * candidate, candidate, ret);
+        }
+
+        return ret;
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec8x16u popcount(vec8x16u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
         return vec8x16u{_mm_popcnt_epi16(decay(v))};

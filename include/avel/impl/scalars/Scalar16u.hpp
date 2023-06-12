@@ -35,6 +35,21 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL std::uint16_t isqrt(std::uint16_t x) {
+        std::uint16_t ret = 0;
+
+        for (int i = 8; i -- > 0;) {
+            std::uint16_t candidate = ret | (1 << i);
+
+            if (x >= candidate * candidate) {
+                ret = candidate;
+            }
+        }
+
+        return ret;
+    }
+
+    [[nodiscard]]
     AVEL_FINL std::uint16_t byteswap(std::uint16_t x) {
         #if defined(AVEL_GCC) || defined(AVEL_CLANG)
         return __builtin_bswap16(x);

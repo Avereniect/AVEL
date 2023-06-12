@@ -1895,6 +1895,72 @@ namespace avel_tests {
         }
     }
 
+    TEST(Vec16x8u, Isqrt_edge_cases) {
+        vec16x8u v0{0x00};
+        vec16x8u v1{0x01};
+
+        auto results0 = isqrt(v0);
+        auto results1 = isqrt(v1);
+
+        auto expected0 = v0;
+        auto expected1 = v1;
+
+        EXPECT_TRUE(all(results0 == expected0));
+        EXPECT_TRUE(all(results1 == expected1));
+    }
+
+    TEST(Vec16x8u, Isqrt_squares) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_squares_array<arr16x8u>();
+
+            vec16x8u v1{inputs};
+            vec16x8u v0 = v1 - vec16x8u{1};
+            vec16x8u v2 = v1 + vec16x8u{1};
+
+            auto results0 = isqrt(v0);
+            auto results1 = isqrt(v1);
+            auto results2 = isqrt(v2);
+
+            arr16x8u expected0{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected0[j] = isqrt(inputs[j] - 1);
+            }
+
+            EXPECT_TRUE(all(results0 == vec16x8u{expected0}));
+
+            arr16x8u expected1{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected1[j] = isqrt(inputs[j] + 0);
+            }
+
+            EXPECT_TRUE(all(results1 == vec16x8u{expected1}));
+
+            arr16x8u expected2{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected2[j] = isqrt(inputs[j] + 1);
+            }
+
+            EXPECT_TRUE(all(results2 == vec16x8u{expected2}));
+        }
+    }
+
+    TEST(Vec16x8u, Isqrt) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr16x8u>();
+
+            vec16x8u v{inputs};
+
+            auto results = isqrt(v);
+
+            arr16x8u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = isqrt(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec16x8u{expected}));
+        }
+    }
+
     TEST(Vec16x8u, Popcount_edge_cases) {
         vec16x8u v{0x0};
         vec16x8u c = popcount(v);

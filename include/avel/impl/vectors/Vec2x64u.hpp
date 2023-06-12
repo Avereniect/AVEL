@@ -1672,6 +1672,23 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL vec2x64u isqrt(vec2x64u v) {
+        return {};
+
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
+
+        #elif defined(AVEL_SSE2)
+
+        #endif
+
+        #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
+
+        #elif defined(AVEL_NEON)
+
+        #endif
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec2x64u popcount(vec2x64u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
         return vec2x64u{_mm_popcnt_epi64(decay(v))};

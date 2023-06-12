@@ -15,6 +15,25 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL std::int32_t isqrt(std::int32_t x) {
+        if (x < 1) {
+            return 0;
+        }
+
+        std::int32_t ret = 0;
+
+        for (int i = 16; i -- > 0;) {
+            std::int32_t candidate = ret | (1 << i);
+
+            if (x >= candidate * candidate) {
+                ret = candidate;
+            }
+        }
+
+        return ret;
+    }
+
+    [[nodiscard]]
     AVEL_FINL std::int32_t byteswap(std::int32_t v) {
         return std::int32_t(byteswap(std::uint32_t(v)));
     }

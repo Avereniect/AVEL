@@ -2178,6 +2178,23 @@ namespace avel_tests {
         }
     }
 
+    TEST(Vec4x64u, Isqrt) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr4x64u>();
+
+            vec4x64u v{inputs};
+
+            auto results = isqrt(v);
+
+            arr4x64u expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = isqrt(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec4x64u{expected}));
+        }
+    }
+
     TEST(Vec4x64u, Popcount_edge_cases) {
         vec4x64u v{0x0};
         vec4x64u c = popcount(v);

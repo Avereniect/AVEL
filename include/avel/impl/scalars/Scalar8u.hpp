@@ -22,6 +22,21 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL std::uint8_t isqrt(std::uint8_t x) {
+        std::uint8_t ret = 0;
+
+        for (int i = 4; i -- > 0;) {
+            std::uint8_t candidate = ret | (1 << i);
+
+            if (x >= candidate * candidate) {
+                ret = candidate;
+            }
+        }
+
+        return ret;
+    }
+
+    [[nodiscard]]
     AVEL_FINL std::uint8_t popcount(std::uint8_t x) {
         #if defined(AVEL_POPCNT)
         return _popcnt32(std::uint32_t{x});
