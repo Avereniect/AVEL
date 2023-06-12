@@ -2,9 +2,9 @@
 #define AVEL_VEC16X8I_TESTS_HPP
 
 namespace avel_tests {
-    
+
     using namespace avel;
-    
+
     //=========================================================================
     // mask16x8i tests
     //=========================================================================
@@ -1158,22 +1158,23 @@ namespace avel_tests {
             auto inputs = random_array<arr16x8i>();
             vec16x8i v{inputs};
 
-            EXPECT_EQ(inputs[0x0], extract<0x0>(v));
-            EXPECT_EQ(inputs[0x1], extract<0x1>(v));
-            EXPECT_EQ(inputs[0x2], extract<0x2>(v));
-            EXPECT_EQ(inputs[0x3], extract<0x3>(v));
-            EXPECT_EQ(inputs[0x4], extract<0x4>(v));
-            EXPECT_EQ(inputs[0x5], extract<0x5>(v));
-            EXPECT_EQ(inputs[0x6], extract<0x6>(v));
-            EXPECT_EQ(inputs[0x7], extract<0x7>(v));
-            EXPECT_EQ(inputs[0x8], extract<0x8>(v));
-            EXPECT_EQ(inputs[0x9], extract<0x9>(v));
-            EXPECT_EQ(inputs[0xa], extract<0xa>(v));
-            EXPECT_EQ(inputs[0xb], extract<0xb>(v));
-            EXPECT_EQ(inputs[0xc], extract<0xc>(v));
-            EXPECT_EQ(inputs[0xd], extract<0xd>(v));
-            EXPECT_EQ(inputs[0xe], extract<0xe>(v));
-            EXPECT_EQ(inputs[0xf], extract<0xf>(v));
+            EXPECT_EQ(inputs[0x00], extract<0x00>(v));
+            EXPECT_EQ(inputs[0x01], extract<0x01>(v));
+            EXPECT_EQ(inputs[0x02], extract<0x02>(v));
+            EXPECT_EQ(inputs[0x03], extract<0x03>(v));
+            EXPECT_EQ(inputs[0x04], extract<0x04>(v));
+            EXPECT_EQ(inputs[0x05], extract<0x05>(v));
+            EXPECT_EQ(inputs[0x06], extract<0x06>(v));
+            EXPECT_EQ(inputs[0x07], extract<0x07>(v));
+            EXPECT_EQ(inputs[0x08], extract<0x08>(v));
+            EXPECT_EQ(inputs[0x09], extract<0x09>(v));
+            EXPECT_EQ(inputs[0x0a], extract<0x0a>(v));
+            EXPECT_EQ(inputs[0x0b], extract<0x0b>(v));
+            EXPECT_EQ(inputs[0x0c], extract<0x0c>(v));
+            EXPECT_EQ(inputs[0x0d], extract<0x0d>(v));
+            EXPECT_EQ(inputs[0x0e], extract<0x0e>(v));
+            EXPECT_EQ(inputs[0x0f], extract<0x0f>(v));
+
         }
     }
 
@@ -1182,22 +1183,23 @@ namespace avel_tests {
             auto inputs = random_array<arr16x8i>();
             vec16x8i v{random_val<vec16x8i::scalar>()};
 
-            v = insert<0x0>(v, inputs[0x0]);
-            v = insert<0x1>(v, inputs[0x1]);
-            v = insert<0x2>(v, inputs[0x2]);
-            v = insert<0x3>(v, inputs[0x3]);
-            v = insert<0x4>(v, inputs[0x4]);
-            v = insert<0x5>(v, inputs[0x5]);
-            v = insert<0x6>(v, inputs[0x6]);
-            v = insert<0x7>(v, inputs[0x7]);
-            v = insert<0x8>(v, inputs[0x8]);
-            v = insert<0x9>(v, inputs[0x9]);
-            v = insert<0xa>(v, inputs[0xa]);
-            v = insert<0xb>(v, inputs[0xb]);
-            v = insert<0xc>(v, inputs[0xc]);
-            v = insert<0xd>(v, inputs[0xd]);
-            v = insert<0xe>(v, inputs[0xe]);
-            v = insert<0xf>(v, inputs[0xf]);
+            v = insert<0x00>(v, inputs[0x00]);
+            v = insert<0x01>(v, inputs[0x01]);
+            v = insert<0x02>(v, inputs[0x02]);
+            v = insert<0x03>(v, inputs[0x03]);
+            v = insert<0x04>(v, inputs[0x04]);
+            v = insert<0x05>(v, inputs[0x05]);
+            v = insert<0x06>(v, inputs[0x06]);
+            v = insert<0x07>(v, inputs[0x07]);
+            v = insert<0x08>(v, inputs[0x08]);
+            v = insert<0x09>(v, inputs[0x09]);
+            v = insert<0x0a>(v, inputs[0x0a]);
+            v = insert<0x0b>(v, inputs[0x0b]);
+            v = insert<0x0c>(v, inputs[0x0c]);
+            v = insert<0x0d>(v, inputs[0x0d]);
+            v = insert<0x0e>(v, inputs[0x0e]);
+            v = insert<0x0f>(v, inputs[0x0f]);
+
 
             EXPECT_TRUE(all(v == vec16x8i{inputs}));
         }
@@ -1213,15 +1215,16 @@ namespace avel_tests {
 
             vec16x8i v{inputs};
 
-            EXPECT_TRUE(all(bit_shift_left<0x0>(v) == (v << 0x0)));
-            EXPECT_TRUE(all(bit_shift_left<0x1>(v) == (v << 0x1)));
-            EXPECT_TRUE(all(bit_shift_left<0x2>(v) == (v << 0x2)));
-            EXPECT_TRUE(all(bit_shift_left<0x3>(v) == (v << 0x3)));
-            EXPECT_TRUE(all(bit_shift_left<0x4>(v) == (v << 0x4)));
-            EXPECT_TRUE(all(bit_shift_left<0x5>(v) == (v << 0x5)));
-            EXPECT_TRUE(all(bit_shift_left<0x6>(v) == (v << 0x6)));
-            EXPECT_TRUE(all(bit_shift_left<0x7>(v) == (v << 0x7)));
-            EXPECT_TRUE(all(bit_shift_left<0x8>(v) == (v << 0x8)));
+            EXPECT_TRUE(all(bit_shift_left<0x00>(v) == (v << 0x00)));
+            EXPECT_TRUE(all(bit_shift_left<0x01>(v) == (v << 0x01)));
+            EXPECT_TRUE(all(bit_shift_left<0x02>(v) == (v << 0x02)));
+            EXPECT_TRUE(all(bit_shift_left<0x03>(v) == (v << 0x03)));
+            EXPECT_TRUE(all(bit_shift_left<0x04>(v) == (v << 0x04)));
+            EXPECT_TRUE(all(bit_shift_left<0x05>(v) == (v << 0x05)));
+            EXPECT_TRUE(all(bit_shift_left<0x06>(v) == (v << 0x06)));
+            EXPECT_TRUE(all(bit_shift_left<0x07>(v) == (v << 0x07)));
+            EXPECT_TRUE(all(bit_shift_left<0x08>(v) == (v << 0x08)));
+
         }
     }
 
@@ -1231,15 +1234,16 @@ namespace avel_tests {
 
             vec16x8i v{inputs};
 
-            EXPECT_TRUE(all(bit_shift_right<0x0>(v) == (v >> 0x0)));
-            EXPECT_TRUE(all(bit_shift_right<0x1>(v) == (v >> 0x1)));
-            EXPECT_TRUE(all(bit_shift_right<0x2>(v) == (v >> 0x2)));
-            EXPECT_TRUE(all(bit_shift_right<0x3>(v) == (v >> 0x3)));
-            EXPECT_TRUE(all(bit_shift_right<0x4>(v) == (v >> 0x4)));
-            EXPECT_TRUE(all(bit_shift_right<0x5>(v) == (v >> 0x5)));
-            EXPECT_TRUE(all(bit_shift_right<0x6>(v) == (v >> 0x6)));
-            EXPECT_TRUE(all(bit_shift_right<0x7>(v) == (v >> 0x7)));
-            EXPECT_TRUE(all(bit_shift_right<0x8>(v) == (v >> 0x8)));
+            EXPECT_TRUE(all(bit_shift_right<0x00>(v) == (v >> 0x00)));
+            EXPECT_TRUE(all(bit_shift_right<0x01>(v) == (v >> 0x01)));
+            EXPECT_TRUE(all(bit_shift_right<0x02>(v) == (v >> 0x02)));
+            EXPECT_TRUE(all(bit_shift_right<0x03>(v) == (v >> 0x03)));
+            EXPECT_TRUE(all(bit_shift_right<0x04>(v) == (v >> 0x04)));
+            EXPECT_TRUE(all(bit_shift_right<0x05>(v) == (v >> 0x05)));
+            EXPECT_TRUE(all(bit_shift_right<0x06>(v) == (v >> 0x06)));
+            EXPECT_TRUE(all(bit_shift_right<0x07>(v) == (v >> 0x07)));
+            EXPECT_TRUE(all(bit_shift_right<0x08>(v) == (v >> 0x08)));
+
         }
     }
 
@@ -1249,14 +1253,16 @@ namespace avel_tests {
 
             vec16x8i v{inputs};
 
-            EXPECT_TRUE(all(rotl<0x0>(v) == (rotl(v, 0x0))));
-            EXPECT_TRUE(all(rotl<0x1>(v) == (rotl(v, 0x1))));
-            EXPECT_TRUE(all(rotl<0x2>(v) == (rotl(v, 0x2))));
-            EXPECT_TRUE(all(rotl<0x3>(v) == (rotl(v, 0x3))));
-            EXPECT_TRUE(all(rotl<0x4>(v) == (rotl(v, 0x4))));
-            EXPECT_TRUE(all(rotl<0x5>(v) == (rotl(v, 0x5))));
-            EXPECT_TRUE(all(rotl<0x6>(v) == (rotl(v, 0x6))));
-            EXPECT_TRUE(all(rotl<0x7>(v) == (rotl(v, 0x7))));
+            EXPECT_TRUE(all(rotl<0x00>(v) == (rotl(v, 0x00))));
+            EXPECT_TRUE(all(rotl<0x01>(v) == (rotl(v, 0x01))));
+            EXPECT_TRUE(all(rotl<0x02>(v) == (rotl(v, 0x02))));
+            EXPECT_TRUE(all(rotl<0x03>(v) == (rotl(v, 0x03))));
+            EXPECT_TRUE(all(rotl<0x04>(v) == (rotl(v, 0x04))));
+            EXPECT_TRUE(all(rotl<0x05>(v) == (rotl(v, 0x05))));
+            EXPECT_TRUE(all(rotl<0x06>(v) == (rotl(v, 0x06))));
+            EXPECT_TRUE(all(rotl<0x07>(v) == (rotl(v, 0x07))));
+            EXPECT_TRUE(all(rotl<0x08>(v) == (rotl(v, 0x08))));
+
         }
     }
 
@@ -1303,14 +1309,16 @@ namespace avel_tests {
 
             vec16x8i v{inputs0};
 
-            EXPECT_TRUE(all(rotr<0x0>(v) == (rotr(v, 0x0))));
-            EXPECT_TRUE(all(rotr<0x1>(v) == (rotr(v, 0x1))));
-            EXPECT_TRUE(all(rotr<0x2>(v) == (rotr(v, 0x2))));
-            EXPECT_TRUE(all(rotr<0x3>(v) == (rotr(v, 0x3))));
-            EXPECT_TRUE(all(rotr<0x4>(v) == (rotr(v, 0x4))));
-            EXPECT_TRUE(all(rotr<0x5>(v) == (rotr(v, 0x5))));
-            EXPECT_TRUE(all(rotr<0x6>(v) == (rotr(v, 0x6))));
-            EXPECT_TRUE(all(rotr<0x7>(v) == (rotr(v, 0x7))));
+            EXPECT_TRUE(all(rotr<0x00>(v) == (rotr(v, 0x00))));
+            EXPECT_TRUE(all(rotr<0x01>(v) == (rotr(v, 0x01))));
+            EXPECT_TRUE(all(rotr<0x02>(v) == (rotr(v, 0x02))));
+            EXPECT_TRUE(all(rotr<0x03>(v) == (rotr(v, 0x03))));
+            EXPECT_TRUE(all(rotr<0x04>(v) == (rotr(v, 0x04))));
+            EXPECT_TRUE(all(rotr<0x05>(v) == (rotr(v, 0x05))));
+            EXPECT_TRUE(all(rotr<0x06>(v) == (rotr(v, 0x06))));
+            EXPECT_TRUE(all(rotr<0x07>(v) == (rotr(v, 0x07))));
+            EXPECT_TRUE(all(rotr<0x08>(v) == (rotr(v, 0x08))));
+
         }
     }
 
@@ -1734,6 +1742,7 @@ namespace avel_tests {
             EXPECT_TRUE(all(load<vec16x8i, 0x0e>(inputs.data()) == load<vec16x8i>(inputs.data(), 0x0e)));
             EXPECT_TRUE(all(load<vec16x8i, 0x0f>(inputs.data()) == load<vec16x8i>(inputs.data(), 0x0f)));
             EXPECT_TRUE(all(load<vec16x8i, 0x10>(inputs.data()) == load<vec16x8i>(inputs.data(), 0x10)));
+
         }
     }
 
@@ -1777,6 +1786,7 @@ namespace avel_tests {
             EXPECT_TRUE(all(aligned_load<vec16x8i, 0x0e>(inputs.data()) == aligned_load<vec16x8i>(inputs.data(), 0x0e)));
             EXPECT_TRUE(all(aligned_load<vec16x8i, 0x0f>(inputs.data()) == aligned_load<vec16x8i>(inputs.data(), 0x0f)));
             EXPECT_TRUE(all(aligned_load<vec16x8i, 0x10>(inputs.data()) == aligned_load<vec16x8i>(inputs.data(), 0x10)));
+
         }
     }
 
@@ -1826,6 +1836,7 @@ namespace avel_tests {
             store<0x0e>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0e));
             store<0x0f>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0f));
             store<0x10>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x10));
+
         }
     }
 
@@ -1875,6 +1886,7 @@ namespace avel_tests {
             aligned_store<0x0e>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0e));
             aligned_store<0x0f>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x0f));
             aligned_store<0x10>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x10));
+
         }
     }
 
@@ -1947,7 +1959,7 @@ namespace avel_tests {
         }
     }
 
-    TEST(Vec16x8i, Popcount) {
+    TEST(Vec16x8i, Popcount_edge_cases) {
         vec16x8i v{0x0};
         vec16x8i c = popcount(v);
         EXPECT_TRUE(all(c == v));
@@ -1992,7 +2004,7 @@ namespace avel_tests {
             vec16x8i::scalar v = (vec16x8i::scalar(0x1) << i) - 1;
             EXPECT_TRUE(all(countl_zero(vec16x8i{v}) == vec16x8i(type_width<vec16x8i::scalar>::value - i)));
         }
-        EXPECT_TRUE(all(countl_zero(vec16x8u(-1)) == vec16x8u{0}));
+        EXPECT_TRUE(all(countl_zero(vec16x8i(-1)) == vec16x8i{0}));
     }
 
     TEST(Vec16x8i, Countl_zero_random) {
@@ -2069,7 +2081,7 @@ namespace avel_tests {
             vec16x8i::scalar v = (vec16x8i::scalar(1) << i) - 1;
             EXPECT_TRUE(all(countr_one(vec16x8i{v}) == vec16x8i(i)));
         }
-        EXPECT_TRUE(all(countr_one(vec16x8u{vec16x8u::scalar(-1)}) == vec16x8u{type_width<vec16x8i::scalar>::value}));
+        EXPECT_TRUE(all(countr_one(vec16x8i{vec16x8i::scalar(-1)}) == vec16x8i{type_width<vec16x8i::scalar>::value}));
     }
 
     TEST(Vec16x8i, Countr_one_random) {
@@ -2114,7 +2126,7 @@ namespace avel_tests {
             EXPECT_TRUE(results == mask16x8i{expected});
         }
     }
-    
+
 }
 
 #endif
