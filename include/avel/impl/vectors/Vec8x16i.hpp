@@ -1524,7 +1524,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16i isqrt(vec8x16i v) {
-        return vec8x16i{};
+        return clear(v < vec8x16i{0x00}, vec8x16i{isqrt(vec8x16u{v})});
     }
 
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec8x16i, mask8x16i, vec8x16u)

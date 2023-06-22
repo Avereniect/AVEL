@@ -990,7 +990,36 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64u isqrt(vec8x64u v) {
-        return{};
+        #if defined(AVEL_AVX512DQ)
+        auto clamped = min(v, vec8x64u{18446744065119617025ull});
+
+        auto as_floats = _mm512_cvt_roundepu64_pd(decay(clamped), _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC);
+        auto fp_sqrts = _mm512_sqrt_round_pd(as_floats, _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC);
+        auto int_sqrts = _mm512_cvttpd_epu64(fp_sqrts);
+        auto adjusted_roots = _mm512_add_epi64(int_sqrts, _mm512_set1_epi64(0x01));
+
+        auto v_reconstructed = _mm512_mullo_epi64(adjusted_roots, adjusted_roots);
+        auto are_reconstructions_accurate = _mm512_cmpge_epu64_mask(decay(v), v_reconstructed);
+
+        auto ret = _mm512_mask_blend_epi64(are_reconstructions_accurate, int_sqrts, adjusted_roots);
+        return vec8x64u{ret};
+
+        #elif defined(AVEL_AVX512F)
+        auto v_lo = _mm512_and_epi32(decay(v), _mm512_set1_epi64(0xffffffff));
+        auto v_hi = _mm512_srli_epi32(decay(v), 32);
+
+        auto as_floats_lo = _mm512_cvtepu32_pd(v_lo);
+        auto as_floats_hi = _mm512_cvtepu32_pd(v_hi);
+
+        auto as_floats_hi_scaled = _mm512_scalef_pd(as_floats_hi, _mm512_set1_pd(4294967296.0));
+
+        auto as_floats = _mm512_add_pd(as_floats_hi_scaled, as_floats_lo);
+        auto float_sqrt = _mm512_sqrt_pd(as_floats);
+
+        auto ret  =_mm512_cvtepi32_epi64(_mm512_cvtpd_epu32(float_sqrt));
+        return vec8x64u{ret};
+
+        #endif
     }
 
     [[nodiscard]]

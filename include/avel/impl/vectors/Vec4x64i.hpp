@@ -1221,7 +1221,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x64i isqrt(vec4x64i v) {
-        return {};
+        auto clamped = max(v, vec4x64i{0x00});
+        return vec4x64i{isqrt(vec4x64u{clamped})};
     }
 
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec4x64i, mask4x64i, vec4x64u)

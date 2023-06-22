@@ -991,7 +991,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x16i isqrt(vec16x16i v) {
-        return {};
+        auto clamped = max(vec16x16i{v}, vec16x16i{0x00});
+        return vec16x16i{isqrt(vec16x16u{clamped})};
     }
 
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec16x16i, mask16x16i, vec16x16u)

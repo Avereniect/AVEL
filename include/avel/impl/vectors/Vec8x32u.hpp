@@ -1050,7 +1050,21 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x32u isqrt(vec8x32u v) {
-        return {};
+        #if defined(AVEL_AVX512VL)
+        auto clamped = min(v, vec8x32u{4294836225u});
+
+        auto as_floats = _mm512_cvt_roundepu32_ps(_mm512_castsi256_si512(decay(clamped)), _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC);
+        auto fp_sqrts = _mm512_castps512_ps256(_mm512_sqrt_round_ps(as_floats, _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC));
+        auto int_sqrts = _mm256_cvttps_epu32(fp_sqrts);
+        auto adjusted_roots = _mm256_add_epi32(int_sqrts, _mm256_set1_epi32(0x01));
+
+        auto v_reconstructed = _mm256_mullo_epi32(adjusted_roots, adjusted_roots);
+        auto are_reconstructions_accurate = _mm256_cmpge_epu32_mask(decay(v), v_reconstructed);
+
+        auto ret = _mm256_mask_blend_epi32(are_reconstructions_accurate, int_sqrts, adjusted_roots);
+        return vec8x32u{ret};
+
+        #endif
     }
 
     [[nodiscard]]

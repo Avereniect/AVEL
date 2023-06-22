@@ -24,10 +24,10 @@ namespace avel {
             return 0;
         }
 
-        std::int16_t ret = 0;
+        std::uint16_t ret = 0;
 
         for (int i = 8; i -- > 0;) {
-            std::int16_t candidate = ret | (1 << i);
+            std::uint16_t candidate = ret | (1 << i);
 
             if (x >= candidate * candidate) {
                 ret = candidate;

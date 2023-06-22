@@ -1110,7 +1110,21 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x16u isqrt(vec16x16u v) {
-        return {};
+        auto zeros = _mm256_setzero_si256();
+        auto lo = _mm256_unpacklo_epi16(decay(v), zeros);
+        auto hi = _mm256_unpackhi_epi16(decay(v), zeros);
+
+        auto as_floats_lo = _mm256_cvtepi32_ps(lo);
+        auto as_floats_hi = _mm256_cvtepi32_ps(hi);
+
+        auto fp_sqrts_lo = _mm256_sqrt_ps(as_floats_lo);
+        auto fp_sqrts_hi = _mm256_sqrt_ps(as_floats_hi);
+
+        auto sqrts_lo = _mm256_cvttps_epi32(fp_sqrts_lo);
+        auto sqrts_hi = _mm256_cvttps_epi32(fp_sqrts_hi);
+
+        auto ret = _mm256_packus_epi32(sqrts_lo, sqrts_hi);
+        return vec16x16u{ret};
     }
 
     [[nodiscard]]

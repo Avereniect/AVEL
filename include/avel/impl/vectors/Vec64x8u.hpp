@@ -1440,21 +1440,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec64x8u isqrt(vec64x8u v) {
-        #if defined(AVEL_AVX512VBMI)
-        auto table0 = ;
-        auto table1 = ;
+        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
+        auto table0 = _mm512_load_si512(isqrt_table_data + 0x00);
+        auto table1 = _mm512_load_si512(isqrt_table_data + 0x40);
+        auto table2 = _mm512_load_si512(isqrt_table_data + 0x80);
+        auto table3 = _mm512_load_si512(isqrt_table_data + 0xC0);
 
-        auto indices = _mm512_srli_epi16(decay(v), 1);
+        auto lookup0 = _mm512_permutex2var_epi8(table0, decay(v), table1);
+        auto lookup1 = _mm512_permutex2var_epi8(table2, decay(v), table3);
 
-        auto lookup_value = _mm512_permutex2var_epi8(table0, indices, table1);
+        auto blend_mask = _mm512_movepi8_mask(decay(v));
+        auto result = _mm512_mask_blend_epi8(blend_mask, lookup0, lookup1);
+        return vec64x8u{result};
 
-        auto is_root_self = _mm512_cmple_epi8_mask(decay(v), _mm512_set1_epi8(0x1));
-
-        auto result = _mm512_mask_blend_epi8(is_root_self, lookup_value, decay(v));
-
-        return{};
-
-        #elif deifned(AVEL_AVX512BW)
+        #elif defined(AVEL_AVX512BW)
         return{};
 
         #endif

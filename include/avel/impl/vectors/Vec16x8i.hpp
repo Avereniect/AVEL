@@ -2009,7 +2009,92 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x8i isqrt(vec16x8i v) {
-        return vec16x8i{};
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
+        auto widened_v = _mm512_castsi128_si512(decay(v));
+
+        auto table_lo = _mm512_loadu_si512(isqrt_table_data + 0x0);
+        auto table_hi = _mm512_loadu_si512(isqrt_table_data + 0x40);
+
+        auto zero_mask = _knot_mask16(_mm_movepi8_mask(decay(v)));
+        auto lookup = _mm512_permutex2var_epi8(table_lo, widened_v, table_hi);
+        auto ret = _mm_maskz_mov_epi8(zero_mask, _mm512_castsi512_si128(lookup));
+
+        return vec16x8i{ret};
+
+        #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        auto widened_v = _mm256_cvtepu8_epi16(decay(v));
+
+        auto ret = _mm256_setzero_si256();
+        for (int i = 4; i -- > 0;) {
+            auto candidate = _mm256_or_si256(ret, _mm256_set1_epi16(1 << i));
+
+            auto candidate2 = _mm256_mullo_epi16(candidate, candidate);
+            auto mask = _mm256_cmpge_epi16_mask(widened_v, candidate2);
+            ret = _mm256_mask_blend_epi16(mask, ret, candidate);
+        }
+
+        return vec16x8i{_mm256_cvtepi16_epi8(ret)};
+
+        #elif defined(AVEL_SSE41)
+        auto ret_even = _mm_setzero_si128();
+        auto ret_odd  = _mm_setzero_si128();
+
+        auto v_even = _mm_and_si128(decay(v), _mm_set1_epi16(0xff));
+        auto v_odd  = _mm_srli_epi16(decay(v), 8);
+
+        for (int i = 4; i -- > 0;) {
+            auto threshold = _mm_set1_epi16(1 << i);
+
+            auto candidate_even = _mm_or_si128(ret_even, threshold);
+            auto candidate_odd  = _mm_or_si128(ret_odd,  threshold);
+
+            auto candidate2_even = _mm_mullo_epi16(candidate_even, candidate_even);
+            auto candidate2_odd  = _mm_mullo_epi16(candidate_odd,  candidate_odd );
+
+            // Check if candidate is greater-than or equal to values in v
+            auto mask_even = _mm_cmpeq_epi8(_mm_min_epu8(v_even, candidate2_even), candidate2_even);
+            auto mask_odd  = _mm_cmpeq_epi8(_mm_min_epu8(v_odd,  candidate2_odd ), candidate2_odd );
+
+            // Conditionally set
+            ret_even = _mm_blendv_epi8(mask_even, candidate_even, ret_even);
+            ret_odd  = _mm_blendv_epi8(mask_odd,  candidate_odd,  ret_odd );
+        }
+
+        auto ret = _mm_or_si128(v_even, _mm_slli_epi16(v_odd, 8));
+        return vec16x8u{ret};
+
+        #elif defined(AVEL_SSE2)
+        auto is_negative = _mm_cmplt_epi8(decay(v), _mm_setzero_si128());
+
+        auto ret_even = _mm_setzero_si128();
+        auto ret_odd  = _mm_setzero_si128();
+
+        auto v_even = _mm_and_si128(decay(v), _mm_set1_epi16(0xff));
+        auto v_odd  = _mm_srli_epi16(decay(v), 8);
+
+        for (int i = 4; i -- > 0;) {
+            auto threshold = _mm_set1_epi16(1 << i);
+
+            auto candidate_even = _mm_or_si128(ret_even, threshold);
+            auto candidate_odd  = _mm_or_si128(ret_odd,  threshold);
+
+            auto candidate2_even = _mm_mullo_epi16(candidate_even, candidate_even);
+            auto candidate2_odd  = _mm_mullo_epi16(candidate_odd,  candidate_odd );
+
+            // Check if candidate is less-than to values in v
+            auto mask_even = _mm_cmplt_epi16(v_even, candidate2_even);
+            auto mask_odd  = _mm_cmplt_epi16(v_odd,  candidate2_odd );
+
+            // Conditionally set lowest bit
+            ret_even = _mm_or_si128(ret_even, _mm_andnot_si128(mask_even, candidate_even));
+            ret_odd  = _mm_or_si128(ret_odd , _mm_andnot_si128(mask_odd , candidate_odd));
+        }
+
+        auto ret = _mm_or_si128(ret_even, _mm_slli_epi16(ret_odd, 8));
+        ret = _mm_andnot_si128(is_negative, ret);
+        return vec16x8i{ret};
+
+        #endif
     }
 
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec16x8i, mask16x8i, vec16x8u)

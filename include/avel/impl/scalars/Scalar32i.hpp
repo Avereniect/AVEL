@@ -20,10 +20,10 @@ namespace avel {
             return 0;
         }
 
-        std::int32_t ret = 0;
+        std::uint32_t ret = 0;
 
         for (int i = 16; i -- > 0;) {
-            std::int32_t candidate = ret | (1 << i);
+            std::uint32_t candidate = ret | (std::uint32_t(1) << i);
 
             if (x >= candidate * candidate) {
                 ret = candidate;

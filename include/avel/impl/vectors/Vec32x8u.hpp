@@ -1397,7 +1397,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec32x8u isqrt(vec32x8u v) {
-        return {};
+        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
+        auto table0 = _mm512_load_si512(isqrt_table_data + 0x00);
+        auto table1 = _mm512_load_si512(isqrt_table_data + 0x40);
+        auto table2 = _mm512_load_si512(isqrt_table_data + 0x80);
+        auto table3 = _mm512_load_si512(isqrt_table_data + 0xC0);
+
+        auto lookup0 = _mm512_permutex2var_epi8(table0, _mm512_castsi256_si512(decay(v)), table1);
+        auto lookup1 = _mm512_permutex2var_epi8(table2, _mm512_castsi256_si512(decay(v)), table3);
+
+        std::uint64_t blend_mask = _mm256_movepi8_mask(decay(v));
+        auto result = _mm256_mask_blend_epi8(blend_mask, _mm512_castsi512_si256(lookup0), _mm512_castsi512_si256(lookup1));
+        return vec32x8u{result};
+
+        #endif
     }
 
     [[nodiscard]]

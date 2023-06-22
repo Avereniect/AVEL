@@ -913,7 +913,23 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec32x16u isqrt(vec32x16u v) {
-        return{};
+        #if defined(AVEL_AVX512BW)
+        auto zeros = _mm512_setzero_si512();
+        auto lo = _mm512_unpacklo_epi16(decay(v), zeros);
+        auto hi = _mm512_unpackhi_epi16(decay(v), zeros);
+
+        auto as_floats_lo = _mm512_cvtepi32_ps(lo);
+        auto as_floats_hi = _mm512_cvtepi32_ps(hi);
+
+        auto fp_sqrts_lo = _mm512_sqrt_ps(as_floats_lo);
+        auto fp_sqrts_hi = _mm512_sqrt_ps(as_floats_hi);
+
+        auto sqrts_lo = _mm512_cvttps_epi32(fp_sqrts_lo);
+        auto sqrts_hi = _mm512_cvttps_epi32(fp_sqrts_hi);
+
+        auto ret = _mm512_packus_epi32(sqrts_lo, sqrts_hi);
+        return vec32x16u{ret};
+        #endif
     }
 
     [[nodiscard]]

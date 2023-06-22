@@ -896,7 +896,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32i isqrt(vec16x32i v) {
-        return{};
+        #if defined(AVEL_AVX512F)
+        v = max(v, vec16x32i{0x00});
+
+        auto as_floats = _mm512_cvt_roundepu32_ps(decay(v), _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC);
+        auto fp_sqrts = _mm512_sqrt_round_ps(as_floats, _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC);
+        auto int_sqrts = _mm512_cvttps_epu32(fp_sqrts);
+        auto adjusted_roots = _mm512_add_epi32(int_sqrts, _mm512_set1_epi32(0x01));
+
+        auto v_reconstructed = _mm512_mullo_epi32(adjusted_roots, adjusted_roots);
+        auto are_reconstructions_accurate = _mm512_cmpge_epu32_mask(decay(v), v_reconstructed);
+
+        auto ret = _mm512_mask_blend_epi32(are_reconstructions_accurate, int_sqrts, adjusted_roots);
+        return vec16x32i{ret};
+        #endif
     }
 
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec16x32i, mask16x32i, vec16x32u)

@@ -1822,19 +1822,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64i isqrt(vec2x64i v) {
-        return {};
-
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
-
-        #elif defined(AVEL_SSE2)
-
-        #endif
-
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
-
-        #elif defined(AVEL_NEON)
-
-        #endif
+        auto clamped = max(v, vec2x64i{0x00});
+        return vec2x64i{isqrt(vec2x64u{clamped})};
     }
 
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec2x64i, mask2x64i, vec2x64u)

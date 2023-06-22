@@ -1704,7 +1704,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32i isqrt(vec4x32i v) {
-        return vec4x32i{};
+        #if defined(AVEL_AVX512VL)
+        v = max(v, vec4x32i{0x00});
+
+        auto as_floats = _mm512_cvt_roundepu32_ps(_mm512_castsi128_si512(decay(v)), _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC);
+        auto fp_sqrts = _mm512_castps512_ps128(_mm512_sqrt_round_ps(as_floats, _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC));
+        auto int_sqrts = _mm_cvttps_epu32(fp_sqrts);
+        auto adjusted_roots = _mm_add_epi32(int_sqrts, _mm_set1_epi32(0x01));
+
+        auto v_reconstructed = _mm_mullo_epi32(adjusted_roots, adjusted_roots);
+        auto are_reconstructions_accurate = _mm_cmpge_epu32_mask(decay(v), v_reconstructed);
+
+        auto ret = _mm_mask_blend_epi32(are_reconstructions_accurate, int_sqrts, adjusted_roots);
+        return vec4x32i{ret};
+        #endif
     }
 
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec4x32i, mask4x32i, vec4x32u)

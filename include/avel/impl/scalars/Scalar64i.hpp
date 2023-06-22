@@ -24,10 +24,10 @@ namespace avel {
             return 0;
         }
 
-        std::int64_t ret = 0;
+        std::uint64_t ret = 0;
 
         for (int i = 32; i -- > 0;) {
-            std::int64_t candidate = ret | (1 << i);
+            std::uint64_t candidate = ret | (std::uint64_t(1) << i);
 
             if (x >= candidate * candidate) {
                 ret = candidate;

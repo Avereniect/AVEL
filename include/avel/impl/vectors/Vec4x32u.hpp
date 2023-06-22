@@ -1629,16 +1629,21 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32u isqrt(vec4x32u v) {
-        vec4x32u ret{0};
+        #if defined(AVEL_AVX512VL)
+        auto clamped = min(v, vec4x32u{4294836225u});
 
-        for (int i = 16; i -- > 0;) {
-            vec4x32u candidate = ret | vec4x32u(1 << i);
+        auto as_floats = _mm512_cvt_roundepu32_ps(_mm512_castsi128_si512(decay(clamped)), _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC);
+        auto fp_sqrts = _mm512_castps512_ps128(_mm512_sqrt_round_ps(as_floats, _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC));
+        auto int_sqrts = _mm_cvttps_epu32(fp_sqrts);
+        auto adjusted_roots = _mm_add_epi32(int_sqrts, _mm_set1_epi32(0x01));
 
-            // Specialize this line for different instruction sets
-            ret = blend(v >= candidate * candidate, candidate, ret);
-        }
+        auto v_reconstructed = _mm_mullo_epi32(adjusted_roots, adjusted_roots);
+        auto are_reconstructions_accurate = _mm_cmpge_epu32_mask(decay(v), v_reconstructed);
 
-        return ret;
+        auto ret = _mm_mask_blend_epi32(are_reconstructions_accurate, int_sqrts, adjusted_roots);
+        return vec4x32u{ret};
+
+        #endif
     }
 
     [[nodiscard]]

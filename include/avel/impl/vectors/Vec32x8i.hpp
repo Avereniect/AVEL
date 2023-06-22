@@ -1148,7 +1148,18 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec32x8i isqrt(vec32x8i v) {
-        return {};
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
+        auto widened_v = _mm512_castsi256_si512(decay(v));
+
+        auto table_lo = _mm512_loadu_si512(isqrt_table_data + 0x0);
+        auto table_hi = _mm512_loadu_si512(isqrt_table_data + 0x40);
+
+        auto zero_mask = _knot_mask32(_mm256_movepi8_mask(decay(v)));
+        auto lookup = _mm512_permutex2var_epi8(table_lo, widened_v, table_hi);
+        auto ret = _mm256_maskz_mov_epi8(zero_mask, _mm512_castsi512_si256(lookup));
+
+        return vec32x8i{ret};
+        #endif
     }
 
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec32x8i, mask32x8i, vec32x8u)
