@@ -961,6 +961,11 @@ namespace avel {
         auto ret = _mm512_maskz_mov_epi8(zero_mask, lookup);
 
         return vec64x8i{ret};
+
+        #elif defined(AVEL_AVX512BW)
+        auto clamped = max(v, vec64x8i{0x00});
+        return vec64x8i{isqrt(vec64x8u{clamped})};
+
         #endif
     }
 

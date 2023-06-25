@@ -1391,24 +1391,39 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec32x8u div(vec32x8u v) {
-        return vec32x8u{};
-    }
-
-    [[nodiscard]]
     AVEL_FINL vec32x8u isqrt(vec32x8u v) {
-        #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
-        auto table0 = _mm512_load_si512(isqrt_table_data + 0x00);
-        auto table1 = _mm512_load_si512(isqrt_table_data + 0x40);
-        auto table2 = _mm512_load_si512(isqrt_table_data + 0x80);
-        auto table3 = _mm512_load_si512(isqrt_table_data + 0xC0);
+        #if defined(AVEL_AVX2)
+        // This approach is based on two lookups
+        // The first lookup uses the low nibble of each byte and computes
+        // their square roots exactly.
+        // The second lookup uses the high nibble of each byte and estimates
+        // the square root based on those bits alone. The result is either
+        // accurate or too small by exactly 1. To handle this, the high
+        // nibble of the lookup result contains the threshold that the low
+        // nibble of v would need to pass in order for the error to be 1. By
+        // checking if the low nibble of v is greater than this threshold, the
+        // lookup value ay be incremented in a predicated fashion, correcting
+        // the error
 
-        auto lookup0 = _mm512_permutex2var_epi8(table0, _mm512_castsi256_si512(decay(v)), table1);
-        auto lookup1 = _mm512_permutex2var_epi8(table2, _mm512_castsi256_si512(decay(v)), table3);
+        auto table0 = _mm256_broadcastsi128_si256(_mm_load_si128(reinterpret_cast<const __m128i*>(isqrt_table_data0)));
+        auto table1 = _mm256_broadcastsi128_si256(_mm_load_si128(reinterpret_cast<const __m128i*>(isqrt_table_data1)));
 
-        std::uint64_t blend_mask = _mm256_movepi8_mask(decay(v));
-        auto result = _mm256_mask_blend_epi8(blend_mask, _mm512_castsi512_si256(lookup0), _mm512_castsi512_si256(lookup1));
-        return vec32x8u{result};
+        auto nibble_mask = _mm256_set1_epi8(0x0f);
+        auto lo_nibble = _mm256_and_si256(nibble_mask, decay(v));
+        auto hi_nibble = _mm256_and_si256(nibble_mask, _mm256_srli_epi16(decay(v), 4));
+
+        auto lo_lookup = _mm256_shuffle_epi8(table0, lo_nibble);
+        auto hi_lookup_full = _mm256_shuffle_epi8(table1, hi_nibble);
+
+        auto hi_lookup_sqrt = _mm256_and_si256(nibble_mask, hi_lookup_full);
+        auto hi_lookup_threshold = _mm256_and_si256(nibble_mask, _mm256_srli_epi16(hi_lookup_full, 4));
+
+        auto is_estimate_off = _mm256_cmpgt_epi8(lo_nibble, hi_lookup_threshold);
+        auto corrected_hi_lookup = _mm256_sub_epi8(hi_lookup_sqrt, is_estimate_off);
+
+        auto combined_lookup = _mm256_max_epu8(lo_lookup, corrected_hi_lookup);
+
+        return vec32x8u{combined_lookup};
 
         #endif
     }

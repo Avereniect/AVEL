@@ -1142,11 +1142,6 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec32x8i div(vec32x8i v) {
-        return vec32x8i{};
-    }
-
-    [[nodiscard]]
     AVEL_FINL vec32x8i isqrt(vec32x8i v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
         auto widened_v = _mm512_castsi256_si512(decay(v));
@@ -1159,6 +1154,11 @@ namespace avel {
         auto ret = _mm256_maskz_mov_epi8(zero_mask, _mm512_castsi512_si256(lookup));
 
         return vec32x8i{ret};
+
+        #elif defined(AVEL_AVX2)
+        auto clamped = max(v, vec32x8i{0x00});
+        return vec32x8i{isqrt(vec32x8u{clamped})};
+
         #endif
     }
 

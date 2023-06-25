@@ -1454,7 +1454,37 @@ namespace avel {
         return vec64x8u{result};
 
         #elif defined(AVEL_AVX512BW)
-        return{};
+        // This approach is based on two lookups
+        // The first lookup uses the low nibble of each byte and computes
+        // their square roots exactly.
+        // The second lookup uses the high nibble of each byte and estimates
+        // the square root based on those bits alone. The result is either
+        // accurate or too small by exactly 1. To handle this, the high
+        // nibble of the lookup result contains the threshold that the low
+        // nibble of v would need to pass in order for the error to be 1. By
+        // checking if the low nibble of v is greater than this threshold, the
+        // lookup value ay be incremented in a predicated fashion, correcting
+        // the error
+
+        auto table0 = _mm512_broadcast_i32x4(_mm_load_si128(reinterpret_cast<const __m128i*>(isqrt_table_data0)));
+        auto table1 = _mm512_broadcast_i32x4(_mm_load_si128(reinterpret_cast<const __m128i*>(isqrt_table_data1)));
+
+        auto nibble_mask = _mm512_set1_epi8(0x0f);
+        auto lo_nibble = _mm512_and_si512(nibble_mask, decay(v));
+        auto hi_nibble = _mm512_and_si512(nibble_mask, _mm512_srli_epi16(decay(v), 4));
+
+        auto lo_lookup = _mm512_shuffle_epi8(table0, lo_nibble);
+        auto hi_lookup_full = _mm512_shuffle_epi8(table1, hi_nibble);
+
+        auto hi_lookup_sqrt = _mm512_and_si512(nibble_mask, hi_lookup_full);
+        auto hi_lookup_threshold = _mm512_and_si512(nibble_mask, _mm512_srli_epi16(hi_lookup_full, 4));
+
+        auto is_estimate_off = _mm512_cmplt_epu8_mask(hi_lookup_threshold, lo_nibble);
+        auto corrected_hi_lookup = _mm512_mask_add_epi8(hi_lookup_sqrt, is_estimate_off, hi_lookup_sqrt, _mm512_set1_epi8(0x01));
+
+        auto combined_lookup = _mm512_max_epu8(lo_lookup, corrected_hi_lookup);
+
+        return vec64x8u{combined_lookup};
 
         #endif
     }

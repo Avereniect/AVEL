@@ -2738,75 +2738,96 @@ namespace avel {
         auto result = _mm_mask_blend_epi8(blend_mask, _mm512_castsi512_si128(lookup0), _mm512_castsi512_si128(lookup1));
         return vec16x8u{result};
 
-        #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        auto widened_v = _mm256_cvtepu8_epi16(decay(v));
+        #elif defined(AVEL_SSSE3)
+        // This approach is based on two lookups
+        // The first lookup uses the low nibble of each byte and computes
+        // their square roots exactly.
+        // The second lookup uses the high nibble of each byte and estimates
+        // the square root based on those bits alone. The result is either
+        // accurate or too small by exactly 1. To handle this, the high
+        // nibble of the lookup result contains the threshold that the low
+        // nibble of v would need to pass in order for the error to be 1. By
+        // checking if the low nibble of v is greater than this threshold, the
+        // lookup value ay be incremented in a predicated fashion, correcting
+        // the error
 
-        auto ret = _mm256_setzero_si256();
-        for (int i = 4; i -- > 0;) {
-            auto candidate = _mm256_or_si256(ret, _mm256_set1_epi16(1 << i));
+        auto table0 = _mm_load_si128(reinterpret_cast<const __m128i*>(isqrt_table_data0));
+        auto table1 = _mm_load_si128(reinterpret_cast<const __m128i*>(isqrt_table_data1));
 
-            auto candidate2 = _mm256_mullo_epi16(candidate, candidate);
-            auto mask = _mm256_cmpge_epi16_mask(widened_v, candidate2);
-            ret = _mm256_mask_blend_epi16(mask, ret, candidate);
-        }
+        auto nibble_mask = _mm_set1_epi8(0x0f);
+        auto lo_nibble = _mm_and_si128(nibble_mask, decay(v));
+        auto hi_nibble = _mm_and_si128(nibble_mask, _mm_srli_epi16(decay(v), 4));
 
-        return vec16x8u{_mm256_cvtepi16_epi8(ret)};
+        auto lo_lookup = _mm_shuffle_epi8(table0, lo_nibble);
+        auto hi_lookup_full = _mm_shuffle_epi8(table1, hi_nibble);
 
-        #elif defined(AVEL_SSE41)
-        auto ret_even = _mm_setzero_si128();
-        auto ret_odd  = _mm_setzero_si128();
+        auto hi_lookup_sqrt = _mm_and_si128(nibble_mask, hi_lookup_full);
+        auto hi_lookup_threshold = _mm_and_si128(nibble_mask, _mm_srli_epi16(hi_lookup_full, 4));
 
-        auto v_even = _mm_and_si128(decay(v), _mm_set1_epi16(0xff));
-        auto v_odd  = _mm_srli_epi16(decay(v), 8);
+        auto is_estimate_off = _mm_cmplt_epi8(hi_lookup_threshold, lo_nibble);
+        auto corrected_hi_lookup = _mm_sub_epi8(hi_lookup_sqrt, is_estimate_off);
 
-        for (int i = 4; i -- > 0;) {
-            auto threshold = _mm_set1_epi16(1 << i);
+        auto combined_lookup = _mm_max_epu8(lo_lookup, corrected_hi_lookup);
 
-            auto candidate_even = _mm_or_si128(ret_even, threshold);
-            auto candidate_odd  = _mm_or_si128(ret_odd,  threshold);
-
-            auto candidate2_even = _mm_mullo_epi16(candidate_even, candidate_even);
-            auto candidate2_odd  = _mm_mullo_epi16(candidate_odd,  candidate_odd );
-
-            // Check if candidate is greater-than or equal to values in v
-            auto mask_even = _mm_cmpeq_epi8(_mm_min_epu8(v_even, candidate2_even), candidate2_even);
-            auto mask_odd  = _mm_cmpeq_epi8(_mm_min_epu8(v_odd,  candidate2_odd ), candidate2_odd );
-
-            // Conditionally set
-            ret_even = _mm_blendv_epi8(mask_even, candidate_even, ret_even);
-            ret_odd  = _mm_blendv_epi8(mask_odd,  candidate_odd,  ret_odd );
-        }
-
-        auto ret = _mm_or_si128(v_even, _mm_slli_epi16(v_odd, 8));
-        return vec16x8u{ret};
+        return vec16x8u{combined_lookup};
 
         #elif defined(AVEL_SSE2)
-        auto ret_even = _mm_setzero_si128();
-        auto ret_odd  = _mm_setzero_si128();
+        vec16x8u x = v;
+        vec16x8u c{0};
 
-        auto v_even = _mm_and_si128(decay(v), _mm_set1_epi16(0xff));
-        auto v_odd  = _mm_srli_epi16(decay(v), 8);
+        {
+            vec16x8u d{64};
+            vec16x8u t = c + d;
 
-        for (int i = 4; i -- > 0;) {
-            auto threshold = _mm_set1_epi16(1 << i);
+            mask16x8u b = d <= v;
+            mask16x8u e = x >= t;
+            mask16x8u f = b & e;
 
-            auto candidate_even = _mm_or_si128(ret_even, threshold);
-            auto candidate_odd  = _mm_or_si128(ret_odd,  threshold);
-
-            auto candidate2_even = _mm_mullo_epi16(candidate_even, candidate_even);
-            auto candidate2_odd  = _mm_mullo_epi16(candidate_odd,  candidate_odd );
-
-            // Check if candidate is less-than to values in v
-            auto mask_even = _mm_cmplt_epi16(v_even, candidate2_even);
-            auto mask_odd  = _mm_cmplt_epi16(v_odd,  candidate2_odd );
-
-            // Conditionally set lowest bit
-            ret_even = _mm_or_si128(ret_even, _mm_andnot_si128(mask_even, candidate_even));
-            ret_odd  = _mm_or_si128(ret_odd , _mm_andnot_si128(mask_odd , candidate_odd));
+            x -= keep(f, t);
+            c = blend(b, bit_shift_right<1>(c), c);
+            c += keep(f, d);
         }
 
-        auto ret = _mm_or_si128(ret_even, _mm_slli_epi16(ret_odd, 8));
-        return vec16x8u{ret};
+        {
+            vec16x8u d{16};
+            vec16x8u t = c + d;
+
+            mask16x8u b = d <= v;
+            mask16x8u e = x >= t;
+            mask16x8u f = b & e;
+
+            x -= keep(f, t);
+            c = blend(b, bit_shift_right<1>(c), c);
+            c += keep(f, d);
+        }
+
+        {
+            vec16x8u d{4};
+            vec16x8u t = c + d;
+
+            mask16x8u b = d <= v;
+            mask16x8u e = x >= t;
+            mask16x8u f = b & e;
+
+            x -= keep(f, t);
+            c = blend(b, bit_shift_right<1>(c), c);
+            c += keep(f, d);
+        }
+
+        {
+            vec16x8u d{1};
+            vec16x8u t = c + d;
+
+            mask16x8u b = d <= v;
+            mask16x8u e = x >= t;
+            mask16x8u f = b & e;
+
+            x -= keep(f, t);
+            c = blend(b, bit_shift_right<1>(c), c);
+            c += keep(f, d);
+        }
+
+        return c;
 
         #endif
 
@@ -2868,7 +2889,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x8u countl_zero(vec16x8u v) {
-        //TODO: Leverage leading zero count instructions
+        //TODO: Consider leveraging leading zero count instructions
         #if defined(AVEL_SSSE3)
         alignas(16) static constexpr std::uint8_t table_data0[16] {
             8, 3, 2, 2,
