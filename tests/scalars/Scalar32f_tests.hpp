@@ -5,74 +5,73 @@ namespace avel_tests {
 
     using namespace avel;
 
-    constexpr float lowest = std::numeric_limits<float>::lowest();
-    constexpr float max = std::numeric_limits<float>::max();
-    constexpr float min = std::numeric_limits<float>::min();
-
-    //=====================================================
-    // Midpoint
-    //=====================================================
-
-    TEST(Scalar32f, Midpoint_preselected) {
-        EXPECT_EQ(avel::midpoint(+0.0f, +0.0f), +0.0f);
-        EXPECT_EQ(avel::midpoint(+1.0f, +1.0f), +1.0f);
-        EXPECT_EQ(avel::midpoint(-1.0f, -1.0f), -1.0f);
-        EXPECT_EQ(avel::midpoint(+1.0f, +3.0f), +2.0f);
-    }
-
-    TEST(Scalar32f, Midpoint_preselected_edge_cases) {
-        constexpr auto l1 = min;
-        constexpr auto l2 = 2.0f * min;
-        constexpr auto l3 = 3.0f * min;
-
-        EXPECT_EQ(avel::midpoint(l1, l3), l2);
-        EXPECT_EQ(avel::midpoint(l1, l2), l1);
-        EXPECT_EQ(avel::midpoint(l2, l1), l2);
-
-        constexpr auto m1 = min;
-        constexpr auto m2 = 2.0f * min;
-        constexpr auto m3 = 3.0f * min;
-
-        EXPECT_EQ(avel::midpoint(m1, m3), m2);
-        EXPECT_EQ(avel::midpoint(m1, m2), m1);
-        EXPECT_EQ(avel::midpoint(m2, m1), m2);
-    }
-
-    /*
-    //=====================================================
-    // AVEL Floating-point vector operations
-    //=====================================================
-
-    TEST(Scalar32f_tests, Epsilon_increment) {
-        EXPECT_EQ(epsilon_increment(bit_cast<float>(0x00000000)), bit_cast<float>(0x00000001));
-        EXPECT_EQ(epsilon_increment(bit_cast<float>(0x80000000)), bit_cast<float>(0x00000001));
-
-        EXPECT_EQ(epsilon_increment(bit_cast<float>(0x3f800000)), bit_cast<float>(0x3f800001));
-        EXPECT_EQ(epsilon_increment(bit_cast<float>(0xbf800000)), bit_cast<float>(0xbf7fffff));
-    }
-
-    TEST(Scalar32f_tests, Epsilon_difference) {
-        EXPECT_EQ(epsilon_difference(bit_cast<float>(0x00000001), bit_cast<float>(0x80000001)), 2);
-        EXPECT_EQ(epsilon_difference(+0.0f, -0.0f), 0);
-        EXPECT_EQ(epsilon_difference(1.0f, 1.0f), 0);
-        EXPECT_EQ(epsilon_difference(8388608, 8388609), 1);
-        EXPECT_EQ(epsilon_difference(-INFINITY, +INFINITY), 0xFF000000);
-    }
-    */
-
     //=====================================================
     // Floating-Point Manipulation Functions
     //=====================================================
 
+    //=====================================================
+    // Nearest Integer Functions
+    //=====================================================
+
     /*
-    TEST(Scalar32f_tests, Frexp) {
+    */
+
+    //=====================================================
+    // Power Functions
+    //=====================================================
+
+    TEST(Scalar32f_tests, sqrt) {
+
+    }
+
+    //=====================================================
+    // Nearest Integer Functions
+    //=====================================================
+
+    TEST(Sclar32f_tests, ceil) {
+
+    }
+
+    TEST(Sclar32f_tests, floor) {
+
+    }
+
+    TEST(Scalar32f_tests, trunc) {
+        EXPECT_EQ(0.0f, trunc(0.25f));
+        EXPECT_EQ(0.0f, trunc(0.50f));
+        EXPECT_EQ(0.0f, trunc(0.75f));
+        EXPECT_EQ(1.0f, trunc(1.50f));
+        EXPECT_EQ(2.0f, trunc(2.50f));
+        EXPECT_EQ(3.0f, trunc(3.75f));
+        EXPECT_EQ(-3.0f, trunc(-3.75f));
+
+        EXPECT_EQ(0.0f, trunc(0.0f));
+        EXPECT_EQ(-0.0f, trunc(-0.0f));
+        EXPECT_EQ(INFINITY, trunc(INFINITY));
+        EXPECT_EQ(-INFINITY, trunc(-INFINITY));
+        EXPECT_TRUE(std::isnan(trunc(NAN)));
+    }
+
+    TEST(Sclar32f_tests, round) {
+
+    }
+
+    TEST(Sclar32f_tests, nearbyint) {
+
+    }
+
+    //=====================================================
+    // Floating-point classification
+    //=====================================================
+
+    TEST(Scalar32f_tests, frexp) {
         std::int32_t exp = 0x00;
 
         //Zeros
-        EXPECT_EQ(bit_cast<std::uint32_t>(frexp(+0.0f, &exp)), bit_cast<std::uint32_t>(+0.0f));
+        EXPECT_EQ(avel::bit_cast<std::uint32_t>(avel::frexp(+0.0f, &exp)), avel::bit_cast<std::uint32_t>(+0.0f));
         EXPECT_EQ(exp, 0);
 
-        EXPECT_EQ(bit_cast<std::uint32_t>(frexp(-0.0f, &exp)), bit_cast<std::uint32_t>(-0.0f));
+        EXPECT_EQ(avel::bit_cast<std::uint32_t>(avel::frexp(-0.0f, &exp)), avel::bit_cast<std::uint32_t>(-0.0f));
         EXPECT_EQ(exp, 0);
 
         //Infinities
@@ -133,72 +132,137 @@ namespace avel_tests {
         EXPECT_EQ(frexp(val5, &exp), +0.5f);
         EXPECT_EQ(exp, -126);
     }
-    */
 
-    //=====================================================
-    // Nearest Integer Functions
-    //=====================================================
+    TEST(Sclar32f_tests, ldexp) {
 
-    /*
-    TEST(Scalar32f_tests, Trunc) {
-        EXPECT_EQ(0.0f, trunc(0.25f));
-        EXPECT_EQ(0.0f, trunc(0.50f));
-        EXPECT_EQ(0.0f, trunc(0.75f));
-        EXPECT_EQ(1.0f, trunc(1.50f));
-        EXPECT_EQ(2.0f, trunc(2.50f));
-        EXPECT_EQ(3.0f, trunc(3.75f));
-        EXPECT_EQ(-3.0f, trunc(-3.75f));
-
-        EXPECT_EQ(0.0f, trunc(0.0f));
-        EXPECT_EQ(-0.0f, trunc(-0.0f));
-        EXPECT_EQ(INFINITY, trunc(INFINITY));
-        EXPECT_EQ(-INFINITY, trunc(-INFINITY));
-        EXPECT_TRUE(std::isnan(trunc(NAN)));
     }
-    */
 
-    /*
-    TEST(Scalar32f_tests, Trunc_random) {
-        for (int i = 0; i < iterations; ++i) {
-            std::uint32_t a = rand();
-            float b = float(a) / 4096.0f;
+    TEST(Sclar32f_tests, scalbn) {
 
-            float t0 = std::trunc(b);
-            float t1 = avel::trunc(b);
-
-            EXPECT_EQ(t0, t1);
-        }
     }
-    */
+
+    TEST(Sclar32f_tests, ilogb) {
+
+    }
+
+    TEST(Sclar32f_tests, logb) {
+
+    }
+
+    TEST(Sclar32f_tests, copysign) {
+        EXPECT_EQ();
+    }
 
     //=====================================================
-    // Power Functions
+    // Floating-point comparisons
     //=====================================================
 
-    /*
-    TEST(Scalar32f_tests, Powi) {
-        //EXPECT_EQ(pow(FLT_MAX, 0), 1.0f);
-        //EXPECT_EQ(pow(FLT_MAX, 1), FLT_MAX);
-        //EXPECT_EQ(pow(FLT_MAX, 2), +INFINITY);
+    TEST(Scalar32f_tests, isgreater) {
+        EXPECT_FALSE(avel::isgreater(-1.0, -1.0));
+        EXPECT_FALSE(avel::isgreater(+0.0, +0.0));
+        EXPECT_FALSE(avel::isgreater(+1.0, +1.0));
 
-        EXPECT_EQ(pow(+INFINITY, 0), 1.0f);
-        EXPECT_EQ(pow(+INFINITY, 1), +INFINITY);
-        EXPECT_EQ(pow(+INFINITY, 2), +INFINITY);
+        EXPECT_TRUE(avel::isgreater(-1.0, -2.0));
+        EXPECT_TRUE(avel::isgreater(+0.0, -1.0));
+        EXPECT_TRUE(avel::isgreater(+1.0, +0.0));
 
-        EXPECT_EQ(pow(-INFINITY, 0), 1.0f);
-        EXPECT_EQ(pow(-INFINITY, 1), -INFINITY);
-        EXPECT_EQ(pow(-INFINITY, 2), +INFINITY);
-        EXPECT_EQ(pow(-INFINITY, 3), -INFINITY);
-        EXPECT_EQ(pow(-INFINITY, 4), +INFINITY);
+        EXPECT_FALSE(avel::isgreater(0.0, NAN));
+        EXPECT_FALSE(avel::isgreater(NAN, 0.0));
+        EXPECT_FALSE(avel::isgreater(NAN, NAN));
 
-        EXPECT_TRUE(std::isnan(pow(NAN, 0)));
+        EXPECT_FALSE(avel::isgreater(+INFINITY, +INFINITY));
+        EXPECT_FALSE(avel::isgreater(-INFINITY, -INFINITY));
 
-        EXPECT_EQ(pow(7.0f, 2), 49.00f);
-        EXPECT_EQ(pow(4.0f, 3), 64.00f);
-        EXPECT_EQ(pow(1.5f, 2),  2.25f);
-        EXPECT_EQ(pow(1.0f, 0),  1.00f);
+        EXPECT_TRUE(avel::isgreater(+0.0, -INFINITY));
+        EXPECT_TRUE(avel::isgreater(+INFINITY, +0.0));
     }
-    */
+
+    TEST(Scalar32f_tests, isgreaterequal) {
+        EXPECT_TRUE(avel::isgreaterequal(-1.0, -1.0));
+        EXPECT_TRUE(avel::isgreaterequal(+0.0, +0.0));
+        EXPECT_TRUE(avel::isgreaterequal(+1.0, +1.0));
+
+        EXPECT_TRUE(avel::isgreaterequal(-1.0, -2.0));
+        EXPECT_TRUE(avel::isgreaterequal(+0.0, -1.0));
+        EXPECT_TRUE(avel::isgreaterequal(+1.0, +0.0));
+
+        EXPECT_FALSE(avel::isgreaterequal(0.0, NAN));
+        EXPECT_FALSE(avel::isgreaterequal(NAN, 0.0));
+        EXPECT_FALSE(avel::isgreaterequal(NAN, NAN));
+
+        EXPECT_TRUE(avel::isgreaterequal(+INFINITY, +INFINITY));
+        EXPECT_TRUE(avel::isgreaterequal(-INFINITY, -INFINITY));
+
+        EXPECT_TRUE(avel::isgreaterequal(+0.0, -INFINITY));
+        EXPECT_TRUE(avel::isgreaterequal(+INFINITY, +0.0));
+    }
+
+    TEST(Scalar32f_tests, isless) {
+        EXPECT_FALSE(avel::isless(-1.0, -1.0));
+        EXPECT_FALSE(avel::isless(+0.0, +0.0));
+        EXPECT_FALSE(avel::isless(+1.0, +1.0));
+
+        EXPECT_FALSE(avel::isless(-1.0, -2.0));
+        EXPECT_FALSE(avel::isless(+0.0, -1.0));
+        EXPECT_FALSE(avel::isless(+1.0, +0.0));
+
+        EXPECT_FALSE(avel::isless(0.0, NAN));
+        EXPECT_FALSE(avel::isless(NAN, 0.0));
+        EXPECT_FALSE(avel::isless(NAN, NAN));
+
+        EXPECT_FALSE(avel::isless(+INFINITY, +INFINITY));
+        EXPECT_FALSE(avel::isless(-INFINITY, -INFINITY));
+
+        EXPECT_FALSE(avel::isless(+0.0, -INFINITY));
+        EXPECT_FALSE(avel::isless(+INFINITY, +0.0));
+    }
+
+    TEST(Scalar32f_tests, islessequal) {
+        EXPECT_TRUE(avel::islessequal(-1.0, -1.0));
+        EXPECT_TRUE(avel::islessequal(+0.0, +0.0));
+        EXPECT_TRUE(avel::islessequal(+1.0, +1.0));
+
+        EXPECT_FALSE(avel::islessequal(-1.0, -2.0));
+        EXPECT_FALSE(avel::islessequal(+0.0, -1.0));
+        EXPECT_FALSE(avel::islessequal(+1.0, +0.0));
+
+        EXPECT_FALSE(avel::islessequal(0.0, NAN));
+        EXPECT_FALSE(avel::islessequal(NAN, 0.0));
+        EXPECT_FALSE(avel::islessequal(NAN, NAN));
+
+        EXPECT_TRUE(avel::islessequal(+INFINITY, +INFINITY));
+        EXPECT_TRUE(avel::islessequal(-INFINITY, -INFINITY));
+
+        EXPECT_FALSE(avel::islessequal(+0.0, -INFINITY));
+        EXPECT_FALSE(avel::islessequal(+INFINITY, +0.0));
+    }
+
+    TEST(Scalar32f_tests, islessgreater) {
+        EXPECT_FALSE(avel::islessgreater(-1.0f, -1.0f));
+        EXPECT_FALSE(avel::islessgreater(+0.0f, +0.0f));
+        EXPECT_FALSE(avel::islessgreater(+1.0f, +1.0f));
+
+        EXPECT_TRUE(avel::islessgreater(-1.0f, +0.0f));
+        EXPECT_TRUE(avel::islessgreater(+0.0f, +1.0f));
+
+        EXPECT_TRUE(avel::islessgreater(+0.0f, +1.0f));;
+    }
+
+    TEST(Scalar32f_tests, is_unordered) {
+        EXPECT_TRUE(avel::isunordered(NAN, NAN));
+
+        EXPECT_FALSE(avel::isunordered(0.0f, 0.0f));
+        EXPECT_TRUE(avel::isunordered(NAN, 0.0f));
+        EXPECT_TRUE(avel::isunordered(0.0f, NAN));
+
+        EXPECT_FALSE(avel::isunordered(INFINITY, INFINITY));
+        EXPECT_TRUE(avel::isunordered(INFINITY, NAN));
+        EXPECT_TRUE(avel::isunordered(NAN, INFINITY));
+
+        EXPECT_FALSE(avel::isunordered(1.0f, 0.0f));
+        EXPECT_FALSE(avel::isunordered(0.0f, 1.0f));
+        EXPECT_FALSE(avel::isunordered(1.0f, 1.0f));
+    }
 
 }
 

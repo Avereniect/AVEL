@@ -994,7 +994,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL std::array<float, 4> to_array(vec4x32f v) {
+    AVEL_FINL arr4x32f to_array(vec4x32f v) {
         alignas(16) std::array<float, 4> array{};
         aligned_store(array.data(), v);
         return array;
@@ -1093,7 +1093,7 @@ namespace avel {
         #if defined(AVELSSE41)
         return vec4x32f{_mm_round_ps(x, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)};
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         //TODO: Create vectorized implementation
         alignas(alignof(vec4x32f)) auto arr = to_array(x);
 

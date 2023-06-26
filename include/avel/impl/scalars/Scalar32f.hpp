@@ -339,9 +339,11 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool isnan(float arg) {
-        std::int32_t tmp = bit_cast<std::int32_t>(arg);
-        std::int32_t exp = tmp >> 23 & 0xFF;
-        return (exp == 255) && (tmp & 0x007fffff);
+        return arg != arg;
+
+        //std::int32_t tmp = bit_cast<std::int32_t>(arg);
+        //std::int32_t exp = tmp >> 23 & 0xFF;
+        //return (exp == 255) && (tmp & 0x007fffff);
     }
 
     [[nodiscard]]
