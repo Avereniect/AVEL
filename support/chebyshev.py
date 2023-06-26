@@ -7,10 +7,10 @@ from mpmath import mp
 N = 6
 
 # Beginning of range over which to approximate
-A = mp.mpf(0)
+A = mp.mpf(1.0)
 
 # End of range over which to approximate
-B = mp.mpf(mp.pi / 4)
+B = mp.mpf(2.0)
 
 
 # Note: The polynomial approximation, p, can be fixed to be 1.0 at 0.0 by
@@ -22,7 +22,9 @@ B = mp.mpf(mp.pi / 4)
 # Function to approximate
 #
 def f(x):
-    return (mp.cos(x) - 1.0) / x
+    b = mp.power(2, 3/2)
+    return mp.log(x, b) / 3
+    # (mp.cos(x) - 1.0) / x
 
 
 #
@@ -160,6 +162,15 @@ def main():
     print("Polynomial approximation (x):")
     for (x, i) in zip(x_polynomial_coefficients, range(0, N)):
         print(f"x^{i}: {x}")
+
+    desmos_polynomial = ""
+    for (i, C) in enumerate(reversed(x_polynomial_coefficients)):
+        desmos_polynomial += f"{C}" + "x^" + "{" + f"{N - i - 1}" + "} + "
+
+    desmos_polynomial = desmos_polynomial.rstrip(" + ")
+
+    print()
+    print(f"Desmos polynomial (x):\n{desmos_polynomial}")
 
 
 if __name__ == "__main__":
