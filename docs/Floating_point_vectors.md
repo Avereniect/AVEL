@@ -172,10 +172,77 @@
   * produces `NAN` if `v` if `NAN`
 
 * `vector average(vector a, vector b)`
-* `vector midpoint(vector a, vector b)`
 
-### Load/Store Operations
-*
+
+
+### Load/Store operations
+* `template<class V, N = V::width>`  
+  `vector load(const scalar* p)`
+  * loads the first `N` values from the address `p` into corresponding lanes
+  * likely to perform best when `N == V::width`
+
+* `template<class V>`  
+  `vector load(const scalar* p, std::uint32_t n)`
+  * loads the first `n` values from the address `p` into corresponding lanes
+  * if `n` is greater than the width of the vector, loads `V::width` elements
+  * likely to perform worse than an equivalent call to `load<n>(p)`
+
+* `template<class V, N = V::width>`  
+  `vector aligned_load(const scalar* p)`
+  * loads the first `N` values from the address `p` into corresponding lanes
+  * `p` must be aligned to `alignof(vector)`
+  * likely to perform best when `N == V::width`
+  * may perform better than an equivalent call to `load(p, N)`
+
+* `template<class V>`  
+  `vector aligned_load(const scalar* p, std::uint32_t n)`
+  * loads the first `n` values from the address `p` into corresponding lanes
+  * `p` must be aligned to `alignof(vector)`
+  * may perform better than an equivalent call to `load`
+
+* `template<class V, N = V::width>`
+  `vector gather(const scalar* p, ivector indices)`
+  * for the first `N` lanes, loads the value located at `p[indices]`
+  * may perform better than individual loads on machine with AVX2
+  * only available for vectors of 32-bit and 64-bit  elements
+
+* `template<class V>`
+  `vector gather(const scalar* p, ivector indices, std::uint32_t n)`
+  * for the first `n` lanes, loads the value located at `p[indices]`
+  * may perform better than individual loads on machine with AVX2
+  * only available for vectors of 32-bit and 64-bit elements
+
+* `template<class N = vector::width>`
+  `void store(scalar* p, vector x)`
+  * stores `x`'s elements beginning at `p`
+  * likely to perform best when `N == V::width`
+
+* `void store(scalar* p, vector x, std::uint32_t n)`
+  * stores `x`'s first `n` elements beginning at `p`
+
+* `template<class N = vector::width>`
+  `void aligned_store(scalar* p, vector x)`
+  * stores `x`'s elements beginning at `p`
+  * `p` must be aligned to `alignof(vector)`
+  * may perform better than an equivalent call to `store`
+
+* `void aligned_store(scalar* p, vector x, std::uint32_t n)`
+  * stores `x`'s first `n` elements beginning at `p`
+  * `p` must be aligned to `alignof(vector)`
+  * may perform better than an equivalent call to `store`
+
+* `template<class N = vector::width>`
+  `void scatter(scalar* p, ivector indices, vector x)`
+  * for the first `N` lanes, store the value to `p[indices]`
+  * may perform better than individual loads on machine with AVX2
+  * only available for vectors of 32-bit and 64-bit  elements
+
+* `void scatter(scalar* p, ivector indices, vector x, std::uint32_t n)`
+  * for the first `n` lanes, store the value to `p[indices]`
+  * may perform better than individual loads on machine with AVX2
+  * only available for vectors of 32-bit and 64-bit  elements
+
+
 
 ## Conversions
 * `std::array<V0, ...> convert<V0, V1>(V1 v)`
@@ -191,7 +258,7 @@
 * `vector fmax(vector a, vector b)`
 * `vector fmin(vector a, vector b)`
 
-#### Rounding Operations
+#### Nearest Integer Operations
 * `vector ceil(vector v)`
 * `vector floor(vector v)`
 * `vector trunc(vector v)`
@@ -204,7 +271,8 @@
 
 #### Floating-Point Manipulation
 * `vector frexp(vector num, ivector* exp)`
-  * for each lane, returns a normalized fraction and write the exponent of `num` into `exp`
+  * for each lane, returns a normalized fraction and write the exponent of `num`
+    into `exp`
 
 * `vector ldexp(vector num, ivector exp)`
   * for each lane, returns
@@ -237,8 +305,8 @@
 * `ivector fpclassify(vector v)`
   * for each lane, returns an implementation-defined integer value identifying 
     the category to which `v` belongs
-  * integer values may be `FP_NORMAL`, `FP_SUBNORMAL`, `FP_ZERO`, 
-    `FP_INFINITE`, `FP_NAN`
+  * integer values may be `FP_NORMAL`, `FP_SUBNORMAL`, `FP_ZERO`, `FP_INFINITE`,
+    `FP_NAN`
 
 * `mask isfinite(vector v)`
   * for each lane, returns `true` if `v` is a finite value, `false` otherwise
@@ -248,8 +316,37 @@
 
 * `mask isnan(vector v)`
   * for each lane, returns `true` if `v` is a NAN value, `false` otherwise
+
 * `mask isnormal(vector v)`
   * for each lane, returns `true` if `v` is a normal value
 
 * `mask signbit(vector v)`
-  * for each lane, returns `true` if the signbit of `v` is set, `false` otherwise
+  * for each lane, returns `true` if the sign bit of `v` is set, `false` 
+    otherwise
+  * checks the sign bit of `+infinity`, `-infinity`, and `NAN`
+
+#### Floating-point Comparisons
+* `mask isgreater(vector x, vector y)`
+  * for each lane, returns `true` if `x` is greater than `y`
+  * if either `x` or `y` is `NAN`, returns `false`
+
+* `mask isgreaterequal(vector x, vector y)`
+  * for each lane, returns `true` if `x` is greater than or equal to `y`
+  * if either `x` or `y` is `NAN`, returns `false`
+
+* `mask isless(vector x, vector y)`
+  * for each lane, returns `true` if `x` is less than `y`
+  * if either `x` or `y` is `NAN`, returns `false`
+
+* `mask islessequal(vector x, vector y)`
+  * for each lane, returns `true` if `x` is less than or equal to `y`
+  * if either `x` or `y` is `NAN`, returns `false`
+
+* `mask islessgreater(vector x, vector y)`
+  * for each lane, returns `true` if `x` is less than or greater than `y`
+  * if either `x` or `y` is `NAN`, returns `false`
+
+* `mask isunordered(vector x, vector y)`
+  * for each lane, return `true` if either `x` or `y` is `NAN`
+
+

@@ -1,0 +1,343 @@
+#ifndef $<HEADER_GUARD>
+#define $<HEADER_GUARD>
+
+namespace avel_tests {
+
+    using namespace avel;
+
+    //=========================================================================
+    // $<mask_alias> tests
+    //=========================================================================
+
+    //=====================================================
+    // Constructors
+    //=====================================================
+
+    TEST($<Mask_alias>, Construct_from_primitive) {
+        $<mask_alias> mask{$<mask_alias>::primitive{}};
+
+        EXPECT_FALSE(any(mask));
+        EXPECT_FALSE(all(mask));
+        EXPECT_TRUE(none(mask));
+        EXPECT_EQ(count(mask), 0);
+    }
+
+    TEST($<Mask_alias>, Construct_from_bool) {
+        $<mask_alias> mask0{false};
+        EXPECT_FALSE(any(mask0));
+        EXPECT_FALSE(all(mask0));
+        EXPECT_TRUE(none(mask0));
+        EXPECT_EQ(count(mask0), 0);
+
+        $<mask_alias> mask1{true};
+        EXPECT_TRUE(all(mask1));
+        EXPECT_TRUE(any(mask1));
+        EXPECT_FALSE(none(mask1));
+        EXPECT_TRUE(count(mask1) == $<mask_alias>::width);
+    }
+
+    TEST($<Mask_alias>, Construct_from_array) {
+        $<bool_array_alias> false_array{};
+        std::fill_n(false_array.data(), $<mask_alias>::width, false);
+        $<mask_alias> mask0{false_array};
+
+        EXPECT_FALSE(any(mask0));
+        EXPECT_FALSE(all(mask0));
+        EXPECT_TRUE(none(mask0));
+        EXPECT_EQ(count(mask0), 0);
+
+
+        $<bool_array_alias> true_array{};
+        std::fill_n(true_array.data(), $<mask_alias>::width, true);
+        $<mask_alias> mask1{true_array};
+
+        EXPECT_TRUE(any(mask1));
+        EXPECT_TRUE(all(mask1));
+        EXPECT_FALSE(none(mask1));
+        EXPECT_TRUE(count(mask1) == $<mask_alias>::width);
+    }
+
+    TEST($<Mask_alias>, Construct_from_array_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<$<bool_array_alias>>();
+            std::uint32_t cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            auto m = $<mask_alias>{inputs};
+
+            EXPECT_EQ(cnt, count(m));
+            EXPECT_EQ(cnt == $<mask_alias>::width, all(m));
+            EXPECT_EQ(cnt != 0, any(m));
+            EXPECT_EQ(cnt == 0, none(m));
+        }
+    }
+
+    //=====================================================
+    // Assignment
+    //=====================================================
+
+    TEST($<Mask_alias>, Assign_bool) {
+        $<mask_alias> mask0{};
+        mask0 = false;
+        EXPECT_FALSE(any(mask0));
+        EXPECT_FALSE(all(mask0));
+        EXPECT_EQ(count(mask0), 0);
+
+        $<mask_alias> mask1{};
+        mask1 = true;
+        EXPECT_TRUE(all(mask1));
+        EXPECT_TRUE(any(mask1));
+        EXPECT_TRUE(count(mask1) == $<mask_alias>::width);
+    }
+
+    //=====================================================
+    // Comparison operators
+    //=====================================================
+
+    TEST($<Mask_alias>, Equality_comparison) {
+        $<mask_alias> mask0{false};
+        $<mask_alias> mask1{false};
+        EXPECT_EQ(mask0, mask1);
+
+        $<mask_alias> mask2{true};
+        $<mask_alias> mask3{true};
+        EXPECT_EQ(mask2, mask3);
+
+        EXPECT_FALSE(mask0 == mask2);
+        EXPECT_FALSE(mask3 == mask1);
+    }
+
+    TEST($<Mask_alias>, Equality_comparison_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<$<bool_array_alias>>();
+            auto inputs1 = random_array<$<bool_array_alias>>();
+            inputs1[0] = !inputs0[0];
+
+            $<mask_alias> mask0{inputs0};
+            $<mask_alias> mask1{inputs0};
+            $<mask_alias> mask2{inputs1};
+
+            EXPECT_TRUE(mask0 == mask1);
+            EXPECT_FALSE(mask1 == mask2);
+        }
+    }
+
+    TEST($<Mask_alias>, Inequality_comparison) {
+        $<mask_alias> mask0{false};
+        $<mask_alias> mask1{false};
+        EXPECT_FALSE(mask0 != mask1);
+
+        $<mask_alias> mask2{true};
+        $<mask_alias> mask3{true};
+        EXPECT_FALSE(mask2 != mask3);
+
+        EXPECT_TRUE(mask0 != mask2);
+        EXPECT_TRUE(mask3 != mask1);
+    }
+
+    TEST($<Mask_alias>, Inequality_comparison_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<$<bool_array_alias>>();
+            auto inputs1 = random_array<$<bool_array_alias>>();
+            inputs1[0] = !inputs0[0];
+
+            $<mask_alias> mask0{inputs0};
+            $<mask_alias> mask1{inputs1};
+            $<mask_alias> mask2{inputs1};
+
+            EXPECT_TRUE(mask0 != mask1);
+            EXPECT_FALSE(mask1 != mask2);
+        }
+    }
+
+    //=====================================================
+    // Bitwise assignment
+    //=====================================================
+
+    TEST($<Mask_alias>, Bitwise_and_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<$<bool_array_alias>>();
+            auto inputs1 = random_array<$<bool_array_alias>>();
+
+            $<mask_alias> mask0{inputs0};
+            $<mask_alias> mask1{inputs1};
+
+            $<mask_alias> results = mask0;
+            results &= mask1;
+
+            $<bool_array_alias> expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] & inputs1[j];
+            }
+            $<mask_alias> expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST($<Mask_alias>, Bitwise_or_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<$<bool_array_alias>>();
+            auto inputs1 = random_array<$<bool_array_alias>>();
+
+            $<mask_alias> mask0{inputs0};
+            $<mask_alias> mask1{inputs1};
+
+            $<mask_alias> results = mask0;
+            results |= mask1;
+
+            $<bool_array_alias> expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] | inputs1[j];
+            }
+            $<mask_alias> expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST($<Mask_alias>, Bitwise_xor_assignment_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<$<bool_array_alias>>();
+            auto inputs1 = random_array<$<bool_array_alias>>();
+
+            $<mask_alias> mask0{inputs0};
+            $<mask_alias> mask1{inputs1};
+
+            $<mask_alias> results = mask0;
+            results ^= mask1;
+
+            $<bool_array_alias> expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] ^ inputs1[j];
+            }
+            $<mask_alias> expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    //=====================================================
+    // Bitwise/logical operations
+    //=====================================================
+
+    TEST($<Mask_alias>, Logical_negation_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<$<bool_array_alias>>();
+
+            $<mask_alias> mask0{inputs0};
+
+            $<mask_alias> results = !mask0;
+
+            $<bool_array_alias> expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = !inputs0[j];
+            }
+            $<mask_alias> expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST($<Mask_alias>, Bitwise_and_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<$<bool_array_alias>>();
+            auto inputs1 = random_array<$<bool_array_alias>>();
+
+            $<mask_alias> mask0{inputs0};
+            $<mask_alias> mask1{inputs1};
+
+            $<mask_alias> results = mask0 & mask1;
+
+            $<bool_array_alias> expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] & inputs1[j];
+            }
+            $<mask_alias> expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST($<Mask_alias>, Logical_and_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<$<bool_array_alias>>();
+            auto inputs1 = random_array<$<bool_array_alias>>();
+
+            $<mask_alias> mask0{inputs0};
+            $<mask_alias> mask1{inputs1};
+
+            $<mask_alias> results = mask0 && mask1;
+
+            $<bool_array_alias> expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] && inputs1[j];
+            }
+            $<mask_alias> expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST($<Mask_alias>, Bitwise_or_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<$<bool_array_alias>>();
+            auto inputs1 = random_array<$<bool_array_alias>>();
+
+            $<mask_alias> mask0{inputs0};
+            $<mask_alias> mask1{inputs1};
+
+            $<mask_alias> results = mask0 | mask1;
+
+            $<bool_array_alias> expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] | inputs1[j];
+            }
+            $<mask_alias> expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST($<Mask_alias>, Logical_or_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<$<bool_array_alias>>();
+            auto inputs1 = random_array<$<bool_array_alias>>();
+
+            $<mask_alias> mask0{inputs0};
+            $<mask_alias> mask1{inputs1};
+
+            $<mask_alias> results = mask0 || mask1;
+
+            $<bool_array_alias> expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] || inputs1[j];
+            }
+            $<mask_alias> expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+    TEST($<Mask_alias>, Bitwise_xor_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<$<bool_array_alias>>();
+            auto inputs1 = random_array<$<bool_array_alias>>();
+
+            $<mask_alias> mask0{inputs0};
+            $<mask_alias> mask1{inputs1};
+
+            $<mask_alias> results = mask0 ^ mask1;
+
+            $<bool_array_alias> expected;
+            for (std::size_t j = 0; j < expected.size(); ++j) {
+                expected[j] = inputs0[j] ^ inputs1[j];
+            }
+            $<mask_alias> expected_mask{expected};
+
+            EXPECT_EQ(results, expected_mask);
+        }
+    }
+
+}
+
+#endif //$<HEADER_GUARD>
