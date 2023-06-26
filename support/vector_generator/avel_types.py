@@ -106,19 +106,28 @@ class VectorType:
     scalar_type: ScalarType = None
 
     vector_alias: str = None
+    signed_vector_alias: str = None
+
     array_alias: str = None
+    signed_array_alias: str = None
+
     mask_alias: str = None
 
     output_file_name: str = None
     input_files: list = None
     template_file_name: str = None
 
+    output_test_file_name: str = None
+    template_test_file_name: str = None
+
     uvector_alias: str = None
     svector_alias: str = None
 
     umask_alias: str = None
+    bool_array_alias: str = None
 
     header_guard: str = None
+    test_header_guard: str = None
 
     variables: [str] = None
 
@@ -129,19 +138,29 @@ class VectorType:
         self.scalar_type = scalar_type
 
         self.vector_alias = 'vec' + str(width) + 'x' + scalar_type.abbreviation.lower()
+        self.signed_vector_alias = 'vec' + str(width) + 'x' + to_signed(scalar_type).abbreviation.lower()
+
         self.array_alias = 'arr' + str(width) + 'x' + scalar_type.abbreviation.lower()
+        self.signed_array_alias = 'arr' + str(width) + 'x' + to_signed(scalar_type).abbreviation.lower()
+
         self.mask_alias = 'mask' + str(width) + 'x' + scalar_type.abbreviation.lower()
 
         self.output_file_name = 'Vec' + str(width) + 'x' + scalar_type.abbreviation.lower() + '.hpp'
         self.input_files = input_files
         self.template_file_name = to_string(scalar_type.type_category) + '_vector.txt'
 
+        self.output_test_file_name = 'Vec' + str(width) + 'x' + scalar_type.abbreviation.lower() + '_tests.hpp'
+        self.template_test_file_name = to_string(scalar_type.type_category) + '_vector_tests.txt'
+
         self.uvector_alias = 'vec' + str(width) + 'x' + to_unsigned(scalar_type).abbreviation.lower()
         self.svector_alias = 'vec' + str(width) + 'x' + to_signed(scalar_type).abbreviation.lower()
 
         self.umask_alias = 'mask' + str(width) + 'x' + to_unsigned(scalar_type).abbreviation.lower()
 
+        self.bool_array_alias = 'arr' + str(width) + 'xb'
+
         self.header_guard = 'AVEL_VEC' + str(width) + 'X' + scalar_type.abbreviation.upper() + '_HPP'
+        self.test_header_guard = 'AVEL_VEC' + str(width) + 'X' + scalar_type.abbreviation.upper() + '_TESTS_HPP'
 
         self.variables = variables
 
