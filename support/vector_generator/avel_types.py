@@ -185,8 +185,8 @@ vector_types = [
     VectorType(uint64_t, 1, ['single_mask_implementations.cpp', 'single_int_vectors_implementations.cpp', 'single_uint_vectors_implementations.cpp'], ['HAS_SCATTER', 'HAS_GATHER']),
     VectorType(int64_t, 1, ['single_mask_implementations.cpp', 'single_int_vectors_implementations.cpp', 'single_sint_vectors_implementations.cpp'], ['HAS_SCATTER', 'HAS_GATHER']),
 
-#    VectorType(float32_t, 1, ["single_mask_implementations.cpp"], ['HAS_SCATTER', 'HAS_GATHER']),
-#    VectorType(float64_t, 1, ["single_mask_implementations.cpp"], ['HAS_SCATTER', 'HAS_GATHER']),
+    VectorType(float32_t, 1, ["single_mask_implementations.cpp"], ['HAS_SCATTER', 'HAS_GATHER']),
+    VectorType(float64_t, 1, ["single_mask_implementations.cpp"], ['HAS_SCATTER', 'HAS_GATHER']),
 
     # 128-bit vectors
     VectorType(uint8_t, 16, [], ['MULTIPLE']),
@@ -201,8 +201,8 @@ vector_types = [
     VectorType(int64_t, 2, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
     VectorType(uint64_t, 2, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
 
-#    VectorType(float32_t, 4, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
-#    VectorType(float64_t, 2, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
+    VectorType(float32_t, 4, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
+    VectorType(float64_t, 2, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
 
     # 256-bit vectors
     VectorType(uint8_t,  32, [], ['MULTIPLE']),
@@ -217,8 +217,8 @@ vector_types = [
     VectorType(uint64_t,  4, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
     VectorType(int64_t,  4, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
 
-#    VectorType(float32_t, 8, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
-#    VectorType(float64_t, 4, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
+    VectorType(float32_t, 8, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
+    VectorType(float64_t, 4, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
 
     # 512-bit vectors
     VectorType(uint8_t,  64, [], ['MULTIPLE']),
@@ -233,6 +233,6 @@ vector_types = [
     VectorType(uint64_t,  8, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
     VectorType(int64_t,  8, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
 
-#    VectorType(float32_t, 16, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
-#    VectorType(float64_t, 8,  [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER'])
+    VectorType(float32_t, 16, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
+    VectorType(float64_t, 8,  [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER'])
 ]

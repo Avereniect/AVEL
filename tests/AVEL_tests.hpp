@@ -157,6 +157,16 @@ namespace avel_tests {
     }
 
     template<>
+    inline float random_val<float>() {
+        return random32f();
+    }
+
+    template<>
+    inline double random_val<double>() {
+        return random64f();
+    }
+
+    template<>
     inline bool random_val<bool>() {
         return random8u() & 0x1;
     }

@@ -8,7 +8,7 @@ namespace avel {
     //=====================================================
 
     using vec4x64f = Vector<double, 4>;
-
+    using arr4x64f = std::array<double, 4>;
     using mask4x64f = Vector_mask<double, 4>;
 
     //=====================================================
@@ -65,11 +65,34 @@ namespace avel {
         AVEL_FINL explicit Vector_mask(primitive content):
             content(content) {}
 
-        AVEL_FINL explicit Vector_mask(bool x):
-            content(/*TODO: Implement*/) {}
+        AVEL_FINL explicit Vector_mask(bool b):
+        #if defined(AVEL_AVX512VL)
+            content(b ? 0x0f : 0x00) {}
+        #endif
 
-        AVEL_FINL explicit Vector_mask(const std::array<bool, 4>& arr) {
-            //TODO: Implement
+        AVEL_FINL explicit Vector_mask(const arr4xb& arr) {
+            static_assert(
+                sizeof(bool) == 1,
+                "Implementation assumes bool occupy a single byte"
+            );
+
+
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            __m128i array_data = _mm_set1_epi32(bit_cast<std::uint32_t>(arr));
+            content = __mmask8(_mm_cmplt_epu8_mask(_mm_setzero_si128(), array_data));
+
+            #elif defined(AVEL_AVX512VL)
+            auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
+            auto expanded = _mm_cvtepi8_epi32(array_data);
+            content = _mm_cmplt_epu32_mask(_mm_setzero_si128(), expanded);
+
+            #elif defined(AVEL_AVX2)
+            __m128i array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
+            array_data = _mm_unpacklo_epi8(array_data, array_data);
+            array_data = _mm_unpacklo_epi16(array_data, array_data);
+            content = _mm_castsi128_ps(_mm_cmplt_epi32(_mm_setzero_si128(), array_data));
+
+            #endif
         }
 
         Vector_mask() = default;
@@ -81,8 +104,13 @@ namespace avel {
         // Assignment operators
         //=================================================
 
-        AVEL_FINL Vector_mask& operator=(bool x) {
-            //TODO: Implement
+        AVEL_FINL Vector_mask& operator=(bool b) {
+            *this = Vector_mask{b};
+            return *this;
+        }
+
+        AVEL_FINL Vector_mask& operator=(primitive p) {
+            content = p;
             return *this;
         }
 
@@ -95,12 +123,24 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
-            //TODO: Implement
+            #if defined(AVEL_AVX512VL)
+            return lhs.content == rhs.content;
+
+            #elif defined(AVEL_AVX2)
+
+
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) noexcept {
-            //TODO: Implement
+            #if defined(AVEL_AVX512VL)
+            return lhs.content != rhs.content;
+
+            #elif defined(AVEL_AVX2)
+
+
+            #endif
         }
 
         //=================================================
@@ -108,17 +148,35 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator&=(Vector_mask rhs) {
-            //TODO: Implement
+            #if defined(AVEL_AVX512VL)
+            content &= rhs.content;
+
+            #elif defined(AVEL_AVX2)
+
+
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector_mask& operator|=(Vector_mask rhs) {
-            //TODO: Implement
+            #if defined(AVEL_AVX512VL)
+            content |= rhs.content;
+
+            #elif defined(AVEL_AVX2)
+
+
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector_mask& operator^=(Vector_mask rhs) {
-            //TODO: Implement
+            #if defined(AVEL_AVX512VL)
+            content ^= rhs.content;
+
+            #elif defined(AVEL_AVX2)
+
+
+            #endif
             return *this;
         }
 
@@ -127,42 +185,23 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask operator!() const {
-            //TODO: Implement
+            #if defined(AVEL_AVX512VL)
+            Vector_mask{primitive(content ^ 0x0f)};
+
+            #elif defined(AVEL_AVX2)
+
+
+            #endif
         }
 
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator&(Vector_mask lhs, Vector_mask rhs) {
-            lhs &= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator&&(Vector_mask lhs, Vector_mask rhs) {
-            return lhs & rhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator|(Vector_mask lhs, Vector_mask rhs) {
-            lhs |= rhs;
-            return lhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator||(Vector_mask lhs, Vector_mask rhs) {
-            return lhs | rhs;
-        }
-
-        [[nodiscard]]
-        AVEL_FINL friend Vector_mask operator^(Vector_mask lhs, Vector_mask rhs) {
-            lhs ^= rhs;
-            return lhs;
-        }
+        AVEL_VECTOR_MASK_BINARY_BITWISE_OPERATORS
 
         //=================================================
         // Conversion operators
         //=================================================
 
-        AVEL_FINL operator primitive() const {
+        [[nodiscard]]
+        AVEL_FINL explicit operator primitive() const {
             return content;
         }
 
@@ -174,22 +213,28 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(mask4x64f m) {
-        //TODO: Implement
+        #if defined(AVEL_AVX512VL)
+        return avel::popcount(decay(m));
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool any(mask4x64f m) {
-        //TODO: Implement
+        #if defined(AVEL_AVX512VL)
+        return decay(m);
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool all(mask4x64f m) {
-        //TODO: Implement
+        #if defined(AVEL_AVX512VL)
+        return 0x0f == decay(m);
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL bool none(mask4x64f m) {
-        //TODO: Implement
+        return !any(m);
     }
 
     //=====================================================
@@ -218,7 +263,7 @@ namespace avel {
         using scalar = double;
 
         #if defined(AVEL_AVX)
-        using primitive = __m256;
+        using primitive = __m256d;
         #endif
 
         using mask = Vector_mask<scalar, width>;
@@ -238,17 +283,20 @@ namespace avel {
             content(convert<Vector>(v)[0]) {}
 
         AVEL_FINL explicit Vector(mask m):
-            content(/*TODO: Implement*/) {}
+        #if defined(AVEL_AVX512VL)
+            content(_mm256_mask_blend_pd(decay(m), _mm256_set1_pd(0.0), _mm256_set1_pd(1.0))) {}
+        #elif defined(AVEL_AVX)
+            content(_mm256_blendv_pd(_mm256_set1_pd(0.0), _mm256_set1_pd(1.0), decay(m))) {}
+        #endif
 
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}
 
         AVEL_FINL explicit Vector(scalar x):
-            content(/*TODO: Implement*/) {}
+            content(_mm256_set1_pd(x)) {}
 
-        AVEL_FINL explicit Vector(const std::array<scalar, width>& array) {
-            //TODO: Implement
-        }
+        AVEL_FINL explicit Vector(const arr4x64f& array):
+            content(_mm256_loadu_pd(array.data())) {}
 
         Vector() = default;
         Vector(const Vector&) = default;
@@ -259,13 +307,22 @@ namespace avel {
         // Assignment operators
         //=================================================
 
+        AVEL_FINL Vector& operator=(scalar x) {
+            *this = Vector{x};
+            return *this;
+        }
+
+        AVEL_FINL Vector& operator=(primitive p) {
+            content = p;
+            return *this;
+        }
+
         Vector& operator=(const Vector&) = default;
         Vector& operator=(Vector&&) = default;
 
-        AVEL_FINL Vector& operator=(scalar x) {
-            //TODO: Implement
-            return *this;
-        }
+        //=================================================
+        // Comparison operators
+        //=================================================
 
         //=================================================
         // Comparison operators
@@ -273,32 +330,44 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator==(Vector lhs, Vector rhs) {
-            //TODO: Implement
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmp_pd_mask(lhs.content, rhs.content, _CMP_EQ_OS)};
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator!=(Vector lhs, Vector rhs) {
-            //TODO: Implement
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmp_pd_mask(lhs.content, rhs.content, _CMP_NEQ_OS)};
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator<(Vector lhs, Vector rhs) {
-            //TODO: Implement
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmp_pd_mask(lhs.content, rhs.content, _CMP_LT_OS)};
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator<=(Vector lhs, Vector rhs) {
-            //TODO: Implement
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmp_pd_mask(lhs.content, rhs.content, _CMP_LE_OS)};
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator>(Vector lhs, Vector rhs) {
-            //TODO: Implement
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmp_pd_mask(lhs.content, rhs.content, _CMP_GT_OS)};
+            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator>=(Vector lhs, Vector rhs) {
-            //TODO: Implement
+            #if defined(AVEL_AVX512VL)
+            return mask{_mm256_cmp_pd_mask(lhs.content, rhs.content, _CMP_GE_OS)};
+            #endif
         }
 
         //=================================================
@@ -310,7 +379,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector operator-() const {
-            return Vector{} - *this;
+            return Vector{0.0} - *this;
         }
 
         //=================================================
@@ -318,27 +387,27 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator+=(Vector rhs) {
-            //TODO: Implement
+            content = _mm256_add_pd(content, rhs.content);
             return *this;
         }
 
         AVEL_FINL Vector& operator-=(Vector rhs) {
-            //TODO: Implement
+            content = _mm256_sub_pd(content, rhs.content);
             return *this;
         }
 
         AVEL_FINL Vector& operator*=(Vector rhs) {
-            //TODO: Implement
+            content = _mm256_mul_pd(content, rhs.content);
             return *this;
         }
 
         AVEL_FINL Vector& operator/=(Vector rhs) {
-            //TODO: Implement
+            content = _mm256_div_pd(content, rhs.content);
             return *this;
         }
 
         AVEL_FINL Vector& operator%=(Vector rhs) {
-            //TODO: Implement
+            //TODO: Call fmod
             return *this;
         }
 
@@ -457,7 +526,14 @@ namespace avel {
         }
 
         AVEL_FINL explicit operator mask() const {
-            return *this != Vector{};
+            #if defined(AVEL_AVX512VL)
+            auto t = _mm256_castpd_si256(content);
+            return mask{_mm256_test_epi64_mask(t, t)};
+
+            #elif defined(AVEL_AVX)
+            return mask{_mm256_cmp_pd(content, _mm256_setzero_pd(), _CMP_NEQ_UQ)};
+
+            #endif
         }
 
     private:
@@ -470,17 +546,67 @@ namespace avel {
 
     };
 
+    static_assert(
+        4 * sizeof(double) == sizeof(vec4x64f),
+        "Vector was not of the expected size!"
+    );
+
+    //=====================================================
+    // Arrangement operations
+    //=====================================================
+
+    template<std::uint32_t N>
+    AVEL_FINL double extract(vec4x64f v) {
+        static_assert(N < vec4x64f::width, "Specified index does not exist");
+        typename std::enable_if<N < vec4x64f::width, int>::type dummy_variable = 0;
+
+        return {};
+    }
+
+    template<std::uint32_t N>
+    AVEL_FINL vec4x64f insert(vec4x64f v, double x) {
+        static_assert(N < vec4x64f::width, "Specified index does not exist");
+        typename std::enable_if<N < vec4x64f::width, int>::type dummy_variable = 0;
+
+        return {};
+    }
+
     //=====================================================
     // General vector operations
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec4x64f set_bits(mask4x64f m) {
+    AVEL_FINL std::uint32_t count(vec4x64f x) {
+        return 0;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool any(vec4x64f x) {
+        return false;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool all(vec4x64f x) {
+        return false;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool none(vec4x64f x) {
+        return false;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x64f keep(mask4x64f m, vec4x64f v) {
         //TODO: Implement
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x64f blend(vec4x64f a, vec4x64f b, mask4x64f m) {
+    AVEL_FINL vec4x64f clear(mask4x64f m, vec4x64f v) {
+        //TODO: Implement
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x64f blend(mask4x64f m, vec4x64f a, vec4x64f b) {
         //TODO: Implement
     }
 
@@ -500,7 +626,7 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL std::pair<vec4x64f, vec4x64f> minmax(vec4x64f a, vec4x64f b) {
+    AVEL_FINL std::array<vec4x64f, 2> minmax(vec4x64f a, vec4x64f b) {
         //TODO: Implement
     }
 
@@ -510,13 +636,8 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x64f midpoint(vec4x64f x, vec4x64f y) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec4x64f average(vec4x64f a, vec4x64f b) {
-        //TODO: Implement
+    AVEL_FINL vec4x64f negate(mask4x64f m, vec4x64f v) {
+        return{};
     }
 
     [[nodiscard]]
@@ -524,43 +645,113 @@ namespace avel {
         //TODO: Implement
     }
 
+    [[nodiscard]]
+    AVEL_FINL vec4x64f neg_abs(vec4x64f v) {
+        //TODO: Implement
+    }
+
+    //=====================================================
+    // Load/Store operations
+    //=====================================================
+
     template<>
     [[nodiscard]]
-    AVEL_FINL vec4x64f load<vec4x64f>(const double* ptr) {
+    AVEL_FINL vec4x64f load<vec4x64f>(const double* ptr, std::uint32_t n) {
         //TODO: Implement
     }
 
     template<>
     [[nodiscard]]
-    AVEL_FINL vec4x64f aligned_load<vec4x64f>(const double* ptr) {
+    AVEL_FINL vec4x64f load<vec4x64f, vec4x64f::width>(const double* ptr) {
         //TODO: Implement
     }
 
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec4x64f aligned_load<vec4x64f>(const double* ptr, std::uint32_t n) {
+        //TODO: Implement
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec4x64f aligned_load<vec4x64f, vec4x64f::width>(const double* ptr) {
+        //TODO: Implement
+    }
+
+
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec4x64f gather<vec4x64f>(const double* ptr, vec4x64i indices, std::uint32_t n) {
+        //TODO: Implement
+    }
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL vec4x64f gather<vec4x64f>(const double* ptr, vec4x64i indices) {
+        //TODO: Implement
+    }
+
+
+
+    template<std::uint32_t N = vec4x64f::width>
     AVEL_FINL void store(double* ptr, vec4x64f v) {
         //TODO: Implement
     }
 
+    template<>
+    AVEL_FINL void store<vec4x64f::width>(double* ptr, vec4x64f v) {
+        //TODO: Implement
+    }
+
+    AVEL_FINL void store(double* ptr, vec4x64f v, std::uint32_t n) {
+        //TODO: Implement
+    }
+
+
+
+    template<std::uint32_t N = vec4x64f::width>
     AVEL_FINL void aligned_store(double* ptr, vec4x64f v) {
         //TODO: Implement
     }
 
-    //=====================================================
-    // Floating-point vector operations
-    //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL vec4x64f epsilon_increment(vec4x64f arg) {
+    template<>
+    AVEL_FINL void aligned_store<vec4x64f::width>(double* ptr, vec4x64f v) {
         //TODO: Implement
     }
 
-    [[nodiscard]]
-    AVEL_FINL vec4x64f epsilon_decrement(vec4x64f arg) {
+    AVEL_FINL void aligned_store(double* ptr, vec4x64f v, std::uint32_t n) {
         //TODO: Implement
     }
 
-    [[nodiscard]]
-    AVEL_FINL vec4x64f epsilon_offset(vec4x64f arg, vec4x64f offset) {
+
+
+    AVEL_FINL void scatter(double* ptr, vec4x64f v, vec4x64i indices, std::uint32_t n) {
         //TODO: Implement
+    }
+
+    template<std::uint32_t N = vec4x64f::width>
+    AVEL_FINL void scatter(double* ptr, vec4x64f v, vec4x64i indices) {
+        //TODO: Implement
+    }
+
+    template<>
+    AVEL_FINL void scatter<0>(double* ptr, vec4x64f v, vec4x64i indices) {
+        // Don't have to do anything
+    }
+
+    template<>
+    AVEL_FINL void scatter<vec4x64f::width>(double* ptr, vec4x64f v, vec4x64i indices) {
+        //TODO: Implement
+    }
+
+
+
+    [[nodiscard]]
+    AVEL_FINL arr4x64f to_array(vec4x64f v) {
+        alignas(32) arr4x64f ret;
+        aligned_store(ret.data(), v);
+        return ret;
     }
 
     //=====================================================
@@ -770,6 +961,11 @@ namespace avel {
         //TODO: Implement
     }
 
+    [[nodiscard]]
+    AVEL_FINL vec4x64f rint(vec4x64f arg) {
+        //TODO: Implement
+    }
+
     //=====================================================
     // Floating-point manipulation
     //=====================================================
@@ -790,12 +986,12 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x64f scalebn(vec4x64f x, vec4x64i exp) {
+    AVEL_FINL vec4x64f scalbn(vec4x64f x, vec4x64i exp) {
         //TODO: Implement
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x64f ilogb(vec4x64f x) {
+    AVEL_FINL vec4x64i ilogb(vec4x64f x) {
         //TODO: Implement
     }
 
@@ -815,8 +1011,12 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x64f copysign(vec4x64f mag, vec4x64f sgn) {
-        //TODO: Implement
+    AVEL_FINL vec4x64f copysign(vec4x64f mag, vec4x64f sign) {
+        #if defined(AVEL_SSE2)
+        auto mask = _mm256_set1_pd(double_sign_bit_mask);
+        auto ret = _mm256_or_pd(_mm256_and_pd(mask, decay(sign)), _mm256_andnot_pd(mask, decay(mag)));
+        return vec4x64f{ret};
+        #endif
     }
 
     //=====================================================
@@ -829,13 +1029,15 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL mask4x64f isfininte(vec4x64f arg) {
-        //TODO: Implement
+    AVEL_FINL mask4x64f isfinite(vec4x64f arg) {
+        #if defined(AVEL_AVX512VL)
+        return  vec4x64f{_mm256_getexp_pd(decay(arg))} != vec4x64f{1023.0f};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask4x64f isinf(vec4x64f arg) {
-        //TODO: Implement
+        return abs(arg) == vec4x64f{INFINITY};
     }
 
     [[nodiscard]]
@@ -845,12 +1047,24 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask4x64f isnormal(vec4x64f arg) {
-        //TODO: Implement
+        #if defined(AVEL_AVX512VL)
+        return !mask4x64f{_mm256_fpclass_ps_mask(decay(arg), 0xBF)};
+
+        #elif defined(AVEL_AVX2)
+
+
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask4x64f signbit(vec4x64f arg) {
+        #if defined(AVEL_AVX512VL)
+        return mask4x64f{_mm256_fpclass_pd_mask(decay(arg), 0x40)};
+
+        #elif defined(AVEL_AVX2)
         //TODO: Implement
+
+        #endif
     }
 
     //=====================================================
@@ -885,17 +1099,6 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL mask4x64f isunordered(vec4x64f x, vec4x64f y) {
         return isnan(x) || isnan(y);
-    }
-
-    //=====================================================
-    // Vector conversions
-    //=====================================================
-
-    [[nodiscard]]
-    AVEL_FINL std::array<double, 4> to_array(vec4x64f x) {
-        alignas(32) std::array<double, 4> array{};
-        aligned_store(array.data(), x);
-        return array;
     }
 
 }
