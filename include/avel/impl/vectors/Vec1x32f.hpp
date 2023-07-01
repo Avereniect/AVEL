@@ -357,7 +357,7 @@ namespace avel {
         static_assert(N <= vec1x32f::width, "Specified index does not exist");
         typename std::enable_if<N <= vec1x32f::width, int>::type dummy_variable = 0;
 
-        return {};
+        return decay(v);
     }
 
     template<std::uint32_t N>
@@ -365,7 +365,7 @@ namespace avel {
         static_assert(N < vec1x32f::width, "Specified index does not exist");
         typename std::enable_if<N < vec1x32f::width, int>::type dummy_variable = 0;
 
-        return {};
+        return vec1x32f{x};
     }
 
     //=====================================================
@@ -374,57 +374,57 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(vec1x32f x) {
-        return 0;
+        return bool(decay(x));
     }
 
     [[nodiscard]]
     AVEL_FINL bool any(vec1x32f x) {
-        return false;
+        return bool(decay(x));
     }
 
     [[nodiscard]]
     AVEL_FINL bool all(vec1x32f x) {
-        return false;
+        return bool(decay(x));
     }
 
     [[nodiscard]]
     AVEL_FINL bool none(vec1x32f x) {
-        return false;
+        return !bool(decay(x));
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f keep(mask1x32f m, vec1x32f v) {
-        return {};
+        return vec1x32f{avel::keep(decay(m), decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f clear(mask1x32f m, vec1x32f v) {
-        return {};
+        return vec1x32f{avel::clear(decay(m), decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f blend(mask1x32f m, vec1x32f a, vec1x32f b) {
-        return {};
+        return vec1x32f{avel::blend(decay(m), decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f byteswap(vec1x32f v) {
-        return bit_cast<vec1x32f>(byteswap(bit_cast<vec1x32f>(v)));
+        return bit_cast<vec1x32f>(avel::byteswap(bit_cast<vec1x32u>(v)));
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f max(vec1x32f a, vec1x32f b) {
-        return {};
+        return vec1x32f{avel::max(decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f min(vec1x32f a, vec1x32f b) {
-        return {};
+        return vec1x32f{avel::min(decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL std::array<vec1x32f, 2> minmax(vec1x32f a, vec1x32f b) {
-        return {};
+        return {min(a, b), max(a, b)};
     }
 
     [[nodiscard]]
@@ -434,21 +434,17 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec1x32f negate(mask1x32f m, vec1x32f v) {
-        if (decay(m)) {
-            return -v;
-        } else {
-            return v;
-        }
+        return vec1x32f{avel::negate(decay(m), decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f abs(vec1x32f v) {
-        return {};
+        return vec1x32f{avel::abs(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f neg_abs(vec1x32f v) {
-        return {};
+        return vec1x32f{avel::neg_abs(decay(v))};
     }
 
     //=====================================================
@@ -583,12 +579,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec1x32f fmax(vec1x32f a, vec1x32f b) {
-        return {};
+        return vec1x32f{avel::fmax(decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f fmin(vec1x32f a, vec1x32f b) {
-        return {};
+        return vec1x32f{avel::fmin(decay(a), decay(b))};
     }
 
     //=====================================================
@@ -597,7 +593,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec1x32f sqrt(vec1x32f x) {
-        return {};
+        return vec1x32f{avel::sqrt(decay(x))};
     }
 
     //=====================================================
@@ -605,33 +601,33 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec1x32f ceil(vec1x32f x) {
-        return {};
+    AVEL_FINL vec1x32f ceil(vec1x32f v) {
+        return vec1x32f{avel::ceil(decay(v))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x32f floor(vec1x32f x) {
-        return {};
+    AVEL_FINL vec1x32f floor(vec1x32f v) {
+        return vec1x32f{avel::floor(decay(v))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x32f trunc(vec1x32f x) {
-        return {};
+    AVEL_FINL vec1x32f trunc(vec1x32f v) {
+        return vec1x32f{avel::trunc(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f round(vec1x32f v) {
-        return {};
+        return vec1x32f{avel::round(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f nearbyint(vec1x32f v) {
-        return {};
+        return vec1x32f{avel::nearbyint(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f rint(vec1x32f v) {
-        return {};
+        return vec1x32f{avel::rint(decay(v))};
     }
 
     //=====================================================
@@ -640,32 +636,35 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec1x32f frexp(vec1x32f v, vec1x32i* exp) {
-        return {};
+        std::int32_t tmp;
+        auto ret = avel::frexp(decay(v), &tmp);
+        *exp = tmp;
+        return vec1x32f{ret};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f ldexp(vec1x32f arg, vec1x32i exp) {
-        return {};
+        return vec1x32f{avel::ldexp(decay(arg), decay(exp))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f scalbn(vec1x32f x, vec1x32i exp) {
-        return {};
+        return vec1x32f{avel::scalbn(decay(x), decay(exp))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32i ilogb(vec1x32f x) {
-        return {};
+        return vec1x32i{avel::ilogb(decay(x))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f logb(vec1x32f x) {
-        return {};
+        return vec1x32f{avel::logb(decay(x))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x32f copysign(vec1x32f mag, vec1x32f sign) {
-        return {};
+        return vec1x32f{avel::copysign(decay(mag), decay(sign))};
     }
 
     //=====================================================
@@ -674,32 +673,32 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec1x32i fpclassify(vec1x32f v) {
-        return {};
+        return vec1x32i{avel::fpclassify(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x32f isfinite(vec1x32f v) {
-        return {};
+        return mask1x32f{avel::isfinite(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x32f isinf(vec1x32f v) {
-        return {};
+        return mask1x32f{avel::isinf(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x32f isnan(vec1x32f v) {
-        return {};
+        return mask1x32f{avel::isnan(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x32f isnormal(vec1x32f v) {
-        return {};
+        return mask1x32f{avel::isnormal(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x32f signbit(vec1x32f arg) {
-        return {};
+        return mask1x32f{avel::signbit(decay(arg))};
     }
 
     //=====================================================
@@ -708,32 +707,32 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask1x32f isgreater(vec1x32f x, vec1x32f y) {
-        return {};
+        return mask1x32f{avel::isgreater(decay(x), decay(y))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x32f isgreaterequal(vec1x32f x, vec1x32f y) {
-        return {};
+        return mask1x32f{avel::isgreaterequal(decay(x), decay(y))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x32f isless(vec1x32f x, vec1x32f y) {
-        return {};
+        return mask1x32f{avel::isless(decay(x), decay(y))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x32f islessequal(vec1x32f x, vec1x32f y) {
-        return {};
+        return mask1x32f{avel::islessequal(decay(x), decay(y))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x32f islessgreater(vec1x32f x, vec1x32f y) {
-        return {};
+        return mask1x32f{avel::islessgreater(decay(x), decay(y))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x32f isunordered(vec1x32f x, vec1x32f y) {
-        return {};
+        return mask1x32f{avel::isunordered(decay(x), decay(y))};
     }
 
 }

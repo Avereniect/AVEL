@@ -261,7 +261,7 @@ namespace avel {
 
 
     template<>
-    class alignas(16) Vector<double, 2> {
+    class Vector<double, 2> {
     public:
 
         //=================================================
@@ -532,7 +532,7 @@ namespace avel {
         // Conversions
         //=================================================
 
-        AVEL_FINL operator primitive() const {
+        AVEL_FINL explicit operator primitive() const {
             return content;
         }
 
@@ -618,8 +618,8 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
         return vec2x64f{_mm_and_pd(decay(m), decay(v))};
+
         #endif
-        //TODO: Implement
     }
 
     [[nodiscard]]
@@ -629,6 +629,7 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
         return vec2x64f{_mm_andnot_pd(decay(m), decay(v))};
+
         #endif
     }
 
@@ -636,6 +637,7 @@ namespace avel {
     AVEL_FINL vec2x64f blend(mask2x64f m, vec2x64f a, vec2x64f b) {
         #if defined(AVEL_AVX512VL)
         return vec2x64f{_mm_mask_blend_pd(decay(m), decay(b), decay(a))};
+
         #elif defined(AVEL_SSE41)
         return vec2x64f{_mm_blendv_pd(decay(b), decay(a), decay(n))};
 
@@ -645,6 +647,11 @@ namespace avel {
         return vec2x64f{_mm_or_pd(x, y)};
 
         #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec2x64f byteswap(vec2x64f v) {
+        return bit_cast<vec2x64f>(byteswap(bit_cast<vec2x64u>(v)));
     }
 
     [[nodiscard]]
@@ -736,19 +743,22 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec2x64f load<vec2x64f, vec2x64f::width>(const double* ptr) {
-        //TODO: Implement
+        return vec2x64f{_mm_loadu_pd(ptr)};
     }
+
+
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec2x64f aligned_load<vec2x64f>(const double* ptr, std::uint32_t n) {
-        //TODO: Implement
+        auto mask = (n >= 2) ? -1 : (1 << n) - 1;
+        return vec2x64f{_mm_maskz_load_pd(mask, ptr)};
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec2x64f aligned_load<vec2x64f, vec2x64f::width>(const double* ptr) {
-        //TODO: Implement
+        return vec2x64f{_mm_load_pd(ptr)};
     }
 
 
@@ -756,56 +766,62 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec2x64f gather<vec2x64f>(const double* ptr, vec2x64i indices, std::uint32_t n) {
-        //TODO: Implement
+        auto mask = (n >= 2) ? -1 : (1 << n) - 1;
+        return vec2x64f{_mm_mmask_i64gather_pd(_mm_setzero_pd(), mask, decay(indices), ptr, sizeof(double))};
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec2x64f gather<vec2x64f>(const double* ptr, vec2x64i indices) {
-        //TODO: Implement
+        return vec2x64f{_mm_i64gather_pd(ptr, decay(indices), sizeof(double))};
     }
 
 
 
+    AVEL_FINL void store(double* ptr, vec2x64f v, std::uint32_t n) {
+        auto mask = (n >= 2) ? -1 : (1 << n) - 1;
+        _mm_mask_storeu_pd(ptr, mask, decay(v));
+    }
+
     template<std::uint32_t N = vec2x64f::width>
     AVEL_FINL void store(double* ptr, vec2x64f v) {
-        //TODO: Implement
+        store(ptr, v, N);
     }
 
     template<>
     AVEL_FINL void store<vec2x64f::width>(double* ptr, vec2x64f v) {
-        //TODO: Implement
-    }
-
-    AVEL_FINL void store(double* ptr, vec2x64f v, std::uint32_t n) {
-        //TODO: Implement
+        _mm_storeu_pd(ptr, decay(v));
     }
 
 
+
+    AVEL_FINL void aligned_store(double* ptr, vec2x64f v, std::uint32_t n) {
+        auto mask = (n >= 2) ? -1 : (1 << n) - 1;
+        _mm_mask_store_pd(ptr, mask, decay(v));
+    }
 
     template<std::uint32_t N = vec2x64f::width>
     AVEL_FINL void aligned_store(double* ptr, vec2x64f v) {
-        //TODO: Implement
+        aligned_store(ptr, v, N);
     }
 
     template<>
     AVEL_FINL void aligned_store<vec2x64f::width>(double* ptr, vec2x64f v) {
-        //TODO: Implement
-    }
-
-    AVEL_FINL void aligned_store(double* ptr, vec2x64f v, std::uint32_t n) {
-        //TODO: Implement
+        #if defined(AVEL_SSE2)
+        _mm_store_pd(ptr, decay(v));
+        #endif
     }
 
 
 
     AVEL_FINL void scatter(double* ptr, vec2x64f v, vec2x64i indices, std::uint32_t n) {
-        //TODO: Implement
+        auto mask = (n >= 2) ? -1 : (1 << n) - 1;
+        _mm_mask_i64scatter_pd(ptr, mask, decay(indices), decay(v), sizeof(double));
     }
 
     template<std::uint32_t N = vec2x64f::width>
     AVEL_FINL void scatter(double* ptr, vec2x64f v, vec2x64i indices) {
-        //TODO: Implement
+        scatter(ptr, v, indices, N);
     }
 
     template<>
@@ -815,14 +831,14 @@ namespace avel {
 
     template<>
     AVEL_FINL void scatter<vec2x64f::width>(double* ptr, vec2x64f v, vec2x64i indices) {
-        //TODO: Implement
+        _mm_i64scatter_pd(ptr, decay(indices), decay(v), sizeof(double));
     }
 
 
 
     [[nodiscard]]
-    AVEL_FINL arr1x64f to_array(vec2x64f v) {
-        alignas(8) arr1x64f ret;
+    AVEL_FINL arr2x64f to_array(vec2x64f v) {
+        alignas(16) arr2x64f ret;
         aligned_store(ret.data(), v);
         return ret;
     }
@@ -833,137 +849,21 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64f fmax(vec2x64f a, vec2x64f b) {
-        //TODO: Implement
+        return blend(avel::isnan(b), a, avel::max(a, b));
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64f fmin(vec2x64f a, vec2x64f b) {
-        //TODO: Implement
+        return blend(avel::isnan(b), a, avel::min(a, b));
     }
-
-    /*
-    [[nodiscard]]
-    AVEL_FINL vec2x64f fabs(vec2x64f v) {
-        return abs(v);
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f fabsf(vec2x64f v) {
-        return fabs(v);
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f fmod(vec2x64f x, vec2x64f y) {
-        return x % y;
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f fmodf(vec2x64f x, vec2x64f y) {
-        return x % y;
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f remainderf(vec2x64f v) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f remquof(vec2x64f v) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f fmadd(vec2x64f m, vec2x64f x, vec2x64f b) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f fmsubb(vec2x64f m, vec2x64f x, vec2x64f b) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f fnmadd(vec2x64f m, vec2x64f x, vec2x64f b) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f fnmsub(vec2x64f m, vec2x64f x, vec2x64f b) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f fma(vec2x64f m, vec2x64f x, vec2x64f b) {
-        return fmadd(m, x, b);
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f fmaf(vec2x64f m, vec2x64f x, vec2x64f b) {
-        return fmadd(m, x, b);
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f fmin(vec2x64f a, vec2x64f b) {
-        return fminf(a, b);
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f fdim(vec2x64f a, vec2x64f b) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f lerp(vec2x64f a, vec2x64f b, vec2x64f t);
-    */
-
-    //=====================================================
-    // Exponential functions
-    //=====================================================
-
-    /*
-    [[nodiscard]]
-    AVEL_FINL vec2x64f exp(vec2x64f x) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f exp2(vec2x64f x) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f expm1(vec2x64f x) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f log(vec2x64f x) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f log10(vec2x64f x) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f log2(vec2x64f x) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f log1p(vec2x64f x) {
-        //TODO: Implement
-    }
-    */
 
     //=====================================================
     // Power functions
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec2x64f sqrt(vec2x64f x) {
-        return vec2x64f{}; //TODO: Implement
+    AVEL_FINL vec2x64f sqrt(vec2x64f v) {
+        return vec2x64f{_mm_sqrt_pd(decay(v))};
     }
 
     //=====================================================
@@ -971,33 +871,45 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec2x64f ceil(vec2x64f x) {
-        return {}; //TODO: Implement
+    AVEL_FINL vec2x64f ceil(vec2x64f v) {
+        #if defined(AVEL_SSE41)
+        return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)};
+        #endif
     }
 
     [[nodiscard]]
-    AVEL_FINL vec2x64f floor(vec2x64f x) {
-        return {}; //TODO: Implement
+    AVEL_FINL vec2x64f floor(vec2x64f v) {
+        #if defined(AVEL_SSE41)
+        return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)};
+        #endif
     }
 
     [[nodiscard]]
-    AVEL_FINL vec2x64f trunc(vec2x64f x) {
-        return {}; //TODO: Implement
+    AVEL_FINL vec2x64f trunc(vec2x64f v) {
+        #if defined(AVEL_SSE41)
+        return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64f round(vec2x64f v) {
-        return {}; //TODO: Implement
+        #if defined(AVEL_SSE41)
+        return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC)};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64f nearbyint(vec2x64f v) {
-        return {}; //TODO: Implement
+        #if defined(AVEL_SSE41)
+        return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_CUR_DIRECTION)};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64f rint(vec2x64f v) {
-        return {}; //TODO: Implement
+        #if defined(AVEL_SSE41)
+        return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_CUR_DIRECTION)};
+        #endif
     }
 
     //=====================================================
@@ -1006,32 +918,58 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64f frexp(vec2x64f v, vec2x64i* exp) {
-        return {}; //TODO: Implement
+        #if defined(AVEL_AVX512VL)
+        auto is_infinity = _mm_fpclass_pd_mask(decay(v), 0x10 | 0x08);
+        auto is_non_zero = _mm_cmp_pd_mask(decay(v), _mm_setzero_pd(), _CMP_NEQ_UQ);
+
+        auto exponents = _mm_getexp_pd(decay(v));
+        exponents = _mm_add_pd(exponents, _mm_set1_pd(1.0f));
+        *exp = _mm_maskz_cvttpd_epi64(is_non_zero, exponents);
+
+        auto ret = _mm_getmant_pd(decay(v), _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+        // Note: Returns -1 or 1 for -infinity and +infinity respectively
+
+        ret = _mm_maskz_mov_pd(is_non_zero, ret);
+        ret = _mm_mask_blend_pd(is_infinity, ret, decay(v));
+        return vec2x64f{ret};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64f ldexp(vec2x64f x, vec2x64i exp) {
-        return {}; //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec2x64f modf(vec2x64f x, vec2x64f* iptr) {
-        return {}; //TODO: Implement
+        return vec2x64f{_mm_scalef_pd(decay(x), _mm_cvtepi64_pd(decay(exp)))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64f scalbn(vec2x64f x, vec2x64i exp) {
-        return {}; //TODO: Implement
+        return avel::ldexp(x, exp);
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64i ilogb(vec2x64f x) {
-        return {}; //TODO: Implement
+        #if defined(AVEL_AVX512VL)
+        auto exp_fp = _mm_getexp_pd(decay(x));
+
+        vec2x64f zero_ret{_mm_castsi128_pd(_mm_set1_epi64x(FP_ILOGB0))};
+        vec2x64f inf_ret {_mm_castsi128_pd(_mm_set1_epi64x(INT_MAX))};
+        vec2x64f nan_ret {_mm_castsi128_pd(_mm_set1_epi64x(FP_ILOGBNAN))};
+
+        auto misc_ret_i = _mm_cvtpd_epi64(exp_fp);
+        misc_ret_i = _mm_maskz_mov_epi64(_mm_cmpneq_epi64_mask(misc_ret_i, _mm_set1_epi64x(0x8000000000000000ll)), misc_ret_i);
+
+        vec2x64i zero_ret_i{_mm_castpd_si128(_mm_fixupimm_pd(zero_ret, exp_fp, _mm_set1_epi64x(0x88808888), 0x00))};
+        vec2x64i inf_ret_i {_mm_castpd_si128(_mm_fixupimm_pd(inf_ret,  exp_fp, _mm_set1_epi64x(0x88088888), 0x00))};
+        vec2x64i nan_ret_i {_mm_castpd_si128(_mm_fixupimm_pd(nan_ret,  exp_fp, _mm_set1_epi64x(0x88888800), 0x00))};
+
+        return (vec2x64i{misc_ret_i} | zero_ret_i) | (inf_ret_i | nan_ret_i);
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64f logb(vec2x64f x) {
-        return {}; //TODO: Implement
+        #if defined(AVEL_AVX512VL)
+        return vec2x64f{_mm_getexp_pd(decay(x))};
+        #endif
     }
 
     [[nodiscard]]
@@ -1049,43 +987,75 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64i fpclassify(vec2x64f v) {
-        //TODO: Implement
+        const vec2x64i fp_infinite{int(FP_INFINITE)};
+        const vec2x64i fp_nan{int(FP_NAN)};
+        const vec2x64i fp_normal{int(FP_NORMAL)};
+        const vec2x64i fp_subnormal{int(FP_SUBNORMAL)};
+        const vec2x64i fp_zero{int(FP_ZERO)};
+
+        #if defined(AVEL_AVX512VL)
+        mask2x64i infinite_mask {_mm_fpclass_pd_mask(decay(v), 0x08 | 0x10)};
+        mask2x64i nan_mask      {_mm_fpclass_pd_mask(decay(v), 0x01 | 0x80)};
+        mask2x64i subnormal_mask{_mm_fpclass_pd_mask(decay(v), 0x20)};
+        mask2x64i zero_mask     {_mm_fpclass_pd_mask(decay(v), 0x02 | 0x04)};
+        mask2x64i normal_mask   {!(infinite_mask | nan_mask | subnormal_mask | zero_mask)};
+
+        return
+            keep(infinite_mask, fp_infinite) |
+            keep(nan_mask, fp_nan) |
+            keep(normal_mask, fp_normal) |
+            keep(subnormal_mask, fp_subnormal) |
+            keep(zero_mask, fp_zero);
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask2x64f isnan(vec2x64f v) {
-        return (v != v);
+        #if defined(AVEL_AVX512VL)
+        return mask2x64f{_mm_fpclass_pd_mask(decay(v), 0x80 | 0x01)};
+
+        #elif defined(AVEL_SSE2)
+        return {}; //TODO: Implement
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask2x64f isfinite(vec2x64f arg) {
-        #if defined(AVEL_AVX512VL)
-        return  vec2x64f{_mm_getexp_pd(decay(arg))} != vec2x64f{1023.0f};
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
+        retturn !mask2x64f{_mm_fpclass_pd_mask(decay(arg), 0x01 | 0x08 | 0x10 | 0x80)};
+
+        #elif defined(AVEL_AVX512VL)
+        return  vec2x64f{_mm_getexp_pd(decay(arg))} < vec2x64f{1024.0f};
+
+        #elif defined(AVEL_SSE2)
+        return {}; //TODO: Implement
+
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask2x64f isinf(vec2x64f v) {
+        #if defined(AVEL_AVX512VL)
+        return mask2x64f{_mm_fpclass_pd_mask(decay(v), 0x08 | 0x10)};
+
+        #elif defined(AVEL_SSE2)
         return abs(v) == vec2x64f{INFINITY};
+
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask2x64f isnormal(vec2x64f v) {
-        //TODO: Implement
-    }
-
-    [[nodiscard]]
-    AVEL_FINL mask2x64f isunordered(vec2x64f x, vec2x64f y) {
-        //TODO: Implement
+        return !mask2x64f{_mm_fpclass_pd_mask(decay(v), 0xBF)};
     }
 
     [[nodiscard]]
     AVEL_FINL mask2x64f signbit(vec2x64f arg) {
         #if defined(AVEL_AVX512VL)
-        return mask2x64f{_mm_fpclass_pd_mask(decay(arg), 0x40)};
+        return mask2x64f{_mm_fpclass_pd_mask(decay(arg), 0x40 | 0x04 | 0x10)};
 
-        #elif defined(AVEL_AVX2)
-
+        #elif defined(AVEL_SSE2)
+        return {}; //TODO: Implement
 
         #endif
     }
@@ -1117,6 +1087,17 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL mask2x64f islessgreater(vec2x64f x, vec2x64f y) {
         return x != y;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL mask2x64f isunordered(vec2x64f x, vec2x64f y) {
+        #if defined(AVEL_AVX512VL)
+        return mask2x64f{_mm_cmp_pd_mask(decay(x), decay(y), _CMP_UNORD_Q)};
+
+        #elif defined(AVEL_SSE2)
+        return mask2x64f{_mm_cmpunord_pd(decay(x), decay(y))};
+
+        #endif
     }
 
 }

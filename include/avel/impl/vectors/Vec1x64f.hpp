@@ -357,7 +357,7 @@ namespace avel {
         static_assert(N < vec1x64f::width, "Specified index does not exist");
         typename std::enable_if<N < vec1x64f::width, int>::type dummy_variable = 0;
 
-        return {};
+        return decay(v);
     }
 
     template<std::uint32_t N>
@@ -365,7 +365,7 @@ namespace avel {
         static_assert(N < vec1x64f::width, "Specified index does not exist");
         typename std::enable_if<N < vec1x64f::width, int>::type dummy_variable = 0;
 
-        return {};
+        return vec1x64f{x};
     }
 
     //=====================================================
@@ -374,57 +374,57 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(vec1x64f x) {
-        return 0;
+        return bool(decay(x));
     }
 
     [[nodiscard]]
     AVEL_FINL bool any(vec1x64f x) {
-        return false;
+        return bool(decay(x));
     }
 
     [[nodiscard]]
     AVEL_FINL bool all(vec1x64f x) {
-        return false;
+        return bool(decay(x));
     }
 
     [[nodiscard]]
     AVEL_FINL bool none(vec1x64f x) {
-        return false;
+        return !bool(decay(x));
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f keep(mask1x64f m, vec1x64f v) {
-        return vec1x64f{};
+        return vec1x64f{avel::keep(decay(m), decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f clear(mask1x64f m, vec1x64f v) {
-        return vec1x64f{};
+        return vec1x64f{avel::clear(decay(m), decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f blend(mask1x64f m, vec1x64f a, vec1x64f b) {
-        return vec1x64f{};
+        return vec1x64f{avel::blend(decay(m), decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f byteswap(vec1x64f v) {
-        return bit_cast<vec1x64f>(byteswap(bit_cast<vec1x64f>(v)));
+        return bit_cast<vec1x64f>(avel::byteswap(bit_cast<vec1x64u>(v)));
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f max(vec1x64f a, vec1x64f b) {
-        return vec1x64f{};
+        return vec1x64f{avel::max(decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f min(vec1x64f a, vec1x64f b) {
-        return vec1x64f{};
+        return vec1x64f{avel::min(decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL std::array<vec1x64f, 2> minmax(vec1x64f a, vec1x64f b) {
-        return {};
+        return {min(a, b), max(a, b)};
     }
 
     [[nodiscard]]
@@ -434,21 +434,17 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec1x64f negate(mask1x64f m, vec1x64f v) {
-        if (decay(m)) {
-            return -v;
-        } else {
-            return v;
-        }
+        return vec1x64f{avel::negate(decay(m), decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f abs(vec1x64f v) {
-        return {};
+        return vec1x64f{avel::abs(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f neg_abs(vec1x64f v) {
-        return {};
+        return vec1x64f{avel::neg_abs(decay(v))};
     }
 
     //=====================================================
@@ -583,12 +579,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec1x64f fmax(vec1x64f a, vec1x64f b) {
-        return {};
+        return vec1x64f{avel::fmax(decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f fmin(vec1x64f a, vec1x64f b) {
-        return {};
+        return vec1x64f{avel::fmin(decay(a), decay(b))};
     }
 
     //=====================================================
@@ -597,7 +593,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec1x64f sqrt(vec1x64f x) {
-        return {};
+        return vec1x64f{avel::sqrt(decay(x))};
     }
 
     //=====================================================
@@ -606,66 +602,69 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec1x64f ceil(vec1x64f x) {
-        return {};
+        return vec1x64f{avel::ceil(decay(x))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f floor(vec1x64f x) {
-        return {};
+        return vec1x64f{avel::floor(decay(x))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f trunc(vec1x64f x) {
-        return {};
+        return vec1x64f{avel::trunc(decay(x))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64f round(vec1x64f v) {
-        return {};
+    AVEL_FINL vec1x64f round(vec1x64f x) {
+        return vec1x64f{avel::round(decay(x))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f nearbyint(vec1x64f v) {
-        return {};
+        return vec1x64f{avel::nearbyint(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f rint(vec1x64f v) {
-        return {};
+        return vec1x64f{avel::rint(decay(v))};
     }
 
     //=====================================================
-    // doubleing-point manipulation
+    // floating-point manipulation
     //=====================================================
 
     [[nodiscard]]
     AVEL_FINL vec1x64f frexp(vec1x64f v, vec1x64i* exp) {
-        return {};
+        std::int64_t e;
+        auto ret = avel::frexp(decay(v), &e);
+        *exp = e;
+        return vec1x64f{ret};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f ldexp(vec1x64f arg, vec1x64i exp) {
-        return {};
+        return vec1x64f{avel::ldexp(decay(arg), decay(exp))};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec1x64f scalbn(vec1x64f x, vec1x64i exp) {
-        return {};
+    AVEL_FINL vec1x64f scalbn(vec1x64f arg, vec1x64i exp) {
+        return vec1x64f{avel::scalbn(decay(arg), decay(exp))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64i ilogb(vec1x64f x) {
-        return {};
+        return vec1x64i{avel::ilogb(decay(x))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f logb(vec1x64f x) {
-        return {};
+        return vec1x64f{avel::logb(decay(x))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec1x64f copysign(vec1x64f mag, vec1x64f sign) {
-        return {};
+        return vec1x64f{avel::copysign(decay(mag), decay(sign))};
     }
 
     //=====================================================
@@ -674,32 +673,32 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec1x64i fpclassify(vec1x64f v) {
-        return {};
+        return vec1x64i{avel::fpclassify(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x64f isfinite(vec1x64f v) {
-        return {};
+        return mask1x64f{avel::isfinite(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x64f isinf(vec1x64f v) {
-        return {};
+        return mask1x64f{avel::isinf(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x64f isnan(vec1x64f v) {
-        return {};
+        return mask1x64f{avel::isnan(decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x64f isnormal(vec1x64f v) {
-        return {};
+        return mask1x64f{avel::isnormal(decay(v))};
     }
 
     [[nodiscard]]
-    AVEL_FINL mask1x64f signbit(vec1x64f arg) {
-        return {};
+    AVEL_FINL mask1x64f signbit(vec1x64f v) {
+        return mask1x64f{avel::signbit(decay(v))};
     }
 
     //=====================================================
@@ -708,32 +707,32 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask1x64f isgreater(vec1x64f x, vec1x64f y) {
-        return {};
+        return mask1x64f{avel::isgreater(decay(x), decay(y))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x64f isgreaterequal(vec1x64f x, vec1x64f y) {
-        return {};
+        return mask1x64f{avel::isgreaterequal(decay(x), decay(y))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x64f isless(vec1x64f x, vec1x64f y) {
-        return {};
+        return mask1x64f{avel::isless(decay(x), decay(y))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x64f islessequal(vec1x64f x, vec1x64f y) {
-        return {};
+        return mask1x64f{avel::islessequal(decay(x), decay(y))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x64f islessgreater(vec1x64f x, vec1x64f y) {
-        return {};
+        return mask1x64f{avel::islessgreater(decay(x), decay(y))};
     }
 
     [[nodiscard]]
     AVEL_FINL mask1x64f isunordered(vec1x64f x, vec1x64f y) {
-        return {};
+        return mask1x64f{avel::isunordered(decay(x), decay(y))};
     }
 
 }

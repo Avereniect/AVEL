@@ -182,6 +182,11 @@ namespace avel {
         return std::nearbyint(arg);
     }
 
+    [[nodiscard]]
+    AVEL_FINL float rint(float arg) {
+        return std::rint(arg);
+    }
+
     //=====================================================
     // Floating-point manipulation functions
     //=====================================================
@@ -278,7 +283,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL float logb(float arg) {
-        return static_cast<float>(ilogb(arg));
+        return std::logb(arg);
     }
 
     [[nodiscard]]
@@ -348,15 +353,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool isnormal(float arg) {
-        std::int32_t tmp = bit_cast<std::int32_t>(arg);
-        std::int32_t exp = tmp >> 23 & 0xFF;
-
-        return (exp != 0x00) && (exp != 255);
+        return std::isnormal(arg);
     }
 
     [[nodiscard]]
     AVEL_FINL bool signbit(float arg) {
-        return bit_cast<std::int32_t>(arg) & 0x80000000;
+        return std::signbit(arg);
     }
 
     //=====================================================

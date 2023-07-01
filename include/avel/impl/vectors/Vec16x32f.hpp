@@ -289,7 +289,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL Vector operator-() const {
-            return Vector{} - *this;
+            return Vector{0.0f} - *this;
         }
 
         //=================================================
@@ -317,7 +317,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator%=(Vector vec) {
-            content = fmod(*this, vec);
+            //TODO: Implement
             return *this;
         }
 
@@ -388,7 +388,7 @@ namespace avel {
         //=================================================
 
         [[nodiscard]]
-        AVEL_FINL operator primitive() const {
+        AVEL_FINL explicit operator primitive() const {
             return content;
         }
 
@@ -449,47 +449,51 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(vec16x32f x) {
-        return 0; //TODO: Implement
+        return count(mask16x32f{x});
     }
 
     [[nodiscard]]
     AVEL_FINL bool any(vec16x32f x) {
-        return false; //TODO: Implement
+        return any(mask16x32f{x});
     }
 
     [[nodiscard]]
     AVEL_FINL bool all(vec16x32f x) {
-        return false; //TODO: Implement
+        return all(mask16x32f{x});
     }
 
     [[nodiscard]]
     AVEL_FINL bool none(vec16x32f x) {
-        return false; //TODO: Implement
+        return none(mask16x32f{x});
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f keep(mask16x32f m, vec16x32f v) {
-        return {}; //TODO: Implement
+        #if defined(AVEL_AVX512F)
+        return vec16x32f{_mm512_maskz_mov_ps(decay(m), decay(v))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f clear(mask16x32f m, vec16x32f v) {
-        return {}; //TODO: Implement
+        #if defined(AVEL_AVX512F)
+        return vec16x32f{_mm512_maskz_mov_ps(decay(!m), decay(v))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f blend(mask16x32f m, vec16x32f a, vec16x32f b) {
-        return vec16x32f{_mm512_mask_blend_ps(decay(m), decay(a), decay(b))};
+        return vec16x32f{_mm512_mask_blend_ps(decay(m), decay(b), decay(a))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f max(vec16x32f a, vec16x32f b) {
-        return vec16x32f{_mm512_max_ps(a, b)};
+        return vec16x32f{_mm512_max_ps(decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f min(vec16x32f a, vec16x32f b) {
-        return vec16x32f{_mm512_min_ps(a, b)};
+        return vec16x32f{_mm512_min_ps(decay(a), decay(b))};
     }
 
     [[nodiscard]]
@@ -509,13 +513,13 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32f negate(mask16x32f m, vec16x32f v) {
-        return{};
+        return vec16x32f{_mm512_mask_sub_ps(decay(v), decay(m), _mm512_setzero_ps(), decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f abs(vec16x32f v) {
         #if defined(AVEL_AVX512F)
-        return vec16x32f{_mm512_abs_ps(v)};
+        return vec16x32f{_mm512_abs_ps(decay(v))};
         #endif
     }
 
@@ -533,25 +537,29 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec16x32f load<vec16x32f>(const float* ptr, std::uint32_t n) {
-        return {}; //TODO: Implement
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        return vec16x32f{_mm512_maskz_loadu_ps(mask, ptr)};
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec16x32f load<vec16x32f, vec16x32f::width>(const float* ptr) {
-        return {}; //TODO: Implement
+        return vec16x32f{_mm512_loadu_ps(ptr)};
     }
+
+
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec16x32f aligned_load<vec16x32f>(const float* ptr, std::uint32_t n) {
-        return {}; //TODO: Implement
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        return vec16x32f{_mm512_maskz_load_ps(mask, ptr)};
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec16x32f aligned_load<vec16x32f, vec16x32f::width>(const float* ptr) {
-        return {}; //TODO: Implement
+        return vec16x32f{_mm512_load_ps(ptr)};
     }
 
 
@@ -559,7 +567,8 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec16x32f gather<vec16x32f>(const float* ptr, vec16x32i indices, std::uint32_t n) {
-        return {}; //TODO: Implement
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        return vec16x32f{_mm512_mask_i32gather_ps(_mm512_setzero_ps(), mask, decay(indices), ptr, sizeof(float))};
     }
 
     template<>
@@ -572,45 +581,52 @@ namespace avel {
 
 
 
+    AVEL_FINL void store(float* ptr, vec16x32f v, std::uint32_t n) {
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        _mm512_mask_storeu_ps(ptr, mask, decay(v));
+    }
+
     template<std::uint32_t N = vec16x32f::width>
     AVEL_FINL void store(float* ptr, vec16x32f v) {
-        //TODO: Implement
+        store(ptr, v, N);
     }
 
     template<>
     AVEL_FINL void store<vec16x32f::width>(float* ptr, vec16x32f v) {
-        //TODO: Implement
+        #if defined(AVEL_AVX512F)
+        _mm512_storeu_ps(ptr, decay(v));
+        #endif
     }
 
-    AVEL_FINL void store(float* ptr, vec16x32f v, std::uint32_t n) {
-        //TODO: Implement
+
+
+    AVEL_FINL void aligned_store(float* ptr, vec16x32f v, std::uint32_t n) {
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        _mm512_mask_store_ps(ptr, mask, decay(v));
     }
-
-
 
     template<std::uint32_t N = vec16x32f::width>
     AVEL_FINL void aligned_store(float* ptr, vec16x32f v) {
-        //TODO: Implement
+        aligned_store(ptr, v, N);
     }
 
     template<>
     AVEL_FINL void aligned_store<vec16x32f::width>(float* ptr, vec16x32f v) {
-        
-    }
-
-    AVEL_FINL void aligned_store(float* ptr, vec16x32f v, std::uint32_t n) {
-        //TODO: Implement
+        #if defined(AVEL_AVX512F)
+        _mm512_store_ps(ptr, decay(v));
+        #endif
     }
 
 
 
     AVEL_FINL void scatter(float* ptr, vec16x32f v, vec16x32i indices, std::uint32_t n) {
-        //TODO: Implement
+        auto mask = (n >= 16) ? -1 : (1 << n) - 1;
+        _mm512_mask_i32scatter_ps(ptr, mask, decay(indices), decay(v), sizeof(float));
     }
 
     template<std::uint32_t N = vec16x32f::width>
     AVEL_FINL void scatter(float* ptr, vec16x32f v, vec16x32i indices) {
-        //TODO: Implement
+        scatter(ptr, v, indices, N);
     }
 
     template<>
@@ -620,7 +636,7 @@ namespace avel {
 
     template<>
     AVEL_FINL void scatter<vec16x32f::width>(float* ptr, vec16x32f v, vec16x32i indices) {
-        //TODO: Implement
+        _mm512_i32scatter_ps(ptr, decay(indices), decay(v), sizeof(float));
     }
 
 
@@ -637,55 +653,13 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec16x32f fabs(vec16x32f v) {
-        return abs(v);
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x32f fmadd(vec16x32f m, vec16x32f x, vec16x32f b) {
-        return vec16x32f{_mm512_fmadd_ps(m, x, b)};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x32f fmsub(vec16x32f m, vec16x32f x, vec16x32f b) {
-        return vec16x32f{_mm512_fmsub_ps(m, x, b)};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x32f fnmadd(vec16x32f m, vec16x32f x, vec16x32f b) {
-        return vec16x32f{_mm512_fnmadd_ps(m, x, b)};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x32f fnmsub(vec16x32f m, vec16x32f x, vec16x32f b) {
-        return vec16x32f{_mm512_fnmsub_ps(m, x, b)};
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x32f fma(vec16x32f m, vec16x32f x, vec16x32f b) {
-        return fmadd(m, x, b);
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x32f fmaf(vec16x32f m, vec16x32f x, vec16x32f b) {
-        return fma(m, x, b);
-    }
-
-    [[nodiscard]]
     AVEL_FINL vec16x32f fmax(vec16x32f a, vec16x32f b) {
-        //TODO: Handle case with two NaNs
-        return max(a, max(b, vec16x32f(INFINITY)));
-    }
-
-    [[nodiscard]]
-    AVEL_FINL vec16x32f fminf(vec16x32f a, vec16x32f b) {
-        //TODO: Handle case with two NaNs
-        return min(a, min(b, vec16x32f(INFINITY)));
+        return blend(avel::isnan(b), a, avel::max(a, b));
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f fmin(vec16x32f a, vec16x32f b) {
-        return fminf(a, b);
+        return blend(avel::isnan(b), a, avel::min(a, b));
     }
 
     //=====================================================
@@ -694,7 +668,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32f sqrt(vec16x32f x) {
-        return vec16x32f{_mm512_sqrt_ps(x)};
+        return vec16x32f{_mm512_sqrt_ps(decay(x))};
     }
 
     //=====================================================
@@ -703,32 +677,32 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32f ceil(vec16x32f v) {
-        return vec16x32f{_mm512_roundscale_ps(v, _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC)};
+        return vec16x32f{_mm512_roundscale_ps(decay(v), _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC)};
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f floor(vec16x32f v) {
-        return vec16x32f{_mm512_roundscale_ps(v, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)};
+        return vec16x32f{_mm512_roundscale_ps(decay(v), _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)};
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f trunc(vec16x32f v) {
-        return vec16x32f{_mm512_roundscale_ps(v, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
+        return vec16x32f{_mm512_roundscale_ps(decay(v), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f round(vec16x32f v) {
-        return vec16x32f{_mm512_roundscale_ps(v, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
+        return vec16x32f{_mm512_roundscale_ps(decay(v), _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f nearbyint(vec16x32f v) {
-        return vec16x32f{_mm512_roundscale_ps(v, _MM_FROUND_CUR_DIRECTION)};
+        return vec16x32f{_mm512_roundscale_ps(decay(v), _MM_FROUND_CUR_DIRECTION)};
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f rint(vec16x32f v) {
-        return {};
+        return vec16x32f{_mm512_roundscale_ps(decay(v), _MM_FROUND_CUR_DIRECTION)};
     }
 
     //=====================================================
@@ -736,28 +710,57 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec16x32f frexp(vec16x32f x, vec16x32i* exp)  {
-        return {}; //TODO: Implement
+    AVEL_FINL vec16x32f frexp(vec16x32f v, vec16x32i* exp)  {
+        #if defined(AVEL_AVX512F)
+        auto is_infinity = _mm512_fpclass_ps_mask(decay(v), 0x10 | 0x08);
+        auto is_non_zero = _mm512_cmp_ps_mask(decay(v), _mm512_setzero_ps(), _CMP_NEQ_UQ);
+
+        auto exponents = _mm512_getexp_ps(decay(v));;
+        exponents = _mm512_add_ps(exponents, _mm512_set1_ps(1.0f));
+        *exp = _mm512_maskz_cvttps_epi32(is_non_zero, exponents);
+
+        auto ret = _mm512_getmant_ps(decay(v), _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+        ret = _mm512_maskz_mov_ps(is_non_zero, ret);
+        ret = _mm512_mask_blend_ps(is_infinity, ret, decay(v));
+        return vec16x32f{ret};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f ldexp(vec16x32f x, vec16x32i exp)  {
-        return {}; //TODO: Implement
+        return vec16x32f{_mm512_scalef_ps(decay(x), _mm512_cvtepi32_ps(decay(exp)))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f scalbn(vec16x32f x, vec16x32i exp)  {
-        return {}; //TODO: Implement
+        return avel::ldexp(x, exp);
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32i ilogb(vec16x32f x) {
-        return {}; //TODO: Implement
+        #if defined(AVEL_AVX512VL)
+        auto exp_fp = _mm512_getexp_ps(decay(x));
+
+        vec16x32f zero_ret{_mm512_castsi512_ps(_mm512_set1_epi32(FP_ILOGB0))};
+        vec16x32f inf_ret {_mm512_castsi512_ps(_mm512_set1_epi32(INT_MAX))};
+        vec16x32f nan_ret {_mm512_castsi512_ps(_mm512_set1_epi32(FP_ILOGBNAN))};
+
+        auto misc_ret_i = _mm512_cvtps_epi32(exp_fp);
+        misc_ret_i = _mm512_maskz_mov_epi32(_mm512_cmpneq_epi32_mask(misc_ret_i, _mm512_set1_epi32(0x80000000)), misc_ret_i);
+
+        vec16x32i zero_ret_i{_mm512_castps_si512(_mm512_fixupimm_ps(zero_ret, exp_fp, _mm512_set1_epi32(0x88808888), 0x00))};
+        vec16x32i inf_ret_i {_mm512_castps_si512(_mm512_fixupimm_ps(inf_ret,  exp_fp, _mm512_set1_epi32(0x88088888), 0x00))};
+        vec16x32i nan_ret_i {_mm512_castps_si512(_mm512_fixupimm_ps(nan_ret,  exp_fp, _mm512_set1_epi32(0x88888800), 0x00))};
+
+        return (vec16x32i{misc_ret_i} | zero_ret_i) | (inf_ret_i | nan_ret_i);
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec16x32f logb(vec16x32f x) {
-        return {}; //TODO: Implement
+        #if defined(AVEL_AVX512F)
+        return vec16x32f{_mm512_getexp_ps(decay(x))};
+        #endif
     }
 
     [[nodiscard]]
@@ -775,24 +778,45 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32i fpclassify(vec16x32f v) {
-        return {}; //TODO: Implement
+        const vec16x32i fp_infinite{int(FP_INFINITE)};
+        const vec16x32i fp_nan{int(FP_NAN)};
+        const vec16x32i fp_normal{int(FP_NORMAL)};
+        const vec16x32i fp_subnormal{int(FP_SUBNORMAL)};
+        const vec16x32i fp_zero{int(FP_ZERO)};
+
+        #if defined(AVEL_AVX512VL)
+        mask16x32i infinite_mask {_mm512_fpclass_ps_mask(decay(v), 0x08 | 0x10)};
+        mask16x32i nan_mask      {_mm512_fpclass_ps_mask(decay(v), 0x01 | 0x80)};
+        mask16x32i subnormal_mask{_mm512_fpclass_ps_mask(decay(v), 0x20)};
+        mask16x32i zero_mask     {_mm512_fpclass_ps_mask(decay(v), 0x02 | 0x04)};
+        mask16x32i normal_mask   {!(infinite_mask | nan_mask | subnormal_mask | zero_mask)};
+
+        return
+            keep(infinite_mask, fp_infinite) |
+            keep(nan_mask, fp_nan) |
+            keep(normal_mask, fp_normal) |
+            keep(subnormal_mask, fp_subnormal) |
+            keep(zero_mask, fp_zero);
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask16x32f isinf(vec16x32f v) {
         #if defined(AVEL_AVX512F)
-        return abs(v) == vec16x32f{INFINITY};
+        return mask16x32f{_mm512_fpclass_ps_mask(decay(v), 0x08 | 0x10)};
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask16x32f isnan(vec16x32f v) {
-        return (v != v);
+        return mask16x32f{_mm512_fpclass_ps_mask(decay(v), 0x80 | 0x01)};
     }
 
     [[nodiscard]]
     AVEL_FINL mask16x32f isfinite(vec16x32f v) {
-        return  vec16x32f{_mm512_getexp_ps(v)} != vec16x32f{255.0f};
+        #if defined(AVEL_AVX512F)
+        return vec16x32f{_mm512_getexp_ps(decay(v))} < vec16x32f{128.0f};
+        #endif
     }
 
     [[nodiscard]]
@@ -805,7 +829,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL mask16x32f signbit(vec16x32f arg) {
         #if defined(AVEL_AVX512F)
-        return mask16x32f{_mm512_fpclass_ps_mask(decay(arg), 0x40)};
+        return mask16x32f{_mm512_fpclass_ps_mask(decay(arg), 0x40 | 0x04 | 0x10)};
         #endif
     }
 
@@ -840,7 +864,9 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask16x32f isunordered(vec16x32f x, vec16x32f y) {
-        return isnan(x) | isnan(y);
+        #if defined(AVEL_AVX512F)
+        return mask16x32f{_mm512_cmp_ps_mask(decay(x), decay(y), _CMP_UNORD_Q)};
+        #endif
     }
 
 }

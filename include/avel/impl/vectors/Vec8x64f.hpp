@@ -15,6 +15,11 @@ namespace avel {
     // Forward declarations
     //=====================================================
 
+    AVEL_FINL mask8x64f isnan(vec8x64f v);
+
+
+
+
     template<>
     class Vector_mask<double, 8> {
     public:
@@ -395,7 +400,8 @@ namespace avel {
         static_assert(N < vec8x64f::width, "Specified index does not exist");
         typename std::enable_if<N < vec8x64f::width, int>::type dummy_variable = 0;
 
-        return {};
+        auto quarter = _mm_castps_pd(_mm512_extractf32x4_ps(_mm512_castpd_ps(decay(v)), N / 2));
+        return quarter[N % 2];
     }
 
     template<std::uint32_t N>
@@ -404,7 +410,10 @@ namespace avel {
         static_assert(N < vec8x64f::width, "Specified index does not exist");
         typename std::enable_if<N < vec8x64f::width, int>::type dummy_variable = 0;
 
-        return {};
+        auto broadcasted = _mm512_set1_pd(x);
+        constexpr auto blend_mask = std::uint8_t(~(1 << N));
+        auto ret = _mm512_mask_blend_pd(blend_mask, broadcasted, decay(v));
+        return vec8x64f{ret};
     }
 
     //=====================================================
@@ -413,57 +422,60 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t count(vec8x64f x) {
-        return 0;
+        return count(mask8x64f{x});
     }
 
     [[nodiscard]]
     AVEL_FINL bool any(vec8x64f x) {
-        return false;
+        return any(mask8x64f{x});
     }
 
     [[nodiscard]]
     AVEL_FINL bool all(vec8x64f x) {
-        return false;
+        return all(mask8x64f{x});
     }
 
     [[nodiscard]]
     AVEL_FINL bool none(vec8x64f x) {
-        return false;
+        return none(mask8x64f{x});
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f keep(mask8x64f m, vec8x64f v) {
-        return vec8x64f{};
+        return vec8x64f{_mm512_maskz_mov_pd(decay(m), decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f clear(mask8x64f m, vec8x64f v) {
-        return vec8x64f{};
+        return vec8x64f{_mm512_maskz_mov_pd(decay(!m), decay(v))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f blend(mask8x64f m, vec8x64f a, vec8x64f b) {
-        return vec8x64f{};
+        return vec8x64f{_mm512_mask_blend_pd(decay(m), decay(b), decay(a))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f byteswap(vec8x64f v) {
-        return bit_cast<vec8x64f>(byteswap(bit_cast<vec8x64f>(v)));
+        return bit_cast<vec8x64f>(byteswap(bit_cast<vec8x64u>(v)));
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f max(vec8x64f a, vec8x64f b) {
-        return vec8x64f{};
+        return vec8x64f{_mm512_max_pd(decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f min(vec8x64f a, vec8x64f b) {
-        return vec8x64f{};
+        return vec8x64f{_mm512_min_pd(decay(a), decay(b))};
     }
 
     [[nodiscard]]
     AVEL_FINL std::array<vec8x64f, 2> minmax(vec8x64f a, vec8x64f b) {
-        return {};
+        return {
+            vec8x64f{_mm512_min_pd(decay(a), decay(b))},
+            vec8x64f{_mm512_max_pd(decay(a), decay(b))}
+        };
     }
 
     [[nodiscard]]
@@ -545,45 +557,50 @@ namespace avel {
 
 
 
+    AVEL_FINL void store(double* ptr, vec8x64f v, std::uint32_t n) {
+        auto mask = (n >= 8) ? -1 : (1 << n) - 1;
+        _mm512_mask_storeu_pd(ptr, mask, decay(v));
+    }
+
     template<std::uint32_t N = vec8x64f::width>
     AVEL_FINL void store(double* ptr, vec8x64f v) {
-        //TODO: Implement
+        store(ptr, v, N);
     }
 
     template<>
     AVEL_FINL void store<vec8x64f::width>(double* ptr, vec8x64f v) {
-        //TODO: Implement
-    }
-
-    AVEL_FINL void store(double* ptr, vec8x64f v, std::uint32_t n) {
-        //TODO: Implement
+        _mm512_storeu_pd(ptr, decay(v));
     }
 
 
+
+    AVEL_FINL void aligned_store(double* ptr, vec8x64f v, std::uint32_t n) {
+        auto mask = (n >= 8) ? -1 : (1 << n) - 1;
+        _mm512_mask_store_pd(ptr, mask, decay(v));
+    }
 
     template<std::uint32_t N = vec8x64f::width>
     AVEL_FINL void aligned_store(double* ptr, vec8x64f v) {
-        //TODO: Implement
+        aligned_store(ptr, v, N);
     }
 
     template<>
     AVEL_FINL void aligned_store<vec8x64f::width>(double* ptr, vec8x64f v) {
-        //TODO: Implement
-    }
-
-    AVEL_FINL void aligned_store(double* ptr, vec8x64f v, std::uint32_t n) {
-        //TODO: Implement
+        #if defined(AVEL_AVX512F)
+        _mm512_store_pd(ptr, decay(v));
+        #endif
     }
 
 
 
     AVEL_FINL void scatter(double* ptr, vec8x64f v, vec8x64i indices, std::uint32_t n) {
-        //TODO: Implement
+        auto mask = (n >= 8) ? -1 : (1 << n) - 1;
+        _mm512_mask_i64scatter_pd(ptr, mask, decay(indices), decay(v), sizeof(double));
     }
 
     template<std::uint32_t N = vec8x64f::width>
     AVEL_FINL void scatter(double* ptr, vec8x64f v, vec8x64i indices) {
-        //TODO: Implement
+        scatter(ptr, v, indices, N);
     }
 
     template<>
@@ -593,7 +610,7 @@ namespace avel {
 
     template<>
     AVEL_FINL void scatter<vec8x64f::width>(double* ptr, vec8x64f v, vec8x64i indices) {
-        //TODO: Implement
+        _mm512_i64scatter_pd(ptr, decay(indices), decay(v), sizeof(double));
     }
 
 
@@ -611,12 +628,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64f fmax(vec8x64f a, vec8x64f b) {
-        return {};
+        return blend(avel::isnan(b), a, avel::max(a, b));
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f fmin(vec8x64f a, vec8x64f b) {
-        return {};
+        return blend(avel::isnan(b), a, avel::min(a, b));
     }
 
     //=====================================================
@@ -625,7 +642,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64f sqrt(vec8x64f x) {
-        return {};
+        return vec8x64f{_mm512_sqrt_pd(decay(x))};
     }
 
     //=====================================================
@@ -633,33 +650,33 @@ namespace avel {
     //=====================================================
 
     [[nodiscard]]
-    AVEL_FINL vec8x64f ceil(vec8x64f x) {
-        return {};
+    AVEL_FINL vec8x64f ceil(vec8x64f v) {
+        return vec8x64f{_mm512_roundscale_pd(decay(v), _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC)};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x64f floor(vec8x64f x) {
-        return {};
+    AVEL_FINL vec8x64f floor(vec8x64f v) {
+        return vec8x64f{_mm512_roundscale_pd(decay(v), _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)};
     }
 
     [[nodiscard]]
-    AVEL_FINL vec8x64f trunc(vec8x64f x) {
-        return {};
+    AVEL_FINL vec8x64f trunc(vec8x64f v) {
+        return vec8x64f{_mm512_roundscale_pd(decay(v), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f round(vec8x64f v) {
-        return {};
+        return vec8x64f{_mm512_roundscale_pd(decay(v), _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f nearbyint(vec8x64f v) {
-        return {};
+        return vec8x64f{_mm512_roundscale_pd(decay(v), _MM_FROUND_CUR_DIRECTION)};
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f rint(vec8x64f v) {
-        return {};
+        return vec8x64f{_mm512_roundscale_pd(decay(v), _MM_FROUND_CUR_DIRECTION)};
     }
 
     //=====================================================
@@ -668,27 +685,56 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64f frexp(vec8x64f v, vec8x64i* exp) {
-        return {};
+        #if defined(AVEL_AVX512F)
+        auto is_infinity = _mm512_fpclass_pd_mask(decay(v), 0x10 | 0x08);
+        auto is_non_zero = _mm512_cmp_pd_mask(decay(v), _mm512_setzero_pd(), _CMP_NEQ_UQ);
+
+        auto exponents = _mm512_getexp_pd(decay(v));
+        exponents = _mm512_add_pd(exponents, _mm512_set1_pd(1.0f));
+        *exp = _mm512_maskz_cvttpd_epi64(is_non_zero, exponents);
+
+        auto ret = _mm512_getmant_pd(decay(v), _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+        // Note: Returns -1 or 1 for -infinity and +infinity respectively
+
+        ret = _mm512_maskz_mov_pd(is_non_zero, ret);
+        ret = _mm512_mask_blend_pd(is_infinity, ret, decay(v));
+        return vec8x64f{ret};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f ldexp(vec8x64f arg, vec8x64i exp) {
-        return {};
+        return vec8x64f{_mm512_scalef_pd(decay(arg), _mm512_cvtepi64_pd(decay(exp)))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f scalbn(vec8x64f x, vec8x64i exp) {
-        return {};
+        return avel::ldexp(x, exp);
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64i ilogb(vec8x64f x) {
-        return {};
+        #if defined(AVEL_AVX512F)
+        auto exp_fp = _mm512_getexp_pd(decay(x));
+
+        vec8x64f zero_ret{_mm512_castsi512_pd(_mm512_set1_epi64(FP_ILOGB0))};
+        vec8x64f inf_ret {_mm512_castsi512_pd(_mm512_set1_epi64(INT_MAX))};
+        vec8x64f nan_ret {_mm512_castsi512_pd(_mm512_set1_epi64(FP_ILOGBNAN))};
+
+        auto misc_ret_i = _mm512_cvtpd_epi64(exp_fp);
+        misc_ret_i = _mm512_maskz_mov_epi64(_mm512_cmpneq_epi64_mask(misc_ret_i, _mm512_set1_epi64(0x8000000000000000ll)), misc_ret_i);
+
+        vec8x64i zero_ret_i{_mm512_castpd_si512(_mm512_fixupimm_pd(zero_ret, exp_fp, _mm512_set1_epi64(0x88808888), 0x00))};
+        vec8x64i inf_ret_i {_mm512_castpd_si512(_mm512_fixupimm_pd(inf_ret,  exp_fp, _mm512_set1_epi64(0x88088888), 0x00))};
+        vec8x64i nan_ret_i {_mm512_castpd_si512(_mm512_fixupimm_pd(nan_ret,  exp_fp, _mm512_set1_epi64(0x88888800), 0x00))};
+
+        return (vec8x64i{misc_ret_i} | zero_ret_i) | (inf_ret_i | nan_ret_i);
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f logb(vec8x64f x) {
-        return {};
+        return vec8x64f{_mm512_getexp_pd(decay(x))};
     }
 
     [[nodiscard]]
@@ -706,35 +752,59 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64i fpclassify(vec8x64f v) {
-        return {};
-    }
+        const vec8x64i fp_infinite{int(FP_INFINITE)};
+        const vec8x64i fp_nan{int(FP_NAN)};
+        const vec8x64i fp_normal{int(FP_NORMAL)};
+        const vec8x64i fp_subnormal{int(FP_SUBNORMAL)};
+        const vec8x64i fp_zero{int(FP_ZERO)};
 
-    [[nodiscard]]
-    AVEL_FINL mask8x64f isfinite(vec8x64f v) {
-        #if defined(AVEL_AVX512F)
-        return  vec8x64f{_mm512_getexp_pd(decay(v))} != vec8x64f{1023.0f};
+        #if defined(AVEL_AVX512VL)
+        mask8x64i infinite_mask {_mm512_fpclass_pd_mask(decay(v), 0x08 | 0x10)};
+        mask8x64i nan_mask      {_mm512_fpclass_pd_mask(decay(v), 0x01 | 0x80)};
+        mask8x64i subnormal_mask{_mm512_fpclass_pd_mask(decay(v), 0x20)};
+        mask8x64i zero_mask     {_mm512_fpclass_pd_mask(decay(v), 0x02 | 0x04)};
+        mask8x64i normal_mask   {!(infinite_mask | nan_mask | subnormal_mask | zero_mask)};
+
+        return
+            keep(infinite_mask, fp_infinite) |
+            keep(nan_mask, fp_nan) |
+            keep(normal_mask, fp_normal) |
+            keep(subnormal_mask, fp_subnormal) |
+            keep(zero_mask, fp_zero);
         #endif
     }
 
     [[nodiscard]]
-    AVEL_FINL mask8x64f isinf(vec8x64f arg) {
-        return abs(arg) == vec8x64f{INFINITY};
+    AVEL_FINL mask8x64f isfinite(vec8x64f v) {
+        #if defined(AVEL_AVX512VL)
+        return  vec8x64f{_mm512_getexp_pd(decay(v))} < vec8x64f{1024.0f};
+        #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL mask8x64f isinf(vec8x64f v) {
+        #if defined(AVEL_AVX512F)
+        return mask8x64f{_mm512_fpclass_pd_mask(decay(v), 0x08 | 0x10)};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask8x64f isnan(vec8x64f v) {
-        return {};
+        return mask8x64f{_mm512_fpclass_pd_mask(decay(v), 0x80 | 0x01)};
     }
 
     [[nodiscard]]
     AVEL_FINL mask8x64f isnormal(vec8x64f v) {
-        return {};
+        #if defined(AVEL_AVX512VL)
+        return !mask8x64f{_mm512_fpclass_pd_mask(decay(v), 0xBF)};
+
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask8x64f signbit(vec8x64f arg) {
-        #if defined(AVEL_AVX512VL)
-        return mask8x64f{_mm512_fpclass_pd_mask(decay(arg), 0x40)};
+        #if defined(AVEL_AVX512F)
+        return mask8x64f{_mm512_fpclass_pd_mask(decay(arg), 0x40 | 0x04 | 0x10)};
         #endif
     }
 
@@ -769,7 +839,9 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask8x64f isunordered(vec8x64f x, vec8x64f y) {
-        return isnan(x) || isnan(y);
+        #if defined(AVEL_AVX512F)
+        return mask8x64f{_mm512_cmp_pd_mask(decay(x), decay(y), _CMP_UNORD_Q)};
+        #endif
     }
 
 }

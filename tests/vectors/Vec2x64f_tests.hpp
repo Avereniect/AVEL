@@ -1,20 +1,20 @@
-#ifndef AVEL_VEC4X32F_TESTS_HPP
-#define AVEL_VEC4X32F_TESTS_HPP
+#ifndef AVEL_VEC2X64F_TESTS_HPP
+#define AVEL_VEC2X64F_TESTS_HPP
 
 namespace avel_tests {
 
     using namespace avel;
 
     //=========================================================================
-    // mask4x32f tests
+    // mask2x64f tests
     //=========================================================================
 
     //=====================================================
     // Constructors
     //=====================================================
 
-    TEST(Mask4x32f, Construct_from_primitive) {
-        mask4x32f mask{mask4x32f::primitive{}};
+    TEST(Mask2x64f, Construct_from_primitive) {
+        mask2x64f mask{mask2x64f::primitive{}};
 
         EXPECT_FALSE(any(mask));
         EXPECT_FALSE(all(mask));
@@ -22,24 +22,24 @@ namespace avel_tests {
         EXPECT_EQ(count(mask), 0);
     }
 
-    TEST(Mask4x32f, Construct_from_bool) {
-        mask4x32f mask0{false};
+    TEST(Mask2x64f, Construct_from_bool) {
+        mask2x64f mask0{false};
         EXPECT_FALSE(any(mask0));
         EXPECT_FALSE(all(mask0));
         EXPECT_TRUE(none(mask0));
         EXPECT_EQ(count(mask0), 0);
 
-        mask4x32f mask1{true};
+        mask2x64f mask1{true};
         EXPECT_TRUE(all(mask1));
         EXPECT_TRUE(any(mask1));
         EXPECT_FALSE(none(mask1));
-        EXPECT_TRUE(count(mask1) == mask4x32f::width);
+        EXPECT_TRUE(count(mask1) == mask2x64f::width);
     }
 
-    TEST(Mask4x32f, Construct_from_array) {
-        arr4xb false_array{};
-        std::fill_n(false_array.data(), mask4x32f::width, false);
-        mask4x32f mask0{false_array};
+    TEST(Mask2x64f, Construct_from_array) {
+        arr2xb false_array{};
+        std::fill_n(false_array.data(), mask2x64f::width, false);
+        mask2x64f mask0{false_array};
 
         EXPECT_FALSE(any(mask0));
         EXPECT_FALSE(all(mask0));
@@ -47,25 +47,25 @@ namespace avel_tests {
         EXPECT_EQ(count(mask0), 0);
 
 
-        arr4xb true_array{};
-        std::fill_n(true_array.data(), mask4x32f::width, true);
-        mask4x32f mask1{true_array};
+        arr2xb true_array{};
+        std::fill_n(true_array.data(), mask2x64f::width, true);
+        mask2x64f mask1{true_array};
 
         EXPECT_TRUE(any(mask1));
         EXPECT_TRUE(all(mask1));
         EXPECT_FALSE(none(mask1));
-        EXPECT_TRUE(count(mask1) == mask4x32f::width);
+        EXPECT_TRUE(count(mask1) == mask2x64f::width);
     }
 
-    TEST(Mask4x32f, Construct_from_array_random) {
+    TEST(Mask2x64f, Construct_from_array_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4xb>();
+            auto inputs = random_array<arr2xb>();
             std::uint32_t cnt = std::count(inputs.begin(), inputs.end(), true);
 
-            auto m = mask4x32f{inputs};
+            auto m = mask2x64f{inputs};
 
             EXPECT_EQ(cnt, count(m));
-            EXPECT_EQ(cnt == mask4x32f::width, all(m));
+            EXPECT_EQ(cnt == mask2x64f::width, all(m));
             EXPECT_EQ(cnt != 0, any(m));
             EXPECT_EQ(cnt == 0, none(m));
         }
@@ -75,74 +75,74 @@ namespace avel_tests {
     // Assignment
     //=====================================================
 
-    TEST(Mask4x32f, Assign_bool) {
-        mask4x32f mask0{};
+    TEST(Mask2x64f, Assign_bool) {
+        mask2x64f mask0{};
         mask0 = false;
         EXPECT_FALSE(any(mask0));
         EXPECT_FALSE(all(mask0));
         EXPECT_EQ(count(mask0), 0);
 
-        mask4x32f mask1{};
+        mask2x64f mask1{};
         mask1 = true;
         EXPECT_TRUE(all(mask1));
         EXPECT_TRUE(any(mask1));
-        EXPECT_TRUE(count(mask1) == mask4x32f::width);
+        EXPECT_TRUE(count(mask1) == mask2x64f::width);
     }
 
     //=====================================================
     // Comparison operators
     //=====================================================
 
-    TEST(Mask4x32f, Equality_comparison) {
-        mask4x32f mask0{false};
-        mask4x32f mask1{false};
+    TEST(Mask2x64f, Equality_comparison) {
+        mask2x64f mask0{false};
+        mask2x64f mask1{false};
         EXPECT_EQ(mask0, mask1);
 
-        mask4x32f mask2{true};
-        mask4x32f mask3{true};
+        mask2x64f mask2{true};
+        mask2x64f mask3{true};
         EXPECT_EQ(mask2, mask3);
 
         EXPECT_FALSE(mask0 == mask2);
         EXPECT_FALSE(mask3 == mask1);
     }
 
-    TEST(Mask4x32f, Equality_comparison_random) {
+    TEST(Mask2x64f, Equality_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4xb>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2xb>();
             inputs1[0] = !inputs0[0];
 
-            mask4x32f mask0{inputs0};
-            mask4x32f mask1{inputs0};
-            mask4x32f mask2{inputs1};
+            mask2x64f mask0{inputs0};
+            mask2x64f mask1{inputs0};
+            mask2x64f mask2{inputs1};
 
             EXPECT_TRUE(mask0 == mask1);
             EXPECT_FALSE(mask1 == mask2);
         }
     }
 
-    TEST(Mask4x32f, Inequality_comparison) {
-        mask4x32f mask0{false};
-        mask4x32f mask1{false};
+    TEST(Mask2x64f, Inequality_comparison) {
+        mask2x64f mask0{false};
+        mask2x64f mask1{false};
         EXPECT_FALSE(mask0 != mask1);
 
-        mask4x32f mask2{true};
-        mask4x32f mask3{true};
+        mask2x64f mask2{true};
+        mask2x64f mask3{true};
         EXPECT_FALSE(mask2 != mask3);
 
         EXPECT_TRUE(mask0 != mask2);
         EXPECT_TRUE(mask3 != mask1);
     }
 
-    TEST(Mask4x32f, Inequality_comparison_random) {
+    TEST(Mask2x64f, Inequality_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4xb>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2xb>();
             inputs1[0] = !inputs0[0];
 
-            mask4x32f mask0{inputs0};
-            mask4x32f mask1{inputs1};
-            mask4x32f mask2{inputs1};
+            mask2x64f mask0{inputs0};
+            mask2x64f mask1{inputs1};
+            mask2x64f mask2{inputs1};
 
             EXPECT_TRUE(mask0 != mask1);
             EXPECT_FALSE(mask1 != mask2);
@@ -153,64 +153,64 @@ namespace avel_tests {
     // Bitwise assignment
     //=====================================================
 
-    TEST(Mask4x32f, Bitwise_and_assignment_random) {
+    TEST(Mask2x64f, Bitwise_and_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4xb>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2xb>();
 
-            mask4x32f mask0{inputs0};
-            mask4x32f mask1{inputs1};
+            mask2x64f mask0{inputs0};
+            mask2x64f mask1{inputs1};
 
-            mask4x32f results = mask0;
+            mask2x64f results = mask0;
             results &= mask1;
 
-            arr4xb expected;
+            arr2xb expected;
             for (std::size_t j = 0; j < expected.size(); ++j) {
                 expected[j] = inputs0[j] & inputs1[j];
             }
-            mask4x32f expected_mask{expected};
+            mask2x64f expected_mask{expected};
 
             EXPECT_EQ(results, expected_mask);
         }
     }
 
-    TEST(Mask4x32f, Bitwise_or_assignment_random) {
+    TEST(Mask2x64f, Bitwise_or_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4xb>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2xb>();
 
-            mask4x32f mask0{inputs0};
-            mask4x32f mask1{inputs1};
+            mask2x64f mask0{inputs0};
+            mask2x64f mask1{inputs1};
 
-            mask4x32f results = mask0;
+            mask2x64f results = mask0;
             results |= mask1;
 
-            arr4xb expected;
+            arr2xb expected;
             for (std::size_t j = 0; j < expected.size(); ++j) {
                 expected[j] = inputs0[j] | inputs1[j];
             }
-            mask4x32f expected_mask{expected};
+            mask2x64f expected_mask{expected};
 
             EXPECT_EQ(results, expected_mask);
         }
     }
 
-    TEST(Mask4x32f, Bitwise_xor_assignment_random) {
+    TEST(Mask2x64f, Bitwise_xor_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4xb>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2xb>();
 
-            mask4x32f mask0{inputs0};
-            mask4x32f mask1{inputs1};
+            mask2x64f mask0{inputs0};
+            mask2x64f mask1{inputs1};
 
-            mask4x32f results = mask0;
+            mask2x64f results = mask0;
             results ^= mask1;
 
-            arr4xb expected;
+            arr2xb expected;
             for (std::size_t j = 0; j < expected.size(); ++j) {
                 expected[j] = inputs0[j] ^ inputs1[j];
             }
-            mask4x32f expected_mask{expected};
+            mask2x64f expected_mask{expected};
 
             EXPECT_EQ(results, expected_mask);
         }
@@ -220,138 +220,138 @@ namespace avel_tests {
     // Bitwise/logical operations
     //=====================================================
 
-    TEST(Mask4x32f, Logical_negation_random) {
+    TEST(Mask2x64f, Logical_negation_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
+            auto inputs0 = random_array<arr2xb>();
 
-            mask4x32f mask0{inputs0};
+            mask2x64f mask0{inputs0};
 
-            mask4x32f results = !mask0;
+            mask2x64f results = !mask0;
 
-            arr4xb expected;
+            arr2xb expected;
             for (std::size_t j = 0; j < expected.size(); ++j) {
                 expected[j] = !inputs0[j];
             }
-            mask4x32f expected_mask{expected};
+            mask2x64f expected_mask{expected};
 
             EXPECT_EQ(results, expected_mask);
         }
     }
 
-    TEST(Mask4x32f, Bitwise_and_random) {
+    TEST(Mask2x64f, Bitwise_and_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4xb>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2xb>();
 
-            mask4x32f mask0{inputs0};
-            mask4x32f mask1{inputs1};
+            mask2x64f mask0{inputs0};
+            mask2x64f mask1{inputs1};
 
-            mask4x32f results = mask0 & mask1;
+            mask2x64f results = mask0 & mask1;
 
-            arr4xb expected;
+            arr2xb expected;
             for (std::size_t j = 0; j < expected.size(); ++j) {
                 expected[j] = inputs0[j] & inputs1[j];
             }
-            mask4x32f expected_mask{expected};
+            mask2x64f expected_mask{expected};
 
             EXPECT_EQ(results, expected_mask);
         }
     }
 
-    TEST(Mask4x32f, Logical_and_random) {
+    TEST(Mask2x64f, Logical_and_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4xb>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2xb>();
 
-            mask4x32f mask0{inputs0};
-            mask4x32f mask1{inputs1};
+            mask2x64f mask0{inputs0};
+            mask2x64f mask1{inputs1};
 
-            mask4x32f results = mask0 && mask1;
+            mask2x64f results = mask0 && mask1;
 
-            arr4xb expected;
+            arr2xb expected;
             for (std::size_t j = 0; j < expected.size(); ++j) {
                 expected[j] = inputs0[j] && inputs1[j];
             }
-            mask4x32f expected_mask{expected};
+            mask2x64f expected_mask{expected};
 
             EXPECT_EQ(results, expected_mask);
         }
     }
 
-    TEST(Mask4x32f, Bitwise_or_random) {
+    TEST(Mask2x64f, Bitwise_or_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4xb>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2xb>();
 
-            mask4x32f mask0{inputs0};
-            mask4x32f mask1{inputs1};
+            mask2x64f mask0{inputs0};
+            mask2x64f mask1{inputs1};
 
-            mask4x32f results = mask0 | mask1;
+            mask2x64f results = mask0 | mask1;
 
-            arr4xb expected;
+            arr2xb expected;
             for (std::size_t j = 0; j < expected.size(); ++j) {
                 expected[j] = inputs0[j] | inputs1[j];
             }
-            mask4x32f expected_mask{expected};
+            mask2x64f expected_mask{expected};
 
             EXPECT_EQ(results, expected_mask);
         }
     }
 
-    TEST(Mask4x32f, Logical_or_random) {
+    TEST(Mask2x64f, Logical_or_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4xb>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2xb>();
 
-            mask4x32f mask0{inputs0};
-            mask4x32f mask1{inputs1};
+            mask2x64f mask0{inputs0};
+            mask2x64f mask1{inputs1};
 
-            mask4x32f results = mask0 || mask1;
+            mask2x64f results = mask0 || mask1;
 
-            arr4xb expected;
+            arr2xb expected;
             for (std::size_t j = 0; j < expected.size(); ++j) {
                 expected[j] = inputs0[j] || inputs1[j];
             }
-            mask4x32f expected_mask{expected};
+            mask2x64f expected_mask{expected};
 
             EXPECT_EQ(results, expected_mask);
         }
     }
 
-    TEST(Mask4x32f, Bitwise_xor_random) {
+    TEST(Mask2x64f, Bitwise_xor_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4xb>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2xb>();
 
-            mask4x32f mask0{inputs0};
-            mask4x32f mask1{inputs1};
+            mask2x64f mask0{inputs0};
+            mask2x64f mask1{inputs1};
 
-            mask4x32f results = mask0 ^ mask1;
+            mask2x64f results = mask0 ^ mask1;
 
-            arr4xb expected;
+            arr2xb expected;
             for (std::size_t j = 0; j < expected.size(); ++j) {
                 expected[j] = inputs0[j] ^ inputs1[j];
             }
-            mask4x32f expected_mask{expected};
+            mask2x64f expected_mask{expected};
 
             EXPECT_EQ(results, expected_mask);
         }
     }
 
     //=========================================================================
-    // Vec4x32f tests
+    // Vec2x64f tests
     //=========================================================================
 
     //=====================================================
     // Constructors
     //=====================================================
 
-    TEST(Vec4x32f, Construct_vector_from_mask_random) {
+    TEST(Vec2x64f, Construct_vector_from_mask_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4xb>();
+            auto inputs = random_array<arr2xb>();
 
-            mask4x32f m0{inputs};
-            vec4x32f v0{m0};
+            mask2x64f m0{inputs};
+            vec2x64f v0{m0};
 
             auto results = to_array(v0);
             for (std::size_t j = 0; j < inputs.size(); ++j) {
@@ -360,24 +360,24 @@ namespace avel_tests {
         }
     }
 
-    TEST(Vec4x32f, Construct_from_scalar_random) {
+    TEST(Vec2x64f, Construct_from_scalar_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto x = random_val<vec4x32f::scalar>();
-            vec4x32f results{x};
+            auto x = random_val<vec2x64f::scalar>();
+            vec2x64f results{x};
 
-            arr4x32f arr;
-            std::fill_n(arr.data(), vec4x32f::width, x);
-            vec4x32f expected{arr};
+            arr2x64f arr;
+            std::fill_n(arr.data(), vec2x64f::width, x);
+            vec2x64f expected{arr};
 
             EXPECT_TRUE(all(results == expected));
         }
     }
 
-    TEST(Vec4x32f, Construct_from_array_random) {
+    TEST(Vec2x64f, Construct_from_array_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto data = random_array<arr4x32f>();
+            auto data = random_array<arr2x64f>();
 
-            vec4x32f v{data};
+            vec2x64f v{data};
 
             auto results = to_array(v);
 
@@ -391,19 +391,19 @@ namespace avel_tests {
     // Assignment operators
     //=====================================================
 
-    TEST(Vec4x32f, Assign_primitive) {
-        vec4x32f::primitive x{};
-        vec4x32f v{0x0F};
+    TEST(Vec2x64f, Assign_primitive) {
+        vec2x64f::primitive x{};
+        vec2x64f v{0x0F};
         v = x;
-        vec4x32f expected{0.0};
+        vec2x64f expected{0.0};
 
         EXPECT_TRUE(all(v == expected));
     }
 
-    TEST(Vec4x32f, Assign_scalar_random) {
+    TEST(Vec2x64f, Assign_scalar_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto scalar = random_val<vec4x32f::scalar>();
-            vec4x32f v;
+            auto scalar = random_val<vec2x64f::scalar>();
+            vec2x64f v;
             v = scalar;
 
             auto results = to_array(v);
@@ -417,113 +417,113 @@ namespace avel_tests {
     // Comparison operators
     //=====================================================
 
-    TEST(Vec4x32f, Equality_comparison) {
-        mask4x32f mask0{false};
-        mask4x32f mask1{false};
+    TEST(Vec2x64f, Equality_comparison) {
+        mask2x64f mask0{false};
+        mask2x64f mask1{false};
         EXPECT_EQ(mask0, mask1);
 
-        mask4x32f mask2{true};
-        mask4x32f mask3{true};
+        mask2x64f mask2{true};
+        mask2x64f mask3{true};
         EXPECT_EQ(mask2, mask3);
     }
 
-    TEST(Vec4x32f, Equality_comparison_random) {
+    TEST(Vec2x64f, Equality_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs0};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs0};
 
             EXPECT_TRUE(all(v0 == v1));
         }
     }
 
-    TEST(Vec4x32f, Inequality_comparison_random) {
+    TEST(Vec2x64f, Inequality_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs0};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs0};
 
             EXPECT_FALSE(any(v0 != v1));
         }
     }
 
-    TEST(Vec4x32f, Less_than_comparison_random) {
+    TEST(Vec2x64f, Less_than_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = (v0 < v1);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < expected.size(); ++j) {
                 expected[j] = inputs0[j] < inputs1[j];
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
-    TEST(Vec4x32f, Less_than_or_equal_comparison_random) {
+    TEST(Vec2x64f, Less_than_or_equal_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = (v0 <= v1);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < expected.size(); ++j) {
                 expected[j] = inputs0[j] <= inputs1[j];
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
-    TEST(Vec4x32f, Greater_than_comparison_random) {
+    TEST(Vec2x64f, Greater_than_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = (v0 > v1);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < expected.size(); ++j) {
                 expected[j] = inputs0[j] > inputs1[j];
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
-    TEST(Vec4x32f, Greater_than_or_equal_comparison_random) {
+    TEST(Vec2x64f, Greater_than_or_equal_comparison_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = (v0 >= v1);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < expected.size(); ++j) {
                 expected[j] = inputs0[j] >= inputs1[j];
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
@@ -531,130 +531,130 @@ namespace avel_tests {
     // Unary arithmetic operators
     //=====================================================
 
-    TEST(Vec4x32f, Unary_plus) {
-        auto inputs = random_array<arr4x32f>();
-        const vec4x32f u{inputs};
-        vec4x32f v{+u};
+    TEST(Vec2x64f, Unary_plus) {
+        auto inputs = random_array<arr2x64f>();
+        const vec2x64f u{inputs};
+        vec2x64f v{+u};
 
         EXPECT_TRUE(all(u == v));
     }
 
-    TEST(Vec4x32f, Unary_minus) {
-        auto inputs = random_array<arr4x32f>();
-        const vec4x32f input{inputs};
+    TEST(Vec2x64f, Unary_minus) {
+        auto inputs = random_array<arr2x64f>();
+        const vec2x64f input{inputs};
 
         auto results = -input;
 
-        arr4x32f expected{};
+        arr2x64f expected{};
         for (std::size_t j = 0; j < expected.size(); ++j) {
             expected[j] = -inputs[j];
         }
 
-        EXPECT_TRUE(all(results == vec4x32f{expected}));
+        EXPECT_TRUE(all(results == vec2x64f{expected}));
     }
 
     //=====================================================
     // Arithmetic assignment operators
     //=====================================================
 
-    TEST(Vec4x32f, Plus_assignment_random) {
+    TEST(Vec2x64f, Plus_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = v0;
             results += v1;
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = inputs0[j] + inputs1[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Minus_assignment_random) {
+    TEST(Vec2x64f, Minus_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = v0;
             results -= v1;
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = inputs0[j] - inputs1[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Times_assignment_random) {
+    TEST(Vec2x64f, Times_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = v0;
             results *= v1;
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = inputs0[j] * inputs1[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
     /*
-    TEST(Vec4x32f, Div_assignment_random) {
+    TEST(Vec2x64f, Div_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_denominator_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_denominator_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = v0;
             results /= v1;
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = inputs0[j] / inputs1[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Mod_assignment_random) {
+    TEST(Vec2x64f, Mod_assignment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_denominator_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_denominator_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = v0;
             results %= v1;
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = inputs0[j] % inputs1[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
     */
@@ -663,99 +663,99 @@ namespace avel_tests {
     // Arithmetic operators
     //=====================================================
 
-    TEST(Vec4x32f, Addition_random) {
+    TEST(Vec2x64f, Addition_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = v0 + v1;
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = inputs0[j] + inputs1[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Subtraction_random) {
+    TEST(Vec2x64f, Subtraction_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = v0 - v1;
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = inputs0[j] - inputs1[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Multiplication_random) {
+    TEST(Vec2x64f, Multiplication_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = v0 * v1;
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = inputs0[j] * inputs1[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
     /*
-    TEST(Vec4x32f, Division_random) {
+    TEST(Vec2x64f, Division_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_denominator_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_denominator_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = v0 / v1;
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = inputs0[j] / inputs1[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Mod_random) {
+    TEST(Vec2x64f, Mod_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_denominator_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_denominator_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = v0 % v1;
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = inputs0[j] % inputs1[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
     */
@@ -764,71 +764,71 @@ namespace avel_tests {
     // Increment/Decrement operators
     //=====================================================
 
-    TEST(Vec4x32f, Pre_increment_random) {
+    TEST(Vec2x64f, Pre_increment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f input{inputs};
+            vec2x64f input{inputs};
             ++input;
 
             auto results = input;
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = ++inputs[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Post_increment_random) {
+    TEST(Vec2x64f, Post_increment_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f input{inputs};
+            vec2x64f input{inputs};
             input++;
 
             auto results = input;
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = ++inputs[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Pre_decrement_random) {
+    TEST(Vec2x64f, Pre_decrement_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f input{inputs};
+            vec2x64f input{inputs};
             --input;
 
             auto results = input;
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = --inputs[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Post_decrement_random) {
+    TEST(Vec2x64f, Post_decrement_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f input{inputs};
+            vec2x64f input{inputs};
             input--;
 
             auto results = input;
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = --inputs[j];
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
@@ -836,29 +836,29 @@ namespace avel_tests {
     // Conversion operators
     //=====================================================
 
-    TEST(Vec4x32f, Conversion_to_mask) {
-        vec4x32f vec{0.0};
+    TEST(Vec2x64f, Conversion_to_mask) {
+        vec2x64f vec{0.0};
 
-        auto a = vec.operator mask4x32f();
-        mask4x32f b{false};
+        auto a = vec.operator mask2x64f();
+        mask2x64f b{false};
 
         EXPECT_TRUE(a == b);
     }
 
-    TEST(Vec4x32f, Conversion_to_mask_random) {
+    TEST(Vec2x64f, Conversion_to_mask_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
-            auto results = mask4x32f{v};
+            auto results = mask2x64f{v};
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = inputs[j];
             }
 
-            EXPECT_TRUE(results == mask4x32f{expected});
+            EXPECT_TRUE(results == mask2x64f{expected});
         }
     }
 
@@ -866,31 +866,27 @@ namespace avel_tests {
     // Arrangement Operations
     //=====================================================
 
-    TEST(Vec4x32f, Extract_random) {
+    TEST(Vec2x64f, Extract_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
-            vec4x32f v{inputs};
+            auto inputs = random_array<arr2x64f>();
+            vec2x64f v{inputs};
 
             EXPECT_EQ(inputs[0x00], extract<0x00>(v));
             EXPECT_EQ(inputs[0x01], extract<0x01>(v));
-            EXPECT_EQ(inputs[0x02], extract<0x02>(v));
-            EXPECT_EQ(inputs[0x03], extract<0x03>(v));
 
         }
     }
 
-    TEST(Vec4x32f, Insert_random) {
+    TEST(Vec2x64f, Insert_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
-            vec4x32f v{random_val<vec4x32f::scalar>()};
+            auto inputs = random_array<arr2x64f>();
+            vec2x64f v{random_val<vec2x64f::scalar>()};
 
             v = insert<0x00>(v, inputs[0x00]);
             v = insert<0x01>(v, inputs[0x01]);
-            v = insert<0x02>(v, inputs[0x02]);
-            v = insert<0x03>(v, inputs[0x03]);
 
 
-            EXPECT_TRUE(all(v == vec4x32f{inputs}));
+            EXPECT_TRUE(all(v == vec2x64f{inputs}));
         }
     }
 
@@ -900,16 +896,16 @@ namespace avel_tests {
     // General vector functions
     //=====================================================
 
-    TEST(Vec4x32f, Count_random) {
-        auto predicate = [] (vec4x32f::scalar x) {
+    TEST(Vec2x64f, Count_random) {
+        auto predicate = [] (vec2x64f::scalar x) {
             return x != 0;
         };
 
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
             auto cnt = std::count_if(inputs.begin(), inputs.end(), predicate);
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = count(v);
 
@@ -917,283 +913,283 @@ namespace avel_tests {
         }
     }
 
-    TEST(Vec4x32f, Any_edge_cases) {
-        EXPECT_FALSE(avel::any(vec4x32f{0.0}));
-        EXPECT_TRUE(avel::any(vec4x32f{1.0}));
+    TEST(Vec2x64f, Any_edge_cases) {
+        EXPECT_FALSE(avel::any(vec2x64f{0.0}));
+        EXPECT_TRUE(avel::any(vec2x64f{1.0}));
     }
 
-    TEST(Vec4x32f, Any_random) {
-        auto predicate = [] (vec4x32f::scalar x) {
+    TEST(Vec2x64f, Any_random) {
+        auto predicate = [] (vec2x64f::scalar x) {
             return x != 0;
         };
 
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
             auto cnt = std::count_if(inputs.begin(), inputs.end(), predicate);
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             EXPECT_EQ(cnt != 0, any(v));
         }
     }
 
-    TEST(Vec4x32f, All_edge_cases) {
-        EXPECT_FALSE(avel::all(vec4x32f{0.0}));
-        EXPECT_TRUE(avel::all(vec4x32f{1.0}));
+    TEST(Vec2x64f, All_edge_cases) {
+        EXPECT_FALSE(avel::all(vec2x64f{0.0}));
+        EXPECT_TRUE(avel::all(vec2x64f{1.0}));
     }
 
-    TEST(Vec4x32f, All_random) {
-        auto predicate = [] (vec4x32f::scalar x) {
+    TEST(Vec2x64f, All_random) {
+        auto predicate = [] (vec2x64f::scalar x) {
             return x != 0;
         };
 
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
             auto cnt = std::count_if(inputs.begin(), inputs.end(), predicate);
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::all(v);
 
-            EXPECT_EQ(cnt == vec4x32f::width, results);
+            EXPECT_EQ(cnt == vec2x64f::width, results);
         }
     }
 
-    TEST(Vec4x32f, None_edge_cases) {
-        EXPECT_TRUE(none(vec4x32f{0.0}));
-        EXPECT_FALSE(none(vec4x32f{1.0}));
+    TEST(Vec2x64f, None_edge_cases) {
+        EXPECT_TRUE(none(vec2x64f{0.0}));
+        EXPECT_FALSE(none(vec2x64f{1.0}));
     }
 
-    TEST(Vec4x32f, None_random) {
-        auto predicate = [] (vec4x32f::scalar x) {
+    TEST(Vec2x64f, None_random) {
+        auto predicate = [] (vec2x64f::scalar x) {
             return x != 0;
         };
 
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
             auto cnt = std::count_if(inputs.begin(), inputs.end(), predicate);
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             EXPECT_EQ(cnt == 0, none(v));
         }
     }
 
-    TEST(Vec4x32f, Keep_random) {
+    TEST(Vec2x64f, Keep_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            mask4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            mask2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::keep(v0, v1);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::keep(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Clear_random) {
+    TEST(Vec2x64f, Clear_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            mask4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            mask2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::clear(v0, v1);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::clear(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Blend_random) {
+    TEST(Vec2x64f, Blend_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4x32f>();
-            auto inputs2 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2x64f>();
+            auto inputs2 = random_array<arr2x64f>();
 
-            mask4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
-            vec4x32f v2{inputs2};
+            mask2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
+            vec2x64f v2{inputs2};
 
             auto results = avel::blend(v0, v1, v2);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::blend(inputs0[j], inputs1[j], inputs2[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Max_random) {
+    TEST(Vec2x64f, Max_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::max(v0, v1);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::max(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Min_random) {
+    TEST(Vec2x64f, Min_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::min(v0, v1);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::min(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Minmax_random) {
+    TEST(Vec2x64f, Minmax_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::minmax(v0, v1);
 
-            arr4x32f expected0{};
-            arr4x32f expected1{};
+            arr2x64f expected0{};
+            arr2x64f expected1{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 auto xy = avel::minmax(inputs0[j], inputs1[j]);
                 expected0[j] = xy[0];
                 expected1[j] = xy[1];
             }
 
-            EXPECT_TRUE(all(results[0] == vec4x32f{expected0}));
-            EXPECT_TRUE(all(results[1] == vec4x32f{expected1}));
+            EXPECT_TRUE(all(results[0] == vec2x64f{expected0}));
+            EXPECT_TRUE(all(results[1] == vec2x64f{expected1}));
         }
     }
 
-    TEST(Vec4x32f, Clamp_random) {
+    TEST(Vec2x64f, Clamp_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
-            auto inputs2 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
+            auto inputs2 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
-            vec4x32f input2{inputs2};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
+            vec2x64f input2{inputs2};
 
             auto xy = avel::minmax(v1, input2);
 
             auto results = avel::clamp(v0, xy[0], xy[1]);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 auto xy = avel::minmax(inputs1[j], inputs2[j]);
                 expected[j] = avel::clamp(inputs0[j], xy[0], xy[1]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
     /*
-    TEST(Vec4x32f, Average_random) {
+    TEST(Vec2x64f, Average_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::average(v0, v1);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::average(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
     */
 
-    TEST(Vec4x32f, Negate_random) {
+    TEST(Vec2x64f, Negate_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4xb>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2xb>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            mask4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            mask2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::negate(v0, v1);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::negate(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Abs_random) {
+    TEST(Vec2x64f, Abs_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::abs(v);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::abs(inputs[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, Neg_abs_random) {
+    TEST(Vec2x64f, Neg_abs_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::neg_abs(v);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::neg_abs(inputs[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
@@ -1201,15 +1197,15 @@ namespace avel_tests {
     // Load/Store operations
     //=====================================================
 
-    TEST(Vec4x32f, Load_n_random) {
+    TEST(Vec2x64f, Load_n_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            for (std::uint32_t j = 0; j < vec4x32f::width; ++j) {
-                auto results = load<vec4x32f>(inputs.data(), j);
+            for (std::uint32_t j = 0; j < vec2x64f::width; ++j) {
+                auto results = load<vec2x64f>(inputs.data(), j);
 
                 auto loaded_data = to_array(results);
-                for (std::uint32_t k = 0; k < vec4x32f::width; k++) {
+                for (std::uint32_t k = 0; k < vec2x64f::width; k++) {
                     if (k < j) {
                         EXPECT_EQ(inputs[k], loaded_data[k]);
                     } else {
@@ -1220,29 +1216,27 @@ namespace avel_tests {
         }
     }
 
-    TEST(Vec4x32f, Load_random) {
+    TEST(Vec2x64f, Load_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            EXPECT_TRUE(all(load<vec4x32f, 0x00>(inputs.data()) == load<vec4x32f>(inputs.data(), 0x00)));
-            EXPECT_TRUE(all(load<vec4x32f, 0x00>(inputs.data()) == load<vec4x32f>(inputs.data(), 0x00)));
-            EXPECT_TRUE(all(load<vec4x32f, 0x01>(inputs.data()) == load<vec4x32f>(inputs.data(), 0x01)));
-            EXPECT_TRUE(all(load<vec4x32f, 0x02>(inputs.data()) == load<vec4x32f>(inputs.data(), 0x02)));
-            EXPECT_TRUE(all(load<vec4x32f, 0x03>(inputs.data()) == load<vec4x32f>(inputs.data(), 0x03)));
-            EXPECT_TRUE(all(load<vec4x32f, 0x04>(inputs.data()) == load<vec4x32f>(inputs.data(), 0x04)));
+            EXPECT_TRUE(all(load<vec2x64f, 0x00>(inputs.data()) == load<vec2x64f>(inputs.data(), 0x00)));
+            EXPECT_TRUE(all(load<vec2x64f, 0x00>(inputs.data()) == load<vec2x64f>(inputs.data(), 0x00)));
+            EXPECT_TRUE(all(load<vec2x64f, 0x01>(inputs.data()) == load<vec2x64f>(inputs.data(), 0x01)));
+            EXPECT_TRUE(all(load<vec2x64f, 0x02>(inputs.data()) == load<vec2x64f>(inputs.data(), 0x02)));
 
         }
     }
 
-    TEST(Vec4x32f, Aligned_load_n_random) {
+    TEST(Vec2x64f, Aligned_load_n_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            alignas(alignof(vec4x32f)) auto inputs = random_array<arr4x32f>();
+            alignas(alignof(vec2x64f)) auto inputs = random_array<arr2x64f>();
 
-            for (std::uint32_t j = 0; j < vec4x32f::width; ++j) {
-                auto results = aligned_load<vec4x32f>(inputs.data(), j);
+            for (std::uint32_t j = 0; j < vec2x64f::width; ++j) {
+                auto results = aligned_load<vec2x64f>(inputs.data(), j);
 
                 auto loaded_data = to_array(results);
-                for (std::uint32_t k = 0; k < vec4x32f::width; k++) {
+                for (std::uint32_t k = 0; k < vec2x64f::width; k++) {
                     if (k < j) {
                         EXPECT_EQ(inputs[k], loaded_data[k]);
                     } else {
@@ -1253,41 +1247,39 @@ namespace avel_tests {
         }
     }
 
-    TEST(Vec4x32f, Aligned_load_random) {
+    TEST(Vec2x64f, Aligned_load_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            alignas(alignof(vec4x32f)) auto inputs = random_array<arr4x32f>();
+            alignas(alignof(vec2x64f)) auto inputs = random_array<arr2x64f>();
 
-            EXPECT_TRUE(all(aligned_load<vec4x32f, 0x00>(inputs.data()) == aligned_load<vec4x32f>(inputs.data(), 0x00)));
-            EXPECT_TRUE(all(aligned_load<vec4x32f, 0x00>(inputs.data()) == aligned_load<vec4x32f>(inputs.data(), 0x00)));
-            EXPECT_TRUE(all(aligned_load<vec4x32f, 0x01>(inputs.data()) == aligned_load<vec4x32f>(inputs.data(), 0x01)));
-            EXPECT_TRUE(all(aligned_load<vec4x32f, 0x02>(inputs.data()) == aligned_load<vec4x32f>(inputs.data(), 0x02)));
-            EXPECT_TRUE(all(aligned_load<vec4x32f, 0x03>(inputs.data()) == aligned_load<vec4x32f>(inputs.data(), 0x03)));
-            EXPECT_TRUE(all(aligned_load<vec4x32f, 0x04>(inputs.data()) == aligned_load<vec4x32f>(inputs.data(), 0x04)));
+            EXPECT_TRUE(all(aligned_load<vec2x64f, 0x00>(inputs.data()) == aligned_load<vec2x64f>(inputs.data(), 0x00)));
+            EXPECT_TRUE(all(aligned_load<vec2x64f, 0x00>(inputs.data()) == aligned_load<vec2x64f>(inputs.data(), 0x00)));
+            EXPECT_TRUE(all(aligned_load<vec2x64f, 0x01>(inputs.data()) == aligned_load<vec2x64f>(inputs.data(), 0x01)));
+            EXPECT_TRUE(all(aligned_load<vec2x64f, 0x02>(inputs.data()) == aligned_load<vec2x64f>(inputs.data(), 0x02)));
 
         }
     }
 
-    TEST(Vec4x32f, Gather_n_random) {
+    TEST(Vec2x64f, Gather_n_random) {
         static constexpr std::size_t test_data_size = 16 * 1024;
 
-        std::vector<vec4x32f::scalar> test_data{};
+        std::vector<vec2x64f::scalar> test_data{};
         test_data.resize(test_data_size);
         for (auto& x : test_data) {
-            x = random_val<vec4x32f::scalar>();
+            x = random_val<vec2x64f::scalar>();
         }
 
         for (std::size_t i = 0; i < iterations; ++i) {
-            arr4x32i index_array{};
+            arr2x64i index_array{};
             for (std::size_t j = 0; j < index_array.size(); ++j) {
-                index_array[j] = random_val<vec4x32u::scalar>() % test_data_size;
+                index_array[j] = random_val<vec2x64u::scalar>() % test_data_size;
             }
-            auto indices = load<vec4x32i>(index_array.data());
+            auto indices = load<vec2x64i>(index_array.data());
 
-            for (std::size_t j = 0; j <= vec4x32f::width; ++j) {
-                auto results = gather<vec4x32f>(test_data.data(), indices, j);
+            for (std::size_t j = 0; j <= vec2x64f::width; ++j) {
+                auto results = gather<vec2x64f>(test_data.data(), indices, j);
 
                 auto loaded_data = to_array(results);
-                for (std::size_t k = 0; k < vec4x32f::width; k++) {
+                for (std::size_t k = 0; k < vec2x64f::width; k++) {
                     if (k < j) {
                         EXPECT_EQ(test_data[index_array[k]], loaded_data[k]);
                     } else {
@@ -1298,39 +1290,37 @@ namespace avel_tests {
         }
     }
 
-    TEST(Vec4x32f, Gather_random) {
+    TEST(Vec2x64f, Gather_random) {
         static constexpr std::size_t test_data_size = 16 * 1024;
 
-        std::vector<vec4x32f::scalar> test_data{};
+        std::vector<vec2x64f::scalar> test_data{};
         test_data.resize(test_data_size);
         for (auto& x : test_data) {
-            x = random_val<vec4x32f::scalar>();
+            x = random_val<vec2x64f::scalar>();
         }
 
         for (std::size_t i = 0; i < iterations; ++i) {
-            arr4x32i index_array{};
-            for (std::size_t j = 0; j < vec4x32f::width; ++j) {
-                index_array[j] = random_val<vec4x32i::scalar>() % test_data_size;
+            arr2x64i index_array{};
+            for (std::size_t j = 0; j < vec2x64f::width; ++j) {
+                index_array[j] = random_val<vec2x64i::scalar>() % test_data_size;
             }
-            auto indices = load<vec4x32i>(index_array.data());
+            auto indices = load<vec2x64i>(index_array.data());
 
-            EXPECT_TRUE(all(gather<vec4x32f, 0x00>(test_data.data(), indices) == gather<vec4x32f>(test_data.data(), indices, 0x00)));
-            EXPECT_TRUE(all(gather<vec4x32f, 0x01>(test_data.data(), indices) == gather<vec4x32f>(test_data.data(), indices, 0x01)));
-            EXPECT_TRUE(all(gather<vec4x32f, 0x02>(test_data.data(), indices) == gather<vec4x32f>(test_data.data(), indices, 0x02)));
-            EXPECT_TRUE(all(gather<vec4x32f, 0x03>(test_data.data(), indices) == gather<vec4x32f>(test_data.data(), indices, 0x03)));
-            EXPECT_TRUE(all(gather<vec4x32f, 0x04>(test_data.data(), indices) == gather<vec4x32f>(test_data.data(), indices, 0x04)));
+            EXPECT_TRUE(all(gather<vec2x64f, 0x00>(test_data.data(), indices) == gather<vec2x64f>(test_data.data(), indices, 0x00)));
+            EXPECT_TRUE(all(gather<vec2x64f, 0x01>(test_data.data(), indices) == gather<vec2x64f>(test_data.data(), indices, 0x01)));
+            EXPECT_TRUE(all(gather<vec2x64f, 0x02>(test_data.data(), indices) == gather<vec2x64f>(test_data.data(), indices, 0x02)));
 
         }
     }
 
-    TEST(Vec4x32f, Store_n) {
+    TEST(Vec2x64f, Store_n) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
-            for (std::size_t j = 0; j < vec4x32f::width; ++j) {
-                vec4x32f::scalar arr[vec4x32f::width]{};
+            for (std::size_t j = 0; j < vec2x64f::width; ++j) {
+                vec2x64f::scalar arr[vec2x64f::width]{};
                 store(arr, v, j);
 
                 for (std::size_t k = 0; k < inputs.size(); ++k) {
@@ -1344,31 +1334,29 @@ namespace avel_tests {
         }
     }
 
-    TEST(Vec4x32f, Store_random) {
+    TEST(Vec2x64f, Store_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
-            vec4x32f::scalar arr[vec4x32f::width]{};
+            vec2x64f::scalar arr[vec2x64f::width]{};
 
             store<0x00>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x00));
             store<0x01>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x01));
             store<0x02>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x02));
-            store<0x03>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x03));
-            store<0x04>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x04));
 
         }
     }
 
-    TEST(Vec4x32f, Aligned_store_n_random) {
+    TEST(Vec2x64f, Aligned_store_n_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
-            for (std::size_t j = 0; j < vec4x32f::width; ++j) {
-                alignas(alignof(vec4x32f)) vec4x32f::scalar arr[vec4x32f::width]{};
+            for (std::size_t j = 0; j < vec2x64f::width; ++j) {
+                alignas(alignof(vec2x64f)) vec2x64f::scalar arr[vec2x64f::width]{};
                 aligned_store(arr, v, j);
 
                 for (std::size_t k = 0; k < inputs.size(); ++k) {
@@ -1382,43 +1370,41 @@ namespace avel_tests {
         }
     }
 
-    TEST(Vec4x32f, Aligned_store_random) {
+    TEST(Vec2x64f, Aligned_store_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
-            alignas(alignof(vec4x32f)) vec4x32f::scalar arr[vec4x32f::width]{};
+            alignas(alignof(vec2x64f)) vec2x64f::scalar arr[vec2x64f::width]{};
 
             aligned_store<0x00>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x00));
             aligned_store<0x01>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x01));
             aligned_store<0x02>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x02));
-            aligned_store<0x03>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x03));
-            aligned_store<0x04>(arr, v); EXPECT_TRUE(compare_stored_data(arr, v, 0x04));
 
         }
     }
 
-    TEST(Vec4x32f, Scatter_n_random) {
+    TEST(Vec2x64f, Scatter_n_random) {
         static constexpr std::size_t test_data_size = 16 * 1024;
-        static constexpr std::size_t block_size = test_data_size / vec4x32f::width;
+        static constexpr std::size_t block_size = test_data_size / vec2x64f::width;
 
-        std::vector<vec4x32f::scalar> test_data{};
+        std::vector<vec2x64f::scalar> test_data{};
         test_data.resize(test_data_size);
 
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto input_array0 = random_array<arr4x32f>();
+            auto input_array0 = random_array<arr2x64f>();
 
-            vec4x32f input0{input_array0};
+            vec2x64f input0{input_array0};
 
-            arr4x32i index_array{};
+            arr2x64i index_array{};
             for (std::size_t j = 0; j < index_array.size(); ++j) {
-                index_array[j] = (random_val<vec4x32u::scalar>() % block_size) + (j * block_size);
+                index_array[j] = (random_val<vec2x64u::scalar>() % block_size) + (j * block_size);
             }
 
-            vec4x32i indices{index_array};
+            vec2x64i indices{index_array};
 
-            for (std::size_t j = 0; j <= vec4x32u::width; ++j) {
+            for (std::size_t j = 0; j <= vec2x64u::width; ++j) {
                 scatter(test_data.data(), input0, indices, j);
 
                 for (std::size_t k = 0; k < input_array0.size(); ++k) {
@@ -1430,39 +1416,37 @@ namespace avel_tests {
         }
     }
 
-    TEST(Vec4x32f, Scatter_random) {
+    TEST(Vec2x64f, Scatter_random) {
         static constexpr std::size_t test_data_size = 16 * 1024;
-        static constexpr std::size_t block_size = test_data_size / vec4x32f::width;
+        static constexpr std::size_t block_size = test_data_size / vec2x64f::width;
 
-        std::vector<vec4x32f::scalar> test_data{};
+        std::vector<vec2x64f::scalar> test_data{};
         test_data.resize(test_data_size);
 
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto input_array0 = random_array<arr4x32f>();
+            auto input_array0 = random_array<arr2x64f>();
 
-            vec4x32f input0{input_array0};
+            vec2x64f input0{input_array0};
 
-            arr4x32i index_array{};
+            arr2x64i index_array{};
             for (std::size_t j = 0; j < index_array.size(); ++j) {
-                index_array[j] = (random_val<vec4x32u::scalar>() % block_size) + (j * block_size);
+                index_array[j] = (random_val<vec2x64u::scalar>() % block_size) + (j * block_size);
             }
 
-            vec4x32i indices{index_array};
+            vec2x64i indices{index_array};
 
             scatter<0x00>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x00));
             scatter<0x01>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x01));
             scatter<0x02>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x02));
-            scatter<0x03>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x03));
-            scatter<0x04>(test_data.data(), input0, indices); EXPECT_TRUE(compare_stored_data(test_data.data(), input0, indices, 0x04));
 
         }
     }
 
-    TEST(Vec4x32f, To_array_random) {
+    TEST(Vec2x64f, To_array_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = to_array(v);
 
@@ -1476,9 +1460,9 @@ namespace avel_tests {
     // Floating-point functions
     //=====================================================
 
-    TEST(Vec4x32f, fmax_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
+    TEST(Vec2x64f, fmax_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
 
         EXPECT_TRUE(all(zero == avel::fmax(zero, zero)));
         EXPECT_TRUE(all(zero == avel::fmax(nan, zero)));
@@ -1486,28 +1470,28 @@ namespace avel_tests {
         EXPECT_TRUE(all(avel::isnan(avel::fmax(nan, nan))));
     }
 
-    TEST(Vec4x32f, fmax_random) {
+    TEST(Vec2x64f, fmax_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::fmax(v0, v1);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::fmax(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, fmin_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
+    TEST(Vec2x64f, fmin_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
 
         EXPECT_TRUE(all(zero == avel::fmin(zero, zero)));
         EXPECT_TRUE(all(zero == avel::fmin(nan, zero)));
@@ -1515,22 +1499,22 @@ namespace avel_tests {
         EXPECT_TRUE(all(avel::isnan(avel::fmin(nan, nan))));
     }
 
-    TEST(Vec4x32f, fmin_random) {
+    TEST(Vec2x64f, fmin_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::fmin(v0, v1);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::fmin(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
@@ -1538,11 +1522,11 @@ namespace avel_tests {
     // Nearest Integer Operations
     //=====================================================
 
-    TEST(Vec4x32f, ceil_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, ceil_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(all(avel::isnan(avel::ceil(nan))));
         EXPECT_TRUE(all(zero == avel::ceil(zero)));
@@ -1550,28 +1534,28 @@ namespace avel_tests {
         EXPECT_TRUE(all(neg_inf == avel::ceil(neg_inf)));
     }
 
-    TEST(Vec4x32f, ceil_random) {
+    TEST(Vec2x64f, ceil_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::ceil(v);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::ceil(inputs[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, floor_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, floor_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(all(avel::isnan(avel::floor(nan))));
         EXPECT_TRUE(all(zero == avel::floor(zero)));
@@ -1579,28 +1563,28 @@ namespace avel_tests {
         EXPECT_TRUE(all(neg_inf == avel::floor(neg_inf)));
     }
 
-    TEST(Vec4x32f, floor_random) {
+    TEST(Vec2x64f, floor_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::floor(v);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::floor(inputs[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, trunc_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, trunc_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(all(avel::isnan(avel::trunc(nan))));
         EXPECT_TRUE(all(zero == avel::trunc(zero)));
@@ -1608,28 +1592,28 @@ namespace avel_tests {
         EXPECT_TRUE(all(neg_inf == avel::trunc(neg_inf)));
     }
 
-    TEST(Vec4x32f, trunc_random) {
+    TEST(Vec2x64f, trunc_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::trunc(v);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::trunc(inputs[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, round_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, round_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(all(avel::isnan(avel::round(nan))));
         EXPECT_TRUE(all(zero == avel::round(zero)));
@@ -1637,28 +1621,28 @@ namespace avel_tests {
         EXPECT_TRUE(all(neg_inf == avel::round(neg_inf)));
     }
 
-    TEST(Vec4x32f, round_random) {
+    TEST(Vec2x64f, round_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::round(v);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::round(inputs[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, nearbyint_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, nearbyint_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(all(avel::isnan(avel::nearbyint(nan))));
         EXPECT_TRUE(all(zero == avel::nearbyint(zero)));
@@ -1666,28 +1650,28 @@ namespace avel_tests {
         EXPECT_TRUE(all(neg_inf == avel::nearbyint(neg_inf)));
     }
 
-    TEST(Vec4x32f, nearbyint_random) {
+    TEST(Vec2x64f, nearbyint_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::nearbyint(v);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::nearbyint(inputs[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, rint_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, rint_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(all(avel::isnan(avel::rint(nan))));
         EXPECT_TRUE(all(zero == avel::rint(zero)));
@@ -1695,20 +1679,20 @@ namespace avel_tests {
         EXPECT_TRUE(all(neg_inf == avel::rint(neg_inf)));
     }
 
-    TEST(Vec4x32f, rint_random) {
+    TEST(Vec2x64f, rint_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::rint(v);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::rint(inputs[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
@@ -1716,64 +1700,64 @@ namespace avel_tests {
     // Floating-point Manipulation
     //=====================================================
 
-    TEST(Vec4x32f, frexp_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, frexp_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
-        vec4x32i zero_i{0x00};
+        vec2x64i zero_i{0x00};
 
-        vec4x32i e0;
+        vec2x64i e0;
         auto s0 = avel::frexp(zero, &e0);
 
         EXPECT_TRUE(all(zero_i == e0));
         EXPECT_TRUE(all(s0 == zero));
 
-        vec4x32i e1;
+        vec2x64i e1;
         auto s1 = avel::frexp(nan, &e1);
 
         EXPECT_TRUE(all(avel::isnan(s1)));
 
-        vec4x32i e2;
+        vec2x64i e2;
         auto s2 = avel::frexp(pos_inf, &e2);
 
         EXPECT_TRUE(all(s2 == pos_inf));
 
-        vec4x32i e3;
+        vec2x64i e3;
         auto s3 = avel::frexp(neg_inf, &e3);
 
         EXPECT_TRUE(all(s3 == neg_inf));
     }
 
-    TEST(Vec4x32f, frexp_random) {
+    TEST(Vec2x64f, frexp_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
-            vec4x32i results0;
+            vec2x64i results0;
             auto results1 = avel::frexp(v, &results0);
 
-            arr4x32i expected0{};
-            arr4x32f expected1{};
+            arr2x64i expected0{};
+            arr2x64f expected1{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected1[j] = avel::frexp(inputs[j], expected0.data() + j);
             }
 
-            EXPECT_TRUE(all(results0 == vec4x32i{expected0}));
-            EXPECT_TRUE(all(results1 == vec4x32f{expected1}));
+            EXPECT_TRUE(all(results0 == vec2x64i{expected0}));
+            EXPECT_TRUE(all(results1 == vec2x64f{expected1}));
         }
     }
 
-    TEST(Vec4x32f, ldexp_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, ldexp_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
-        vec4x32i e0{0};
-        vec4x32i e1{64};
+        vec2x64i e0{0};
+        vec2x64i e1{64};
 
         EXPECT_TRUE(all(zero == avel::ldexp(zero, e0)));
         EXPECT_TRUE(all(zero == avel::ldexp(zero, e1)));
@@ -1784,33 +1768,33 @@ namespace avel_tests {
         EXPECT_TRUE(all(avel::isnan(avel::ldexp(nan, e1))));
     }
 
-    TEST(Vec4x32f, ldexp_random) {
+    TEST(Vec2x64f, ldexp_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_exponent_array<arr4x32i>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_exponent_array<arr2x64i>();
 
-            vec4x32f v0{inputs0};
-            vec4x32i v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64i v1{inputs1};
 
             auto results = avel::ldexp(v0, v1);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::ldexp(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, scalbn_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, scalbn_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
-        vec4x32i e0{0};
-        vec4x32i e1{64};
+        vec2x64i e0{0};
+        vec2x64i e1{64};
 
         EXPECT_TRUE(all(zero == avel::scalbn(zero, e0)));
         EXPECT_TRUE(all(zero == avel::scalbn(zero, e1)));
@@ -1821,34 +1805,34 @@ namespace avel_tests {
         EXPECT_TRUE(all(avel::isnan(avel::scalbn(nan, e1))));
     }
 
-    TEST(Vec4x32f, scalbn_random) {
+    TEST(Vec2x64f, scalbn_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_exponent_array<arr4x32i>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_exponent_array<arr2x64i>();
 
-            vec4x32f v0{inputs0};
-            vec4x32i v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64i v1{inputs1};
 
             auto results = avel::scalbn(v0, v1);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::scalbn(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, ilogb_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, ilogb_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
-        vec4x32i e0{FP_ILOGB0};
-        vec4x32i e1{FP_ILOGBNAN};
-        vec4x32i e2{INT_MAX};
+        vec2x64i e0{FP_ILOGB0};
+        vec2x64i e1{FP_ILOGBNAN};
+        vec2x64i e2{INT_MAX};
 
         EXPECT_TRUE(all(e0 == avel::ilogb(zero)));
         EXPECT_TRUE(all(e1 == avel::ilogb(nan)));
@@ -1856,28 +1840,28 @@ namespace avel_tests {
         EXPECT_TRUE(all(e2 == avel::ilogb(neg_inf)));
     }
 
-    TEST(Vec4x32f, ilogb_random) {
+    TEST(Vec2x64f, ilogb_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::ilogb(v);
 
-            arr4x32i expected{};
+            arr2x64i expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::ilogb(inputs[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32i{expected}));
+            EXPECT_TRUE(all(results == vec2x64i{expected}));
         }
     }
 
-    TEST(Vec4x32f, logb_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, logb_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(all(neg_inf == avel::logb(zero)));
         EXPECT_TRUE(all(avel::isnan(avel::logb(nan))));
@@ -1885,39 +1869,39 @@ namespace avel_tests {
         EXPECT_TRUE(all(pos_inf == avel::logb(neg_inf)));
     }
 
-    TEST(Vec4x32f, logb_random) {
+    TEST(Vec2x64f, logb_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::logb(v);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::logb(inputs[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
-    TEST(Vec4x32f, copysign) {
+    TEST(Vec2x64f, copysign) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::copysign(v0, v1);
 
-            arr4x32f expected{};
+            arr2x64f expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::copysign(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32f{expected}));
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
         }
     }
 
@@ -1925,15 +1909,15 @@ namespace avel_tests {
     // Floating-point Classification
     //=====================================================
 
-    TEST(Vec4x32f, fpclassify_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, fpclassify_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
-        vec4x32i c0{FP_ZERO};
-        vec4x32i c1{FP_NAN};
-        vec4x32i c2{FP_INFINITE};
+        vec2x64i c0{FP_ZERO};
+        vec2x64i c1{FP_NAN};
+        vec2x64i c2{FP_INFINITE};
 
         EXPECT_TRUE(all(c0 == avel::fpclassify(zero)));
         EXPECT_TRUE(all(c1 == avel::fpclassify(nan)));
@@ -1941,28 +1925,28 @@ namespace avel_tests {
         EXPECT_TRUE(all(c2 == avel::fpclassify(neg_inf)));
     }
 
-    TEST(Vec4x32f, fpclassify_random) {
+    TEST(Vec2x64f, fpclassify_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::fpclassify(v);
 
-            arr4x32i expected{};
+            arr2x64i expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::fpclassify(inputs[j]);
             }
 
-            EXPECT_TRUE(all(results == vec4x32i{expected}));
+            EXPECT_TRUE(all(results == vec2x64i{expected}));
         }
     }
 
-    TEST(Vec4x32f, isfinite_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, isfinite_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(all(avel::isfinite(zero)));
         EXPECT_TRUE(none(avel::isfinite(nan)));
@@ -1970,28 +1954,28 @@ namespace avel_tests {
         EXPECT_TRUE(none(avel::isfinite(neg_inf)));
     }
 
-    TEST(Vec4x32f, isfinite_random) {
+    TEST(Vec2x64f, isfinite_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::isfinite(v);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::isfinite(inputs[j]);
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
-    TEST(Vec4x32f, isinf_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, isinf_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(none(avel::isinf(zero)));
         EXPECT_TRUE(none(avel::isinf(nan)));
@@ -1999,28 +1983,28 @@ namespace avel_tests {
         EXPECT_TRUE(all(avel::isinf(neg_inf)));
     }
 
-    TEST(Vec4x32f, isinf_random) {
+    TEST(Vec2x64f, isinf_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::isinf(v);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::isinf(inputs[j]);
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
-    TEST(Vec4x32f, isnan_edge_cases) {
-        vec4x32f zero{0.0};
-        vec4x32f nan{NAN};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, isnan_edge_cases) {
+        vec2x64f zero{0.0};
+        vec2x64f nan{NAN};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(none(avel::isnan(zero)));
         EXPECT_TRUE(all(avel::isnan(nan)));
@@ -2028,28 +2012,28 @@ namespace avel_tests {
         EXPECT_TRUE(none(avel::isnan(neg_inf)));
     }
 
-    TEST(Vec4x32f, isnan_random) {
+    TEST(Vec2x64f, isnan_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::isnan(v);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::isnan(inputs[j]);
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
-    TEST(Vec4x32f, isnormal_edge_cases) {
-        vec4x32f nan{NAN};
-        vec4x32f zero{0.0f};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, isnormal_edge_cases) {
+        vec2x64f nan{NAN};
+        vec2x64f zero{0.0f};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(none(avel::isnormal(zero)));
         EXPECT_TRUE(none(avel::isnormal(nan)));
@@ -2057,45 +2041,45 @@ namespace avel_tests {
         EXPECT_TRUE(none(avel::isnormal(neg_inf)));
     }
 
-    TEST(Vec4x32f, isnormal_random) {
+    TEST(Vec2x64f, isnormal_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::isnormal(v);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::isnormal(inputs[j]);
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
-    TEST(Vec4x32f, signbit_edge_cases) {
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, signbit_edge_cases) {
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(none(avel::signbit(pos_inf)));
         EXPECT_TRUE(all(avel::signbit(neg_inf)));
     }
 
-    TEST(Vec4x32f, signbit_random) {
+    TEST(Vec2x64f, signbit_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs = random_array<arr4x32f>();
+            auto inputs = random_array<arr2x64f>();
 
-            vec4x32f v{inputs};
+            vec2x64f v{inputs};
 
             auto results = avel::signbit(v);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < inputs.size(); ++j) {
                 expected[j] = avel::signbit(inputs[j]);
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
@@ -2103,11 +2087,11 @@ namespace avel_tests {
     // Floating-point Comparisons
     //=====================================================
 
-    TEST(Vec4x32f, isgreater_edge_cases) {
-        vec4x32f nan{NAN};
-        vec4x32f zero{0.0f};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, isgreater_edge_cases) {
+        vec2x64f nan{NAN};
+        vec2x64f zero{0.0f};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(none(avel::isgreater(nan, nan)));
 
@@ -2124,30 +2108,30 @@ namespace avel_tests {
         EXPECT_TRUE(none(avel::isgreater(neg_inf, nan)));
     }
 
-    TEST(Vec4x32f, isgreater_random) {
+    TEST(Vec2x64f, isgreater_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::isgreater(v0, v1);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::isgreater(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
-    TEST(Vec4x32f, isgreaterequal_edge_cases) {
-        vec4x32f nan{NAN};
-        vec4x32f zero{0.0f};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, isgreaterequal_edge_cases) {
+        vec2x64f nan{NAN};
+        vec2x64f zero{0.0f};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(none(avel::isgreaterequal(nan, nan)));
 
@@ -2164,30 +2148,30 @@ namespace avel_tests {
         EXPECT_TRUE(none(avel::isgreaterequal(neg_inf, nan)));
     }
 
-    TEST(Vec4x32f, isgreaterequal_random) {
+    TEST(Vec2x64f, isgreaterequal_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::isgreaterequal(v0, v1);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::isgreaterequal(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
-    TEST(Vec4x32f, isless_edge_cases) {
-        vec4x32f nan{NAN};
-        vec4x32f zero{0.0f};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, isless_edge_cases) {
+        vec2x64f nan{NAN};
+        vec2x64f zero{0.0f};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(none(avel::isless(nan, nan)));
 
@@ -2204,30 +2188,30 @@ namespace avel_tests {
         EXPECT_TRUE(none(avel::isless(neg_inf, nan)));
     }
 
-    TEST(Vec4x32f, isless_random) {
+    TEST(Vec2x64f, isless_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::isless(v0, v1);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::isless(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
-    TEST(Vec4x32f, islessequal_edge_cases) {
-        vec4x32f nan{NAN};
-        vec4x32f zero{0.0f};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, islessequal_edge_cases) {
+        vec2x64f nan{NAN};
+        vec2x64f zero{0.0f};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(none(avel::islessequal(nan, nan)));
 
@@ -2244,30 +2228,30 @@ namespace avel_tests {
         EXPECT_TRUE(none(avel::islessequal(neg_inf, nan)));
     }
 
-    TEST(Vec4x32f, islessequal_random) {
+    TEST(Vec2x64f, islessequal_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::islessequal(v0, v1);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::islessequal(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
-    TEST(Vec4x32f, islessgreater_edge_cases) {
-        vec4x32f nan{NAN};
-        vec4x32f zero{0.0f};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, islessgreater_edge_cases) {
+        vec2x64f nan{NAN};
+        vec2x64f zero{0.0f};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(none(avel::islessgreater(nan, nan)));
 
@@ -2284,30 +2268,30 @@ namespace avel_tests {
         EXPECT_TRUE(none(avel::islessgreater(neg_inf, nan)));
     }
 
-    TEST(Vec4x32f, islessgreater_random) {
+    TEST(Vec2x64f, islessgreater_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::islessgreater(v0, v1);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::islessgreater(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
-    TEST(Vec4x32f, isunordered_random_edge_cases) {
-        vec4x32f nan{NAN};
-        vec4x32f zero{0.0f};
-        vec4x32f pos_inf{+INFINITY};
-        vec4x32f neg_inf{-INFINITY};
+    TEST(Vec2x64f, isunordered_random_edge_cases) {
+        vec2x64f nan{NAN};
+        vec2x64f zero{0.0f};
+        vec2x64f pos_inf{+INFINITY};
+        vec2x64f neg_inf{-INFINITY};
 
         EXPECT_TRUE(all(avel::isunordered(nan, nan)));
 
@@ -2324,25 +2308,25 @@ namespace avel_tests {
         EXPECT_TRUE(all(avel::isunordered(neg_inf, nan)));
     }
 
-    TEST(Vec4x32f, isunordered_random) {
+    TEST(Vec2x64f, isunordered_random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            auto inputs0 = random_array<arr4x32f>();
-            auto inputs1 = random_array<arr4x32f>();
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
 
-            vec4x32f v0{inputs0};
-            vec4x32f v1{inputs1};
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
 
             auto results = avel::isunordered(v0, v1);
 
-            arr4xb expected{};
+            arr2xb expected{};
             for (std::size_t j = 0; j < inputs0.size(); ++j) {
                 expected[j] = avel::isunordered(inputs0[j], inputs1[j]);
             }
 
-            EXPECT_EQ(results, mask4x32f{expected});
+            EXPECT_EQ(results, mask2x64f{expected});
         }
     }
 
 }
 
-#endif //AVEL_VEC4X32F_TESTS_HPP
+#endif //AVEL_VEC2X64F_TESTS_HPP

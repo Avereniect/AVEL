@@ -182,33 +182,42 @@ namespace avel {
         return std::nearbyint(arg);
     }
 
+    [[nodiscard]]
+    AVEL_FINL double rint(double arg) {
+        return std::rint(arg);
+    }
+
     //=====================================================
-    // doubleing-point manipulation functions
+    // floating-point manipulation functions
     //=====================================================
 
     [[nodiscard]]
     AVEL_FINL double frexp(double arg, std::int64_t* exp) {
-        return std::frexp(arg, exp);
+        std::int32_t e;
+        auto ret = std::frexp(arg, &e);
+        *exp = e;
+        return ret;
     }
 
     [[nodiscard]]
     AVEL_FINL double ldexp(double arg, std::int64_t exp) {
+        exp = avel::clamp(exp, std::int64_t(INT_MIN), std::int64_t(INT_MAX));
         return std::ldexp(arg, exp);
     }
 
     [[nodiscard]]
     AVEL_FINL double scalbn(double x, std::int64_t exp) {
-        return ldexp(x, exp);
+        return avel::ldexp(x, exp);
     }
 
     [[nodiscard]]
     AVEL_FINL std::int64_t ilogb(double arg) {
-        return std::ilogb(arg);
+        return static_cast<std::int64_t>(std::ilogb(arg));
     }
 
     [[nodiscard]]
     AVEL_FINL double logb(double arg) {
-        return static_cast<double>(ilogb(arg));
+        return std::logb(arg);
     }
 
     [[nodiscard]]
@@ -222,6 +231,8 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::int64_t fpclassify(double arg) {
+        return std::fpclassify(arg);
+
         std::int64_t bits = bit_cast<std::int64_t>(arg);
 
         if (0x00000000 == bits || 0x8000000000000000ull == bits) {
@@ -277,7 +288,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool signbit(double arg) {
-        return bit_cast<std::int64_t>(arg) & 0x8000000000000000ull
+        return bit_cast<std::int64_t>(arg) & 0x8000000000000000ull;
     }
 
     //=====================================================
