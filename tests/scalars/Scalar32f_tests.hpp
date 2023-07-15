@@ -150,7 +150,7 @@ namespace avel_tests {
     }
 
     TEST(Sclar32f_tests, copysign) {
-        EXPECT_EQ();
+
     }
 
     //=====================================================
@@ -166,15 +166,15 @@ namespace avel_tests {
         EXPECT_TRUE(avel::isgreater(+0.0, -1.0));
         EXPECT_TRUE(avel::isgreater(+1.0, +0.0));
 
-        EXPECT_FALSE(avel::isgreater(0.0, NAN));
-        EXPECT_FALSE(avel::isgreater(NAN, 0.0));
+        EXPECT_FALSE(avel::isgreater(0.0f, NAN));
+        EXPECT_FALSE(avel::isgreater(NAN, 0.0f));
         EXPECT_FALSE(avel::isgreater(NAN, NAN));
 
         EXPECT_FALSE(avel::isgreater(+INFINITY, +INFINITY));
         EXPECT_FALSE(avel::isgreater(-INFINITY, -INFINITY));
 
-        EXPECT_TRUE(avel::isgreater(+0.0, -INFINITY));
-        EXPECT_TRUE(avel::isgreater(+INFINITY, +0.0));
+        EXPECT_TRUE(avel::isgreater(+0.0f, -INFINITY));
+        EXPECT_TRUE(avel::isgreater(+INFINITY, +0.0f));
     }
 
     TEST(Scalar32f_tests, isgreaterequal) {
@@ -186,15 +186,15 @@ namespace avel_tests {
         EXPECT_TRUE(avel::isgreaterequal(+0.0, -1.0));
         EXPECT_TRUE(avel::isgreaterequal(+1.0, +0.0));
 
-        EXPECT_FALSE(avel::isgreaterequal(0.0, NAN));
-        EXPECT_FALSE(avel::isgreaterequal(NAN, 0.0));
+        EXPECT_FALSE(avel::isgreaterequal(0.0f, NAN));
+        EXPECT_FALSE(avel::isgreaterequal(NAN, 0.0f));
         EXPECT_FALSE(avel::isgreaterequal(NAN, NAN));
 
         EXPECT_TRUE(avel::isgreaterequal(+INFINITY, +INFINITY));
         EXPECT_TRUE(avel::isgreaterequal(-INFINITY, -INFINITY));
 
-        EXPECT_TRUE(avel::isgreaterequal(+0.0, -INFINITY));
-        EXPECT_TRUE(avel::isgreaterequal(+INFINITY, +0.0));
+        EXPECT_TRUE(avel::isgreaterequal(+0.0f, -INFINITY));
+        EXPECT_TRUE(avel::isgreaterequal(+INFINITY, +0.0f));
     }
 
     TEST(Scalar32f_tests, isless) {
@@ -206,15 +206,15 @@ namespace avel_tests {
         EXPECT_FALSE(avel::isless(+0.0, -1.0));
         EXPECT_FALSE(avel::isless(+1.0, +0.0));
 
-        EXPECT_FALSE(avel::isless(0.0, NAN));
-        EXPECT_FALSE(avel::isless(NAN, 0.0));
+        EXPECT_FALSE(avel::isless(0.0f, NAN));
+        EXPECT_FALSE(avel::isless(NAN, 0.0f));
         EXPECT_FALSE(avel::isless(NAN, NAN));
 
         EXPECT_FALSE(avel::isless(+INFINITY, +INFINITY));
         EXPECT_FALSE(avel::isless(-INFINITY, -INFINITY));
 
-        EXPECT_FALSE(avel::isless(+0.0, -INFINITY));
-        EXPECT_FALSE(avel::isless(+INFINITY, +0.0));
+        EXPECT_FALSE(avel::isless(+0.0f, -INFINITY));
+        EXPECT_FALSE(avel::isless(+INFINITY, +0.0f));
     }
 
     TEST(Scalar32f_tests, islessequal) {
@@ -226,15 +226,15 @@ namespace avel_tests {
         EXPECT_FALSE(avel::islessequal(+0.0, -1.0));
         EXPECT_FALSE(avel::islessequal(+1.0, +0.0));
 
-        EXPECT_FALSE(avel::islessequal(0.0, NAN));
-        EXPECT_FALSE(avel::islessequal(NAN, 0.0));
+        EXPECT_FALSE(avel::islessequal(0.0f, NAN));
+        EXPECT_FALSE(avel::islessequal(NAN, 0.0f));
         EXPECT_FALSE(avel::islessequal(NAN, NAN));
 
         EXPECT_TRUE(avel::islessequal(+INFINITY, +INFINITY));
         EXPECT_TRUE(avel::islessequal(-INFINITY, -INFINITY));
 
-        EXPECT_FALSE(avel::islessequal(+0.0, -INFINITY));
-        EXPECT_FALSE(avel::islessequal(+INFINITY, +0.0));
+        EXPECT_FALSE(avel::islessequal(+0.0f, -INFINITY));
+        EXPECT_FALSE(avel::islessequal(+INFINITY, +0.0f));
     }
 
     TEST(Scalar32f_tests, islessgreater) {

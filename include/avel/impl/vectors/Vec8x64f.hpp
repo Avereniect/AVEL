@@ -16,6 +16,8 @@ namespace avel {
     //=====================================================
 
     AVEL_FINL mask8x64f isnan(vec8x64f v);
+    AVEL_FINL vec8x64f copysign(vec8x64f mag, vec8x64f sign);
+
 
 
 
@@ -666,7 +668,11 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64f round(vec8x64f v) {
-        return vec8x64f{_mm512_roundscale_pd(decay(v), _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)};
+        #if defined(AVEL_AVX512F)
+        // The following constant is the value prior to 0.5
+        auto offset = avel::copysign(vec8x64f{avel::bit_cast<double>(0x3fdfffffffffffff)}, v);
+        return avel::trunc(v + offset);
+        #endif
     }
 
     [[nodiscard]]
@@ -680,7 +686,7 @@ namespace avel {
     }
 
     //=====================================================
-    // doubleing-point manipulation
+    // Floating-point manipulation
     //=====================================================
 
     [[nodiscard]]
@@ -724,9 +730,9 @@ namespace avel {
         auto misc_ret_i = _mm512_cvtpd_epi64(exp_fp);
         misc_ret_i = _mm512_maskz_mov_epi64(_mm512_cmpneq_epi64_mask(misc_ret_i, _mm512_set1_epi64(0x8000000000000000ll)), misc_ret_i);
 
-        vec8x64i zero_ret_i{_mm512_castpd_si512(_mm512_fixupimm_pd(zero_ret, exp_fp, _mm512_set1_epi64(0x88808888), 0x00))};
-        vec8x64i inf_ret_i {_mm512_castpd_si512(_mm512_fixupimm_pd(inf_ret,  exp_fp, _mm512_set1_epi64(0x88088888), 0x00))};
-        vec8x64i nan_ret_i {_mm512_castpd_si512(_mm512_fixupimm_pd(nan_ret,  exp_fp, _mm512_set1_epi64(0x88888800), 0x00))};
+        vec8x64i zero_ret_i{_mm512_castpd_si512(_mm512_fixupimm_pd(decay(zero_ret), exp_fp, _mm512_set1_epi64(0x88808888), 0x00))};
+        vec8x64i inf_ret_i {_mm512_castpd_si512(_mm512_fixupimm_pd(decay(inf_ret),  exp_fp, _mm512_set1_epi64(0x88088888), 0x00))};
+        vec8x64i nan_ret_i {_mm512_castpd_si512(_mm512_fixupimm_pd(decay(nan_ret),  exp_fp, _mm512_set1_epi64(0x88888800), 0x00))};
 
         return (vec8x64i{misc_ret_i} | zero_ret_i) | (inf_ret_i | nan_ret_i);
         #endif
@@ -739,10 +745,10 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64f copysign(vec8x64f mag, vec8x64f sign) {
-        #if defined(AVEL_SSE2)
-        auto mask = _mm512_set1_pd(double_sign_bit_mask);
-        auto ret = _mm512_or_pd(_mm512_and_pd(mask, decay(sign)), _mm512_andnot_pd(mask, decay(mag)));
-        return vec8x64f{ret};
+        #if defined(AVEL_AVX512F)
+        auto mask = _mm512_set1_epi64(double_sign_bit_mask_bits);
+        auto ret = _mm512_ternarylogic_epi32(_mm512_castpd_si512(decay(sign)), _mm512_castpd_si512(decay(mag)), mask, 0xe4);
+        return vec8x64f{_mm512_castsi512_pd(ret)};
         #endif
     }
 
@@ -758,7 +764,7 @@ namespace avel {
         const vec8x64i fp_subnormal{int(FP_SUBNORMAL)};
         const vec8x64i fp_zero{int(FP_ZERO)};
 
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         mask8x64i infinite_mask {_mm512_fpclass_pd_mask(decay(v), 0x08 | 0x10)};
         mask8x64i nan_mask      {_mm512_fpclass_pd_mask(decay(v), 0x01 | 0x80)};
         mask8x64i subnormal_mask{_mm512_fpclass_pd_mask(decay(v), 0x20)};
@@ -771,40 +777,83 @@ namespace avel {
             keep(normal_mask, fp_normal) |
             keep(subnormal_mask, fp_subnormal) |
             keep(zero_mask, fp_zero);
+
+        #elif defined(AVEL_AVX512F)
+        auto infinity = _mm512_set1_pd(INFINITY);
+        auto dbl_min = _mm512_set1_pd(DBL_MIN);
+
+        v = avel::abs(v);
+
+        std::uint8_t zero_mask      = _mm512_cmp_pd_mask(decay(v), _mm512_setzero_pd(), _CMP_EQ_OQ);
+        std::uint8_t subnormal_mask = _kandn_mask16(zero_mask, _mm512_cmp_pd_mask(decay(v), dbl_min, _CMP_LE_OQ));
+        std::uint8_t infinite_mask  = _mm512_cmp_pd_mask(decay(v), infinity, _CMP_EQ_OQ);
+        std::uint8_t nan_mask       = _mm512_cmp_pd_mask(decay(v), decay(v), _CMP_UNORD_Q);
+        std::uint8_t normal_mask    = _mm512_kand(
+            _mm512_cmp_pd_mask(dbl_min, decay(v), _CMP_LE_OQ),
+            _mm512_cmp_pd_mask(decay(v), infinity, _CMP_LT_OQ)
+        );
+
+        return
+            keep(mask8x64i{infinite_mask},  fp_infinite) |
+            keep(mask8x64i{nan_mask},       fp_nan) |
+            keep(mask8x64i{normal_mask},    fp_normal) |
+            keep(mask8x64i{subnormal_mask}, fp_subnormal) |
+            keep(mask8x64i{zero_mask},      fp_zero);
+
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask8x64f isfinite(vec8x64f v) {
-        #if defined(AVEL_AVX512VL)
-        return  vec8x64f{_mm512_getexp_pd(decay(v))} < vec8x64f{1024.0f};
+        #if defined(AVEL_AVX512DQ)
+        return !mask8x64f{_mm512_fpclass_pd_mask(decay(v), 0x01 | 0x08 | 0x10 | 0x80)};
+
+        #elif defined(AVEL_AVX512F)
+        return (vec8x64f{-INFINITY} < v) && (v < vec8x64f{+INFINITY});
+
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask8x64f isinf(vec8x64f v) {
-        #if defined(AVEL_AVX512F)
+        #if defined(AVEL_AVX512DQ)
         return mask8x64f{_mm512_fpclass_pd_mask(decay(v), 0x08 | 0x10)};
+
+        #elif defined(AVEL_AVX512F)
+        return avel::abs(v) == vec8x64f{INFINITY};
+
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask8x64f isnan(vec8x64f v) {
+        #if defined(AVEL_AVX512DQ)
         return mask8x64f{_mm512_fpclass_pd_mask(decay(v), 0x80 | 0x01)};
-    }
 
-    [[nodiscard]]
-    AVEL_FINL mask8x64f isnormal(vec8x64f v) {
-        #if defined(AVEL_AVX512VL)
-        return !mask8x64f{_mm512_fpclass_pd_mask(decay(v), 0xBF)};
+        #elif defined(AVEL_AVX512F)
+        return mask8x64f{_mm512_cmp_pd_mask(decay(v), decay(v), _CMP_UNORD_Q)};
 
         #endif
     }
 
     [[nodiscard]]
+    AVEL_FINL mask8x64f isnormal(vec8x64f v) {
+        #if defined(AVEL_AVX512DQ)
+        return !mask8x64f{_mm512_fpclass_pd_mask(decay(v), 0xBF)};
+
+        #elif defined(AVEL_AVX512F)
+        auto abs_v = avel::abs(v);
+        return (vec8x64f{DBL_MIN} <= abs_v) && (abs_v <= vec8x64f{DBL_MAX});
+        #endif
+    }
+
+    [[nodiscard]]
     AVEL_FINL mask8x64f signbit(vec8x64f arg) {
-        #if defined(AVEL_AVX512F)
+        #if defined(AVEL_AVX512DQ)
         return mask8x64f{_mm512_fpclass_pd_mask(decay(arg), 0x40 | 0x04 | 0x10)};
+
+        #elif defined(AVEL_AVX512F)
+        return mask8x64f{_mm512_cmplt_epi64_mask(_mm512_castpd_si512(decay(arg)), _mm512_setzero_si512())};
         #endif
     }
 

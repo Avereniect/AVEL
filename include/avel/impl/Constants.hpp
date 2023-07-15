@@ -20,7 +20,7 @@ namespace avel {
     };
 
     //=====================================================
-    // Floating-point constants
+    // 32-bit Floating-point constants
     //
     // Used in implementation of math functions
     // Errors are positive for overestimates and negative
@@ -115,6 +115,65 @@ namespace avel {
 
     const std::uint32_t recip_pi_minus_bits = 0x3ea2f983;
     const float recip_pi_minus = avel::bit_cast<float>(recip_pi_minus_bits);
+
+    //=====================================================
+    // 64-bit floating-point constants
+    //
+    // Used in implementation of math functions
+    // Errors are positive for overestimates and negative
+    // for underestimates
+    //=====================================================
+
+    // Float-component masks
+
+    const std::uint64_t double_sign_bit_mask_bits = 0x8000000000000000ull;
+    const auto double_sign_bit_mask = avel::bit_cast<double>(double_sign_bit_mask_bits);
+
+    const std::uint64_t double_exponent_mask_bits = 0x7ff0000000000000ull;
+    const auto double_exponent_mask = avel::bit_cast<double>(double_exponent_mask_bits);
+
+    const std::uint64_t double_mantissa_mask_bits = 0x000fffffffffffffull;
+    const auto double_mantissa_mask = avel::bit_cast<double>(double_mantissa_mask_bits);
+
+    //=====================================================
+    // Mask Constants
+    //=====================================================
+
+    ///
+    /// If the action was .
+    ///
+    alignas(32) static constexpr std::array<std::int8_t, 32> masks128_table {
+        -1, -1, -1, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1,
+        +0, +0, +0, +0,
+        +0, +0, +0, +0,
+        +0, +0, +0, +0,
+        +0, +0, +0, +0
+    };
+
+    ///
+    /// Table containing array that's used for loading masks.
+    ///
+    alignas(64) static constexpr std::array<std::int8_t, 64> masks256_table {
+        -1, -1, -1, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1,
+        +0, +0, +0, +0,
+        +0, +0, +0, +0,
+        +0, +0, +0, +0,
+        +0, +0, +0, +0
+        +0, +0, +0, +0,
+        +0, +0, +0, +0,
+        +0, +0, +0, +0,
+        +0, +0, +0, +0
+    };
 
     //=====================================================
     // VBMI Lookup Tables for 8-bit integers

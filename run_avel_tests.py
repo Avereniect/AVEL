@@ -250,8 +250,7 @@ def identify_vector_features():
     queue = [path for path in directory_contents if os.path.isfile(vector_implementation_path + path)]
 
     # Filter only vector headers
-    queue = [file_name for file_name in queue if ('x' in file_name and 'f' not in file_name)]
-    # TODO: Remove the test for files containing f once implementations of float vectors are added
+    queue = [file_name for file_name in queue if ('x' in file_name)]
 
     names_and_features = {}
     for file_name in queue:
@@ -557,7 +556,7 @@ def validate_command_line_arguments():
               'en it will be replaced with the path of the test executable. Otherwise, the path of test executable '
               'will be appended to the end of this parameter. If this parameter is not specified, the test executable '
               'is invoked directly.')
-        print('  -T   (Optional) A pair of hexadecimal strings seperated by a color. Indicate which tests have '
+        print('  -T   (Optional) A pair of hexadecimal strings seperated by a colon. Indicate which tests have '
               'previously passed, allowing the script to avoid rerunning tests that have completed in previous runs. '
               'The script will print out this value upon completion if any tests failed.')
 

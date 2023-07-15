@@ -16,6 +16,9 @@
 #define AVEL_ENABLE_VEC1X64U_TESTS true
 #define AVEL_ENABLE_VEC1X64I_TESTS true
 
+#define AVEL_ENABLE_VEC1X32F_TESTS true
+#define AVEL_ENABLE_VEC1X64F_TESTS true
+
 
 
 #define AVEL_ENABLE_VEC16X8U_TESTS true
@@ -29,6 +32,9 @@
 
 #define AVEL_ENABLE_VEC2X64U_TESTS true
 #define AVEL_ENABLE_VEC2X64I_TESTS true
+
+#define AVEL_ENABLE_VEC4X32F_TESTS true
+#define AVEL_ENABLE_VEC2X64F_TESTS true
 
 
 
@@ -44,6 +50,8 @@
 #define AVEL_ENABLE_VEC4X64U_TESTS true
 #define AVEL_ENABLE_VEC4X64I_TESTS true
 
+#define AVEL_ENABLE_VEC8X32F_TESTS true
+#define AVEL_ENABLE_VEC4X64F_TESTS true
 
 
 #define AVEL_ENABLE_VEC64X8U_TESTS true
@@ -57,6 +65,9 @@
 
 #define AVEL_ENABLE_VEC8X64U_TESTS true
 #define AVEL_ENABLE_VEC8X64I_TESTS true
+
+#define AVEL_ENABLE_VEC16X32F_TESTS true
+#define AVEL_ENABLE_VEC8X64F_TESTS true
 */
 
 
@@ -123,7 +134,7 @@
 
 
 #ifndef AVEL_ENABLE_VEC1X64U_TESTS
-    #define AVEL_ENABLE_VECX64U_TESTS true
+    #define AVEL_ENABLE_VEC1X64U_TESTS true
 #endif
 
 #if AVEL_ENABLE_VEC1X64U_TESTS
@@ -137,6 +148,25 @@
 
 #if AVEL_ENABLE_VEC1X64I_TESTS
     #include "Vec1x64i_tests.hpp"
+#endif
+
+
+
+#ifndef AVEL_ENABLE_VEC1X32F_TESTS
+    #define AVEL_ENABLE_VEC1X32F_TESTS true
+#endif
+
+#if AVEL_ENABLE_VEC1X32F_TESTS
+    #include "Vec1x32f_tests.hpp"
+#endif
+
+
+#ifndef AVEL_ENABLE_VEC1X64F_TESTS
+    #define AVEL_ENABLE_VEC1X64F_TESTS true
+#endif
+
+#if AVEL_ENABLE_VEC1X64F_TESTS
+    #include "Vec1x64f_tests.hpp"
 #endif
 
 
@@ -218,6 +248,25 @@
 
     #if AVEL_ENABLE_VEC2X64I_TESTS
         #include "Vec2x64i_tests.hpp"
+    #endif
+
+
+
+    #ifndef AVEL_ENABLE_VEC4X32F_TESTS
+        #define AVEL_ENABLE_VEC4X32F_TESTS true
+    #endif
+
+    #if AVEL_ENABLE_VEC4X32F_TESTS
+        #include "Vec4x32f_tests.hpp"
+    #endif
+
+
+    #ifndef AVEL_ENABLE_VEC2X64F_TESTS
+        #define AVEL_ENABLE_VEC2X64F_TESTS true
+    #endif
+
+    #if AVEL_ENABLE_VEC2X64F_TESTS
+        #include "Vec2x64f_tests.hpp"
     #endif
 #endif
 
@@ -301,6 +350,25 @@
     #if AVEL_ENABLE_VEC4X64I_TESTS
         #include "Vec4x64i_tests.hpp"
     #endif
+
+
+
+    #ifndef AVEL_ENABLE_VEC8X32F_TESTS
+        #define AVEL_ENABLE_VEC8X32F_TESTS true
+    #endif
+
+    #if AVEL_ENABLE_VEC8X32F_TESTS
+        #include "Vec8x32f_tests.hpp"
+    #endif
+
+
+    #ifndef AVEL_ENABLE_VEC4X64F_TESTS
+        #define AVEL_ENABLE_VEC4X64F_TESTS true
+    #endif
+
+    #if AVEL_ENABLE_VEC4X64F_TESTS
+        #include "Vec4x64f_tests.hpp"
+    #endif
 #endif
 
 
@@ -344,6 +412,25 @@
 
     #if AVEL_ENABLE_VEC8X64I_TESTS
         #include "Vec8x64i_tests.hpp"
+    #endif
+
+
+
+    #ifndef AVEL_ENABLE_VEC16X32F_TESTS
+        #define AVEL_ENABLE_VEC16X32F_TESTS true
+    #endif
+
+    #if AVEL_ENABLE_VEC16X32F_TESTS
+        #include "Vec16x32f_tests.hpp"
+    #endif
+
+
+    #ifndef AVEL_ENABLE_VEC8X64F_TESTS
+        #define AVEL_ENABLE_VEC8X64F_TESTS true
+    #endif
+
+    #if AVEL_ENABLE_VEC8X64F_TESTS
+        #include "Vec8x64f_tests.hpp"
     #endif
 #endif
 

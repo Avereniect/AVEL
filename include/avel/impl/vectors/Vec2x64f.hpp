@@ -23,6 +23,8 @@ namespace avel {
     AVEL_FINL mask2x64f isunordered(vec2x64f, vec2x64f);
     AVEL_FINL mask2x64f signbit(vec2x64f x);
     AVEL_FINL mask2x64f isnan(vec2x64f v);
+    AVEL_FINL mask2x64f isinf(vec2x64f v);
+    AVEL_FINL vec2x64f copysign(vec2x64f mag, vec2x64f sign);
 
 
 
@@ -312,11 +314,9 @@ namespace avel {
 
         AVEL_FINL explicit Vector(mask m):
         #if defined(AVEL_AVX512VL)
-            content(_mm_mask_blend_pd(decay(m), _mm_set1_pd(0.0), _mm_set1_pd(1.0))) {}
-        #elif defined(AVEL_AVX)
-            content(_mm256_blendv_pd(_mm256_set1_pd(0.0), _mm256_set1_pd(1.0), decay(m))) {}
+            content(_mm_maskz_mov_pd(decay(m), _mm_set1_pd(1.0)) {}
         #elif defined(AVEL_SSE2)
-            content() {}
+            content(_mm_and_pd(decay(m), _mm_set1_pd(1.0f))) {}
         #endif
 
         AVEL_FINL explicit Vector(primitive content):
@@ -639,7 +639,7 @@ namespace avel {
         return vec2x64f{_mm_mask_blend_pd(decay(m), decay(b), decay(a))};
 
         #elif defined(AVEL_SSE41)
-        return vec2x64f{_mm_blendv_pd(decay(b), decay(a), decay(n))};
+        return vec2x64f{_mm_blendv_pd(decay(b), decay(a), decay(m))};
 
         #elif defined(AVEL_SSE2)
         auto x = _mm_andnot_pd(decay(m), decay(b));
@@ -689,7 +689,7 @@ namespace avel {
         return vec2x64f{_mm_mask_sub_pd(decay(v), decay(m), _mm_setzero_pd(), decay(v))};
 
         #elif defined(AVEL_SSE2)
-        auto negation_mask = _mm_and_pd(decay(m), _mm_castsi128_pd(_mm_set1_pd(double_sign_bit_mask)));
+        auto negation_mask = _mm_and_pd(decay(m), _mm_set1_pd(double_sign_bit_mask));
         return vec2x64f{_mm_xor_pd(decay(v), negation_mask)};
 
         #endif
@@ -728,11 +728,12 @@ namespace avel {
         auto mask = (n >= 2) ? -1 : (1 << n) - 1;
         return vec2x64f{_mm_maskz_loadu_pd(mask, ptr)};
 
-        #elif defined(AVEL_AVX2)
-        _mm_maskload_pd();
-
         #elif defined(AVEL_SSE2)
-
+        switch (n) {
+            case 0:  return vec2x64f{_mm_setzero_pd()};
+            case 1:  return vec2x64f{_mm_set_sd(*ptr)};
+            default: return vec2x64f{_mm_loadu_pd(ptr)};
+        }
         #endif
 
         #if defined(AVEL_NEON)
@@ -751,8 +752,23 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec2x64f aligned_load<vec2x64f>(const double* ptr, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
         auto mask = (n >= 2) ? -1 : (1 << n) - 1;
         return vec2x64f{_mm_maskz_load_pd(mask, ptr)};
+
+        #elif defined(AVEL_AVX)
+        auto table_offset = masks128_table.size() / 2 - avel::min(vec2x64f::width, n) * sizeof(double);
+        auto mask = _mm_loadu_si128(reinterpret_cast<const __m128i*>(masks128_table.data() + table_offset));
+        return vec2x64f{_mm_maskload_pd(ptr, mask)};
+
+        #elif defined(AVEL_SSE2)
+        switch (n) {
+            default: return vec2x64f{_mm_loadu_pd(ptr)};
+            case 1: return vec2x64f{_mm_load_sd(ptr)};
+            case 0: return vec2x64f{0.0};
+        }
+
+        #endif
     }
 
     template<>
@@ -766,21 +782,68 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec2x64f gather<vec2x64f>(const double* ptr, vec2x64i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
         auto mask = (n >= 2) ? -1 : (1 << n) - 1;
         return vec2x64f{_mm_mmask_i64gather_pd(_mm_setzero_pd(), mask, decay(indices), ptr, sizeof(double))};
+
+        #elif defined(AVEL_AVX2)
+        auto table_offset = masks128_table.size() / 2 - avel::min(vec2x64f::width, n) * sizeof(double);
+        auto mask = _mm_loadu_si128(reinterpret_cast<const __m128i*>(masks128_table.data() + table_offset));
+        return vec2x64f{_mm_mask_i64gather_pd(_mm_setzero_pd(), ptr, decay(indices), mask, sizeof(double))};
+
+        #elif defined(AVEL_SSE2)
+        auto a = _mm_setzero_pd();
+        auto b = _mm_setzero_pd();
+
+        switch (n) {
+            default: b = _mm_load_sd(ptr + extract<1>(indices));
+            case 1:  a = _mm_load_sd(ptr + extract<0>(indices));
+            case 0:  ;
+        }
+
+        return vec2x64f{_mm_unpacklo_pd(a, b)};
+
+        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec2x64f gather<vec2x64f>(const double* ptr, vec2x64i indices) {
+        #if defined(AVEL_AVX2)
         return vec2x64f{_mm_i64gather_pd(ptr, decay(indices), sizeof(double))};
+
+        #elif defined(AVEL_SSE2)
+        return vec2x64f{_mm_set_pd(
+            ptr[extract<1>(indices)],
+            ptr[extract<0>(indices)]
+        )};
+
+        #endif
     }
 
 
 
     AVEL_FINL void store(double* ptr, vec2x64f v, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
         auto mask = (n >= 2) ? -1 : (1 << n) - 1;
         _mm_mask_storeu_pd(ptr, mask, decay(v));
+
+        #elif defined(AVEL_AVX)
+        auto table_offset = masks128_table.size() / 2 - avel::min(vec2x64f::width, n) * sizeof(double);
+        auto mask = _mm_loadu_si128(reinterpret_cast<const __m128i*>(masks128_table.data() + table_offset));
+        _mm_maskstore_pd(ptr, mask, decay(v));
+
+        #elif defined(AVEL_SSE2)
+        auto table_offset = masks128_table.size() / 2 - avel::min(vec2x64f::width, n) * sizeof(double);
+        auto mask = _mm_loadu_si128(reinterpret_cast<const __m128i*>(masks128_table.data() + table_offset));
+
+        _mm_maskmoveu_si128(
+            _mm_castpd_si128(decay(v)),
+            mask,
+            reinterpret_cast<char*>(ptr)
+        );
+
+        #endif
     }
 
     template<std::uint32_t N = vec2x64f::width>
@@ -796,8 +859,13 @@ namespace avel {
 
 
     AVEL_FINL void aligned_store(double* ptr, vec2x64f v, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
         auto mask = (n >= 2) ? -1 : (1 << n) - 1;
         _mm_mask_store_pd(ptr, mask, decay(v));
+
+        #elif defined(AVEL_SSE2)
+        store(ptr, v, n);
+        #endif
     }
 
     template<std::uint32_t N = vec2x64f::width>
@@ -815,8 +883,18 @@ namespace avel {
 
 
     AVEL_FINL void scatter(double* ptr, vec2x64f v, vec2x64i indices, std::uint32_t n) {
+        #if defined(AVEL_AVX512VL)
         auto mask = (n >= 2) ? -1 : (1 << n) - 1;
         _mm_mask_i64scatter_pd(ptr, mask, decay(indices), decay(v), sizeof(double));
+
+        #elif defined(AVEL_SSE2)
+        switch (n) {
+            default: ptr[extract<1>(indices)] = extract<1>(v);
+            case 1:  ptr[extract<0>(indices)] = extract<0>(v);
+            case 0: ;
+        }
+
+        #endif
     }
 
     template<std::uint32_t N = vec2x64f::width>
@@ -831,7 +909,14 @@ namespace avel {
 
     template<>
     AVEL_FINL void scatter<vec2x64f::width>(double* ptr, vec2x64f v, vec2x64i indices) {
+        #if defined(AVEL_AVX512VL)
         _mm_i64scatter_pd(ptr, decay(indices), decay(v), sizeof(double));
+
+        #elif defined(AVEL_SSE2)
+        ptr[extract<0>(indices)] = extract<0>(v);
+        ptr[extract<1>(indices)] = extract<1>(v);
+
+        #endif
     }
 
 
@@ -874,6 +959,27 @@ namespace avel {
     AVEL_FINL vec2x64f ceil(vec2x64f v) {
         #if defined(AVEL_SSE41)
         return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)};
+
+        #elif defined(AVEL_SSE2)
+        auto abs_v = abs(v);
+
+        auto is_integral = _mm_cmple_pd(_mm_set1_pd(4503599627370496.0), decay(abs_v));
+        auto is_nan = _mm_cmpunord_pd(decay(abs_v), decay(abs_v));
+        auto is_output_self = _mm_or_pd(is_integral, is_nan);
+
+        auto converted0 = _mm_cvttsd_si64(decay(v));
+        auto converted1 = _mm_cvttsd_si64(_mm_shuffle_pd(decay(v), decay(v), 0x3));
+
+        auto reconstructed0 = _mm_cvtsi64_sd(_mm_undefined_pd(), converted0);
+        auto reconstructed1 = _mm_cvtsi64_sd(_mm_undefined_pd(), converted1);
+
+        auto reconstructed = _mm_unpacklo_pd(reconstructed0, reconstructed1);
+
+        auto is_reconstruction_smaller = _mm_cmplt_pd(reconstructed, decay(v));
+        auto corrected_result = _mm_add_pd(reconstructed, _mm_and_pd(is_reconstruction_smaller, _mm_set1_pd(1.0f)));
+
+        return blend(mask2x64f{is_output_self}, v, vec2x64f{corrected_result});
+
         #endif
     }
 
@@ -881,6 +987,27 @@ namespace avel {
     AVEL_FINL vec2x64f floor(vec2x64f v) {
         #if defined(AVEL_SSE41)
         return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)};
+
+        #elif defined(AVEL_SSE2)
+        auto abs_v = abs(v);
+
+        auto is_integral = _mm_cmple_pd(_mm_set1_pd(4503599627370496.0), decay(abs_v));
+        auto is_nan = _mm_cmpunord_pd(decay(abs_v), decay(abs_v));
+        auto is_output_self = _mm_or_pd(is_integral, is_nan);
+
+        auto converted0 = _mm_cvttsd_si64(decay(v));
+        auto converted1 = _mm_cvttsd_si64(_mm_shuffle_pd(decay(v), decay(v), 0x3));
+
+        auto reconstructed0 = _mm_cvtsi64_sd(_mm_undefined_pd(), converted0);
+        auto reconstructed1 = _mm_cvtsi64_sd(_mm_undefined_pd(), converted1);
+
+        auto reconstructed = _mm_unpacklo_pd(reconstructed0, reconstructed1);
+
+        auto is_reconstruction_smaller = _mm_cmplt_pd(decay(v), reconstructed);
+        auto corrected_result = _mm_sub_pd(reconstructed, _mm_and_pd(is_reconstruction_smaller, _mm_set1_pd(1.0f)));
+
+        return blend(mask2x64f{is_output_self}, v, vec2x64f{corrected_result});
+
         #endif
     }
 
@@ -888,13 +1015,33 @@ namespace avel {
     AVEL_FINL vec2x64f trunc(vec2x64f v) {
         #if defined(AVEL_SSE41)
         return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)};
+
+        #elif defined(AVEL_SSE2)
+        auto abs_v = abs(v);
+
+        auto is_integral = _mm_cmple_pd(_mm_set1_pd(4503599627370496.0), decay(abs_v));
+        auto is_nan = _mm_cmpunord_pd(decay(abs_v), decay(abs_v));
+        auto is_output_self = _mm_or_pd(is_integral, is_nan);
+
+        auto converted0 = _mm_cvttsd_si64(decay(v));
+        auto converted1 = _mm_cvttsd_si64(_mm_shuffle_pd(decay(v), decay(v), 0x3));
+
+        auto reconstructed0 = _mm_cvtsi64_sd(_mm_undefined_pd(), converted0);
+        auto reconstructed1 = _mm_cvtsi64_sd(_mm_undefined_pd(), converted1);
+
+        auto reconstructed = _mm_unpacklo_pd(reconstructed0, reconstructed1);
+
+        return blend(mask2x64f{is_output_self}, v, vec2x64f{reconstructed});
+
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64f round(vec2x64f v) {
-        #if defined(AVEL_SSE41)
-        return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC)};
+        #if defined(AVEL_SSE2)
+        // The following constant is the value prior to 0.5
+        auto offset = avel::copysign(vec2x64f{avel::bit_cast<double>(0x3fdfffffffffffff)}, v);
+        return avel::trunc(v + offset);
         #endif
     }
 
@@ -902,14 +1049,27 @@ namespace avel {
     AVEL_FINL vec2x64f nearbyint(vec2x64f v) {
         #if defined(AVEL_SSE41)
         return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_CUR_DIRECTION)};
+
+        #elif defined(AVEL_SSE2)
+        int mode = _MM_GET_ROUNDING_MODE();
+        switch (mode) {
+            case _MM_ROUND_DOWN:        return avel::floor(v);
+            case _MM_ROUND_NEAREST:     return avel::round(v);
+            case _MM_ROUND_TOWARD_ZERO: return avel::trunc(v);
+            case _MM_ROUND_UP:          return avel::ceil(v);
+        default:
+            return vec2x64f{0.0};
+            // TODO: Find proper solution.
+            // Not sure how to handle such a case.
+            // Fall back to scalar code?
+        }
+
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64f rint(vec2x64f v) {
-        #if defined(AVEL_SSE41)
-        return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_CUR_DIRECTION)};
-        #endif
+        return nearbyint(v);
     }
 
     //=====================================================
@@ -932,12 +1092,78 @@ namespace avel {
         ret = _mm_maskz_mov_pd(is_non_zero, ret);
         ret = _mm_mask_blend_pd(is_infinity, ret, decay(v));
         return vec2x64f{ret};
+
+        #elif defined(AVEL_SSE2)
+        auto bits = _mm_castpd_si128(decay(v));
+
+        auto is_v_zero = _mm_castpd_si128(_mm_cmpeq_pd(_mm_setzero_pd(), decay(v)));
+
+        // Check if v is subnormal
+        auto is_subnormal = avel::abs(v) < vec2x64f{DBL_MIN};
+        auto multiplier = blend(is_subnormal, vec2x64f{9007199254740992.0f}, vec2x64f{1.0f});
+
+        // Make v normal if it's subnormal
+        auto v_corrected = v * multiplier;
+        auto v_corrected_bits = _mm_castpd_si128(decay(v_corrected));
+
+        // Compute exponent to write out
+        auto is_subnormal_raw = _mm_castpd_si128(decay(is_subnormal));
+        auto biased_exponent = _mm_srli_epi64(_mm_and_si128(v_corrected_bits, _mm_set1_epi64x(double_exponent_mask_bits)), 52);
+        auto bias_correction = _mm_add_epi64(_mm_set1_epi64x(1022), _mm_and_si128(is_subnormal_raw, _mm_set1_epi64x(53)));
+        auto unbiased_exponent = _mm_sub_epi64(biased_exponent, bias_correction);
+
+        // Clear out exponent value when the input is zero
+        *exp = _mm_andnot_si128(is_v_zero, unbiased_exponent);
+
+        // Change exponent to be -1, thereby remapping to [0.5, 1.0) range
+        auto new_exponent = _mm_set1_epi64x(1022ull << 52);
+        auto cleared_exponent = _mm_andnot_si128(_mm_set1_epi64x(double_exponent_mask_bits), v_corrected_bits);
+        auto remapped_significand = _mm_or_si128(cleared_exponent, new_exponent);
+
+        auto comparison32 = _mm_cmpeq_epi32(biased_exponent, _mm_set1_epi64x(0x7ffll));
+        auto comparison64 = _mm_shuffle_epi32(comparison32, 0xa0);
+        auto is_output_self = _mm_or_si128(is_v_zero, comparison64);
+        auto ret = blend(mask2x64i{is_output_self}, vec2x64i{bits}, vec2x64i{remapped_significand});
+
+        mask2x64f m{_mm_castsi128_pd(is_output_self)};
+        return blend(m, v, vec2x64f{_mm_castsi128_pd(decay(ret))});
+
         #endif
     }
 
     [[nodiscard]]
-    AVEL_FINL vec2x64f ldexp(vec2x64f x, vec2x64i exp) {
-        return vec2x64f{_mm_scalef_pd(decay(x), _mm_cvtepi64_pd(decay(exp)))};
+    AVEL_FINL vec2x64f ldexp(vec2x64f arg, vec2x64i exp) {
+        #if defined(AVEL_AVX512VL)
+        return vec2x64f{_mm_scalef_pd(decay(arg), _mm_cvtepi64_pd(decay(exp)))};
+
+        #elif defined(AVEL_SSE2)
+        //TODO: Optimize. 32-bit integer operations would be faster and suffice
+
+        // Approach based on repeated multiplication by powers of two.
+        vec2x64i lower_bound{-1022};
+        vec2x64i upper_bound{+1023};
+        vec2x64i& bias = upper_bound;
+
+        auto exponent0 = avel::clamp(exp, lower_bound, upper_bound);
+        auto exponent_field0 = _mm_slli_epi64(_mm_add_epi64(decay(exponent0), decay(bias)), 52);
+        auto multiplicand0 = _mm_castsi128_pd(exponent_field0);
+        exp -= exponent0;
+
+        auto exponent1 = avel::clamp(exp, lower_bound, upper_bound);
+        auto exponent_field1 = _mm_slli_epi64(_mm_add_epi64(decay(exponent1), decay(bias)), 52);
+        auto multiplicand1 = _mm_castsi128_pd(exponent_field1);
+        exp -= exponent1;
+
+        auto exponent2 = avel::clamp(exp, lower_bound, upper_bound);
+        auto exponent_field2 = _mm_slli_epi64(_mm_add_epi64(decay(exponent2), decay(bias)), 52);
+        auto multiplicand2 = _mm_castsi128_pd(exponent_field2);
+        exp -= exponent2;
+
+        auto ret = _mm_mul_pd(_mm_mul_pd(_mm_mul_pd(decay(arg), multiplicand0), multiplicand1), multiplicand2);
+
+        return vec2x64f{ret};
+
+        #endif
     }
 
     [[nodiscard]]
@@ -962,6 +1188,26 @@ namespace avel {
         vec2x64i nan_ret_i {_mm_castpd_si128(_mm_fixupimm_pd(nan_ret,  exp_fp, _mm_set1_epi64x(0x88888800), 0x00))};
 
         return (vec2x64i{misc_ret_i} | zero_ret_i) | (inf_ret_i | nan_ret_i);
+
+        #elif defined(AVEL_SSE2)
+        auto is_subnormal = avel::abs(x) < vec2x64f{DBL_MIN};
+        auto multiplier = blend(is_subnormal, vec2x64f{9007199254740992.0f}, vec2x64f{1.0f});
+
+        auto x_corrected = x * multiplier;
+
+        auto bits = avel::bit_cast<vec2x64i>(x_corrected);
+
+        vec2x64i exponents = avel::bit_shift_right<52>(bits & vec2x64i{double_exponent_mask_bits});
+        vec2x64i bias = blend(bit_cast<mask2x64i>(is_subnormal), vec2x64i{1023 + 54}, vec2x64i{1023});
+
+        auto ret = exponents - bias;
+
+        ret = blend(mask2x64i{_mm_castpd_si128(decay(x == vec2x64f{0.0}))}, vec2x64i{FP_ILOGB0}, ret);
+        ret = blend(mask2x64i{_mm_castpd_si128(decay(avel::isinf(x)))}, vec2x64i{INT_MAX}, ret);
+        ret = blend(mask2x64i{_mm_castpd_si128(decay(avel::isnan(x)))}, vec2x64i{FP_ILOGBNAN}, ret);
+
+        return ret;
+
         #endif
     }
 
@@ -969,12 +1215,41 @@ namespace avel {
     AVEL_FINL vec2x64f logb(vec2x64f x) {
         #if defined(AVEL_AVX512VL)
         return vec2x64f{_mm_getexp_pd(decay(x))};
+
+        #elif defined(AVEL_SSE2)
+        auto is_subnormal = avel::abs(x) < vec2x64f{DBL_MIN};
+        auto multiplier = blend(is_subnormal, vec2x64f{9007199254740992.0}, vec2x64f{1.0f});
+
+        auto x_corrected = x * multiplier;
+
+        auto bits = avel::bit_cast<vec2x64i>(x_corrected);
+
+        auto exponents_i = avel::bit_shift_right<52>(bits & vec2x64i{double_exponent_mask_bits});
+
+        auto narrowed_exponents = _mm_shuffle_epi32(decay(exponents_i), 0xF8);
+
+        vec2x64f exponents{_mm_cvtepi32_pd(narrowed_exponents)};
+        auto bias = blend(is_subnormal, vec2x64f{1023 + 53}, vec2x64f{1023});
+
+        auto ret = exponents - bias;
+
+        ret = blend(x == vec2x64f{0.0f}, vec2x64f{-INFINITY}, ret);
+        ret = blend(avel::isinf(x), vec2x64f{INFINITY}, ret);
+        ret = blend(avel::isnan(x), vec2x64f{NAN}, ret);
+
+        return ret;
+
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64f copysign(vec2x64f mag, vec2x64f sign) {
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_AVX512VL)
+        auto mask = _mm_set1_pd(double_sign_bit_mask);
+        auto ret = _mm_ternarylogic_epi64(decay(sign), decay(mag), mask, 0xe4);
+        return vec2x64f{ret};
+
+        #elif defined(AVEL_SSE2)
         auto mask = _mm_set1_pd(double_sign_bit_mask);
         auto ret = _mm_or_pd(_mm_and_pd(mask, decay(sign)), _mm_andnot_pd(mask, decay(mag)));
         return vec2x64f{ret};
@@ -987,13 +1262,13 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64i fpclassify(vec2x64f v) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         const vec2x64i fp_infinite{int(FP_INFINITE)};
         const vec2x64i fp_nan{int(FP_NAN)};
         const vec2x64i fp_normal{int(FP_NORMAL)};
         const vec2x64i fp_subnormal{int(FP_SUBNORMAL)};
         const vec2x64i fp_zero{int(FP_ZERO)};
 
-        #if defined(AVEL_AVX512VL)
         mask2x64i infinite_mask {_mm_fpclass_pd_mask(decay(v), 0x08 | 0x10)};
         mask2x64i nan_mask      {_mm_fpclass_pd_mask(decay(v), 0x01 | 0x80)};
         mask2x64i subnormal_mask{_mm_fpclass_pd_mask(decay(v), 0x20)};
@@ -1006,47 +1281,90 @@ namespace avel {
             keep(normal_mask, fp_normal) |
             keep(subnormal_mask, fp_subnormal) |
             keep(zero_mask, fp_zero);
-        #endif
-    }
-
-    [[nodiscard]]
-    AVEL_FINL mask2x64f isnan(vec2x64f v) {
-        #if defined(AVEL_AVX512VL)
-        return mask2x64f{_mm_fpclass_pd_mask(decay(v), 0x80 | 0x01)};
 
         #elif defined(AVEL_SSE2)
-        return {}; //TODO: Implement
+        const auto fp_infinite = _mm_set1_epi64x(int(FP_INFINITE));
+        const auto fp_nan = _mm_set1_epi64x(int(FP_NAN));
+        const auto fp_normal = _mm_set1_epi64x(int(FP_NORMAL));
+        const auto fp_subnormal = _mm_set1_epi64x(int(FP_SUBNORMAL));
+        const auto fp_zero = _mm_set1_epi64x(int(FP_ZERO));
+
+        auto infinity = _mm_set1_pd(INFINITY);
+        auto dbl_min = _mm_set1_pd(DBL_MIN);
+
+        v = avel::abs(v);
+
+        auto zero_mask      = _mm_castpd_si128(_mm_cmpeq_pd(decay(v), _mm_setzero_pd()));
+        auto subnormal_mask = _mm_castpd_si128(_mm_andnot_pd(_mm_cmpeq_pd(decay(v), _mm_setzero_pd()), _mm_cmple_pd(decay(v), dbl_min)));
+        auto infinite_mask  = _mm_castpd_si128(_mm_cmpeq_pd(decay(v), infinity));
+        auto nan_mask       = _mm_castpd_si128(_mm_cmpunord_pd(decay(v), decay(v)));
+        auto normal_mask    = _mm_castpd_si128(_mm_and_pd(_mm_cmple_pd(dbl_min, decay(v)), _mm_cmplt_pd(decay(v), infinity)));
+
+        return vec2x64i{
+            _mm_or_si128(
+                _mm_and_si128(infinite_mask, fp_infinite),
+                _mm_or_si128(
+                    _mm_or_si128(
+                        _mm_and_si128(nan_mask, fp_nan),
+                        _mm_and_si128(normal_mask, fp_normal)
+                    ),
+                    _mm_or_si128(
+                        _mm_and_si128(subnormal_mask, fp_subnormal),
+                        _mm_and_si128(zero_mask, fp_zero)
+                    )
+                )
+            )
+        };
+
         #endif
     }
 
     [[nodiscard]]
-    AVEL_FINL mask2x64f isfinite(vec2x64f arg) {
+    AVEL_FINL mask2x64f isfinite(vec2x64f v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
-        retturn !mask2x64f{_mm_fpclass_pd_mask(decay(arg), 0x01 | 0x08 | 0x10 | 0x80)};
-
-        #elif defined(AVEL_AVX512VL)
-        return  vec2x64f{_mm_getexp_pd(decay(arg))} < vec2x64f{1024.0f};
+        return !mask2x64f{_mm_fpclass_pd_mask(decay(v), 0x01 | 0x08 | 0x10 | 0x80)};
 
         #elif defined(AVEL_SSE2)
-        return {}; //TODO: Implement
+        return (vec2x64f{-INFINITY} < v) && (v < vec2x64f{+INFINITY});
 
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask2x64f isinf(vec2x64f v) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         return mask2x64f{_mm_fpclass_pd_mask(decay(v), 0x08 | 0x10)};
 
         #elif defined(AVEL_SSE2)
-        return abs(v) == vec2x64f{INFINITY};
+        return avel::abs(v) == vec2x64f{INFINITY};
+
+        #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL mask2x64f isnan(vec2x64f v) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
+        return mask2x64f{_mm_fpclass_pd_mask(decay(v), 0x80 | 0x01)};
+
+        #elif defined(AVEL_AVX512VL)
+        return mask2x64f{_mm_cmp_pd_mask(decay(v), decay(v), _CMP_UNORD_Q)};
+
+        #elif defined(AVEL_SSE)
+        return mask2x64f{_mm_cmpunord_pd(decay(v), decay(v))};
 
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask2x64f isnormal(vec2x64f v) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         return !mask2x64f{_mm_fpclass_pd_mask(decay(v), 0xBF)};
+
+        #elif defined(AVEL_SSE2)
+        auto abs_v = avel::abs(v);
+        return (vec2x64f{DBL_MIN} <= abs_v) && (abs_v <= vec2x64f{DBL_MAX});
+
+        #endif
     }
 
     [[nodiscard]]
@@ -1055,7 +1373,9 @@ namespace avel {
         return mask2x64f{_mm_fpclass_pd_mask(decay(arg), 0x40 | 0x04 | 0x10)};
 
         #elif defined(AVEL_SSE2)
-        return {}; //TODO: Implement
+        auto ret_32 = _mm_srai_epi32(_mm_castpd_si128(decay(arg)), 31);
+        auto ret = _mm_shuffle_epi32(ret_32, 0xf5);
+        return mask2x64f{_mm_castsi128_pd(ret)};
 
         #endif
     }
@@ -1086,7 +1406,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask2x64f islessgreater(vec2x64f x, vec2x64f y) {
-        return x != y;
+        #if defined(AVEL_AVX)
+        return mask2x64f{_mm_cmp_pd(decay(x), decay(y), _CMP_NEQ_OQ)};
+
+        #elif defined(AVEL_SSE2)
+        return x < y || x > y;
+        #endif
     }
 
     [[nodiscard]]

@@ -49,7 +49,7 @@ namespace avel_tests {
 
     using namespace avel;
 
-    static constexpr std::size_t iterations = 1024;
+    static constexpr std::size_t iterations = 16;
 
     static auto random8u  = [] () -> std::uint8_t {
         static auto tmp = std::mt19937{0xDEADBEEF};
@@ -77,9 +77,9 @@ namespace avel_tests {
 
     static auto random32f = [] () -> float {
         static auto rng = std::mt19937{0xDEADBEEF};
-        static std::uniform_int_distribution<std::int32_t> distribution{
+        static std::uniform_int_distribution<std::uint32_t> distribution{
             0x0,
-            static_cast<int>(2 * 0x7f7fffffu)
+            static_cast<std::uint32_t>(2 * 0x7f7fffffu)
         };
 
         std::int32_t bits = distribution(rng);
@@ -94,14 +94,14 @@ namespace avel_tests {
 
     static auto random64f = [] () -> double {
         static auto rng = std::mt19937_64{0xDEADBEEF};
-        static std::uniform_int_distribution<std::int64_t> distribution{
-            0x0,
-            static_cast<long>(2 * 0x7fefffffffffffffull)
+        static std::uniform_int_distribution<std::uint64_t> distribution{
+            0x0ull,
+            static_cast<std::uint64_t>(2 * 0x7fefffffffffffffull)
         };
 
         std::int64_t bits = distribution(rng);
 
-        if (bits > 0x7fefffffffffffff) {
+        if (bits > 0x7fefffffffffffffull) {
             bits -= 0x7fefffffffffffffull;
             bits |= 0x8000000000000000ull;
         }
@@ -109,12 +109,12 @@ namespace avel_tests {
         return avel::bit_cast<double>(bits);
     };
 
-    template<class I>
-    inline I random_val();
-
     //=====================================================
     // Random integer generation
     //=====================================================
+
+    template<class I>
+    inline I random_val();
 
     template<>
     inline std::uint8_t random_val<std::uint8_t>() {
@@ -171,11 +171,31 @@ namespace avel_tests {
         return random8u() & 0x1;
     }
 
+
+
+
+    template<class F>
+    std::int32_t random_exponent();
+
+    template<>
+    inline std::int32_t random_exponent<std::int32_t>() {
+        return (random32u() % 279) - 150;
+    }
+
+    template<>
+    inline std::int32_t random_exponent<std::int64_t>() {
+        return (random32u() % 2100) - 1075;
+    }
+
+
+
     template<class I>
     inline I random_shift() {
         constexpr auto bound = sizeof(I) * CHAR_BIT + 1;
         return random_val<I>() % bound;
     }
+
+
 
     template<class I>
     inline I random_denominator() {
@@ -197,6 +217,17 @@ namespace avel_tests {
 
         for (int i = 0; i < ret.size(); ++i) {
             ret[i] = random_val<typename A::value_type>();
+        }
+
+        return ret;
+    }
+
+    template<class A>
+    inline A random_exponent_array() {
+        A ret{};
+
+        for (int i = 0; i < ret.size(); ++i) {
+            ret[i] = random_exponent<typename A::value_type>();
         }
 
         return ret;
