@@ -23,6 +23,10 @@ set(AVEL_TEST_GROUPS
     AVEL_ENABLE_VEC1X64I_TESTS;
     AVEL_ENABLE_VEC1X64U_TESTS;
 
+    AVEL_ENABLE_VEC1X32F_TESTS;
+    AVEL_ENABLE_VEC1X64F_TESTS;
+
+
 
 
     AVEL_ENABLE_VEC16X8U_TESTS;
@@ -36,6 +40,9 @@ set(AVEL_TEST_GROUPS
 
     AVEL_ENABLE_VEC2X64U_TESTS;
     AVEL_ENABLE_VEC2X64I_TESTS;
+
+    AVEL_ENABLE_VEC4X32F_TESTS;
+    AVEL_ENABLE_VEC2X64F_TESTS;
 
 
 
@@ -51,6 +58,9 @@ set(AVEL_TEST_GROUPS
     AVEL_ENABLE_VEC4X64U_TESTS;
     AVEL_ENABLE_VEC4X64I_TESTS;
 
+    AVEL_ENABLE_VEC8X32F_TESTS;
+    AVEL_ENABLE_VEC4X64F_TESTS;
+
 
 
     AVEL_ENABLE_VEC64X8U_TESTS;
@@ -64,6 +74,9 @@ set(AVEL_TEST_GROUPS
 
     AVEL_ENABLE_VEC8X64U_TESTS;
     AVEL_ENABLE_VEC8X64I_TESTS;
+
+    AVEL_ENABLE_VEC16X32F_TESTS;
+    AVEL_ENABLE_VEC8X64F_TESTS;
 )
 
 ## Create test group options
@@ -105,6 +118,9 @@ add_executable(AVEL_TESTS
     scalars/Scalar64u_tests.hpp
     scalars/Scalar64i_tests.hpp
 
+    scalars/Scalar32f_tests.hpp
+    scalars/Scalar64f_tests.hpp
+
     scalars/Scalar_tests.cpp
 
     Denominator_tests.hpp
@@ -122,13 +138,41 @@ add_executable(AVEL_TESTS
     vectors/Vec2x64u_tests.hpp
     vectors/Vec2x64i_tests.hpp
 
+    vectors/Vec4x32f_tests.hpp
+    vectors/Vec2x64f_tests.hpp
+
 
     vectors/Vec32x8u_tests.hpp
     vectors/Vec32x8i_tests.hpp
 
+    vectors/Vec16x16u_tests.hpp
+    vectors/Vec16x16i_tests.hpp
+
+    vectors/Vec8x32u_tests.hpp
+    vectors/Vec8x32i_tests.hpp
+
+    vectors/Vec4x64u_tests.hpp
+    vectors/Vec4x64i_tests.hpp
+
+    vectors/Vec8x32f_tests.hpp
+    vectors/Vec4x64f_tests.hpp
+
+
 
     vectors/Vec64x8u_tests.hpp
     vectors/Vec64x8i_tests.hpp
+
+    vectors/Vec32x16u_tests.hpp
+    vectors/Vec32x16i_tests.hpp
+
+    vectors/Vec16x32u_tests.hpp
+    vectors/Vec16x32i_tests.hpp
+
+    vectors/Vec8x64u_tests.hpp
+    vectors/Vec8x64i_tests.hpp
+
+    vectors/Vec16x32f_tests.hpp
+    vectors/Vec8x64f_tests.hpp
 
 
     vectors/Vector_tests.cpp
