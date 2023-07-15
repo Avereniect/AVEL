@@ -19,9 +19,9 @@ import shutil
 import re
 import copy
 
-from math import ceil
+from math import floor
 from multiprocessing import cpu_count
-from threading import Thread, Lock
+from threading import Thread, Lock, Semaphore
 from itertools import product
 from functools import reduce
 
@@ -308,7 +308,10 @@ def run_test_case(compiler_path, build_dir_name, feature_assignments, test_group
     make_command = 'make AVEL_TESTS -C ./test_build_dirs/{}'.format(build_dir_name)
     run_info[3] = make_command
 
+    memory_semaphore.acquire()
     exit_code = os.system(make_command)
+    memory_semaphore.release()
+
     if exit_code != 0:
         return
 
@@ -367,7 +370,10 @@ def expand_assignments(assignments):
 
 
 work_queue = []
+
 work_queue_lock = Lock()
+
+memory_semaphore = None
 
 
 def thread_worker():
@@ -449,6 +455,15 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
     format_string = '#0' + str(2 + len(expression_solutions)) + 'b'
     test_enabled_list = [b == '0' for b in format(parameters['test_mask'], format_string)[2:][::-1]]
 
+    # Compute number of builds to run in parallel based on memory contraints
+    memory_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
+    memory_gigs = memory_bytes / (1024 * 1024 * 1024)
+    # 2 gigs for OS, 3 gigs for build. Values derived empirically from Ubuntu 22.10 machine
+    safe_parallel_build_count = min(int(floor((memory_gigs - 2) / 3)), cpu_count())
+
+    global memory_semaphore
+    memory_semaphore = Semaphore(safe_parallel_build_count)
+
     # Launch a thread for each test case that is enabled
     global test_exit_codes
     test_exit_codes = [False] * len(expression_solutions)
@@ -461,18 +476,11 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
         if test_enabled:
             work_queue.append(params)
 
-    # Compute number of threads to run in parallel
-    memory_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
-    memory_gigs = memory_bytes / (1024 * 1024 * 1024)
-
-    # 2 gigs for OS, 3 gigs for test at peak. Values derived empirically from Ubuntu 22.10 machine
-    thread_count = min(int(ceil((memory_gigs - 2) / 3)), cpu_count())
 
     # Print Debug info
     print(
-        'Testing script: Running {} tests on {}/{} threads on machine with {:.3f}GiB of memory'.format(
+        'Testing script: Running {} tests on {} threads on machine with {:.3f}GiB of memory'.format(
             len(work_queue),
-            thread_count,
             cpu_count(),
             memory_gigs),
         flush=True
@@ -480,7 +488,7 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
 
     # Launch workers threads
     threads = []
-    for i in range(0, thread_count):
+    for i in range(0, cpu_count()):
         th = Thread(target=thread_worker, args=[])
         threads.append(th)
         th.start()
@@ -556,7 +564,7 @@ def validate_command_line_arguments():
               'en it will be replaced with the path of the test executable. Otherwise, the path of test executable '
               'will be appended to the end of this parameter. If this parameter is not specified, the test executable '
               'is invoked directly.')
-        print('  -T   (Optional) A pair of hexadecimal strings seperated by a colon. Indicate which tests have '
+        print('  -T   (Optional) A pair of hexadecimal strings seperated by a color. Indicate which tests have '
               'previously passed, allowing the script to avoid rerunning tests that have completed in previous runs. '
               'The script will print out this value upon completion if any tests failed.')
 
