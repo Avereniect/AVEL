@@ -1692,6 +1692,7 @@ namespace avel {
         vec4x32f inf_ret {_mm_castsi128_ps(_mm_set1_epi32(INT_MAX))};
         vec4x32f nan_ret {_mm_castsi128_ps(_mm_set1_epi32(FP_ILOGBNAN))};
 
+        // Return value when input is not edge case
         auto misc_ret_i = _mm_cvtps_epi32(exp_fp);
         misc_ret_i = _mm_maskz_mov_epi32(_mm_cmpneq_epi32_mask(misc_ret_i, _mm_set1_epi32(0x80000000)), misc_ret_i);
 
@@ -1728,28 +1729,29 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32f logb(vec4x32f x) {
+    AVEL_FINL vec4x32f logb(vec4x32f v) {
         #if defined(AVEL_AVX512VL)
         //TODO: Handle edge cases
-        return vec4x32f{_mm_getexp_ps(decay(x))};
+        return vec4x32f{_mm_getexp_ps(decay(v))};
 
         #elif defined(AVEL_SSE2)
-        auto is_subnormal = avel::abs(x) < vec4x32f{FLT_MIN};
+        auto is_subnormal = avel::abs(v) < vec4x32f{FLT_MIN};
         auto multiplier = blend(is_subnormal, vec4x32f{16777216.0f}, vec4x32f{1.0f});
 
-        auto x_corrected = x * multiplier;
+        auto v_corrected = v * multiplier;
 
-        auto bits = avel::bit_cast<vec4x32i>(x_corrected);
+        auto bits = avel::bit_cast<vec4x32i>(v_corrected);
 
-        auto exponents_i = avel::bit_shift_right<23>(bits & vec4x32i{float_exponent_mask_bits});
+        auto exponent_field = bits & vec4x32i{float_exponent_mask_bits};
+        auto exponents_i = avel::bit_shift_right<23>(exponent_field);
         vec4x32f exponents{_mm_cvtepi32_ps(decay(exponents_i))};
         auto bias = blend(is_subnormal, vec4x32f{127 + 24}, vec4x32f{127});
 
         auto ret = exponents - bias;
 
-        ret = blend(x == vec4x32f{0.0f}, vec4x32f{-INFINITY}, ret);
-        ret = blend(avel::isinf(x), vec4x32f{INFINITY}, ret);
-        ret = blend(avel::isnan(x), vec4x32f{NAN}, ret);
+        ret = blend(v == vec4x32f{0.0f}, vec4x32f{-INFINITY}, ret);
+        ret = blend(avel::isinf(v), vec4x32f{INFINITY}, ret);
+        ret = blend(avel::isnan(v), vec4x32f{NAN}, ret);
 
         return ret;
         #endif

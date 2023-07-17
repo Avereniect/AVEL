@@ -186,7 +186,13 @@ target_link_libraries(AVEL_TESTS PUBLIC AVEL gtest pthread)
 target_compile_features(AVEL_TESTS PRIVATE "cxx_std_11")
 
 #TODO: Set compilation flags based on enabled features
-target_compile_options(AVEL_TESTS PRIVATE "")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(AVEL_ROUNDING_FLAG "-frounding-math")
+else()
+    set(AVEL_ROUNDING_FLAG "")
+endif()
+
+target_compile_options(AVEL_TESTS PRIVATE ${AVEL_ROUNDING_FLAG})
 target_link_options(AVEL_TESTS PRIVATE "")
 
 target_include_directories(AVEL_TESTS PRIVATE ./include/)

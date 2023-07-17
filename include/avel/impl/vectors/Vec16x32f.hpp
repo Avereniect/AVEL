@@ -697,9 +697,14 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32f round(vec16x32f v) {
-        // The following constant is the value prior to 0.5
-        auto offset = avel::copysign(vec16x32f{avel::bit_cast<float>(0x3effffff)}, v);
-        return avel::trunc(v + offset);
+        auto whole = trunc(v);
+        auto frac = v - whole;
+
+        auto offset = copysign(vec16x32f{1.0f}, v);
+        auto should_offset = abs(frac) >= vec16x32f{0.5f};
+        auto ret = whole + keep(should_offset, offset);
+
+        return ret;
     }
 
     [[nodiscard]]
@@ -709,7 +714,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32f rint(vec16x32f v) {
-        return vec16x32f{_mm512_roundscale_ps(decay(v), _MM_FROUND_CUR_DIRECTION)};
+        return nearbyint(v);
     }
 
     //=====================================================
@@ -766,6 +771,7 @@ namespace avel {
         vec16x32f inf_ret {_mm512_castsi512_ps(_mm512_set1_epi32(INT_MAX))};
         vec16x32f nan_ret {_mm512_castsi512_ps(_mm512_set1_epi32(FP_ILOGBNAN))};
 
+        // Return value when input is not edge case
         auto misc_ret_i = _mm512_cvtps_epi32(exp_fp);
         misc_ret_i = _mm512_maskz_mov_epi32(_mm512_cmpneq_epi32_mask(misc_ret_i, _mm512_set1_epi32(0x80000000)), misc_ret_i);
 
