@@ -2,6 +2,7 @@
 #define AVEL_IMPL_VECTORS_HPP
 
 #include <cmath>
+#include <cfloat>
 #include <array>
 
 #if defined(AVEL_NEON) && (__cplusplus >= 202002)

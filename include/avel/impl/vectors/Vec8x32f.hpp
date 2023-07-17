@@ -1028,6 +1028,7 @@ namespace avel {
         vec8x32f inf_ret {_mm256_castsi256_ps(_mm256_set1_epi32(INT_MAX))};
         vec8x32f nan_ret {_mm256_castsi256_ps(_mm256_set1_epi32(FP_ILOGBNAN))};
 
+        // Return value when input is not edge case
         auto misc_ret_i = _mm256_cvtps_epi32(exp_fp);
         misc_ret_i = _mm256_maskz_mov_epi32(_mm256_cmpneq_epi32_mask(misc_ret_i, _mm256_set1_epi32(0x80000000)), misc_ret_i);
 

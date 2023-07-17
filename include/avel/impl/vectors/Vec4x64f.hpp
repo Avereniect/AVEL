@@ -1052,6 +1052,7 @@ namespace avel {
         vec4x64f inf_ret {_mm256_castsi256_pd(_mm256_set1_epi64x(INT_MAX))};
         vec4x64f nan_ret {_mm256_castsi256_pd(_mm256_set1_epi64x(FP_ILOGBNAN))};
 
+        // Return value when input is not edge case
         auto misc_ret_i = _mm256_cvtpd_epi64(exp_fp);
         misc_ret_i = _mm256_maskz_mov_epi64(_mm256_cmpneq_epi64_mask(misc_ret_i, _mm256_set1_epi64x(0x8000000000000000ll)), misc_ret_i);
 
