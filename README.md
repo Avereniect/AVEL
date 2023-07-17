@@ -61,15 +61,13 @@ of portability.
 ## Overview
 AVEL is a C++11 library that provides abstractions over SIMD instruction sets 
 for x86 and ARM. This is primarily done through the use of classes which 
-represent vector registers containing integers and in the future, floating-point
-numbers.
+represent vector registers containing integers or floats.
 * currently unsigned and signed integers of 8, 16, 32, and 64-bit integers 
-  are supported
-* support for vectors of floats and doubles is planned
+  are supported on all targets. Float vectors are supported on x86
 * 128-bit vectors are available on ARM
 * 128-bit, 256-bit and 512-bit vectors are available on x86
 
-It also offers various pieces of functionality that would be useful in the 
+AVEL also offers various pieces of functionality that would be useful in the 
 context of writing vectorized code.
 
 ## Features
