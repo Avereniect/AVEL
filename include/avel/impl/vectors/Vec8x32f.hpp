@@ -143,7 +143,7 @@ namespace avel {
 
         Vector_mask& operator&=(const Vector_mask& rhs) {
             #if defined(AVEL_AVX512VL)
-            content = _kand_mask8(content, rhs.content);
+            content &= rhs.content;
             #elif defined(AVEL_AVX)
             content = _mm256_and_ps(content, rhs.content);
             #endif
@@ -152,7 +152,7 @@ namespace avel {
 
         Vector_mask& operator|=(const Vector_mask& rhs) {
             #if defined(AVEL_AVX512VL)
-            content = _kor_mask8(content, rhs.content);
+            content |= rhs.content;
             #elif defined(AVEL_AVX)
             content = _mm256_or_ps(content, rhs.content);
             #endif
@@ -161,7 +161,7 @@ namespace avel {
 
         Vector_mask& operator^=(const Vector_mask& rhs) {
             #if defined(AVEL_AVX512VL)
-            content = _kxor_mask8(content, rhs.content);
+            content ^= rhs.content;
             #elif defined(AVEL_AVX)
             content = _mm256_xor_ps(content, rhs.content);
             #endif
@@ -175,7 +175,7 @@ namespace avel {
         [[nodiscard]]
         Vector_mask operator!() const {
             #if defined(AVEL_AVX512VL)
-            return Vector_mask{_knot_mask8(content)};
+            return Vector_mask{primitive(~content)};
             #elif defined(AVEL_AVX)
             return Vector_mask{_mm256_andnot_ps(content, _mm256_castsi256_ps(_mm256_set1_epi32(-1)))};
             #endif
@@ -887,8 +887,21 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x32f frexp(vec8x32f v, vec8x32i* exp) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         auto is_infinity = _mm256_fpclass_ps_mask(decay(v), 0x10 | 0x08);
+        auto is_non_zero = _mm256_cmp_ps_mask(decay(v), _mm256_setzero_ps(), _CMP_NEQ_UQ);
+
+        auto exponents = _mm256_getexp_ps(decay(v));
+        exponents = _mm256_add_ps(exponents, _mm256_set1_ps(1.0f));
+        *exp = _mm256_maskz_cvttps_epi32(is_non_zero, exponents);
+
+        auto ret = _mm256_getmant_ps(decay(v), _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+        ret = _mm256_maskz_mov_ps(is_non_zero, ret);
+        ret = _mm256_mask_blend_ps(is_infinity, ret, decay(v));
+        return vec8x32f{ret};
+
+        #elif defined(AVEL_AVX512VL)
+        auto is_infinity = decay(abs(v) == vec8x32f{INFINITY});
         auto is_non_zero = _mm256_cmp_ps_mask(decay(v), _mm256_setzero_ps(), _CMP_NEQ_UQ);
 
         auto exponents = _mm256_getexp_ps(decay(v));
@@ -932,6 +945,47 @@ namespace avel {
         return vec8x32f{_mm256_scalef_ps(decay(arg), _mm256_cvtepi32_ps(decay(exp)))};
 
         #elif defined(AVEL_AVX2)
+        //TODO: Optimize
+        // Approach based on repeated multiplication by powers of two.
+        auto bias = _mm256_set1_epi32(127);
+
+        auto bits = _mm256_castps_si256(decay(arg));
+        auto exponent_field = _mm256_and_si256(_mm256_set1_epi32(float_exponent_mask_bits), bits);
+        vec8x32i arg_exponent{_mm256_srli_epi32(exponent_field, 23)};
+
+        // Perform two multiplications such that they should never lead to lossy rounding
+        vec8x32i lower_bound0{vec8x32i{1} - arg_exponent};
+        vec8x32i upper_bound0{vec8x32i{254} - arg_exponent};
+
+        vec8x32i extracted_magnitude = clamp(exp, lower_bound0, upper_bound0);
+        exp -= extracted_magnitude;
+
+        auto exponent0 = bit_shift_right<1>(extracted_magnitude);
+        auto exponent_field0 = _mm256_slli_epi32(_mm256_add_epi32(decay(exponent0), bias), 23);
+        auto multiplicand0 = _mm256_castsi256_ps(exponent_field0);
+
+        auto exponent1 = extracted_magnitude - exponent0;
+        auto exponent_field1 = _mm256_slli_epi32(_mm256_add_epi32(decay(exponent1), bias), 23);
+        auto multiplicand1 = _mm256_castsi256_ps(exponent_field1);
+
+        // Perform one more multiplication in case the previous two weren't enough
+        // If the number isn't enough then the program
+
+        vec8x32i lower_bound1{-126};
+        vec8x32i upper_bound1{+126};
+
+        auto exponent2 = avel::clamp(exp, lower_bound1, upper_bound1);
+        auto exponent_field2 = _mm256_slli_epi32(_mm256_add_epi32(decay(exponent2), bias), 23);
+        auto multiplicand2 = _mm256_castsi256_ps(exponent_field2);
+        //exp -= exponent2;
+
+        auto t0 = _mm256_mul_ps(decay(arg), multiplicand0);
+        auto t1 = _mm256_mul_ps(t0, multiplicand1);
+        auto ret = _mm256_mul_ps(t1, multiplicand2);
+
+        return vec8x32f{ret};
+
+        /*
         // Approach based on repeated multiplication by powers of two.
         vec8x32i lower_bound{-126};
         vec8x32i upper_bound{+127};
@@ -955,46 +1009,6 @@ namespace avel {
         auto ret = _mm256_mul_ps(_mm256_mul_ps(_mm256_mul_ps(decay(arg), multiplicand0), multiplicand1), multiplicand2);
 
         return vec8x32f{ret};
-
-        /* Attempt at older more manual implementation
-        auto x_bits = _mm256_castps_si256(decay(x));
-
-        auto exponent_mask = _mm256_set1_epi32(float_exponent_mask_bits);
-
-        auto exponent_field = _mm256_and_si256(exponent_mask, x_bits);
-        auto sign_bit_significand_fields = _mm256_andnot_si256(exponent_mask, x_bits);
-
-        // Handle case where result is same as input
-        auto full_exponent = _mm256_set1_epi32(255 << 23);
-        auto is_x_non_finite = _mm256_cmpeq_epi32(exponent_field, full_exponent);
-
-        auto is_x_zero = _mm256_cmpeq_epi32(x_bits, _mm256_setzero_si256());
-        auto is_result_self = _mm256_or_si256(is_x_non_finite, is_x_zero);
-
-        // Handle case where result is normal
-        exp = clamp(exp, vec8x32i{-278}, vec8x32i{277});
-        auto exp_offset = _mm256_slli_epi32(decay(exp), 23);
-
-         auto normal_result = _mm256_add_epi32(x_bits, exp_offset);
-
-         //Handle case where result is a denormal value
-         auto is_new_exponent_denormal = _mm256_cmpeq_epi32(new_exponent, _mm256_setzero_si256());
-
-         auto multiplier_exponent = _mm256_sub_epi32(_mm256_setzero_si256(), _mm256_set1_epi32(127));
-         auto multiplier = _mm256_slli_epi32(multiplier_exponent, 23);
-
-
-         auto ret_bits = _mm256_or_si256(sign_bit_significand_fields, new_exponent_field);
-
-         //TODo: Handle denormal floats
-
-        vec8x32f ret{_mm256_castsi256_ps(ret_bits)};
-
-        return blend(
-            mask8x32f{_mm256_castsi256_ps(is_result_self)},
-            x,
-            ret
-        );
         */
 
         #endif
@@ -1078,7 +1092,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         auto mask = _mm256_set1_ps(float_sign_bit_mask);
         auto ret = _mm256_ternarylogic_epi32(decay(sign), decay(mag), mask, 0xe4);
-        return vec8x32f{ret};
+        return vec8x32f{_mm256_castsi256_ps(ret)};
 
         #elif defined(AVEL_AVX2)
         auto mask = _mm256_set1_ps(float_sign_bit_mask);

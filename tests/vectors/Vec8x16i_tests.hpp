@@ -1897,8 +1897,8 @@ namespace avel_tests {
             auto numerator = random_val<vec8x16i::scalar>();
             auto denominator = random_denominator<vec8x16i::scalar>();
 
-            auto quotient  = (numerator / denominator);
-            auto remainder = (numerator % denominator);
+            vec8x16i::scalar quotient  = (numerator / denominator);
+            vec8x16i::scalar remainder = (numerator % denominator);
 
             vec8x16i n{numerator};
             vec8x16i d{denominator};
@@ -1907,6 +1907,11 @@ namespace avel_tests {
 
             auto q = to_array(div_result.quot);
             auto r = to_array(div_result.rem);
+
+            constexpr auto min_value = std::numeric_limits<vec8x16i::scalar>::min();
+            if (min_value == numerator && -1 == denominator) {
+                continue; // The output in this case is unspecified
+            }
 
             for (std::size_t j = 0; j < q.size(); ++j) {
                 EXPECT_EQ(q[j], quotient);
@@ -1936,7 +1941,12 @@ namespace avel_tests {
             auto q = to_array(div_result.quot);
             auto r = to_array(div_result.rem);
 
+            constexpr auto min_value = std::numeric_limits<vec8x16i::scalar>::min();
             for (std::size_t j = 0; j < quotients.size(); ++j) {
+                if (min_value == numerators[j] && -1 == denominators[j]) {
+                    continue; // The output in this case is unspecified
+                }
+
                 EXPECT_EQ(q[j], quotients[j]);
                 EXPECT_EQ(r[j], remainders[j]);
             }

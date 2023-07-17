@@ -88,7 +88,7 @@ namespace avel {
 
 
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            __m128i array_data = _mm_set1_epi32(bit_cast<std::uint32_t>(arr));
+            __m128i array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
             content = __mmask8(_mm_cmplt_epu8_mask(_mm_setzero_si128(), array_data));
 
             #elif defined(AVEL_AVX512VL)
@@ -927,13 +927,30 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x64f frexp(vec4x64f v, vec4x64i* exp) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         auto is_infinity = _mm256_fpclass_pd_mask(decay(v), 0x10 | 0x08);
         auto is_non_zero = _mm256_cmp_pd_mask(decay(v), _mm256_setzero_pd(), _CMP_NEQ_UQ);
 
         auto exponents = _mm256_getexp_pd(decay(v));
         exponents = _mm256_add_pd(exponents, _mm256_set1_pd(1.0f));
         *exp = _mm256_maskz_cvttpd_epi64(is_non_zero, exponents);
+
+        auto ret = _mm256_getmant_pd(decay(v), _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+        // Note: Returns -1 or 1 for -infinity and +infinity respectively
+
+        ret = _mm256_maskz_mov_pd(is_non_zero, ret);
+        ret = _mm256_mask_blend_pd(is_infinity, ret, decay(v));
+        return vec4x64f{ret};
+
+        #elif defined(AVEL_AVX512VL)
+        auto is_infinity = decay(abs(v) == vec4x64f{INFINITY});
+        auto is_non_zero = _mm256_cmp_pd_mask(decay(v), _mm256_setzero_pd(), _CMP_NEQ_UQ);
+
+        auto exponents = _mm256_getexp_pd(decay(v));
+        exponents = _mm256_add_pd(exponents, _mm256_set1_pd(1.0f));
+        auto exp32 = _mm256_maskz_cvttpd_epi32(is_non_zero, exponents);
+
+        *exp = _mm256_cvtepi32_epi64(exp32);
 
         auto ret = _mm256_getmant_pd(decay(v), _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
         // Note: Returns -1 or 1 for -infinity and +infinity respectively
@@ -969,33 +986,52 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x64f ldexp(vec4x64f arg, vec4x64i exp) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         return vec4x64f{_mm256_scalef_pd(decay(arg), _mm256_cvtepi64_pd(decay(exp)))};
+
+        #elif defined(AVEL_AVX512VL)
+        auto exp32 = _mm256_cvtsepi64_epi32(decay(exp));
+        auto exp_as_f64 = _mm256_cvtepi32_pd(exp32);
+        return vec4x64f{_mm256_scalef_pd(decay(arg), exp_as_f64)};
 
         #elif defined(AVEL_AVX2)
         //TODO: Optimize. 32-bit integer operations would be faster and suffice
-
         // Approach based on repeated multiplication by powers of two.
-        vec4x64i lower_bound{-1022};
-        vec4x64i upper_bound{+1023};
-        vec4x64i& bias = upper_bound;
+        auto bias = _mm256_set1_epi32(1023);
 
-        auto exponent0 = avel::clamp(exp, lower_bound, upper_bound);
-        auto exponent_field0 = _mm256_slli_epi64(_mm256_add_epi64(decay(exponent0), decay(bias)), 52);
-        auto multiplicand0 = _mm256_castsi256_pd(exponent_field0);
-        exp -= exponent0;
+        auto bits = _mm256_castpd_si256(decay(arg));
+        auto exponent_field = _mm256_and_si256(_mm256_set1_epi64x(double_exponent_mask_bits), bits);
+        vec4x64i arg_exponent = bit_shift_right<52>(vec4x64i{exponent_field});
 
-        auto exponent1 = avel::clamp(exp, lower_bound, upper_bound);
-        auto exponent_field1 = _mm256_slli_epi64(_mm256_add_epi64(decay(exponent1), decay(bias)), 52);
-        auto multiplicand1 = _mm256_castsi256_pd(exponent_field1);
-        exp -= exponent1;
+        // Perform two multiplications such that they should never lead to lossy rounding
+        vec4x64i lower_bound0{vec4x64i{1} - arg_exponent};
+        vec4x64i upper_bound0{vec4x64i{1046} - arg_exponent};
 
-        auto exponent2 = avel::clamp(exp, lower_bound, upper_bound);
-        auto exponent_field2 = _mm256_slli_epi64(_mm256_add_epi64(decay(exponent2), decay(bias)), 52);
-        auto multiplicand2 = _mm256_castsi256_pd(exponent_field2);
-        exp -= exponent2;
+        vec4x64i extracted_magnitude = clamp(exp, lower_bound0, upper_bound0);
+        exp -= extracted_magnitude;
 
-        auto ret = _mm256_mul_pd(_mm256_mul_pd(_mm256_mul_pd(decay(arg), multiplicand0), multiplicand1), multiplicand2);
+        auto exponent0 = bit_shift_right<1>(extracted_magnitude);
+        auto exponent_field0 = bit_shift_left<52>(exponent0 + vec4x64i{bias});
+        auto multiplicand0 = _mm256_castsi256_pd(decay(exponent_field0));
+
+        auto exponent1 = extracted_magnitude - exponent0;
+        auto exponent_field1 = bit_shift_left<52>(exponent1 + vec4x64i{bias});
+        auto multiplicand1 = _mm256_castsi256_pd(decay(exponent_field1));
+
+        // Perform one more multiplication in case the previous two weren't enough
+        // If the number isn't enough then the program
+
+        vec4x64i lower_bound1{-1022};
+        vec4x64i upper_bound1{+1022};
+
+        auto exponent2 = avel::clamp(exp, lower_bound1, upper_bound1);
+        auto exponent_field2 = bit_shift_left<52>(exponent2 + vec4x64i{bias});
+        auto multiplicand2 = _mm256_castsi256_pd(decay(exponent_field2));
+        //exp -= exponent2;
+
+        auto t0 = _mm256_mul_pd(decay(arg), multiplicand0);
+        auto t1 = _mm256_mul_pd(t0, multiplicand1);
+        auto ret = _mm256_mul_pd(t1, multiplicand2);
 
         return vec4x64f{ret};
 
@@ -1009,7 +1045,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x64i ilogb(vec4x64f x) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         auto exp_fp = _mm256_getexp_pd(decay(x));
 
         vec4x64f zero_ret{_mm256_castsi256_pd(_mm256_set1_epi64x(FP_ILOGB0))};
@@ -1018,6 +1054,24 @@ namespace avel {
 
         auto misc_ret_i = _mm256_cvtpd_epi64(exp_fp);
         misc_ret_i = _mm256_maskz_mov_epi64(_mm256_cmpneq_epi64_mask(misc_ret_i, _mm256_set1_epi64x(0x8000000000000000ll)), misc_ret_i);
+
+        vec4x64i zero_ret_i{_mm256_castpd_si256(_mm256_fixupimm_pd(zero_ret, exp_fp, _mm256_set1_epi64x(0x88808888), 0x00))};
+        vec4x64i inf_ret_i {_mm256_castpd_si256(_mm256_fixupimm_pd(inf_ret,  exp_fp, _mm256_set1_epi64x(0x88088888), 0x00))};
+        vec4x64i nan_ret_i {_mm256_castpd_si256(_mm256_fixupimm_pd(nan_ret,  exp_fp, _mm256_set1_epi64x(0x88888800), 0x00))};
+
+        return (vec4x64i{misc_ret_i} | zero_ret_i) | (inf_ret_i | nan_ret_i);
+
+        #elif defined(AVEL_AVX512VL)
+        auto exp_fp = _mm256_getexp_pd(decay(x));
+
+        vec4x64f zero_ret{_mm256_castsi256_pd(_mm256_set1_epi64x(FP_ILOGB0))};
+        vec4x64f inf_ret {_mm256_castsi256_pd(_mm256_set1_epi64x(INT_MAX))};
+        vec4x64f nan_ret {_mm256_castsi256_pd(_mm256_set1_epi64x(FP_ILOGBNAN))};
+
+        // Return value when input is not edge case
+        auto misc_ret_i_32 = _mm256_cvtpd_epi32(exp_fp);
+        auto misc_ret_i = _mm256_cvtepi32_epi64(misc_ret_i_32);
+        misc_ret_i = _mm256_maskz_mov_epi64(_mm256_cmpneq_epi64_mask(misc_ret_i, _mm256_set1_epi64x(0xffffffff80000000ll)), misc_ret_i);
 
         vec4x64i zero_ret_i{_mm256_castpd_si256(_mm256_fixupimm_pd(zero_ret, exp_fp, _mm256_set1_epi64x(0x88808888), 0x00))};
         vec4x64i inf_ret_i {_mm256_castpd_si256(_mm256_fixupimm_pd(inf_ret,  exp_fp, _mm256_set1_epi64x(0x88088888), 0x00))};
@@ -1034,7 +1088,7 @@ namespace avel {
         auto bits = avel::bit_cast<vec4x64i>(x_corrected);
 
         vec4x64i exponents = avel::bit_shift_right<52>(bits & vec4x64i{double_exponent_mask_bits});
-        vec4x64i bias{_mm256_blendv_epi8(_mm256_set1_epi64x(1023), _mm256_set1_epi64x(1023 + 54), _mm256_castpd_si256(decay(is_subnormal)))};
+        vec4x64i bias{_mm256_blendv_epi8(_mm256_set1_epi64x(1023), _mm256_set1_epi64x(1023 + 53), _mm256_castpd_si256(decay(is_subnormal)))};
 
         auto ret = exponents - bias;
 
@@ -1086,7 +1140,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         auto mask = _mm256_set1_pd(double_sign_bit_mask);
         auto ret = _mm256_ternarylogic_epi64(decay(sign), decay(mag), mask, 0xe4);
-        return vec4x64f{ret};
+        return vec4x64f{_mm256_castsi256_pd(ret)};
 
         #elif defined(AVEL_AVX)
         auto mask = _mm256_set1_pd(double_sign_bit_mask);

@@ -92,7 +92,7 @@ namespace avel {
             );
 
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            __m128i array_data = _mm_set1_epi32(bit_cast<std::uint32_t>(arr));
+            __m128i array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
             content = __mmask8(_mm_cmplt_epu8_mask(_mm_setzero_si128(), array_data));
 
             #elif defined(AVEL_AVX512VL)
@@ -1385,10 +1385,21 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x32f round(vec4x32f v) {
         #if defined(AVEL_SSE2)
-        // TODO: Check if this solution works regardless of the current rounding mode
+        auto whole = trunc(v);
+        auto frac = v - whole;
+
+        auto offset = copysign(vec4x32f{1.0f}, v);
+        auto should_offset = abs(frac) >= vec4x32f{0.5f};
+        auto ret = whole + keep(should_offset, offset);
+
+        return ret;
+
+        /* Solution that works if the current rounding mode is set to nearest
         // The following constant is the value prior to 0.5
         auto offset = avel::copysign(vec4x32f{avel::bit_cast<float>(0x3effffff)}, v);
-        return avel::trunc(v + offset);
+        auto offsetted = v + offset;
+        return avel::trunc(offsetted);
+        */
         #endif
 
         #if defined(AVEL_NEON) && defined(AVEL_AARCH32)
@@ -1408,8 +1419,19 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         int mode = _MM_GET_ROUNDING_MODE();
         switch (mode) {
+            case _MM_ROUND_NEAREST: {
+                auto abs_v = abs(v);
+
+                auto is_integral = _mm_cmple_ps(_mm_set1_ps(8388608.0f), decay(abs_v));
+                auto is_nan = _mm_cmpunord_ps(decay(abs_v), decay(abs_v));
+                auto is_output_self = _mm_or_ps(is_integral, is_nan);
+
+                auto converted = _mm_cvtps_epi32(decay(v));
+                auto reconstructed = _mm_cvtepi32_ps(converted);
+
+                return blend(mask4x32f{is_output_self}, v, vec4x32f{reconstructed});
+            }
             case _MM_ROUND_DOWN:        return avel::floor(v);
-            case _MM_ROUND_NEAREST:     return avel::round(v);
             case _MM_ROUND_TOWARD_ZERO: return avel::trunc(v);
             case _MM_ROUND_UP:          return avel::ceil(v);
         default:
@@ -1451,7 +1473,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32f frexp(vec4x32f v, vec4x32i* exp) {
-        #if defined(AVEL_AVX512VL)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         auto is_infinity = _mm_fpclass_ps_mask(decay(v), 0x10 | 0x08);
         auto is_non_zero = _mm_cmp_ps_mask(decay(v), _mm_setzero_ps(), _CMP_NEQ_UQ);
 
@@ -1466,15 +1488,31 @@ namespace avel {
         ret = _mm_mask_blend_ps(is_infinity, ret, decay(v));
         return vec4x32f{ret};
 
-        #elif defined(AVEL_SSE2)
-        auto bits = _mm_castps_si128(decay(v));
+        #elif defined(AVEL_AVX512VL)
+        auto is_infinity = _mm_cmp_ps_mask(decay(abs(v)), _mm_set1_ps(INFINITY), _CMP_EQ_OQ);
+        auto is_non_zero = _mm_cmp_ps_mask(decay(v), _mm_setzero_ps(), _CMP_NEQ_UQ);
 
-        auto is_v_zero = _mm_cmpeq_epi32(bits, _mm_setzero_si128());
+        auto exponents = _mm_getexp_ps(decay(v));
+        exponents = _mm_add_ps(exponents, _mm_set1_ps(1.0f));
+        *exp = _mm_maskz_cvttps_epi32(is_non_zero, exponents);
+
+        auto ret = _mm_getmant_ps(decay(v), _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+        // Note: Returns -1 or 1 for -infinity and +infinity respectively
+
+        ret = _mm_maskz_mov_ps(is_non_zero, ret);
+        ret = _mm_mask_blend_ps(is_infinity, ret, decay(v));
+        return vec4x32f{ret};
+
+
+        #elif defined(AVEL_SSE2)
+        auto v_bits = _mm_castps_si128(decay(v));
+
+        auto is_v_zero = _mm_cmpeq_epi32(v_bits, _mm_setzero_si128());
 
         // Check if v is subnormal
         auto abs_mask = _mm_set1_epi32(float_sign_bit_mask_bits);
         auto flt_min_bits = _mm_set1_epi32(0x800000);
-        auto is_subnormal = _mm_cmplt_epi32(_mm_andnot_si128(abs_mask, bits), flt_min_bits);
+        auto is_subnormal = _mm_cmplt_epi32(_mm_andnot_si128(abs_mask, v_bits), flt_min_bits);
 
         // The first constant is the bit pattern for 1.0f
         // When the following two constants are reinterpreted as float, their sum is 2^24
@@ -1488,7 +1526,7 @@ namespace avel {
         auto v_corrected_bits = _mm_castps_si128(v_corrected);
 
         // Compute exponent to write out
-        auto biased_exponent = _mm_srli_epi32(_mm_and_si128(bits, _mm_set1_epi32(float_exponent_mask_bits)), 23);
+        auto biased_exponent = _mm_srli_epi32(_mm_and_si128(v_corrected_bits, _mm_set1_epi32(float_exponent_mask_bits)), 23);
         auto bias_correction = _mm_add_epi32(_mm_set1_epi32(126), _mm_and_si128(is_subnormal, _mm_set1_epi32(24)));
         auto unbiased_exponent = _mm_sub_epi32(biased_exponent, bias_correction);
 
@@ -1502,7 +1540,7 @@ namespace avel {
 
         // Replace output value with original if output should just be self
         auto is_output_self = _mm_or_si128(is_v_zero, _mm_cmpeq_epi32(biased_exponent, _mm_set1_epi32(0xff)));
-        auto ret = blend(mask4x32i{is_output_self}, vec4x32i{bits}, vec4x32i{remapped_significand});
+        auto ret = blend(mask4x32i{is_output_self}, vec4x32i{v_bits}, vec4x32i{remapped_significand});
 
         return vec4x32f{_mm_castsi128_ps(decay(ret))};
 
@@ -1521,6 +1559,90 @@ namespace avel {
         return vec4x32f{_mm_scalef_ps(decay(arg), _mm_cvtepi32_ps(decay(exp)))};
 
         #elif defined(AVEL_SSE2)
+        //TODO: Optimize
+        // Approach based on repeated multiplication by powers of two.
+        auto bias = _mm_set1_epi32(127);
+
+        auto bits = _mm_castps_si128(decay(arg));
+        auto exponent_field = _mm_and_si128(_mm_set1_epi32(float_exponent_mask_bits), bits);
+        vec4x32i arg_exponent{_mm_srli_epi32(exponent_field, 23)};
+
+        // Perform two multiplications such that they should never lead to lossy rounding
+        vec4x32i lower_bound0{vec4x32i{1} - arg_exponent};
+        vec4x32i upper_bound0{vec4x32i{254} - arg_exponent};
+
+        vec4x32i extracted_magnitude = clamp(exp, lower_bound0, upper_bound0);
+        exp -= extracted_magnitude;
+
+        auto exponent0 = bit_shift_right<1>(extracted_magnitude);
+        auto exponent_field0 = _mm_slli_epi32(_mm_add_epi32(decay(exponent0), bias), 23);
+        auto multiplicand0 = _mm_castsi128_ps(exponent_field0);
+
+        auto exponent1 = extracted_magnitude - exponent0;
+        auto exponent_field1 = _mm_slli_epi32(_mm_add_epi32(decay(exponent1), bias), 23);
+        auto multiplicand1 = _mm_castsi128_ps(exponent_field1);
+
+        // Perform one more multiplication in case the previous two weren't enough
+        // If the number isn't enough then the program
+
+        vec4x32i lower_bound1{-126};
+        vec4x32i upper_bound1{+126};
+
+        auto exponent2 = avel::clamp(exp, lower_bound1, upper_bound1);
+        auto exponent_field2 = _mm_slli_epi32(_mm_add_epi32(decay(exponent2), bias), 23);
+        auto multiplicand2 = _mm_castsi128_ps(exponent_field2);
+        //exp -= exponent2;
+
+        auto t0 = _mm_mul_ps(decay(arg), multiplicand0);
+        auto t1 = _mm_mul_ps(t0, multiplicand1);
+        auto ret = _mm_mul_ps(t1, multiplicand2);
+
+        return vec4x32f{ret};
+
+        /*
+        auto is_zero = _mm_castps_si128(_mm_cmpeq_ps(decay(arg), _mm_setzero_ps()));
+
+        auto bits = _mm_castps_si128(decay(arg));
+
+        auto exponent = _mm_srli_epi32(_mm_and_si128(_mm_set1_epi32(float_exponent_mask_bits), bits), 23);
+
+        auto is_exponent_max = _mm_cmpeq_epi32(exponent, _mm_set1_epi32(255));
+        auto is_output_self = _mm_or_si128(is_zero, is_exponent_max);
+
+        auto lower_bound0 = _mm_sub_epi32(_mm_setzero_si128(), exponent);
+        auto upper_bound0 = _mm_sub_epi32(_mm_set1_epi32(254), exponent);
+
+        exp = _mm_andnot_si128(is_output_self, decay(exp));
+
+        auto clamped_exp = clamp(exp, vec4x32i{lower_bound0}, vec4x32i{upper_bound0});
+
+        auto exp_modified = vec4x32i{exponent} - clamped_exp;
+
+        auto new_exponent_field = _mm_slli_epi32(decay(clamped_exp), 23);
+
+        auto arg_with_new_exponent = _mm_or_si128(_mm_andnot_si128(_mm_set1_epi32(float_exponent_mask_bits), bits), new_exponent_field);
+
+        vec4x32i lower_bound1{-126};
+        vec4x32i upper_bound1{+126};
+        vec4x32i bias1{+127};
+
+        auto exponent0 = avel::clamp(vec4x32i{exp_modified}, lower_bound1, upper_bound1);
+        auto exponent_field0 = _mm_slli_epi32(_mm_add_epi32(decay(exponent0), decay(bias1)), 23);
+        auto multiplicand0 = _mm_castsi128_ps(exponent_field0);
+
+        auto ret = _mm_mul_ps(_mm_castsi128_ps(arg_with_new_exponent), multiplicand0);
+
+        return vec4x32f{ret};
+        */
+
+        /*
+        // TODO: Prevent multiple roundings
+        // If one multiple produces a subnormal number and requires rounding,
+        // and there is a subsequent multiplication that also requires
+        // rounding, then the result will not be rounded correctly.
+        // This much be changes such that, at most, a single multiplication by
+        // a value besides 1.0 produces a subnormal result.
+
         // Approach based on repeated multiplication by powers of two.
         vec4x32i lower_bound{-126};
         vec4x32i upper_bound{+127};
@@ -1539,11 +1661,15 @@ namespace avel {
         auto exponent2 = avel::clamp(exp, lower_bound, upper_bound);
         auto exponent_field2 = _mm_slli_epi32(_mm_add_epi32(decay(exponent2), decay(bias)), 23);
         auto multiplicand2 = _mm_castsi128_ps(exponent_field2);
-        exp -= exponent2;
+        //exp -= exponent2;
 
-        auto ret = _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(decay(arg), multiplicand0), multiplicand1), multiplicand2);
+        auto t0 = _mm_mul_ps(decay(arg), multiplicand0);
+        auto t1 = _mm_mul_ps(t0, multiplicand1);
+        auto ret = _mm_mul_ps(t1, multiplicand2);
 
         return vec4x32f{ret};
+        */
+
         #endif
 
         #if defined(AVEL_NEON)
@@ -1638,7 +1764,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         auto mask = _mm_set1_ps(float_sign_bit_mask);
         auto ret = _mm_ternarylogic_epi32(decay(sign), decay(mag), mask, 0xe4);
-        return vec4x32f{ret};
+        return vec4x32f{_mm_castsi128_ps(ret)};
 
         #elif defined(AVEL_SSE)
         auto mask = _mm_set1_ps(float_sign_bit_mask);
@@ -1834,7 +1960,10 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask4x32f islessgreater(vec4x32f x, vec4x32f y) {
-        #if defined(AVEL_AVX)
+        #if defined(AVEL_AVX512VL)
+        return mask4x32f{_mm_cmp_ps_mask(decay(x), decay(y), _CMP_NEQ_OQ)};
+
+        #elif defined(AVEL_AVX)
         return mask4x32f{_mm_cmp_ps(decay(x), decay(y), _CMP_NEQ_OQ)};
 
         #elif defined(AVEL_SSE2)

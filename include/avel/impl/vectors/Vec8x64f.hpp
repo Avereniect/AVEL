@@ -72,14 +72,20 @@ namespace avel {
                 "Implementation assumes bools occupy a single byte"
             );
 
-            #if defined(AVEL_AVX512BW)
+            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             auto array_data = _mm_loadu_si64(arr.data());
             content = static_cast<primitive>(_mm_cmplt_epi8_mask(_mm_setzero_si128(), array_data));
 
-            #elif defined(AVEL_AVX512F)
+            #elif defined(AVEL_AVX512VL)
             auto array_data = _mm_cvtsi64_si128(bit_cast<std::uint64_t>(arr));
             auto expanded = _mm256_cvtepi8_epi32(array_data);
             content = _mm256_cmplt_epu32_mask(_mm256_setzero_si256(), expanded);
+
+            #elif defined(AVEL_AVX512F)
+            auto array_data = _mm_cvtsi64_si128(bit_cast<std::uint64_t>(arr));
+            auto expanded = _mm512_castsi256_si512(_mm256_cvtepi8_epi32(array_data));
+            content = _mm512_cmplt_epu32_mask(_mm512_setzero_si512(), expanded);
+
             #endif
         }
 
@@ -691,7 +697,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64f frexp(vec8x64f v, vec8x64i* exp) {
-        #if defined(AVEL_AVX512F)
+        #if defined(AVEL_AVX512DQ)
         auto is_infinity = _mm512_fpclass_pd_mask(decay(v), 0x10 | 0x08);
         auto is_non_zero = _mm512_cmp_pd_mask(decay(v), _mm512_setzero_pd(), _CMP_NEQ_UQ);
 
@@ -705,12 +711,38 @@ namespace avel {
         ret = _mm512_maskz_mov_pd(is_non_zero, ret);
         ret = _mm512_mask_blend_pd(is_infinity, ret, decay(v));
         return vec8x64f{ret};
+
+        #elif defined(AVEL_AVX512F)
+        auto is_infinity = decay(abs(v) == vec8x64f{INFINITY});
+        auto is_non_zero = _mm512_cmp_pd_mask(decay(v), _mm512_setzero_pd(), _CMP_NEQ_UQ);
+
+        auto exponents = _mm512_getexp_pd(decay(v));
+        exponents = _mm512_add_pd(exponents, _mm512_set1_pd(1.0f));
+        auto exp32 = _mm512_maskz_cvttpd_epi32(is_non_zero, exponents);
+
+        *exp = _mm512_cvtepi32_epi64(exp32);
+
+        auto ret = _mm512_getmant_pd(decay(v), _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+        // Note: Returns -1 or 1 for -infinity and +infinity respectively
+
+        ret = _mm512_maskz_mov_pd(is_non_zero, ret);
+        ret = _mm512_mask_blend_pd(is_infinity, ret, decay(v));
+        return vec8x64f{ret};
+
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f ldexp(vec8x64f arg, vec8x64i exp) {
+        #if defined(AVEL_AVX512DQ)
         return vec8x64f{_mm512_scalef_pd(decay(arg), _mm512_cvtepi64_pd(decay(exp)))};
+
+        #elif defined(AVEL_AVX512F)
+        auto exp32 = _mm512_cvtsepi64_epi32(decay(exp));
+        auto exp_as_f64 = _mm512_cvtepi32_pd(exp32);
+        return vec8x64f{_mm512_scalef_pd(decay(arg), exp_as_f64)};
+
+        #endif
     }
 
     [[nodiscard]]
@@ -720,7 +752,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64i ilogb(vec8x64f x) {
-        #if defined(AVEL_AVX512F)
+        #if defined(AVEL_AVX512DQ)
         auto exp_fp = _mm512_getexp_pd(decay(x));
 
         vec8x64f zero_ret{_mm512_castsi512_pd(_mm512_set1_epi64(FP_ILOGB0))};
@@ -729,6 +761,25 @@ namespace avel {
 
         auto misc_ret_i = _mm512_cvtpd_epi64(exp_fp);
         misc_ret_i = _mm512_maskz_mov_epi64(_mm512_cmpneq_epi64_mask(misc_ret_i, _mm512_set1_epi64(0x8000000000000000ll)), misc_ret_i);
+
+        vec8x64i zero_ret_i{_mm512_castpd_si512(_mm512_fixupimm_pd(decay(zero_ret), exp_fp, _mm512_set1_epi64(0x88808888), 0x00))};
+        vec8x64i inf_ret_i {_mm512_castpd_si512(_mm512_fixupimm_pd(decay(inf_ret),  exp_fp, _mm512_set1_epi64(0x88088888), 0x00))};
+        vec8x64i nan_ret_i {_mm512_castpd_si512(_mm512_fixupimm_pd(decay(nan_ret),  exp_fp, _mm512_set1_epi64(0x88888800), 0x00))};
+
+        return (vec8x64i{misc_ret_i} | zero_ret_i) | (inf_ret_i | nan_ret_i);
+
+        #elif defined(AVEL_AVX512F)
+        auto exp_fp = _mm512_getexp_pd(decay(x));
+
+        // Constants to return when inputs are edge cases
+        vec8x64f zero_ret{_mm512_castsi512_pd(_mm512_set1_epi64(FP_ILOGB0))};
+        vec8x64f inf_ret {_mm512_castsi512_pd(_mm512_set1_epi64(INT_MAX))};
+        vec8x64f nan_ret {_mm512_castsi512_pd(_mm512_set1_epi64(FP_ILOGBNAN))};
+
+        // Return value when input is not edge case
+        auto misc_ret_i_32 = _mm512_cvtpd_epi32(exp_fp);
+        auto misc_ret_i = _mm512_cvtepi32_epi64(misc_ret_i_32);
+        misc_ret_i = _mm512_maskz_mov_epi64(_mm512_cmpneq_epi64_mask(misc_ret_i, _mm512_set1_epi64(0xffffffff80000000ll)), misc_ret_i);
 
         vec8x64i zero_ret_i{_mm512_castpd_si512(_mm512_fixupimm_pd(decay(zero_ret), exp_fp, _mm512_set1_epi64(0x88808888), 0x00))};
         vec8x64i inf_ret_i {_mm512_castpd_si512(_mm512_fixupimm_pd(decay(inf_ret),  exp_fp, _mm512_set1_epi64(0x88088888), 0x00))};

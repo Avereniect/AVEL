@@ -389,7 +389,7 @@ def thread_worker():
         run_test_case(*task)
 
 
-def test_on_compiler(compiler_path, build_dir_name, names_and_features):
+def test_on_compiler(compiler_index, compiler_path, build_dir_name, names_and_features):
     substitute_compiler_macros(compiler_path_to_macro(compiler_path), names_and_features)
 
     # Gather all expressions
@@ -493,9 +493,15 @@ def test_on_compiler(compiler_path, build_dir_name, names_and_features):
         threads.append(th)
         th.start()
 
-    # Wait for threads to complete their work
-    for th in threads:
-        th.join()
+    try:
+        # Wait for threads to complete their work
+        for th in threads:
+            th.join()
+    except KeyboardInterrupt:
+        is_run_successful = all(test_exit_codes)
+        success_string = reduce(lambda byte, bit: byte * 2 + bit, test_exit_codes, 0)
+
+        return is_run_successful, success_string
 
     # Print results of tests if any failed
     print('Testing script:')
@@ -642,6 +648,7 @@ def main():
         (compiler_path, build_directory) = compiler
 
         success, success_string = test_on_compiler(
+            compiler_index,
             compiler_path,
             build_directory,
             copy.deepcopy(vector_names_and_required_features)
@@ -650,7 +657,7 @@ def main():
         if not success:
             print()
             print('Testing script: Tests failed')
-            print('Run again with 0x{:x}:0x{:x} to skip tests that have already passed'.format(
+            print('Run again with -T"0x{:x}:0x{:x}" to skip tests that have already passed'.format(
                 compiler_index,
                 success_string
             ))
