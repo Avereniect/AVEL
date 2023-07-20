@@ -141,6 +141,11 @@ namespace avel {
             return _mm_movemask_pd(_mm_xor_pd(lhs.content, rhs.content)) == 0x00;
 
             #endif
+
+            #if defined(AVEL_NEON)
+            auto min = vminvq_u32(vreinterpretq_u32_u64(vceqq_u64(decay(lhs), decay(rhs))));
+            return min == 0xFFFFFFFF;
+            #endif
         }
 
         [[nodiscard]]
@@ -151,6 +156,11 @@ namespace avel {
             #elif defined(AVEL_SSE2)
             return _mm_movemask_pd(_mm_xor_pd(lhs.content, rhs.content)) != 0x00;
 
+            #endif
+
+            #if defined(AVEL_NEON)
+            auto min = vminvq_u32(vreinterpretq_u32_u64(vceqq_u64(decay(lhs), decay(rhs))));
+            return min == 0x0;
             #endif
         }
 
@@ -165,6 +175,11 @@ namespace avel {
             #elif defined(AVEL_SSE2)
             content = _mm_and_pd(content, decay(rhs));
             #endif
+
+            #if defined(AVEL_NEON)
+            content = vandq_u64(content, rhs.content);
+
+            #endif
             return *this;
         }
 
@@ -174,6 +189,11 @@ namespace avel {
 
             #elif defined(AVEL_SSE2)
             content = _mm_or_pd(content, decay(rhs));
+            #endif
+
+            #if defined(AVEL_NEON)
+            content = vorrq_u64(content, rhs.content);
+
             #endif
             return *this;
         }
@@ -185,6 +205,11 @@ namespace avel {
             #elif defined(AVEL_SSE2)
             content = _mm_xor_pd(content, decay(rhs));
             #endif
+
+            #if defined(AVEL_NEON)
+            content = veorq_u64(content, rhs.content);
+
+            #endif
             return *this;
         }
 
@@ -192,6 +217,7 @@ namespace avel {
         // Bitwise operators
         //=================================================
 
+        [[nodiscard]]
         AVEL_FINL Vector_mask operator!() const {
             #if defined(AVEL_AVX512VL)
             return Vector_mask{primitive(content ^ 0x3)};
@@ -199,6 +225,10 @@ namespace avel {
             #elif defined(AVEL_SSE2)
             auto ones = _mm_castsi128_pd(_mm_set1_epi64x(-1));
             return Vector_mask{_mm_andnot_pd(content, ones)};
+            #endif
+
+            #if defined(AVEL_NEON)
+            return Vector_mask{vreinterpretq_u64_u32(vmvnq_u32(vreinterpretq_u32_u64(content)))};
             #endif
         }
 
@@ -208,7 +238,8 @@ namespace avel {
         // Conversion operators
         //=================================================
 
-        AVEL_FINL operator primitive() const {
+        [[nodiscard]]
+        AVEL_FINL explicit operator primitive() const {
             return content;
         }
 
@@ -318,15 +349,28 @@ namespace avel {
         #elif defined(AVEL_SSE2)
             content(_mm_and_pd(decay(m), _mm_set1_pd(1.0f))) {}
         #endif
+        #if defined(AVEL_NEON)
+            content(vreinterpretq_f64_u64(vandq_u64(decay(m), vdupq_n_u64(0x3ff0000000000000ll)))) {}
+        #endif
 
         AVEL_FINL explicit Vector(primitive content):
             content(content) {}
 
         AVEL_FINL explicit Vector(scalar x):
+        #if defined(AVEL_SSE2)
             content(_mm_set1_pd(x)) {}
+        #endif
+        #if defined(AVEL_NEON)
+            content(vdupq_n_f64(x)) {}
+        #endif
 
         AVEL_FINL explicit Vector(const arr2x64f& array):
+        #if defined(AVEL_SSE2)
             content(_mm_loadu_pd(array.data())) {}
+        #endif
+        #if defined(AVEL_NEON)
+            content(vld1q_f64(array.data())) {}
+        #endif
 
         Vector() = default;
         Vector(const Vector&) = default;
@@ -363,6 +407,10 @@ namespace avel {
             return mask{_mm_cmpeq_pd(decay(lhs), decay(rhs))};
 
             #endif
+
+            #if defined(AVEL_NEON)
+            return mask{vceqq_f64(lhs.content, rhs.content)};
+            #endif
         }
 
         [[nodiscard]]
@@ -373,6 +421,10 @@ namespace avel {
             #elif defined(AVEL_SSE2)
             return mask{_mm_cmpneq_pd(decay(lhs), decay(rhs))};
 
+            #endif
+
+            #if defined(AVEL_NEON)
+            return !(lhs == rhs);
             #endif
         }
 
@@ -385,6 +437,10 @@ namespace avel {
             return mask{_mm_cmplt_pd(decay(lhs), decay(rhs))};
 
             #endif
+
+            #if defined(AVEL_NEON)
+            return mask{vcltq_f64(lhs.content, rhs.content)};
+            #endif
         }
 
         [[nodiscard]]
@@ -394,6 +450,10 @@ namespace avel {
 
             #elif defined(AVEL_SSE2)
             return mask{_mm_cmple_pd(decay(lhs), decay(rhs))};
+            #endif
+
+            #if defined(AVEL_NEON)
+            return mask{vcleq_f64(lhs.content, rhs.content)};
             #endif
         }
 
@@ -405,6 +465,10 @@ namespace avel {
             #elif defined(AVEL_SSE2)
             return mask{_mm_cmpgt_pd(decay(lhs), decay(rhs))};
             #endif
+
+            #if defined(AVEL_NEON)
+            return mask{vcgtq_f64(lhs.content, rhs.content)};
+            #endif
         }
 
         [[nodiscard]]
@@ -414,6 +478,10 @@ namespace avel {
 
             #elif defined(AVEL_SSE2)
             return mask{_mm_cmpge_pd(decay(lhs), decay(rhs))};
+            #endif
+
+            #if defined(AVEL_NEON)
+            return mask{vcgeq_f64(lhs.content, rhs.content)};
             #endif
         }
 
@@ -439,6 +507,11 @@ namespace avel {
             #if defined(AVEL_SSE2)
             content = _mm_add_pd(content, decay(vec));
             #endif
+
+            #if defined(AVEL_NEON)
+            content = vaddq_f64(content, vec.content);
+            #endif
+
             return *this;
         }
 
@@ -446,6 +519,11 @@ namespace avel {
             #if defined(AVEL_SSE2)
             content = _mm_sub_pd(content, decay(vec));
             #endif
+
+            #if defined(AVEL_NEON)
+            content = vsubq_f64(content, vec.content);
+            #endif
+
             return *this;
         }
 
@@ -453,12 +531,20 @@ namespace avel {
             #if defined(AVEL_SSE2)
             content = _mm_mul_pd(content, decay(vec));
             #endif
+
+            #if defined(AVEL_NEON)
+            content = vmulq_f64(content, vec.content);
+            #endif
             return *this;
         }
 
         AVEL_FINL Vector& operator/=(Vector vec) {
             #if defined(AVEL_SSE2)
             content = _mm_div_pd(content, decay(vec));
+            #endif
+
+            #if defined(AVEL_NEON)
+            content = vdivq_f64(content, vec.content);
             #endif
             return *this;
         }
@@ -532,10 +618,12 @@ namespace avel {
         // Conversions
         //=================================================
 
+        [[nodiscard]]
         AVEL_FINL explicit operator primitive() const {
             return content;
         }
 
+        [[nodiscard]]
         AVEL_FINL explicit operator mask() const {
             #if defined(AVEL_AVX512VL)
             auto t = _mm_castpd_si128(content);
@@ -547,6 +635,10 @@ namespace avel {
             #elif defined(AVEL_SSE2)
             return mask{_mm_cmpneq_pd(content, _mm_setzero_pd())};
 
+            #endif
+
+            #if defined(AVEL_NEON)
+            return Vector{0.0} != *this;
             #endif
         }
 
@@ -562,6 +654,7 @@ namespace avel {
     //=====================================================
 
     template<std::uint32_t N>
+    [[nodiscard]]
     AVEL_FINL double extract(vec2x64f v) {
         static_assert(N < vec2x64f::width, "Specified index does not exist");
         typename std::enable_if<N < vec2x64f::width, int>::type dummy_variable = 0;
@@ -573,9 +666,14 @@ namespace avel {
             return _mm_cvtsd_f64(decay(v));
         }
         #endif
+
+        #if defined(AVEL_NEON)
+        return vgetq_lane_f64(decay(v), N);
+        #endif
     }
 
     template<std::uint32_t N>
+    [[nodiscard]]
     AVEL_FINL vec2x64f insert(vec2x64f v, double x) {
         static_assert(N < vec2x64f::width, "Specified index does not exist");
         typename std::enable_if<N < vec2x64f::width, int>::type dummy_variable = 0;
@@ -583,6 +681,12 @@ namespace avel {
         #if defined(AVEL_SSE2)
         auto ret = decay(v);
         ret[N] = x;
+        return vec2x64f{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto ret = decay(v);
+        ret = vsetq_lane_f64(x, decay(v), N);
         return vec2x64f{ret};
         #endif
     }
@@ -620,6 +724,10 @@ namespace avel {
         return vec2x64f{_mm_and_pd(decay(m), decay(v))};
 
         #endif
+
+        #if defined(AVEL_NEON)
+        return vec2x64f{vreinterpretq_f64_u64(vandq_u64(vreinterpretq_u64_f64(decay(v)), decay(m)))};
+        #endif
     }
 
     [[nodiscard]]
@@ -630,6 +738,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         return vec2x64f{_mm_andnot_pd(decay(m), decay(v))};
 
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec2x64f{vreinterpretq_f64_u64(vbicq_u64(vreinterpretq_u64_f64(decay(v)), decay(m)))};
         #endif
     }
 
@@ -647,6 +759,16 @@ namespace avel {
         return vec2x64f{_mm_or_pd(x, y)};
 
         #endif
+
+        #if defined(AVEL_NEON)
+        auto x = vreinterpretq_u32_u64(decay(m));
+        auto y = vreinterpretq_u32_f64(decay(a));
+        auto z = vreinterpretq_u32_f64(decay(b));
+
+        auto w = vbslq_u32(x, y, z);
+
+        return vec2x64f{vreinterpretq_f64_u32(w)};
+        #endif
     }
 
     [[nodiscard]]
@@ -659,12 +781,22 @@ namespace avel {
         #if defined(AVEL_SSE2)
         return vec2x64f{_mm_max_pd(decay(a), decay(b))};
         #endif
+
+        #if defined(AVEL_NEON)
+        auto mask = a < b;
+        return blend(mask, b, a);
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64f min(vec2x64f a, vec2x64f b) {
         #if defined(AVEL_SSE2)
         return vec2x64f{_mm_min_pd(decay(a), decay(b))};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto mask = a < b;
+        return blend(mask, a, b);
         #endif
     }
 
@@ -674,6 +806,14 @@ namespace avel {
         return {
             vec2x64f{_mm_min_pd(decay(a), decay(b))},
             vec2x64f{_mm_max_pd(decay(a), decay(b))}
+        };
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto mask = a < b;
+        return {
+            blend(mask, a, b),
+            blend(mask, b, a)
         };
         #endif
     }
@@ -693,6 +833,10 @@ namespace avel {
         return vec2x64f{_mm_xor_pd(decay(v), negation_mask)};
 
         #endif
+
+        #if defined(AVEL_NEON)
+
+        #endif
     }
 
     [[nodiscard]]
@@ -702,7 +846,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        return vec4x32f{vabsq_f32(decay(v))};
+        return vec2x64f{vabsq_f64(decay(v))};
         #endif
     }
 
@@ -713,7 +857,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        return vec2x64f{vsubq_f32(vdupq_n_f32(0.0f), vabsq_f32(decay(v)))};
+        return vec2x64f{vsubq_f64(vdupq_n_f64(0.0f), vabsq_f64(decay(v)))};
         #endif
     }
 
@@ -744,7 +888,13 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec2x64f load<vec2x64f, vec2x64f::width>(const double* ptr) {
+        #if defined(AVEL_SSE2)
         return vec2x64f{_mm_loadu_pd(ptr)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec2x64f{vld1q_f64(ptr)};
+        #endif
     }
 
 
@@ -769,12 +919,23 @@ namespace avel {
         }
 
         #endif
+
+        #if defined(AVEL_NEON)
+
+        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec2x64f aligned_load<vec2x64f, vec2x64f::width>(const double* ptr) {
+        #if defined(AVEL_SSE2)
         return vec2x64f{_mm_load_pd(ptr)};
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Use assume_aligned and alternatives
+        return vec2x64f{vld1q_f64(ptr)};
+        #endif
     }
 
 
@@ -802,6 +963,10 @@ namespace avel {
         }
 
         return vec2x64f{_mm_unpacklo_pd(a, b)};
+
+        #endif
+
+        #if defined(AVEL_NEON)
 
         #endif
     }
@@ -844,6 +1009,10 @@ namespace avel {
         );
 
         #endif
+
+        #if defined(AVEL_NEON)
+
+        #endif
     }
 
     template<std::uint32_t N = vec2x64f::width>
@@ -853,7 +1022,13 @@ namespace avel {
 
     template<>
     AVEL_FINL void store<vec2x64f::width>(double* ptr, vec2x64f v) {
+        #if defined(AVEL_SSE2)
         _mm_storeu_pd(ptr, decay(v));
+        #endif
+
+        #if defined(AVEL_NEON)
+        vst1q_f64(ptr, decay(v));
+        #endif
     }
 
 
@@ -866,6 +1041,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         store(ptr, v, n);
         #endif
+
+        #if defined(AVEL_NEON)
+
+        #endif
     }
 
     template<std::uint32_t N = vec2x64f::width>
@@ -877,6 +1056,10 @@ namespace avel {
     AVEL_FINL void aligned_store<vec2x64f::width>(double* ptr, vec2x64f v) {
         #if defined(AVEL_SSE2)
         _mm_store_pd(ptr, decay(v));
+        #endif
+
+        #if defined(AVEL_NEON)
+
         #endif
     }
 
@@ -895,6 +1078,10 @@ namespace avel {
         }
 
         #endif
+
+        #if defined(AVEL_NEON)
+
+        #endif
     }
 
     template<std::uint32_t N = vec2x64f::width>
@@ -904,7 +1091,7 @@ namespace avel {
 
     template<>
     AVEL_FINL void scatter<0>(double* ptr, vec2x64f v, vec2x64i indices) {
-        // Don't have to do anything
+        // Don't have to do c   thing
     }
 
     template<>
@@ -915,6 +1102,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         ptr[extract<0>(indices)] = extract<0>(v);
         ptr[extract<1>(indices)] = extract<1>(v);
+
+        #endif
+
+        #if defined(AVEL_NEON)
 
         #endif
     }
@@ -934,12 +1125,24 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64f fmax(vec2x64f a, vec2x64f b) {
+        #if defined(AVEL_SSE2)
         return blend(avel::isnan(b), a, avel::max(a, b));
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec2x64f{vmaxnmq_f64(decay(a), decay(b))};
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec2x64f fmin(vec2x64f a, vec2x64f b) {
+        #if defined(AVEL_SSE2)
         return blend(avel::isnan(b), a, avel::min(a, b));
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec2x64f{vminnmq_f64(decay(a), decay(b))};
+        #endif
     }
 
     //=====================================================
@@ -948,7 +1151,13 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64f sqrt(vec2x64f v) {
+        #if defined(AVEL_SSE2)
         return vec2x64f{_mm_sqrt_pd(decay(v))};
+        #endif
+
+        #if defined(AVEL_NEON)
+        return vec2x64f{vsqrtq_f64(decay(v))};
+        #endif
     }
 
     //=====================================================
@@ -981,6 +1190,10 @@ namespace avel {
         return blend(mask2x64f{is_output_self}, v, vec2x64f{corrected_result});
 
         #endif
+
+        #if defined(AVEL_NEON)
+
+        #endif
     }
 
     [[nodiscard]]
@@ -1009,6 +1222,10 @@ namespace avel {
         return blend(mask2x64f{is_output_self}, v, vec2x64f{corrected_result});
 
         #endif
+
+        #if defined(AVEL_NEON)
+
+        #endif
     }
 
     [[nodiscard]]
@@ -1034,6 +1251,10 @@ namespace avel {
         return blend(mask2x64f{is_output_self}, v, vec2x64f{reconstructed});
 
         #endif
+
+        #if defined(AVEL_NEON)
+
+        #endif
     }
 
     [[nodiscard]]
@@ -1053,6 +1274,10 @@ namespace avel {
         auto offset = avel::copysign(vec2x64f{avel::bit_cast<double>(0x3fdfffffffffffff)}, v);
         return avel::trunc(v + offset);
         */
+
+        #endif
+
+        #if defined(AVEL_NEON)
 
         #endif
     }
@@ -1091,6 +1316,10 @@ namespace avel {
             // Not sure how to handle such a case.
             // Fall back to scalar code?
         }
+
+        #endif
+
+        #if defined(AVEL_NEON)
 
         #endif
     }
@@ -1172,6 +1401,10 @@ namespace avel {
 
         mask2x64f m{_mm_castsi128_pd(is_output_self)};
         return blend(m, v, vec2x64f{_mm_castsi128_pd(decay(ret))});
+
+        #endif
+
+        #if defined(AVEL_NEON)
 
         #endif
     }
@@ -1256,6 +1489,10 @@ namespace avel {
         */
 
         #endif
+
+        #if defined(AVEL_NEON)
+
+        #endif
     }
 
     [[nodiscard]]
@@ -1320,6 +1557,10 @@ namespace avel {
         return ret;
 
         #endif
+
+        #if defined(AVEL_NEON)
+
+        #endif
     }
 
     [[nodiscard]]
@@ -1351,6 +1592,10 @@ namespace avel {
         return ret;
 
         #endif
+
+        #if defined(AVEL_NEON)
+
+        #endif
     }
 
     [[nodiscard]]
@@ -1363,6 +1608,13 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         auto mask = _mm_set1_pd(double_sign_bit_mask);
         auto ret = _mm_or_pd(_mm_and_pd(mask, decay(sign)), _mm_andnot_pd(mask, decay(mag)));
+        return vec2x64f{ret};
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto mask = vdupq_n_u64(double_sign_bit_mask_bits);
+        auto ret = 	vbslq_f64(mask, decay(mag), decay(sign));
+
         return vec2x64f{ret};
         #endif
     }
@@ -1428,6 +1680,10 @@ namespace avel {
         };
 
         #endif
+
+        #if defined(AVEL_NEON)
+
+        #endif
     }
 
     [[nodiscard]]
@@ -1439,6 +1695,10 @@ namespace avel {
         return (vec2x64f{-INFINITY} < v) && (v < vec2x64f{+INFINITY});
 
         #endif
+
+        #if defined(AVEL_NEON)
+        return mask2x64f{vcaleq_f64(decay(v), vdupq_n_f64(INFINITY))};
+        #endif
     }
 
     [[nodiscard]]
@@ -1449,6 +1709,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         return avel::abs(v) == vec2x64f{INFINITY};
 
+        #endif
+
+        #if defined(AVEL_NEON)
+        return mask2x64f{vcaleq_f64(vdupq_n_f64(INFINITY), decay(v))};
         #endif
     }
 
@@ -1464,6 +1728,10 @@ namespace avel {
         return mask2x64f{_mm_cmpunord_pd(decay(v), decay(v))};
 
         #endif
+
+        #if defined(AVEL_NEON)
+        return v != v;
+        #endif
     }
 
     [[nodiscard]]
@@ -1475,6 +1743,10 @@ namespace avel {
         auto abs_v = avel::abs(v);
         return (vec2x64f{DBL_MIN} <= abs_v) && (abs_v <= vec2x64f{DBL_MAX});
 
+        #endif
+
+        #if defined(AVEL_NEON)
+        return mask2x64f{vandq_u64(vcaleq_f64(vdupq_n_f64(DBL_MIN), decay(v)), vcaleq_f64(decay(v), vdupq_n_f64(DBL_MAX)))};
         #endif
     }
 
@@ -1491,6 +1763,10 @@ namespace avel {
         auto ret = _mm_shuffle_epi32(ret_32, 0xf5);
         return mask2x64f{_mm_castsi128_pd(ret)};
 
+        #endif
+
+        #if defined(AVEL_NEON)
+        return mask2x64f{vreinterpretq_u64_s64(vshrq_n_s64(vreinterpretq_s64_f64(decay(arg)), 63))};
         #endif
     }
 
@@ -1529,6 +1805,10 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         return x < y || x > y;
         #endif
+
+        #if defined(AVEL_NEON)
+        return x < y || x > y;
+        #endif
     }
 
     [[nodiscard]]
@@ -1539,6 +1819,12 @@ namespace avel {
         #elif defined(AVEL_SSE2)
         return mask2x64f{_mm_cmpunord_pd(decay(x), decay(y))};
 
+        #endif
+
+        #if defined(AVEL_NEON)
+        auto a = vceqq_f64(decay(x), decay(x));
+        auto b = vceqq_f64(decay(y), decay(y));
+        return mask2x64f{vtstq_u64(a, b)};
         #endif
     }
 

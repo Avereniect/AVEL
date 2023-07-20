@@ -866,9 +866,14 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x32f round(vec8x32f v) {
-        // The following constant is the value prior to 0.5
-        auto offset = avel::copysign(vec8x32f{avel::bit_cast<float>(0x3effffff)}, v);
-        return avel::trunc(v + offset);
+        auto whole = trunc(v);
+        auto frac = v - whole;
+
+        auto offset = copysign(vec8x32f{1.0f}, v);
+        auto should_offset = abs(frac) >= vec8x32f{0.5f};
+        auto ret = whole + keep(should_offset, offset);
+
+        return ret;
     }
 
     [[nodiscard]]
