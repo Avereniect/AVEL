@@ -592,7 +592,7 @@ namespace avel {
             #endif
 
             #if defined(AVEL_NEON)
-            content = vmulq_u8(content, decay(rhs));
+            content = vmulq_s8(content, decay(rhs));
 
             #endif
             return *this;

@@ -1584,7 +1584,33 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        //TODO: Scalarize
+        //Just to avoid division by zero triggering an exception
+        auto denominators = max(y, vec4x32u{1});
+
+        //Falling back to scalar code ends up being faster
+        auto x0 = vgetq_lane_u32(decay(x), 0);
+        auto x1 = vgetq_lane_u32(decay(x), 1);
+        auto x2 = vgetq_lane_u32(decay(x), 2);
+        auto x3 = vgetq_lane_u32(decay(x), 3);
+
+        auto y0 = vgetq_lane_u32(decay(y), 0);
+        auto y1 = vgetq_lane_u32(decay(y), 1);
+        auto y2 = vgetq_lane_u32(decay(y), 2);
+        auto y3 = vgetq_lane_u32(decay(y), 3);
+
+        auto quot = vdupq_n_u32(0x00);
+        quot = vsetq_lane_u32(x0 / y0, quot, 0);
+        quot = vsetq_lane_u32(x1 / y1, quot, 1);
+        quot = vsetq_lane_u32(x2 / y2, quot, 2);
+        quot = vsetq_lane_u32(x3 / y3, quot, 3);
+
+        auto rem = vdupq_n_u32(0x00);
+        rem = vsetq_lane_u32(x0 % y0, rem, 0);
+        rem = vsetq_lane_u32(x1 % y1, rem, 1);
+        rem = vsetq_lane_u32(x2 % y2, rem, 2);
+        rem = vsetq_lane_u32(x3 % y3, rem, 3);
+
+        return {vec4x32u{quot}, vec4x32u{rem}};
         #endif
     }
 
