@@ -730,9 +730,9 @@ namespace avel {
 
         #elif defined(AVEL_SSE)
         switch (N) {
-            case 3: return _mm_cvtss_f32(_mm_shuffle_ps(v, v, 0x03));
-            case 2: return _mm_cvtss_f32(_mm_shuffle_ps(v, v, 0x02));
-            case 1: return _mm_cvtss_f32(_mm_shuffle_ps(v, v, 0x01));
+            case 3: return _mm_cvtss_f32(_mm_shuffle_ps(decay(v), decay(v), 0x03));
+            case 2: return _mm_cvtss_f32(_mm_shuffle_ps(decay(v), decay(v), 0x02));
+            case 1: return _mm_cvtss_f32(_mm_shuffle_ps(decay(v), decay(v), 0x01));
             case 0: return _mm_cvtss_f32(decay(v));
         }
 
@@ -1170,6 +1170,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
+        //TODO: Utilize std::assumed_aligned and alternatives
         store(ptr, v, n);
         #endif
     }
@@ -1344,8 +1345,8 @@ namespace avel {
 
         #endif
 
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH32)
-        return vec4x32f{vrndpq_f32(decay(x))};
+        #if defined(AVEL_NEON) && (defined(AVEL_AARCH32) || defined(AVEL_AARCH64))
+        return vec4x32f{vrndpq_f32(decay(v))};
 
         #elif defined(AVEL_NEON)
         auto abs_v = abs(v);
@@ -1386,7 +1387,7 @@ namespace avel {
 
         #endif
 
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH32)
+        #if defined(AVEL_NEON) && (defined(AVEL_AARCH32) || defined(AVEL_AARCH64))
         return vec4x32f{vrndmq_f32(decay(v))};
 
         #elif defined(AVEL_NEON)
@@ -1415,7 +1416,7 @@ namespace avel {
 
         #endif
 
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH32)
+        #if defined(AVEL_NEON) && (defined(AVEL_AARCH32) || defined(AVEL_AARCH64))
         return vec4x32f{vrndq_f32(decay(v))};
 
         #elif defined(AVEL_NEON)
@@ -1455,8 +1456,8 @@ namespace avel {
         */
         #endif
 
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH32)
-        return vec4x32f{vrndaq_f32(decay(x))};
+        #if defined(AVEL_NEON) && (defined(AVEL_AARCH32) || defined(AVEL_AARCH64))
+        return vec4x32f{vrndaq_f32(decay(v))};
 
         #elif defined(AVEL_NEON)
         auto whole = trunc(v);
@@ -1501,8 +1502,8 @@ namespace avel {
         }
         #endif
 
-        #if defined(AVEL_NEON) && defined(AVEL_AARCH32)
-        return vec4x32f{vrndiq_f32(decay(x))};
+        #if defined(AVEL_NEON) && (defined(AVEL_AARCH32) || defined(AVEL_AARCH64))
+        return vec4x32f{vrndiq_f32(decay(v))};
 
         #elif defined(AVEL_NEON)
         int mode = std::fegetround();
@@ -1618,7 +1619,46 @@ namespace avel {
 
         #if defined(AVEL_NEON)
         //TODO: Implement
-        return {};
+        //TODO: Handling of subnormals not necessary on ARMv7
+
+        auto v_bits = vreinterpretq_s32_f32(decay(v));
+
+        auto is_v_zero = vreinterpretq_s32_u32(vceqq_s32(v_bits, vdupq_n_s32(0x00)));
+
+        // Check if v is subnormal
+        auto abs_mask = vdupq_n_s32(float_sign_bit_mask_bits);
+        auto flt_min_bits = vdupq_n_s32(0x800000);
+        auto is_subnormal = vreinterpretq_s32_u32(vcltq_s32(vbicq_s32(v_bits, abs_mask), flt_min_bits));
+
+        // The first constant is the bit pattern for 1.0f
+        // When the following two constants are reinterpreted as float, their sum is 2^24
+        auto one_bits = vdupq_n_s32(0x3f800000);
+        auto offset_bits = vdupq_n_s32(0xC000000);
+
+        // Make v normal if it's subnormal
+        auto multiplier_bits = vaddq_s32(one_bits, vandq_s32(is_subnormal, offset_bits));
+        auto multiplier = vreinterpretq_f32_s32(multiplier_bits);
+        auto v_corrected = vmulq_f32(decay(v), multiplier);
+        auto v_corrected_bits = vreinterpretq_s32_f32(v_corrected);
+
+        // Compute exponent to write out
+        auto biased_exponent = vshrq_n_s32(vandq_s32(v_corrected_bits, vdupq_n_s32(float_exponent_mask_bits)), 23);
+        auto bias_correction = vaddq_s32(vdupq_n_s32(126), vandq_s32(is_subnormal, vdupq_n_s32(24)));
+        auto unbiased_exponent = vsubq_s32(biased_exponent, bias_correction);
+
+        // Clear out exponent value when the input is zero
+        *exp = 	vbicq_s32(unbiased_exponent, is_v_zero);
+
+        // Change exponent to be -1, thereby remapping to [0.5, 1.0) range
+        auto new_exponent = vdupq_n_s32(126 << 23);
+        auto cleared_exponent = vbicq_s32(v_corrected_bits, vdupq_n_s32(float_exponent_mask_bits));
+        auto remapped_significand = vorrq_s32(cleared_exponent, new_exponent);
+
+        // Replace output value with original if output should just be self
+        auto is_output_self = vorrq_s32(is_v_zero, vreinterpretq_s32_u32(vceqq_s32(biased_exponent, vdupq_n_s32(0xff))));
+        auto ret = blend(mask4x32i{vreinterpretq_u32_s32(is_output_self)}, vec4x32i{v_bits}, vec4x32i{remapped_significand});
+
+        return vec4x32f{vreinterpretq_f32_s32(decay(ret))};
 
         #endif
     }
@@ -1669,81 +1709,50 @@ namespace avel {
 
         return vec4x32f{ret};
 
-        /*
-        auto is_zero = _mm_castps_si128(_mm_cmpeq_ps(decay(arg), _mm_setzero_ps()));
-
-        auto bits = _mm_castps_si128(decay(arg));
-
-        auto exponent = _mm_srli_epi32(_mm_and_si128(_mm_set1_epi32(float_exponent_mask_bits), bits), 23);
-
-        auto is_exponent_max = _mm_cmpeq_epi32(exponent, _mm_set1_epi32(255));
-        auto is_output_self = _mm_or_si128(is_zero, is_exponent_max);
-
-        auto lower_bound0 = _mm_sub_epi32(_mm_setzero_si128(), exponent);
-        auto upper_bound0 = _mm_sub_epi32(_mm_set1_epi32(254), exponent);
-
-        exp = _mm_andnot_si128(is_output_self, decay(exp));
-
-        auto clamped_exp = clamp(exp, vec4x32i{lower_bound0}, vec4x32i{upper_bound0});
-
-        auto exp_modified = vec4x32i{exponent} - clamped_exp;
-
-        auto new_exponent_field = _mm_slli_epi32(decay(clamped_exp), 23);
-
-        auto arg_with_new_exponent = _mm_or_si128(_mm_andnot_si128(_mm_set1_epi32(float_exponent_mask_bits), bits), new_exponent_field);
-
-        vec4x32i lower_bound1{-126};
-        vec4x32i upper_bound1{+126};
-        vec4x32i bias1{+127};
-
-        auto exponent0 = avel::clamp(vec4x32i{exp_modified}, lower_bound1, upper_bound1);
-        auto exponent_field0 = _mm_slli_epi32(_mm_add_epi32(decay(exponent0), decay(bias1)), 23);
-        auto multiplicand0 = _mm_castsi128_ps(exponent_field0);
-
-        auto ret = _mm_mul_ps(_mm_castsi128_ps(arg_with_new_exponent), multiplicand0);
-
-        return vec4x32f{ret};
-        */
-
-        /*
-        // TODO: Prevent multiple roundings
-        // If one multiple produces a subnormal number and requires rounding,
-        // and there is a subsequent multiplication that also requires
-        // rounding, then the result will not be rounded correctly.
-        // This much be changes such that, at most, a single multiplication by
-        // a value besides 1.0 produces a subnormal result.
-
-        // Approach based on repeated multiplication by powers of two.
-        vec4x32i lower_bound{-126};
-        vec4x32i upper_bound{+127};
-        vec4x32i& bias = upper_bound;
-
-        auto exponent0 = avel::clamp(exp, lower_bound, upper_bound);
-        auto exponent_field0 = _mm_slli_epi32(_mm_add_epi32(decay(exponent0), decay(bias)), 23);
-        auto multiplicand0 = _mm_castsi128_ps(exponent_field0);
-        exp -= exponent0;
-
-        auto exponent1 = avel::clamp(exp, lower_bound, upper_bound);
-        auto exponent_field1 = _mm_slli_epi32(_mm_add_epi32(decay(exponent1), decay(bias)), 23);
-        auto multiplicand1 = _mm_castsi128_ps(exponent_field1);
-        exp -= exponent1;
-
-        auto exponent2 = avel::clamp(exp, lower_bound, upper_bound);
-        auto exponent_field2 = _mm_slli_epi32(_mm_add_epi32(decay(exponent2), decay(bias)), 23);
-        auto multiplicand2 = _mm_castsi128_ps(exponent_field2);
-        //exp -= exponent2;
-
-        auto t0 = _mm_mul_ps(decay(arg), multiplicand0);
-        auto t1 = _mm_mul_ps(t0, multiplicand1);
-        auto ret = _mm_mul_ps(t1, multiplicand2);
-
-        return vec4x32f{ret};
-        */
-
         #endif
 
         #if defined(AVEL_NEON)
-        return {}; //TODO: Implement
+        //TODO: Optimize
+        //TODO: Handling of denormals not needed on ARMv7
+
+        // Approach based on repeated multiplication by powers of two.
+        auto bias = vdupq_n_s32(127);
+
+        auto bits = vreinterpretq_s32_f32(decay(arg));
+        auto exponent_field = vandq_s32(vdupq_n_s32(float_exponent_mask_bits), bits);
+        vec4x32i arg_exponent{vshrq_n_s32(exponent_field, 23)};
+
+        // Perform two multiplications such that they should never lead to lossy rounding
+        vec4x32i lower_bound0{vec4x32i{1} - arg_exponent};
+        vec4x32i upper_bound0{vec4x32i{254} - arg_exponent};
+
+        vec4x32i extracted_magnitude = clamp(exp, lower_bound0, upper_bound0);
+        exp -= extracted_magnitude;
+
+        auto exponent0 = bit_shift_right<1>(extracted_magnitude);
+        auto exponent_field0 = vshlq_n_s32(vaddq_s32(decay(exponent0), bias), 23);
+        auto multiplicand0 = vreinterpretq_f32_s32(exponent_field0);
+
+        auto exponent1 = extracted_magnitude - exponent0;
+        auto exponent_field1 = vshlq_n_s32(vaddq_s32(decay(exponent1), bias), 23);
+        auto multiplicand1 = vreinterpretq_f32_s32(exponent_field1);
+
+        // Perform one more multiplication in case the previous two weren't enough
+        // If the number isn't enough then the program
+
+        vec4x32i lower_bound1{-126};
+        vec4x32i upper_bound1{+126};
+
+        auto exponent2 = avel::clamp(exp, lower_bound1, upper_bound1);
+        auto exponent_field2 = vshlq_n_s32(vaddq_s32(decay(exponent2), bias), 23);
+        auto multiplicand2 = vreinterpretq_f32_s32(exponent_field2);
+        //exp -= exponent2;
+
+        auto t0 = vmulq_f32(decay(arg), multiplicand0);
+        auto t1 = vmulq_f32(t0, multiplicand1);
+        auto ret = vmulq_f32(t1, multiplicand2);
+
+        return vec4x32f{ret};
 
         #endif
     }
@@ -1766,9 +1775,9 @@ namespace avel {
         auto misc_ret_i = _mm_cvtps_epi32(exp_fp);
         misc_ret_i = _mm_maskz_mov_epi32(_mm_cmpneq_epi32_mask(misc_ret_i, _mm_set1_epi32(0x80000000)), misc_ret_i);
 
-        vec4x32i zero_ret_i{_mm_castps_si128(_mm_fixupimm_ps(zero_ret, exp_fp, _mm_set1_epi32(0x88808888), 0x00))};
-        vec4x32i inf_ret_i {_mm_castps_si128(_mm_fixupimm_ps(inf_ret,  exp_fp, _mm_set1_epi32(0x88088888), 0x00))};
-        vec4x32i nan_ret_i {_mm_castps_si128(_mm_fixupimm_ps(nan_ret,  exp_fp, _mm_set1_epi32(0x88888800), 0x00))};
+        vec4x32i zero_ret_i{_mm_castps_si128(_mm_fixupimm_ps(decay(zero_ret), exp_fp, _mm_set1_epi32(0x88808888), 0x00))};
+        vec4x32i inf_ret_i {_mm_castps_si128(_mm_fixupimm_ps(decay(inf_ret),  exp_fp, _mm_set1_epi32(0x88088888), 0x00))};
+        vec4x32i nan_ret_i {_mm_castps_si128(_mm_fixupimm_ps(decay(nan_ret),  exp_fp, _mm_set1_epi32(0x88888800), 0x00))};
 
         return (vec4x32i{misc_ret_i} | zero_ret_i) | (inf_ret_i | nan_ret_i);
 
@@ -1794,6 +1803,24 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
+        //TODO: No denormal handling necessary on ARMv7
+        auto is_subnormal = avel::abs(x) < vec4x32f{FLT_MIN};
+        auto multiplier = blend(is_subnormal, vec4x32f{16777216.0f}, vec4x32f{1.0f});
+
+        auto x_corrected = x * multiplier;
+
+        auto bits = avel::bit_cast<vec4x32i>(x_corrected);
+
+        vec4x32i exponents = avel::bit_shift_right<23>(bits & vec4x32i{float_exponent_mask_bits});
+        vec4x32i bias = blend(bit_cast<mask4x32i>(is_subnormal), vec4x32i{127 + 24}, vec4x32i{127});
+
+        auto ret = exponents - bias;
+
+        ret = blend(mask4x32i{decay(x == vec4x32f{0.0f})}, vec4x32i{FP_ILOGB0}, ret);
+        ret = blend(mask4x32i{decay(avel::isinf(x))}, vec4x32i{INT_MAX}, ret);
+        ret = blend(mask4x32i{decay(avel::isnan(x))}, vec4x32i{FP_ILOGBNAN}, ret);
+
+        return ret;
 
         #endif
     }
@@ -1801,7 +1828,6 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x32f logb(vec4x32f v) {
         #if defined(AVEL_AVX512VL)
-        //TODO: Handle edge cases
         return vec4x32f{_mm_getexp_ps(decay(v))};
 
         #elif defined(AVEL_SSE2)
@@ -1827,15 +1853,35 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        //TODO: Implement
+        //TODO: No denormal handling necessary on ARMv7
+        auto is_subnormal = avel::abs(v) < vec4x32f{FLT_MIN};
+        auto multiplier = blend(is_subnormal, vec4x32f{16777216.0f}, vec4x32f{1.0f});
+
+        auto v_corrected = v * multiplier;
+
+        auto bits = avel::bit_cast<vec4x32i>(v_corrected);
+
+        auto exponent_field = bits & vec4x32i{float_exponent_mask_bits};
+        auto exponents_i = avel::bit_shift_right<23>(exponent_field);
+        vec4x32f exponents{vcvtq_f32_s32(decay(exponents_i))};
+        auto bias = blend(is_subnormal, vec4x32f{127 + 24}, vec4x32f{127});
+
+        auto ret = exponents - bias;
+
+        ret = blend(v == vec4x32f{0.0f}, vec4x32f{-INFINITY}, ret);
+        ret = blend(avel::isinf(v), vec4x32f{INFINITY}, ret);
+        ret = blend(avel::isnan(v), vec4x32f{NAN}, ret);
+
+        return ret;
+
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x32f copysign(vec4x32f mag, vec4x32f sign) {
         #if defined(AVEL_AVX512VL)
-        auto mask = _mm_set1_ps(float_sign_bit_mask);
-        auto ret = _mm_ternarylogic_epi32(decay(sign), decay(mag), mask, 0xe4);
+        auto mask = _mm_set1_epi32(float_sign_bit_mask_bits);
+        auto ret = _mm_ternarylogic_epi32(_mm_castps_si128(decay(sign)), _mm_castps_si128(decay(mag)), mask, 0xe4);
         return vec4x32f{_mm_castsi128_ps(ret)};
 
         #elif defined(AVEL_SSE)
@@ -1847,7 +1893,7 @@ namespace avel {
 
         #if defined(AVEL_NEON)
         auto mask = vdupq_n_u32(float_sign_bit_mask_bits);
-        auto ret = 	vbslq_f32(mask, decay(mag), decay(sign));
+        auto ret = 	vbslq_f32(mask, decay(sign), decay(mag));
 
         return vec4x32f{ret};
         #endif
@@ -1859,6 +1905,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32i fpclassify(vec4x32f v) {
+        //TODO: Consider more optimized implementation
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         const vec4x32i fp_infinite{int(FP_INFINITE)};
         const vec4x32i fp_nan{int(FP_NAN)};
@@ -1915,6 +1962,36 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
+        const auto fp_infinite  = vdupq_n_s32(int(FP_INFINITE));
+        const auto fp_nan       = vdupq_n_s32(int(FP_NAN));
+        const auto fp_normal    = vdupq_n_s32(int(FP_NORMAL));
+        const auto fp_subnormal = vdupq_n_s32(int(FP_SUBNORMAL));
+        const auto fp_zero      = vdupq_n_s32(int(FP_ZERO));
+
+        auto infinity = vdupq_n_f32(INFINITY);
+        auto flt_min = vdupq_n_f32(FLT_MIN);
+
+        auto zero_mask      = vreinterpretq_s32_u32(vcaleq_f32(decay(v), vdupq_n_f32(0.0f)));
+        auto subnormal_mask = vreinterpretq_s32_u32(vbicq_u32(vcaltq_f32(decay(v), flt_min), vcaleq_f32(decay(v), vdupq_n_f32(0.0f))));
+        auto infinite_mask  = vreinterpretq_s32_u32(vcaleq_f32(infinity, decay(v)));
+        auto nan_mask       = vreinterpretq_s32_u32(vmvnq_u32(vceqq_f32(decay(v), decay(v))));
+        auto normal_mask    = vreinterpretq_s32_u32(vandq_u32(vcaleq_f32(flt_min, decay(v)), vcaltq_f32(decay(v), infinity)));
+
+        return vec4x32i{
+            vorrq_s32(
+                vandq_s32(infinite_mask, fp_infinite),
+                vorrq_s32(
+                    vorrq_s32(
+                        vandq_s32(nan_mask, fp_nan),
+                        vandq_s32(normal_mask, fp_normal)
+                    ),
+                    vorrq_s32(
+                        vandq_s32(subnormal_mask, fp_subnormal),
+                        vandq_s32(zero_mask, fp_zero)
+                    )
+                )
+            )
+        };
 
         #endif
     }
@@ -1979,15 +2056,9 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        return mask4x32f{vcaltq_f32(decay(v), vdupq_n_f32(INFINITY))};
-
-        /*
-        // Older implementation based on extracting exponent
-        auto bits = vreinterpretq_u32_f32(decay(v));
-        auto exponents = vandq_u32(vshrq_n_u32(bits, 23), vdupq_n_u32(0x000000ff));
-        auto ret = 	vmvnq_u32(vceqq_u32(exponents));
-        return mask4x32f{ret};
-        */
+        auto is_not_denormal = vcaleq_f32(vdupq_n_f32(FLT_MIN), decay(v));
+        auto is_less_than_infinity = vcaltq_f32(decay(v), vdupq_n_f32(INFINITY));
+        return mask4x32f{vandq_u32(is_not_denormal, is_less_than_infinity)};
         #endif
     }
 
@@ -2065,7 +2136,7 @@ namespace avel {
         #if defined(AVEL_NEON)
         auto a = vceqq_f32(decay(x), decay(x));
         auto b = vceqq_f32(decay(y), decay(y));
-        return mask4x32f{vtstq_u32(a, b)};
+        return !mask4x32f{vandq_u32(a, b)};
         #endif
     }
 

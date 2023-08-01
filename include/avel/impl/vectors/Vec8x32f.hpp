@@ -1037,9 +1037,9 @@ namespace avel {
         auto misc_ret_i = _mm256_cvtps_epi32(exp_fp);
         misc_ret_i = _mm256_maskz_mov_epi32(_mm256_cmpneq_epi32_mask(misc_ret_i, _mm256_set1_epi32(0x80000000)), misc_ret_i);
 
-        vec8x32i zero_ret_i{_mm256_castps_si256(_mm256_fixupimm_ps(zero_ret, exp_fp, _mm256_set1_epi32(0x88808888), 0x00))};
-        vec8x32i inf_ret_i {_mm256_castps_si256(_mm256_fixupimm_ps(inf_ret,  exp_fp, _mm256_set1_epi32(0x88088888), 0x00))};
-        vec8x32i nan_ret_i {_mm256_castps_si256(_mm256_fixupimm_ps(nan_ret,  exp_fp, _mm256_set1_epi32(0x88888800), 0x00))};
+        vec8x32i zero_ret_i{_mm256_castps_si256(_mm256_fixupimm_ps(decay(zero_ret), exp_fp, _mm256_set1_epi32(0x88808888), 0x00))};
+        vec8x32i inf_ret_i {_mm256_castps_si256(_mm256_fixupimm_ps(decay(inf_ret),  exp_fp, _mm256_set1_epi32(0x88088888), 0x00))};
+        vec8x32i nan_ret_i {_mm256_castps_si256(_mm256_fixupimm_ps(decay(nan_ret),  exp_fp, _mm256_set1_epi32(0x88888800), 0x00))};
 
         return (vec8x32i{misc_ret_i} | zero_ret_i) | (inf_ret_i | nan_ret_i);
 
@@ -1096,8 +1096,8 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x32f copysign(vec8x32f mag, vec8x32f sign) {
         #if defined(AVEL_AVX512VL)
-        auto mask = _mm256_set1_ps(float_sign_bit_mask);
-        auto ret = _mm256_ternarylogic_epi32(decay(sign), decay(mag), mask, 0xe4);
+        auto mask = _mm256_set1_epi32(float_sign_bit_mask_bits);
+        auto ret = _mm256_ternarylogic_epi32(_mm256_castps_si256(decay(sign)), _mm256_castps_si256(decay(mag)), mask, 0xe4);
         return vec8x32f{_mm256_castsi256_ps(ret)};
 
         #elif defined(AVEL_AVX2)

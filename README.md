@@ -62,9 +62,11 @@ of portability.
 AVEL is a C++11 library that provides abstractions over SIMD instruction sets 
 for x86 and ARM. This is primarily done through the use of classes which 
 represent vector registers containing integers or floats.
-* currently unsigned and signed integers of 8, 16, 32, and 64-bit integers 
-  are supported on all targets. Float vectors are supported on x86
-* 128-bit vectors are available on ARM
+* unsigned and signed integers of 8, 16, 32, and 64-bit integers are supported 
+  on all targets. 
+* 32 and 64-bit floats are supported on x86 and ARM with Neon and AARCH64
+  * testing has not yet been done on AARCH32
+* 128-bit vectors are available on ARM with Neon
 * 128-bit, 256-bit and 512-bit vectors are available on x86
 
 AVEL also offers various pieces of functionality that would be useful in the 
@@ -74,18 +76,20 @@ context of writing vectorized code.
 The library aims to be convenient to use and so emulates the interface of C++'s 
 native feature set and that of its standard library, offering vectorized 
 versions of the same functionality including:
-* all operator overloads
+* all integer and floating-point operators
 * misc. utilities from various headers such as `min`, `max`, `clamp`, and 
   `midpoint`, and `abs`
 * most of the functions from C++ 20's `<bit>` header
+* a selection of float-manipulation functions from the `<cmath>` header 
 * misc. AVEL-specific functions such as `negate`, `blend`, `keep`, `clear`, 
-  `set_bits` which are useful the context of writing vectorized code
+  `set_bits` which are useful in the context of writing vectorized code
 
 AVEL also offers scalar implementations of all of its vectorized facilities in 
 the `avel/Scalar. hpp` header. These will also take advantage of scalar 
 instructions native to the architecture being targeted. The behavior of 
 these functions should match the behavior of each individual lane within a 
-corresponding vector. 
+corresponding vector for all possible inputs. Note that certain inputs may 
+be invalid for specific functions and results are not guaranteed to match. 
 
 To accelerate division AVEL also offers Denominator classes which at the cost of
 some upfront work, will be able to compute quotients and moduli more quickly 
@@ -101,13 +105,12 @@ number of allocations. The performance characteristics of this allocator are not
 guaranteed to be consistent. It's primarily offered as a simple convenience.
 
 AVEL's simplicity of implementation is considered to be one of its features.
-It's recognized that using a library is not the right approach for everyone. 
-AVEL was deliberately written with the intention of being easy to 
-read so that AVEL may serve as a set of reference implementations for 
-functions which may take a long time to figure out how to implement, or 
-which they may simply not have enough spare time or enough interest to 
-figure out at all. In this way, those who stick to using intrinsics or writing
-assembly may also benefit from the library as well.
+It's recognized that using a library is not suitable for all situations. 
+AVEL was deliberately written with the intent of being easy to read so that 
+AVEL may serve as a set of reference implementations for functions which may 
+take a long time to create implementations for, or for which there may simply 
+not be enough interest to implement. In this way, those who stick to using 
+intrinsics or writing assembly may also benefit from the library as well.
 
 ## Usage
 Requires C++ 11 and a supported version of GCC, Clang, or ICX. See the 
@@ -116,11 +119,11 @@ further details
 
 AVEL is a header-only library so it's facilities will be accessed by 
 including the appropriate headers offers various headers in the `include/avel/`
-directory. As an alternative, all of these headers may be included by including 
-the `avel/Avel.hpp` header instead.
+directory. As an convenience, all of these headers may be included by including 
+the `avel/Avel.hpp` header.
 
-For each feature you wish to use, you must first pass the appropriate flags to 
-your compiler. 
+For each CPU feature set you wish to use, you must first pass the appropriate 
+flags to your compiler. 
 * See [GCC's x86 flags](https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html) 
   and [GCC's ARM flags](https://gcc.gnu.org/onlinedocs/gcc/ARM-Options.html)
   * The relevant flags should also work if targeting Clang or ICPX
@@ -129,16 +132,16 @@ your compiler.
   on which the compiler is running.
 * On Linux systems you may inspect the `/proc/cpuinfo` and inspect the flags 
   listings to see which features your CPU supports
-* alternatively, the `lscpu` command will present you with the same 
-  information in a slightly more convenient format 
+  * Alternatively, the `lscpu` command can present you with the same 
+    information in a slightly more convenient format 
 
 Before including any of AVEL's header files, a list of macros should be defined
 to indicate which ISA extensions you wish to use. See 
 [Capabilities](./docs/Capabilities.md) for a list of these macros.
 
-Alternatively, instead of defined the macros individually, 
+Alternatively, instead of defining the macros individually, 
 `AVEL_AUTO_DETECT` may be defined instead and the library will automatically 
-use the ISA extensions you've specified via the command line.
+use the ISA extensions specified via the command line.
 
 Depending on which ISA extensions are enabled, specializations of the 
 `avel::Vector` and `avel::Vector_mask` classes will be provided. Operations 
@@ -147,8 +150,8 @@ capabilities of the target machine.
 
 Since these vector classes are meant to represent vector registers, they should 
 ideally be used in a manner that is different from most other types:
-* It is discouraged to use these types for representing data. It is 
-  encouraged to use these to manipulate data.
+* It is discouraged to use these types for representing data.
+* It is encouraged to use these to manipulate data.
 * Vector's contents should be explicitly loaded and stored
 * Using too many objects of these types may cause register spillover and cause
   the compiler to emit undesired stores and loads
@@ -163,17 +166,14 @@ optimization levels.
   enabled so if this is a relevant factor, their use is highly encouraged
 
 It's encouraged to take a look at the underlying implementations to garner 
-intuition behind the cost of various functions. While some implementations 
-are not necessarily ideal in their instruction count, they will still generally 
-offer better performance than scalar code due to the sheer throughput of the 
-vectorized approach.
+intuition behind the cost of various functions. 
 
 ### SIMD Vector Aliases
-Different set of specializations of `avel::Vector` will be available depending 
+Different sets of specializations of `avel::Vector` will be available depending 
 on which feature macros were defined. Although the direct use of 
 `avel::Vector` and `avel::Vector_mask` is possible, it is not recommended. 
 Instead, AVEL defines aliases for vectors containing a specific quantity of 
-elements of a particular type. For exmpale, if you've enabled `AVEL_SSE2` then 
+elements of a particular type. For example, if you've enabled `AVEL_SSE2` then 
 AVEL will offer the following aliases:
 
 | Native Width | 128 bits wide |
@@ -209,31 +209,36 @@ AVEL also defines aliases that don't feature a specific length but instead have
 `N` indicates the natural width of a vector given the specified CPU features. 
 These vectors will offer AVEL's full feature set. `M` indicates the maximum 
 width of a vector given the specified CPU features. Only loading, storing, and 
-conversion operations are guaranteed to be supported for these vectors, however.
+conversions are guaranteed to be supported for max-width vectors (note that 
+only signed/unsigned and identity conversions are currently implemented).
 
 Corresponding aliases for `avel::Vector_mask` and `std::array` are also provided
 with the `vec` prefix replaced with the `mask` and `arr` prefixes respectively.
 
 ## Performance Warnings
 If the target machine architecture doesn't support a particular operation via a
-dedicated instruction, it will be emulated using other instructions, which may 
-lead to certain operations being disproportionately expensive compared to the 
-equivalent scalar operation, or the same operations performed if using a 
-more modern instruction set.
+dedicated instruction, it will be emulated using an instruction sequence 
+instead., This may lead to certain operations being disproportionately 
+expensive compared to the equivalent scalar operation, or the same operations 
+performed if using a more modern instruction set.
 
 This means that your intuitions for the cost of various operations may not 
 translate from scalar code. It is encouraged that you read through the 
 underlying implementations to get a better idea of the cost of the various 
-functions.
+functions. 
 
-Overall, most operations, even when emulated, will exhibit higher throughputs 
-than their scalar counterparts, so it can still be desirable to use them. 
+Overall, most operations, even when emulated, will exhibit better throughputs
+than their scalar counterparts. While some emulations will have a non-trivial 
+cost, they will still generally perform better than scalar code due to the sheer
+throughput of vectorization. A select few implementations may perform worse than
+scalar code depending on use, however, unless these operations comprise a 
+significant portion of the data transforms, the performance benefits from other
+operations will still yield a net performance gain.
 
 ## Falling Back to Intrinsics
-AVEL is built on top of the use of intrinsics, but it's fundamentally 
-recognized that AVEL will not always be able to offer the best way to 
-perform a particular operation. Hence, AVEL makes it easy to fall back to 
-using platform-specific intrinsics.
+AVEL relies on intrinsics, but it's fundamentally recognized that AVEL will not 
+always be able to offer the best way to perform a particular operation. Hence, 
+AVEL makes it easy to fall back to using platform-specific intrinsics.
 
 Every vector class has a member type alias `primitive` which corresponds to 
 the native type used for that vector by the underlying intrinsics. Vectors 
@@ -243,7 +248,7 @@ underlying `primitive` object contained within the class.
 
 The hope is that this will make it possible for users of the library to 
 write the majority of their code in a convenient way, and only fall back to 
-intrinsics when they need to take advantage of specialized instructions.
+intrinsics when they need to take advantage of more specialized instructions.
 
 ## Documentation
 The library's documentation consists of simple Markdown files provided in the 
@@ -260,19 +265,18 @@ Most operations on `avel::Vector<T, x>` should have the same semantics as the
 corresponding operations on `T` with some notable exceptions:
 * Explicit conversions must be made to convert a `avel::Vector<T, N>` 
   object to a `avel::Vector<U, N>` object even if there is an implicit 
-  conversion from `T` to `U`.
+  conversion from `T` to `U` (Note that only signed/unsigned and identity 
+  conversions are currently implemented).
 * Signed integer overflow and underflow in the case of addition, subtraction,
   and multiplication is well-defined to exhibit the behavior expected of 
   integers with a twos-complement representation.
-* Dividing by zero will not throw an error, but the result of the 
-  corresponding lane will be undefined.
 * Shifting integers by amounts equal to the number of bits they contain is 
   well-defined to continue to shift in zeros or ones. The behavior of shifting 
   by larger amounts or by negative amounts is unspecified for performance 
   reasons.
 * Comparisons on vectors perform element-wise comparisons and hence return 
   vector mask objects. The functions `avel::all`, `avel::any`, `avel::count`,
-  and `avel::none` may be used on masks to produce a scalar boolean value.
+  and `avel::none` may be used on mask object to produce a scalar boolean value.
 * Conversions to/from bool are replaced with equivalent conversions to/from 
   vector masks
 
@@ -294,7 +298,7 @@ int main() {
     
     // Load contents from a previously declared std::array object
     std::array<std::uint32_t, 4> arr1{256, 512, 1024, 2048};
-    vec4x32u v1{{arr1}};
+    vec4x32u v1{arr1};
 
     // Load contents from anonymous std::array object
     vec4x32u v2{{256, 512, 1024, 2048}};
@@ -403,7 +407,7 @@ The library's tests have been run and passed on:
 * x86
   * GCC 9.5.0, 10.4.0, 11.3.0, and 12.1.0
   * Clang 11.1.0-6,  12.0.1, 13.0.1, 14.0.0, 15.0.7
-  * ICX 2023.0.0
+  * ICX 2023.2.0
 * ARM
   * GCC 9.3.0-22, 10.2.1-6
 * Clang 9.0.10-16.1, 11.0.1-2, 13.0.1-6
