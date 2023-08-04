@@ -279,44 +279,32 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator==(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512F)
             return mask{_mm512_cmp_pd_mask(lhs.content, rhs.content, _CMP_EQ_OS)};
-            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator!=(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512F)
             return mask{_mm512_cmp_pd_mask(lhs.content, rhs.content, _CMP_NEQ_OS)};
-            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator<(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512F)
             return mask{_mm512_cmp_pd_mask(lhs.content, rhs.content, _CMP_LT_OS)};
-            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator<=(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512F)
             return mask{_mm512_cmp_pd_mask(lhs.content, rhs.content, _CMP_LE_OS)};
-            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator>(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512F)
             return mask{_mm512_cmp_pd_mask(lhs.content, rhs.content, _CMP_GT_OS)};
-            #endif
         }
 
         [[nodiscard]]
         AVEL_FINL friend mask operator>=(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512F)
             return mask{_mm512_cmp_pd_mask(lhs.content, rhs.content, _CMP_GE_OS)};
-            #endif
         }
 
         //=================================================
@@ -385,10 +373,8 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL explicit operator mask() const {
-            #if defined(AVEL_AVX512F)
             auto t = _mm512_castpd_si512(content);
             return mask{_mm512_test_epi64_mask(t, t)};
-            #endif
         }
 
     };
@@ -513,35 +499,27 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec8x64f load<vec8x64f>(const double* ptr, std::uint32_t n) {
-        #if defined(AVEL_AVX512F)
         auto mask = (n >= 8) ? -1 : (1 << n) - 1;
         return vec8x64f{_mm512_maskz_loadu_pd(mask, ptr)};
-        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec8x64f load<vec8x64f, vec8x64f::width>(const double* ptr) {
-        #if defined(AVEL_AVX512F)
         return vec8x64f{_mm512_loadu_pd(ptr)};
-        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec8x64f aligned_load<vec8x64f>(const double* ptr, std::uint32_t n) {
-        #if defined(AVEL_AVX512F)
         auto mask = (n >= 8) ? -1 : (1 << n) - 1;
         return vec8x64f{_mm512_maskz_load_pd(mask, ptr)};
-        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec8x64f aligned_load<vec8x64f, vec8x64f::width>(const double* ptr) {
-        #if defined(AVEL_AVX512F)
         return vec8x64f{_mm512_load_pd(ptr)};
-        #endif
     }
 
 
@@ -549,18 +527,14 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec8x64f gather<vec8x64f>(const double* ptr, vec8x64i indices, std::uint32_t n) {
-        #if defined(AVEL_AVX512F)
         auto mask = (n >= 8) ? -1 : (1 << n) - 1;
         return vec8x64f{_mm512_mask_i64gather_pd(_mm512_setzero_pd(), mask, decay(indices), ptr, sizeof(double))};
-        #endif
     }
 
     template<>
     [[nodiscard]]
     AVEL_FINL vec8x64f gather<vec8x64f>(const double* ptr, vec8x64i indices) {
-        #if defined(AVEL_AVX512F)
         return vec8x64f{_mm512_i64gather_pd(decay(indices), ptr, sizeof(double))};
-        #endif
     }
 
 
@@ -594,9 +568,7 @@ namespace avel {
 
     template<>
     AVEL_FINL void aligned_store<vec8x64f::width>(double* ptr, vec8x64f v) {
-        #if defined(AVEL_AVX512F)
         _mm512_store_pd(ptr, decay(v));
-        #endif
     }
 
 
@@ -674,11 +646,14 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64f round(vec8x64f v) {
-        #if defined(AVEL_AVX512F)
-        // The following constant is the value prior to 0.5
-        auto offset = avel::copysign(vec8x64f{avel::bit_cast<double>(0x3fdfffffffffffff)}, v);
-        return avel::trunc(v + offset);
-        #endif
+        auto whole = trunc(v);
+        auto frac = v - whole;
+
+        auto offset = copysign(vec8x64f{1.0}, v);
+        auto should_offset = abs(frac) >= vec8x64f{0.5};
+        auto ret = whole + keep(should_offset, offset);
+
+        return ret;
     }
 
     [[nodiscard]]
@@ -810,13 +785,13 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64i fpclassify(vec8x64f v) {
+        #if defined(AVEL_AVX512DQ)
         const vec8x64i fp_infinite{int(FP_INFINITE)};
         const vec8x64i fp_nan{int(FP_NAN)};
         const vec8x64i fp_normal{int(FP_NORMAL)};
         const vec8x64i fp_subnormal{int(FP_SUBNORMAL)};
         const vec8x64i fp_zero{int(FP_ZERO)};
 
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         mask8x64i infinite_mask {_mm512_fpclass_pd_mask(decay(v), 0x08 | 0x10)};
         mask8x64i nan_mask      {_mm512_fpclass_pd_mask(decay(v), 0x01 | 0x80)};
         mask8x64i subnormal_mask{_mm512_fpclass_pd_mask(decay(v), 0x20)};
@@ -831,26 +806,35 @@ namespace avel {
             keep(zero_mask, fp_zero);
 
         #elif defined(AVEL_AVX512F)
-        auto infinity = _mm512_set1_pd(INFINITY);
-        auto dbl_min = _mm512_set1_pd(DBL_MIN);
+        // Approach based on testing of ranges of bit patterns to which the various categories belong
 
-        v = avel::abs(v);
+        auto v_bits = _mm512_castpd_si512(decay(v));
 
-        std::uint8_t zero_mask      = _mm512_cmp_pd_mask(decay(v), _mm512_setzero_pd(), _CMP_EQ_OQ);
-        std::uint8_t subnormal_mask = _kandn_mask16(zero_mask, _mm512_cmp_pd_mask(decay(v), dbl_min, _CMP_LE_OQ));
-        std::uint8_t infinite_mask  = _mm512_cmp_pd_mask(decay(v), infinity, _CMP_EQ_OQ);
-        std::uint8_t nan_mask       = _mm512_cmp_pd_mask(decay(v), decay(v), _CMP_UNORD_Q);
-        std::uint8_t normal_mask    = _mm512_kand(
-            _mm512_cmp_pd_mask(dbl_min, decay(v), _CMP_LE_OQ),
-            _mm512_cmp_pd_mask(decay(v), infinity, _CMP_LT_OQ)
-        );
+        // Take absolute value
+        v_bits = _mm512_and_si512(v_bits, _mm512_set1_epi64(0x7fffffffffffffffull));
 
-        return
-            keep(mask8x64i{infinite_mask},  fp_infinite) |
-            keep(mask8x64i{nan_mask},       fp_nan) |
-            keep(mask8x64i{normal_mask},    fp_normal) |
-            keep(mask8x64i{subnormal_mask}, fp_subnormal) |
-            keep(mask8x64i{zero_mask},      fp_zero);
+        // Bit pattern for FLT_MIN
+        const auto min_bits = _mm512_set1_epi64(0x10000000000000ull);
+
+        // Bit pattern for +INFINITY
+        const auto inf_bits = _mm512_set1_epi64(0x7ff0000000000000ull);
+
+        // Masks for individual categories
+        auto m0 = _mm512_cmpeq_epi64_mask(v_bits, _mm512_setzero_si512());
+        auto m1 = ~m0 & _mm512_cmplt_epi64_mask(v_bits, min_bits);
+        auto m2 = ~_mm512_cmplt_epi64_mask(v_bits, min_bits) & _mm512_cmplt_epi64_mask(v_bits, inf_bits);
+        auto m3 = _mm512_cmpeq_epi64_mask(v_bits, inf_bits);
+        auto m4 = _mm512_cmpgt_epi64_mask(v_bits, inf_bits);
+
+        // Select result via blending
+        auto ret = _mm512_setzero_si512();
+        ret = _mm512_maskz_mov_epi64(m0, _mm512_set1_epi64(FP_ZERO));
+        ret = _mm512_mask_blend_epi64(m1, ret, _mm512_set1_epi64(FP_SUBNORMAL));
+        ret = _mm512_mask_blend_epi64(m2, ret, _mm512_set1_epi64(FP_NORMAL)   );
+        ret = _mm512_mask_blend_epi64(m3, ret, _mm512_set1_epi64(FP_INFINITE) );
+        ret = _mm512_mask_blend_epi64(m4, ret, _mm512_set1_epi64(FP_NAN)      );
+
+        return vec8x64i{ret};
 
         #endif
     }
@@ -915,34 +899,32 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask8x64f isgreater(vec8x64f x, vec8x64f y) {
-        return x > y;
+        return mask8x64f{_mm512_cmp_pd_mask(decay(x), decay(y), _CMP_GT_OQ)};
     }
 
     [[nodiscard]]
     AVEL_FINL mask8x64f isgreaterequal(vec8x64f x, vec8x64f y) {
-        return x >= y;
+        return mask8x64f{_mm512_cmp_pd_mask(decay(x), decay(y), _CMP_GE_OQ)};
     }
 
     [[nodiscard]]
     AVEL_FINL mask8x64f isless(vec8x64f x, vec8x64f y) {
-        return x < y;
+        return mask8x64f{_mm512_cmp_pd_mask(decay(x), decay(y), _CMP_LT_OQ)};
     }
 
     [[nodiscard]]
     AVEL_FINL mask8x64f islessequal(vec8x64f x, vec8x64f y) {
-        return x <= y;
+        return mask8x64f{_mm512_cmp_pd_mask(decay(x), decay(y), _CMP_LE_OQ)};
     }
 
     [[nodiscard]]
     AVEL_FINL mask8x64f islessgreater(vec8x64f x, vec8x64f y) {
-        return x != y;
+        return mask8x64f{_mm512_cmp_pd_mask(decay(x), decay(y), _CMP_NEQ_OQ)};
     }
 
     [[nodiscard]]
     AVEL_FINL mask8x64f isunordered(vec8x64f x, vec8x64f y) {
-        #if defined(AVEL_AVX512F)
         return mask8x64f{_mm512_cmp_pd_mask(decay(x), decay(y), _CMP_UNORD_Q)};
-        #endif
     }
 
 }

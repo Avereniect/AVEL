@@ -46,7 +46,7 @@ namespace avel {
 
         #if defined(AVEL_AVX512VL)
         using primitive = __mmask8;
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         using primitive = __m128;
         #endif
 
@@ -78,7 +78,7 @@ namespace avel {
         AVEL_FINL explicit Vector_mask(bool b):
         #if defined(AVEL_AVX512VL)
             content(b ? 0xf : 0x0) {}
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
             content(_mm_castsi128_ps(_mm_set1_epi32(b ? -1 : 0))) {}
         #endif
         #if defined(AVEL_NEON)
@@ -92,16 +92,16 @@ namespace avel {
             );
 
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-            __m128i array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
-            content = __mmask8(_mm_cmplt_epu8_mask(_mm_setzero_si128(), array_data));
+            auto array_data = _mm_maskz_loadu_epi8(0xf, arr.data());
+            content = primitive(_mm_test_epi8_mask(array_data, array_data));
 
             #elif defined(AVEL_AVX512VL)
-            auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
+            auto array_data = _mm_maskz_loadu_epi32(0x1, arr.data());
             auto expanded = _mm_cvtepi8_epi32(array_data);
-            content = _mm_cmplt_epu32_mask(_mm_setzero_si128(), expanded);
+            content = _mm_test_epi32_mask(expanded, expanded);
 
-            #elif defined(AVEL_SSE)
-            __m128i array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
+            #elif defined(AVEL_SSE2)
+            auto array_data = _mm_cvtsi32_si128(avel::bit_cast<std::uint32_t>(arr));
             array_data = _mm_unpacklo_epi8(array_data, array_data);
             array_data = _mm_unpacklo_epi16(array_data, array_data);
             content = _mm_castsi128_ps(_mm_cmplt_epi32(_mm_setzero_si128(), array_data));
@@ -156,7 +156,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL)
             return lhs.content == rhs.content;
 
-            #elif defined(AVEL_SSE)
+            #elif defined(AVEL_SSE2)
             return !_mm_movemask_ps(_mm_xor_ps(lhs.content, rhs.content));
             #endif
 
@@ -175,7 +175,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL)
             return lhs.content != rhs.content;
 
-            #elif defined(AVEL_SSE)
+            #elif defined(AVEL_SSE2)
             return _mm_movemask_ps(_mm_xor_ps(lhs.content, rhs.content));
             #endif
 
@@ -202,7 +202,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL)
             content &= rhs.content;
 
-            #elif defined(AVEL_SSE)
+            #elif defined(AVEL_SSE2)
             content = _mm_and_ps(content, rhs.content);
             #endif
 
@@ -216,7 +216,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL)
             content |= rhs.content;
 
-            #elif defined(AVEL_SSE)
+            #elif defined(AVEL_SSE2)
             content = _mm_or_ps(content, rhs.content);
             #endif
 
@@ -230,7 +230,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL)
             content ^= rhs.content;
 
-            #elif defined(AVEL_SSE)
+            #elif defined(AVEL_SSE2)
             content = _mm_xor_ps(content, rhs.content);
             #endif
 
@@ -248,7 +248,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL)
             return Vector_mask{primitive(content ^ 0xf)};
 
-            #elif defined(AVEL_SSE)
+            #elif defined(AVEL_SSE2)
             return Vector_mask{_mm_andnot_ps(content, _mm_castsi128_ps(_mm_set1_epi32(-1)))};
             #endif
 
@@ -279,7 +279,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         return popcount(decay(m));
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         return popcount(_mm_movemask_ps(decay(m)));
         #endif
 
@@ -301,7 +301,7 @@ namespace avel {
     AVEL_FINL bool any(mask4x32f m) {
         #if defined(AVEL_AVX512VL)
         return _mm512_mask2int(decay(m));
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         return _mm_movemask_ps(decay(m));
         #endif
 
@@ -322,7 +322,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         return 0x0F == _mm512_mask2int(decay(m));
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         return 0x0F == _mm_movemask_ps(decay(m));
         #endif
 
@@ -363,7 +363,7 @@ namespace avel {
 
         using scalar = float;
 
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
         using primitive = __m128;
         #endif
 
@@ -404,7 +404,7 @@ namespace avel {
             content(content) {}
 
         AVEL_FINL explicit Vector(scalar x):
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
             content(_mm_set1_ps(x)) {}
         #endif
         #if defined(AVEL_NEON)
@@ -412,7 +412,7 @@ namespace avel {
         #endif
 
         AVEL_FINL explicit Vector(const arr4x32f& arr):
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
             content(_mm_loadu_ps(arr.data())) {}
         #endif
         #if defined(AVEL_NEON)
@@ -429,14 +429,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator=(scalar x) {
-            #if defined(AVEL_SSE)
-            content = _mm_set1_ps(x);
-            #endif
-
-            #if defined(AVEL_NEON)
-            content = vdupq_n_f32(x);
-            #endif
-
+            *this = Vector{x};
             return *this;
         }
 
@@ -455,9 +448,9 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator==(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_EQ_OQ)};
+            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_EQ_OS)};
 
-            #elif defined(AVEL_SSE)
+            #elif defined(AVEL_SSE2)
             return mask{_mm_cmpeq_ps(decay(lhs), decay(rhs))};
             #endif
 
@@ -469,9 +462,9 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator!=(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_NEQ_OQ)};
+            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_NEQ_OS)};
 
-            #elif defined(AVEL_SSE)
+            #elif defined(AVEL_SSE2)
             return mask{_mm_cmpneq_ps(decay(lhs), decay(rhs))};
             #endif
 
@@ -483,9 +476,9 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator<(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_LT_OQ)};
+            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_LT_OS)};
 
-            #elif defined(AVEL_SSE)
+            #elif defined(AVEL_SSE2)
             return mask{_mm_cmplt_ps(decay(lhs), decay(rhs))};
             #endif
 
@@ -497,9 +490,9 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator<=(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_LE_OQ)};
+            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_LE_OS)};
 
-            #elif defined(AVEL_SSE)
+            #elif defined(AVEL_SSE2)
             return mask{_mm_cmple_ps(decay(lhs), decay(rhs))};
             #endif
 
@@ -511,9 +504,9 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator>(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_GT_OQ)};
+            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_GT_OS)};
 
-            #elif defined(AVEL_SSE)
+            #elif defined(AVEL_SSE2)
             return mask{_mm_cmpgt_ps(decay(lhs), decay(rhs))};
             #endif
 
@@ -525,9 +518,9 @@ namespace avel {
         [[nodiscard]]
         AVEL_FINL friend mask operator>=(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
-            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_GE_OQ)};
+            return mask{_mm_cmp_ps_mask(decay(lhs), decay(rhs), _CMP_GE_OS)};
 
-            #elif defined(AVEL_SSE)
+            #elif defined(AVEL_SSE2)
             return mask{_mm_cmpge_ps(decay(lhs), decay(rhs))};
             #endif
 
@@ -547,9 +540,8 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL Vector operator-() const {
-            //TODO: Consider flipping sign bit manually?
-            #if defined(AVEL_SSE)
-            return Vector{0.0f} - *this;
+            #if defined(AVEL_SSE2)
+            return Vector{_mm_sub_ps(_mm_setzero_ps(), content)};
             #endif
 
             #if defined(AVEL_NEON)
@@ -562,7 +554,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector& operator+=(Vector rhs) {
-            #if defined(AVEL_SSE)
+            #if defined(AVEL_SSE2)
             content = _mm_add_ps(content, rhs.content);
             #endif
 
@@ -574,7 +566,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator-=(Vector rhs) {
-            #if defined(AVEL_SSE)
+            #if defined(AVEL_SSE2)
             content = _mm_sub_ps(content, rhs.content);
             #endif
 
@@ -585,7 +577,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator*=(Vector rhs) {
-            #if defined(AVEL_SSE)
+            #if defined(AVEL_SSE2)
             content = _mm_mul_ps(content, rhs.content);
             #endif
 
@@ -596,7 +588,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator/=(Vector rhs) {
-            #if defined(AVEL_SSE)
+            #if defined(AVEL_SSE2)
             content = _mm_div_ps(content, rhs.content);
             #endif
 
@@ -699,7 +691,7 @@ namespace avel {
             #elif defined(AVEL_AVX)
             return mask{_mm_cmp_ps(content, _mm_setzero_ps(), _CMP_NEQ_UQ)};
 
-            #elif defined(AVEL_SSE)
+            #elif defined(AVEL_SSE2)
             return mask{_mm_cmpneq_ps(content, _mm_setzero_ps())};
 
             #endif
@@ -728,7 +720,7 @@ namespace avel {
         #if defined(AVEL_SSE41)
         return avel::bit_cast<float>(_mm_extract_ps(decay(v), N));
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         switch (N) {
             case 3: return _mm_cvtss_f32(_mm_shuffle_ps(decay(v), decay(v), 0x03));
             case 2: return _mm_cvtss_f32(_mm_shuffle_ps(decay(v), decay(v), 0x02));
@@ -748,7 +740,7 @@ namespace avel {
         static_assert(N < vec4x32f::width, "Specified index does not exist");
         typename std::enable_if<N < vec4x32f::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
         //TODO: Don't rely on compiler-specific subscripting
         auto tmp = decay(v);
         tmp[N] = x;
@@ -790,7 +782,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         return vec4x32f{_mm_maskz_mov_ps(decay(m), decay(v))};
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         return vec4x32f{_mm_and_ps(decay(m), decay(v))};
         #endif
 
@@ -804,7 +796,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         return vec4x32f{_mm_maskz_mov_ps(decay(!m), decay(v))};
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         return vec4x32f{_mm_andnot_ps(decay(m), decay(v))};
         #endif
 
@@ -821,7 +813,7 @@ namespace avel {
         #elif defined(AVEL_SSE41)
         return vec4x32f{_mm_blendv_ps(decay(b), decay(a), decay(m))};
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         auto x = _mm_andnot_ps(decay(m), decay(b));
         auto y = _mm_and_ps(decay(m), decay(a));
         return vec4x32f{_mm_or_ps(x, y)};
@@ -840,7 +832,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32f max(vec4x32f a, vec4x32f b) {
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
         return vec4x32f{_mm_max_ps(decay(a), decay(b))};
         #endif
 
@@ -852,7 +844,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32f min(vec4x32f a, vec4x32f b) {
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
         return vec4x32f{_mm_min_ps(decay(a), decay(b))};
         #endif
 
@@ -864,7 +856,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::array<vec4x32f, 2> minmax(vec4x32f a, vec4x32f b) {
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
         return std::array<vec4x32f, 2>{
             vec4x32f{_mm_min_ps(decay(a), decay(b))},
             vec4x32f{_mm_max_ps(decay(a), decay(b))}
@@ -904,7 +896,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32f abs(vec4x32f v) {
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
         return vec4x32f{_mm_andnot_ps(_mm_set1_ps(float_sign_bit_mask), decay(v))};
         #endif
 
@@ -915,7 +907,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32f neg_abs(vec4x32f v) {
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
         return vec4x32f{_mm_or_ps(_mm_set1_ps(float_sign_bit_mask), decay(v))};
         #endif
 
@@ -970,7 +962,7 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec4x32f load<vec4x32f, vec4x32f::width>(const float* ptr) {
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
         return vec4x32f{_mm_loadu_ps(ptr)};
         #endif
 
@@ -1000,7 +992,7 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec4x32f aligned_load<vec4x32f, vec4x32f::width>(const float* ptr) {
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
         return vec4x32f{_mm_load_ps(ptr)};
         #endif
 
@@ -1075,7 +1067,7 @@ namespace avel {
         #if defined(AVEL_AVX2)
         return vec4x32f{_mm_i32gather_ps(ptr, decay(indices), sizeof(float))};
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         auto offset_array = to_array(indices);
 
         auto a = _mm_load_ss(ptr + offset_array[0]);
@@ -1148,7 +1140,7 @@ namespace avel {
 
     template<>
     AVEL_FINL void store<vec4x32f::width>(float* ptr, vec4x32f v) {
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
         _mm_storeu_ps(ptr, decay(v));
         #endif
 
@@ -1185,7 +1177,7 @@ namespace avel {
 
     template<>
     AVEL_FINL void aligned_store<vec4x32f::width>(float* ptr, vec4x32f v) {
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
         _mm_store_ps(ptr, decay(v));
         #endif
 
@@ -1247,7 +1239,7 @@ namespace avel {
         _mm_store_ss(ptr + i[2], _mm_permute_ps(decay(v), 0x02));
         _mm_store_ss(ptr + i[3], _mm_permute_ps(decay(v), 0x03));
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         auto i = to_array(indices);
 
         _mm_store_ss(ptr + i[0], decay(v));
@@ -1307,7 +1299,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32f sqrt(vec4x32f x) {
-        #if defined(AVEL_SSE)
+        #if defined(AVEL_SSE2)
         return vec4x32f{_mm_sqrt_ps(decay(x))};
         #endif
 
@@ -1670,6 +1662,7 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
         //TODO: Optimize
+
         // Approach based on repeated multiplication by powers of two.
         auto bias = _mm_set1_epi32(127);
 
@@ -1884,7 +1877,7 @@ namespace avel {
         auto ret = _mm_ternarylogic_epi32(_mm_castps_si128(decay(sign)), _mm_castps_si128(decay(mag)), mask, 0xe4);
         return vec4x32f{_mm_castsi128_ps(ret)};
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         auto mask = _mm_set1_ps(float_sign_bit_mask);
         auto ret = _mm_or_ps(_mm_and_ps(mask, decay(sign)), _mm_andnot_ps(mask, decay(mag)));
 
@@ -1905,63 +1898,71 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32i fpclassify(vec4x32f v) {
-        //TODO: Consider more optimized implementation
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
-        const vec4x32i fp_infinite{int(FP_INFINITE)};
-        const vec4x32i fp_nan{int(FP_NAN)};
-        const vec4x32i fp_normal{int(FP_NORMAL)};
-        const vec4x32i fp_subnormal{int(FP_SUBNORMAL)};
-        const vec4x32i fp_zero{int(FP_ZERO)};
+        #if defined(AVEL_AVX512VL)
+        // Approach based on testing of ranges of bit patterns to which the various categories belong
 
-        mask4x32i infinite_mask {_mm_fpclass_ps_mask(decay(v), 0x08 | 0x10)};
-        mask4x32i nan_mask      {_mm_fpclass_ps_mask(decay(v), 0x01 | 0x80)};
-        mask4x32i subnormal_mask{_mm_fpclass_ps_mask(decay(v), 0x20)};
-        mask4x32i zero_mask     {_mm_fpclass_ps_mask(decay(v), 0x02 | 0x04)};
-        mask4x32i normal_mask   {!(infinite_mask | nan_mask | subnormal_mask | zero_mask)};
+        auto v_bits = _mm_castps_si128(decay(v));
 
-        return
-            keep(infinite_mask, fp_infinite) |
-            keep(nan_mask, fp_nan) |
-            keep(normal_mask, fp_normal) |
-            keep(subnormal_mask, fp_subnormal) |
-            keep(zero_mask, fp_zero);
+        // Take absolute value
+        v_bits = _mm_and_si128(v_bits, _mm_set1_epi32(0x7fffffff));
 
-        #elif defined(AVEL_SSE)
-        const auto fp_infinite = _mm_set1_epi32(int(FP_INFINITE));
-        const auto fp_nan = _mm_set1_epi32(int(FP_NAN));
-        const auto fp_normal = _mm_set1_epi32(int(FP_NORMAL));
-        const auto fp_subnormal = _mm_set1_epi32(int(FP_SUBNORMAL));
-        const auto fp_zero = _mm_set1_epi32(int(FP_ZERO));
+        // Bit pattern for FLT_MIN
+        const auto min_bits = _mm_set1_epi32(0x00800000);
 
-        auto infinity = _mm_set1_ps(INFINITY);
-        auto flt_min = _mm_set1_ps(FLT_MIN);
+        // Bit pattern for +INFINITY
+        const auto inf_bits = _mm_set1_epi32(0x7f800000);
 
-        v = avel::abs(v);
+        // Masks for individual categories
+        auto m0 = _mm_cmpeq_epi32(v_bits, _mm_setzero_si128());
+        auto m1 = _mm_andnot_si128(m0, _mm_cmplt_epi32(v_bits, min_bits));
+        auto m2 = _mm_andnot_si128(_mm_cmplt_epi32(v_bits, min_bits), _mm_cmplt_epi32(v_bits, inf_bits));
+        auto m3 = _mm_cmpeq_epi32(v_bits, inf_bits);
+        auto m4 = _mm_cmpgt_epi32(v_bits, inf_bits);
 
-        auto zero_mask      = _mm_castps_si128(_mm_cmpeq_ps(decay(v), _mm_setzero_ps()));
-        auto subnormal_mask = _mm_castps_si128(_mm_andnot_ps(_mm_cmpeq_ps(decay(v), _mm_setzero_ps()), _mm_cmple_ps(decay(v), flt_min)));
-        auto infinite_mask  = _mm_castps_si128(_mm_cmpeq_ps(decay(v), infinity));
-        auto nan_mask       = _mm_castps_si128(_mm_cmpunord_ps(decay(v), decay(v)));
-        auto normal_mask    = _mm_castps_si128(_mm_and_ps(_mm_cmple_ps(flt_min, decay(v)), _mm_cmplt_ps(decay(v), infinity)));
+        // Select result via blending
+        auto ret = _mm_setzero_si128();
+        ret = _mm_and_si128(m0, _mm_set1_epi32(FP_ZERO));
+        ret = _mm_ternarylogic_epi32(ret, m1, _mm_set1_epi32(FP_SUBNORMAL), 0xf8);
+        ret = _mm_ternarylogic_epi32(ret, m2, _mm_set1_epi32(FP_NORMAL),    0xf8);
+        ret = _mm_ternarylogic_epi32(ret, m3, _mm_set1_epi32(FP_INFINITE),  0xf8);
+        ret = _mm_ternarylogic_epi32(ret, m4, _mm_set1_epi32(FP_NAN),       0xf8);
 
-        return vec4x32i{
-            _mm_or_si128(
-                _mm_and_si128(infinite_mask, fp_infinite),
-                _mm_or_si128(
-                    _mm_or_si128(
-                        _mm_and_si128(nan_mask, fp_nan),
-                        _mm_and_si128(normal_mask, fp_normal)
-                    ),
-                    _mm_or_si128(
-                        _mm_and_si128(subnormal_mask, fp_subnormal),
-                        _mm_and_si128(zero_mask, fp_zero)
-                    )
-                )
-            )
-        };
+        return vec4x32i{ret};
+
+        #elif defined(AVEL_SSE2)
+        // Approach based on testing of ranges of bit patterns to which the various categories belong
+
+        auto v_bits = _mm_castps_si128(decay(v));
+
+        // Take absolute value
+        v_bits = _mm_and_si128(v_bits, _mm_set1_epi32(0x7fffffff));
+
+        // Bit pattern for FLT_MIN
+        const auto min_bits = _mm_set1_epi32(0x00800000);
+
+        // Bit pattern for +INFINITY
+        const auto inf_bits = _mm_set1_epi32(0x7f800000);
+
+        // Masks for individual categories
+        auto m0 = _mm_cmpeq_epi32(v_bits, _mm_setzero_si128());
+        auto m1 = _mm_andnot_si128(m0, _mm_cmplt_epi32(v_bits, min_bits));
+        auto m2 = _mm_andnot_si128(_mm_cmplt_epi32(v_bits, min_bits), _mm_cmplt_epi32(v_bits, inf_bits));
+        auto m3 = _mm_cmpeq_epi32(v_bits, inf_bits);
+        auto m4 = _mm_cmpgt_epi32(v_bits, inf_bits);
+
+        // Select result via blending
+        auto ret = _mm_setzero_si128();
+        ret = _mm_and_si128(m0, _mm_set1_epi32(FP_ZERO));
+        ret = _mm_or_si128(ret, _mm_and_si128(m1, _mm_set1_epi32(FP_SUBNORMAL)));
+        ret = _mm_or_si128(ret, _mm_and_si128(m2, _mm_set1_epi32(FP_NORMAL)));
+        ret = _mm_or_si128(ret, _mm_and_si128(m3, _mm_set1_epi32(FP_INFINITE)));
+        ret = _mm_or_si128(ret, _mm_and_si128(m4, _mm_set1_epi32(FP_NAN)));
+
+        return vec4x32i{ret};
         #endif
 
         #if defined(AVEL_NEON)
+        //TODO: Clean up and optimize
         const auto fp_infinite  = vdupq_n_s32(int(FP_INFINITE));
         const auto fp_nan       = vdupq_n_s32(int(FP_NAN));
         const auto fp_normal    = vdupq_n_s32(int(FP_NORMAL));
@@ -2001,7 +2002,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         return !mask4x32f{_mm_fpclass_ps_mask(decay(v), 0x01 | 0x08 | 0x10 | 0x80)};
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         return (vec4x32f{-INFINITY} < v) && (v < vec4x32f{+INFINITY});
 
         #endif
@@ -2034,7 +2035,7 @@ namespace avel {
         #elif defined(AVEL_AVX512VL)
         return mask4x32f{_mm_cmp_ps_mask(decay(v), decay(v), _CMP_UNORD_Q)};
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         return mask4x32f{_mm_cmpunord_ps(decay(v), decay(v))};
 
         #endif
@@ -2049,7 +2050,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
         return !mask4x32f{_mm_fpclass_ps_mask(decay(v), 0xBF)};
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_SSE2)
         auto abs_v = avel::abs(v);
         return (vec4x32f{FLT_MIN} <= abs_v) && (abs_v <= vec4x32f{FLT_MAX});
 
@@ -2089,22 +2090,90 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask4x32f isgreater(vec4x32f x, vec4x32f y) {
+        #if defined(AVEL_AVX512VL)
+        return mask4x32f{_mm_cmp_ps_mask(decay(x), decay(y), _CMP_GT_OQ)};
+
+        #elif defined(AVEL_AVX2)
+        return mask4x32f{_mm_cmp_ps(decay(x), decay(y), _CMP_GT_OQ)};
+
+        #elif defined(AVEL_SSE2)
+        auto state = _MM_GET_EXCEPTION_STATE();
+        auto ret = x > y;
+        _MM_SET_EXCEPTION_STATE(state);
+        return ret;
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Make quiet
         return x > y;
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask4x32f isgreaterequal(vec4x32f x, vec4x32f y) {
+        #if defined(AVEL_AVX512VL)
+        return mask4x32f{_mm_cmp_ps_mask(decay(x), decay(y), _CMP_GE_OQ)};
+
+        #elif defined(AVEL_AVX2)
+        return mask4x32f{_mm_cmp_ps(decay(x), decay(y), _CMP_GE_OQ)};
+
+        #elif defined(AVEL_SSE2)
+        auto state = _MM_GET_EXCEPTION_STATE();
+        auto ret = x >= y;
+        _MM_SET_EXCEPTION_STATE(state);
+        return ret;
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Make quiet
         return x >= y;
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask4x32f isless(vec4x32f x, vec4x32f y) {
+        #if defined(AVEL_AVX512VL)
+        return mask4x32f{_mm_cmp_ps_mask(decay(x), decay(y), _CMP_LT_OQ)};
+
+        #elif defined(AVEL_AVX2)
+        return mask4x32f{_mm_cmp_ps(decay(x), decay(y), _CMP_LT_OQ)};
+
+        #elif defined(AVEL_SSE2)
+        auto state = _MM_GET_EXCEPTION_STATE();
+        auto ret = x < y;
+        _MM_SET_EXCEPTION_STATE(state);
+        return ret;
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Make quiet
         return x < y;
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask4x32f islessequal(vec4x32f x, vec4x32f y) {
+        #if defined(AVEL_AVX512VL)
+        return mask4x32f{_mm_cmp_ps_mask(decay(x), decay(y), _CMP_LE_OQ)};
+
+        #elif defined(AVEL_AVX2)
+        return mask4x32f{_mm_cmp_ps(decay(x), decay(y), _CMP_LE_OQ)};
+
+        #elif defined(AVEL_SSE2)
+        auto state = _MM_GET_EXCEPTION_STATE();
+        auto ret = x <= y;
+        _MM_SET_EXCEPTION_STATE(state);
+        return ret;
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Make quiet
         return x <= y;
+        #endif
     }
 
     [[nodiscard]]
@@ -2116,10 +2185,16 @@ namespace avel {
         return mask4x32f{_mm_cmp_ps(decay(x), decay(y), _CMP_NEQ_OQ)};
 
         #elif defined(AVEL_SSE2)
-        return x < y || x > y;
+        auto state = _MM_GET_EXCEPTION_STATE();
+        auto ret = (x < y) || (x > y);
+        _MM_SET_EXCEPTION_STATE(state);
+
+        return ret;
+
         #endif
 
         #if defined(AVEL_NEON)
+        //TODO: Make quiet
         return x < y || x > y;
         #endif
     }
@@ -2129,11 +2204,18 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
         return mask4x32f{_mm_cmp_ps_mask(decay(x), decay(y), _CMP_UNORD_Q)};
 
-        #elif defined(AVEL_SSE)
+        #elif defined(AVEL_AVX)
+        return mask4x32f{_mm_cmp_ps(decay(x), decay(y), _CMP_UNORD_Q)};
+
+        #elif defined(AVEL_SSE2)
+        auto state = _MM_GET_EXCEPTION_STATE();
         return mask4x32f{_mm_cmpunord_ps(decay(x), decay(y))};
+        _MM_SET_EXCEPTION_STATE(state);
+
         #endif
 
         #if defined(AVEL_NEON)
+        //TODO: Make quiet
         auto a = vceqq_f32(decay(x), decay(x));
         auto b = vceqq_f32(decay(y), decay(y));
         return !mask4x32f{vandq_u32(a, b)};

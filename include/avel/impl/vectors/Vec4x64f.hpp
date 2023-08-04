@@ -360,8 +360,10 @@ namespace avel {
         AVEL_FINL friend mask operator!=(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
             return mask{_mm256_cmp_pd_mask(lhs.content, rhs.content, _CMP_NEQ_OS)};
+
             #elif defined(AVEL_AVX2)
             return mask{_mm256_cmp_pd(lhs.content, rhs.content, _CMP_NEQ_OS)};
+
             #endif
         }
 
@@ -369,8 +371,10 @@ namespace avel {
         AVEL_FINL friend mask operator<(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
             return mask{_mm256_cmp_pd_mask(lhs.content, rhs.content, _CMP_LT_OS)};
+
             #elif defined(AVEL_AVX2)
             return mask{_mm256_cmp_pd(lhs.content, rhs.content, _CMP_LT_OS)};
+
             #endif
         }
 
@@ -378,8 +382,10 @@ namespace avel {
         AVEL_FINL friend mask operator<=(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
             return mask{_mm256_cmp_pd_mask(lhs.content, rhs.content, _CMP_LE_OS)};
+
             #elif defined(AVEL_AVX2)
             return mask{_mm256_cmp_pd(lhs.content, rhs.content, _CMP_LE_OS)};
+
             #endif
         }
 
@@ -387,8 +393,10 @@ namespace avel {
         AVEL_FINL friend mask operator>(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
             return mask{_mm256_cmp_pd_mask(lhs.content, rhs.content, _CMP_GT_OS)};
+
             #elif defined(AVEL_AVX2)
             return mask{_mm256_cmp_pd(lhs.content, rhs.content, _CMP_GT_OS)};
+
             #endif
         }
 
@@ -396,8 +404,10 @@ namespace avel {
         AVEL_FINL friend mask operator>=(Vector lhs, Vector rhs) {
             #if defined(AVEL_AVX512VL)
             return mask{_mm256_cmp_pd_mask(lhs.content, rhs.content, _CMP_GE_OS)};
+
             #elif defined(AVEL_AVX2)
             return mask{_mm256_cmp_pd(lhs.content, rhs.content, _CMP_GE_OS)};
+
             #endif
         }
 
@@ -904,11 +914,14 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x64f round(vec4x64f v) {
-        #if defined(AVEL_AVX2)
-        // The following constant is the value prior to 0.5
-        auto offset = avel::copysign(vec4x64f{avel::bit_cast<double>(0x3fdfffffffffffff)}, v);
-        return avel::trunc(v + offset);
-        #endif
+        auto whole = trunc(v);
+        auto frac = v - whole;
+
+        auto offset = copysign(vec4x64f{1.0}, v);
+        auto should_offset = abs(frac) >= vec4x64f{0.5};
+        auto ret = whole + keep(should_offset, offset);
+
+        return ret;
     }
 
     [[nodiscard]]
@@ -1074,9 +1087,9 @@ namespace avel {
         auto misc_ret_i = _mm256_cvtepi32_epi64(misc_ret_i_32);
         misc_ret_i = _mm256_maskz_mov_epi64(_mm256_cmpneq_epi64_mask(misc_ret_i, _mm256_set1_epi64x(0xffffffff80000000ll)), misc_ret_i);
 
-        vec4x64i zero_ret_i{_mm256_castpd_si256(_mm256_fixupimm_pd(zero_ret, exp_fp, _mm256_set1_epi64x(0x88808888), 0x00))};
-        vec4x64i inf_ret_i {_mm256_castpd_si256(_mm256_fixupimm_pd(inf_ret,  exp_fp, _mm256_set1_epi64x(0x88088888), 0x00))};
-        vec4x64i nan_ret_i {_mm256_castpd_si256(_mm256_fixupimm_pd(nan_ret,  exp_fp, _mm256_set1_epi64x(0x88888800), 0x00))};
+        vec4x64i zero_ret_i{_mm256_castpd_si256(_mm256_fixupimm_pd(decay(zero_ret), exp_fp, _mm256_set1_epi64x(0x88808888), 0x00))};
+        vec4x64i inf_ret_i {_mm256_castpd_si256(_mm256_fixupimm_pd(decay(inf_ret),  exp_fp, _mm256_set1_epi64x(0x88088888), 0x00))};
+        vec4x64i nan_ret_i {_mm256_castpd_si256(_mm256_fixupimm_pd(decay(nan_ret),  exp_fp, _mm256_set1_epi64x(0x88888800), 0x00))};
 
         return (vec4x64i{misc_ret_i} | zero_ret_i) | (inf_ret_i | nan_ret_i);
 
@@ -1156,62 +1169,67 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x64i fpclassify(vec4x64f v) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
-        const vec4x64i fp_infinite{int(FP_INFINITE)};
-        const vec4x64i fp_nan{int(FP_NAN)};
-        const vec4x64i fp_normal{int(FP_NORMAL)};
-        const vec4x64i fp_subnormal{int(FP_SUBNORMAL)};
-        const vec4x64i fp_zero{int(FP_ZERO)};
+        #if defined(AVEL_AVX512VL)
+        // Approach based on testing of ranges of bit patterns to which the various categories belong
 
-        mask4x64i infinite_mask {_mm256_fpclass_pd_mask(decay(v), 0x08 | 0x10)};
-        mask4x64i nan_mask      {_mm256_fpclass_pd_mask(decay(v), 0x01 | 0x80)};
-        mask4x64i subnormal_mask{_mm256_fpclass_pd_mask(decay(v), 0x20)};
-        mask4x64i zero_mask     {_mm256_fpclass_pd_mask(decay(v), 0x02 | 0x04)};
-        mask4x64i normal_mask   {!(infinite_mask | nan_mask | subnormal_mask | zero_mask)};
+        auto v_bits = _mm256_castpd_si256(decay(v));
 
-        return
-            keep(infinite_mask, fp_infinite) |
-            keep(nan_mask, fp_nan) |
-            keep(normal_mask, fp_normal) |
-            keep(subnormal_mask, fp_subnormal) |
-            keep(zero_mask, fp_zero);
+        // Take absolute value
+        v_bits = _mm256_and_si256(v_bits, _mm256_set1_epi64x(0x7fffffffffffffffull));
+
+        // Bit pattern for FLT_MIN
+        const auto min_bits = _mm256_set1_epi64x(0x10000000000000ull);
+
+        // Bit pattern for +INFINITY
+        const auto inf_bits = _mm256_set1_epi64x(0x7ff0000000000000ull);
+
+        // Masks for individual categories
+        auto m0 = _mm256_cmpeq_epi64(v_bits, _mm256_setzero_si256());
+        auto m1 = _mm256_andnot_si256(m0, _mm256_cmpgt_epi64(min_bits, v_bits));
+        auto m2 = _mm256_andnot_si256(_mm256_cmpgt_epi64(min_bits, v_bits), _mm256_cmpgt_epi64(inf_bits, v_bits));
+        auto m3 = _mm256_cmpeq_epi64(v_bits, inf_bits);
+        auto m4 = _mm256_cmpgt_epi64(v_bits, inf_bits);
+
+        // Select result via blending
+        auto ret = _mm256_setzero_si256();
+        ret = _mm256_and_si256(m0, _mm256_set1_epi64x(FP_ZERO));
+        ret = _mm256_ternarylogic_epi64(ret, m1, _mm256_set1_epi64x(FP_SUBNORMAL), 0xf8);
+        ret = _mm256_ternarylogic_epi64(ret, m2, _mm256_set1_epi64x(FP_NORMAL),    0xf8);
+        ret = _mm256_ternarylogic_epi64(ret, m3, _mm256_set1_epi64x(FP_INFINITE),  0xf8);
+        ret = _mm256_ternarylogic_epi64(ret, m4, _mm256_set1_epi64x(FP_NAN),       0xf8);
+
+        return vec4x64i{ret};
 
         #elif defined(AVEL_AVX2)
-        const auto fp_infinite = _mm256_set1_epi64x(int(FP_INFINITE));
-        const auto fp_nan = _mm256_set1_epi64x(int(FP_NAN));
-        const auto fp_normal = _mm256_set1_epi64x(int(FP_NORMAL));
-        const auto fp_subnormal = _mm256_set1_epi64x(int(FP_SUBNORMAL));
-        const auto fp_zero = _mm256_set1_epi64x(int(FP_ZERO));
+        // Approach based on testing of ranges of bit patterns to which the various categories belong
 
-        auto infinity = _mm256_set1_pd(INFINITY);
-        auto dbl_min = _mm256_set1_pd(DBL_MIN);
+        auto v_bits = _mm256_castpd_si256(decay(v));
 
-        v = avel::abs(v);
+        // Take absolute value
+        v_bits = _mm256_and_si256(v_bits, _mm256_set1_epi64x(0x7fffffffffffffffull));
 
-        auto zero_mask      = _mm256_castpd_si256(_mm256_cmp_pd(decay(v), _mm256_setzero_pd(), _CMP_EQ_OQ));
-        auto subnormal_mask = _mm256_castpd_si256(_mm256_andnot_pd(_mm256_cmp_pd(decay(v), _mm256_setzero_pd(), _CMP_EQ_OQ), _mm256_cmp_pd(decay(v), dbl_min, _CMP_LE_OQ)));
-        auto infinite_mask  = _mm256_castpd_si256(_mm256_cmp_pd(decay(v), infinity, _CMP_EQ_OQ));
-        auto nan_mask       = _mm256_castpd_si256(_mm256_cmp_pd(decay(v), decay(v), _CMP_UNORD_Q));
-        auto normal_mask    = _mm256_castpd_si256(_mm256_and_pd(
-            _mm256_cmp_pd(dbl_min, decay(v), _CMP_LE_OQ),
-            _mm256_cmp_pd(decay(v), infinity, _CMP_LT_OQ)
-        ));
+        // Bit pattern for FLT_MIN
+        const auto min_bits = _mm256_set1_epi64x(0x10000000000000ull);
 
-        return vec4x64i{
-            _mm256_or_si256(
-                _mm256_and_si256(infinite_mask, fp_infinite),
-                _mm256_or_si256(
-                    _mm256_or_si256(
-                        _mm256_and_si256(nan_mask, fp_nan),
-                        _mm256_and_si256(normal_mask, fp_normal)
-                    ),
-                    _mm256_or_si256(
-                        _mm256_and_si256(subnormal_mask, fp_subnormal),
-                        _mm256_and_si256(zero_mask, fp_zero)
-                    )
-                )
-            )
-        };
+        // Bit pattern for +INFINITY
+        const auto inf_bits = _mm256_set1_epi64x(0x7ff0000000000000ull);
+
+        // Masks for individual categories
+        auto m0 = _mm256_cmpeq_epi64(v_bits, _mm256_setzero_si256());
+        auto m1 = _mm256_andnot_si256(m0, _mm256_cmpgt_epi64(min_bits, v_bits));
+        auto m2 = _mm256_andnot_si256(_mm256_cmpgt_epi64(min_bits, v_bits), _mm256_cmpgt_epi64(inf_bits, v_bits));
+        auto m3 = _mm256_cmpeq_epi64(v_bits, inf_bits);
+        auto m4 = _mm256_cmpgt_epi64(v_bits, inf_bits);
+
+        // Select result via blending
+        auto ret = _mm256_setzero_si256();
+        ret = _mm256_and_si256(m0, _mm256_set1_epi64x(FP_ZERO));
+        ret = _mm256_or_si256(ret, _mm256_and_si256(m1, _mm256_set1_epi64x(FP_SUBNORMAL)));
+        ret = _mm256_or_si256(ret, _mm256_and_si256(m2, _mm256_set1_epi64x(FP_NORMAL)));
+        ret = _mm256_or_si256(ret, _mm256_and_si256(m3, _mm256_set1_epi64x(FP_INFINITE)));
+        ret = _mm256_or_si256(ret, _mm256_and_si256(m4, _mm256_set1_epi64x(FP_NAN)));
+
+        return vec4x64i{ret};
 
         #endif
     }
@@ -1286,27 +1304,57 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask4x64f isgreater(vec4x64f x, vec4x64f y) {
-        return x > y;
+        #if defined(AVEL_AVX512VL)
+        return mask4x64f{_mm256_cmp_pd_mask(decay(x), decay(y), _CMP_GT_OQ)};
+
+        #elif defined(AVEL_AVX2)
+        return mask4x64f{_mm256_cmp_pd(decay(x), decay(y), _CMP_GT_OQ)};
+
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask4x64f isgreaterequal(vec4x64f x, vec4x64f y) {
-        return x >= y;
+        #if defined(AVEL_AVX512VL)
+        return mask4x64f{_mm256_cmp_pd_mask(decay(x), decay(y), _CMP_GE_OQ)};
+
+        #elif defined(AVEL_AVX2)
+        return mask4x64f{_mm256_cmp_pd(decay(x), decay(y), _CMP_GE_OQ)};
+
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask4x64f isless(vec4x64f x, vec4x64f y) {
-        return x < y;
+        #if defined(AVEL_AVX512VL)
+        return mask4x64f{_mm256_cmp_pd_mask(decay(x), decay(y), _CMP_LT_OQ)};
+
+        #elif defined(AVEL_AVX2)
+        return mask4x64f{_mm256_cmp_pd(decay(x), decay(y), _CMP_LT_OQ)};
+
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask4x64f islessequal(vec4x64f x, vec4x64f y) {
-        return x <= y;
+        #if defined(AVEL_AVX512VL)
+        return mask4x64f{_mm256_cmp_pd_mask(decay(x), decay(y), _CMP_LE_OQ)};
+
+        #elif defined(AVEL_AVX2)
+        return mask4x64f{_mm256_cmp_pd(decay(x), decay(y), _CMP_LE_OQ)};
+
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL mask4x64f islessgreater(vec4x64f x, vec4x64f y) {
-        return x != y;
+        #if defined(AVEL_AVX512VL)
+        return mask4x64f{_mm256_cmp_pd_mask(decay(x), decay(y), _CMP_NEQ_OQ)};
+
+        #elif defined(AVEL_AVX2)
+        return mask4x64f{_mm256_cmp_pd(decay(x), decay(y), _CMP_NEQ_OQ)};
+
+        #endif
     }
 
     [[nodiscard]]
