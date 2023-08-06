@@ -68,7 +68,7 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
     #if defined(AVEL_AUTO_DETECT)
         static_assert(false, "Cannot detect capabilites on MSVC.");
     #endif
-#elif
+#else
     static_assert(
         false,
         "Compiler is not supported. Compilation not likely to function"
