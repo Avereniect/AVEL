@@ -989,7 +989,7 @@ namespace avel {
         #elif defined(AVEL_AVX2)
         auto table_offset = masks128_table.size() / 2 - avel::min(vec2x64f::width, n) * sizeof(double);
         auto mask = _mm_loadu_si128(reinterpret_cast<const __m128i*>(masks128_table.data() + table_offset));
-        return vec2x64f{_mm_mask_i64gather_pd(_mm_setzero_pd(), ptr, decay(indices), mask, sizeof(double))};
+        return vec2x64f{_mm_mask_i64gather_pd(_mm_setzero_pd(), ptr, decay(indices), _mm_castsi128_pd(mask), sizeof(double))};
 
         #elif defined(AVEL_SSE2)
         auto a = _mm_setzero_pd();
@@ -1804,7 +1804,7 @@ namespace avel {
 
         return vec2x64i{ret};
 
-        #elif defined(AVEL_SSE2)
+        #elif defined(AVEL_SSE42)
         // Approach based on testing of ranges of bit patterns to which the various categories belong
 
         auto v_bits = _mm_castpd_si128(decay(v));
@@ -1824,6 +1824,34 @@ namespace avel {
         auto m2 = _mm_andnot_si128(_mm_cmpgt_epi64(min_bits, v_bits), _mm_cmpgt_epi64(inf_bits, v_bits));
         auto m3 = _mm_cmpeq_epi64(v_bits, inf_bits);
         auto m4 = _mm_cmpgt_epi64(v_bits, inf_bits);
+
+        // Select result via blending
+        auto ret = _mm_setzero_si128();
+        ret = _mm_and_si128(m0, _mm_set1_epi64x(FP_ZERO));
+        ret = _mm_or_si128(ret, _mm_and_si128(m1, _mm_set1_epi64x(FP_SUBNORMAL)));
+        ret = _mm_or_si128(ret, _mm_and_si128(m2, _mm_set1_epi64x(FP_NORMAL)));
+        ret = _mm_or_si128(ret, _mm_and_si128(m3, _mm_set1_epi64x(FP_INFINITE)));
+        ret = _mm_or_si128(ret, _mm_and_si128(m4, _mm_set1_epi64x(FP_NAN)));
+
+        return vec2x64i{ret};
+
+        #elif defined(AVEL_SSE2)
+        // Approach based on testing of ranges of bit patterns to which the various categories belong
+
+        auto abs_v = decay(avel::abs(v));
+
+        // Bit pattern for FLT_MIN
+        const auto min = _mm_set1_pd(DBL_MIN);
+
+        // Bit pattern for +INFINITY
+        const auto inf = _mm_set1_pd(INFINITY);
+
+        // Masks for individual categories
+        auto m0 = _mm_castpd_si128(_mm_cmpeq_pd(decay(v), _mm_setzero_pd()));
+        auto m1 = _mm_castpd_si128(_mm_andnot_pd(_mm_cmpeq_pd(abs_v, _mm_setzero_pd()), _mm_cmplt_pd(abs_v, min)));
+        auto m2 = _mm_castpd_si128(_mm_andnot_pd(_mm_cmplt_pd(abs_v, min), _mm_cmplt_pd(abs_v, inf)));
+        auto m3 = _mm_castpd_si128(_mm_cmpeq_pd(abs_v, inf));
+        auto m4 = _mm_castpd_si128(decay(avel::isnan(v)));
 
         // Select result via blending
         auto ret = _mm_setzero_si128();

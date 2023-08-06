@@ -748,10 +748,10 @@ namespace avel {
         auto mask = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(masks256_table.data() + table_offset));
 
         return vec4x64f{_mm256_mask_i64gather_pd(
-            _mm256_setzero_si256(),
+            _mm256_setzero_pd(),
             ptr,
             decay(indices),
-            mask,
+            _mm256_castsi256_pd(mask),
             sizeof(double)
         )};
 

@@ -707,7 +707,7 @@ namespace avel {
         #elif defined(AVEL_AVX2)
         auto table_offset = masks256_table.size() / 2 - avel::min(vec8x32f::width, n) * sizeof(float);
         auto mask = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(masks256_table.data() + table_offset));
-        return vec8x32f{_mm256_mask_i32gather_ps(_mm256_setzero_ps(), ptr, decay(indices), mask, sizeof(float))};
+        return vec8x32f{_mm256_mask_i32gather_ps(_mm256_setzero_ps(), ptr, decay(indices), _mm256_castsi256_ps(mask), sizeof(float))};
 
         #endif
     }

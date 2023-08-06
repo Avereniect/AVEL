@@ -39,7 +39,7 @@ namespace avel {
         for (std::size_t i = 0; i < n; i += increment) {
             __builtin_prefetch(reinterpret_cast<const char*>(ptr) + i, READ, locality_hint);
         }
-        #elif
+        #else
 
         #if defined(AVEL_SSE)
         static constexpr int table[3] = {
@@ -99,7 +99,7 @@ namespace avel {
         for (std::size_t i = 0; i < n; i += increment) {
             __builtin_prefetch(reinterpret_cast<const char*>(ptr) + i, WRITE, locality_hint);
         }
-        #elif
+        #else
 
         #if defined(AVEL_SSE)
         //TODO: Implement using _m_prefetchw?
