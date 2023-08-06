@@ -820,7 +820,7 @@ namespace avel {
         const auto inf_bits = _mm512_set1_epi32(0x7f800000);
 
         // Masks for individual categories
-        auto m0 = _mm512_cmpeq_epi32_mask(v_bits, _mm512_setzero_si512());
+        auto m0 = _mm512_testn_epi32_mask(v_bits, v_bits);
         auto m1 = ~m0 & _mm512_cmplt_epi32_mask(v_bits, min_bits);
         auto m2 = ~_mm512_cmplt_epi32_mask(v_bits, min_bits) & _mm512_cmplt_epi32_mask(v_bits, inf_bits);
         auto m3 = _mm512_cmpeq_epi32_mask(v_bits, inf_bits);
