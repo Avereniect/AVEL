@@ -1650,7 +1650,7 @@ namespace avel {
 
         #elif defined(AVEL_SSE2) && defined(AVEL_POPCNT)
         auto lo = _mm_cvtsi128_si64(decay(v));
-        auto hi = _mm_cvtsi128_si64(_mm_srli_si128(v, 0x8));
+        auto hi = _mm_cvtsi128_si64(_mm_srli_si128(decay(v), 0x8));
 
         auto popcnt_lo = _mm_popcnt_u64(lo);
         auto popcnt_hi = _mm_popcnt_u64(hi);

@@ -522,7 +522,16 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x32f neg_abs(vec16x32f v) {
+        #if defined(AVEL_AVX512DQ)
         return vec16x32f{_mm512_or_ps(_mm512_set1_ps(float_sign_bit_mask), decay(v))};
+
+        #elif defined(AVEL_AVX512F)
+        auto bits = _mm512_castps_si512(decay(v));
+        auto mask = _mm512_set1_epi32(float_sign_bit_mask_bits);
+        auto result = _mm512_or_si512(bits, mask);
+        return vec16x32f{_mm512_castsi512_ps(result)};
+
+        #endif
     }
 
     //=====================================================

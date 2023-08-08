@@ -489,7 +489,16 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64f neg_abs(vec8x64f v) {
-        return -abs(v);
+        #if defined(AVEL_AVX512DQ)
+        return vec8x64f{_mm512_or_pd(_mm512_set1_pd(double_sign_bit_mask), decay(v))};
+
+        #elif defined(AVEL_AVX512F)
+        auto bits = _mm512_castpd_si512(decay(v));
+        auto mask = _mm512_set1_epi64(double_sign_bit_mask_bits);
+        auto result = _mm512_or_si512(bits, mask);
+        return vec8x64f{_mm512_castsi512_pd(result)};
+
+        #endif
     }
 
     //=====================================================
