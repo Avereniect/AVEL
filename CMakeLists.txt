@@ -104,6 +104,8 @@ endif()
 option(AVEL_BUILD_BENCHMARKS OFF)
 
 if (AVEL_BUILD_BENCHMARKS)
+    set(BENCHMARK_DOWNLOAD_DEPENDENCIES ON)
+    add_subdirectory(google_benchmark)
     add_subdirectory(benchmarks)
 endif()
 
