@@ -19,6 +19,8 @@ import subprocess
 import itertools
 import shutil
 
+from functools import reduce
+
 bench_output_dir = './benchmark_results/'
 """Directory where benchmark results should be placed"""
 
@@ -68,6 +70,9 @@ features_arm = {
 Map associating feature macros with their implied features, according to AVEL
 """
 
+arch_feature_list = [features_x86, features_arm]
+"""List of all feature maps"""
+
 target_features = features_x86
 
 compiler_macros = [
@@ -102,17 +107,16 @@ class VariableAssignments:
             print('Error: Attempted to assign unrecognized value to variable in VariableAssignments')
             exit(1)
 
-        if key not in target_features.keys() and key not in compiler_macros:
-            print('Error: Attempted to assign to unrecognized variable in VariableAssignments')
-            exit(1)
-
         self.backing_dict[key] = value
 
     def __hash__(self):
-        return hash(tuple(self.backing_dict.keys()))
+        tmp0 = reduce(lambda x, y: x + y, [hash(x) for x in self.backing_dict.keys()])
+        tmp1 = reduce(lambda x, y: x + y, [hash(x) for x in self.backing_dict.values()])
+
+        return hash(tmp0 + tmp1)
 
     def __eq__(self, other):
-        return self.backing_dict.keys() == other.backing_dict.keys()
+        return self.backing_dict == other.backing_dict
 
     def items(self):
         return self.backing_dict.items()
@@ -172,22 +176,20 @@ def get_processor_name():
         all_info = subprocess.check_output(command, shell=True).decode().strip()
         for line in all_info.split("\n"):
             if "model name" in line:
-                return re.sub( ".*model name.*:", "", line,1)
+                return re.sub(".*model name.*:", "", line, 1)
 
     return platform.processor()
 
 
-def merge(a: FeatureResults, b: FeatureResults):
-    if a.feature_name != b.feature_name:
-        print('Attempted to merge results from different features')
-        exit(1)
+def default_foreign_architecture_variables(a: VariableAssignments):
+    if cli_arguments['arch'] == 'x86':
+        for feature in features_arm:
+            a[feature] = 'False'
+    elif cli_arguments['arch'] == 'arm':
+        for feature in features_x86:
+            a[feature] = 'False'
 
-    ret = FeatureResults()
-    ret.feature_name = a.feature_name
-    ret.configs = a.configs + b.configs
-    ret.timings = a.timings + b.timings
-
-    return ret
+    return a
 
 
 def compiler_name_to_avel_macro(compiler_name):
@@ -201,7 +203,7 @@ def compiler_name_to_avel_macro(compiler_name):
 
     if 'g++' in compiler_name:
         return 'AVEL_GCC'
-    elif 'Clang' in compiler_name:
+    elif 'clang' in compiler_name:
         return 'AVEL_CLANG'
     elif 'Intel(R) oneAPI DPC++/C++ Compiler' in compiler_name:
         return 'AVEL_ICPX'
@@ -315,9 +317,9 @@ def list_bench_files(bench_path: str):
     files = [f for f in os.listdir(bench_path) if os.path.isfile(bench_path + f)]
 
     suffixes = (
-        '_u8.hpp', '_u16.hpp', '_u32.hpp', '_u64.hpp',
-        '_i8.hpp', '_i16.hpp', '_i32.hpp', '_i64.hpp',
-                               '_f32.hpp', '_f64.hpp'
+        '_8u.hpp', '_16u.hpp', '_32u.hpp', '_64u.hpp',
+        '_8i.hpp', '_16i.hpp', '_32i.hpp', '_64i.hpp',
+        '_32f.hpp', '_64f.hpp'
     )
 
     # Filter for bench files based on suffix
@@ -473,6 +475,11 @@ def expand_feature_assignments(assignments: VariableAssignments):
             for implied_feature in target_features[variable][1]:
                 new_assignments[implied_feature] = 'True'
 
+    # TODO: Make more generic
+    if cli_arguments['arch'] == 'x86':
+        for feature in features_arm.keys():
+            new_assignments[feature] = 'False'
+
     ret = VariableAssignments()
     ret.backing_dict = new_assignments
     return ret
@@ -499,6 +506,15 @@ def run_benchmarks_on_compiler(config: BuildConfiguration):
                 flags += ' ' + target_features[variable][0]
             else:
                 cmake_variables += ' ' + '-D' + variable + ':BOOL=OFF'
+
+    # Populate AVEL_benchmarks_include.hpp
+    include_lines = []
+    for bench_file in config.bench_file_names:
+        include_lines.append('#include "{}"'.format(bench_file))
+
+    bench_file_include_line = '\n'.join(include_lines)
+    with open("benchmarks/AVEL_benchmarks_include.hpp", "w") as f:
+        f.write(bench_file_include_line)
 
     # Run CMake command
     cmake_command_format_string = \
@@ -532,7 +548,8 @@ def run_benchmarks_on_compiler(config: BuildConfiguration):
         '--benchmark_repetitions=1',
         '--benchmark_display_aggregates_only=true',
         '--benchmark_out_format=console',
-        '--benchmark_color=false'
+        '--benchmark_color=false',
+        '--benchmark_enable_random_interleaving=true'
     ]
 
     try:
@@ -562,7 +579,8 @@ def construct_result_objects(bench_outputs: str, config: BuildConfiguration):
     # Skip boilerplate results
     lines = lines[3:]
 
-    unit_space_remover = lambda x: x.replace(' ns', 'ns').replace(' us', 'us').replace(' ms', 'ms').replace(' s', 's')
+    def unit_space_remover(x):
+        x.replace(' ns', 'ns').replace(' us', 'us').replace(' ms', 'ms').replace(' s', 's')
 
     # Split columns into 3-tuple. Discard last column
     lines = [' '.join(line.split()) for line in lines]
@@ -592,9 +610,9 @@ def generate_table_lines(timings: [TimingResults]):
     """
 
     col0_strings = [str(t.config_idx) for t in timings]
-    col1_strings = [t.name            for t in timings]
-    col2_strings = [t.time            for t in timings]
-    col3_strings = [t.cpu_time        for t in timings]
+    col1_strings = [t.name for t in timings]
+    col2_strings = [t.time for t in timings]
+    col3_strings = [t.cpu_time for t in timings]
 
     col0_strings.insert(0, 'Config')
     col1_strings.insert(0, 'Benchmark')
@@ -624,11 +642,11 @@ def generate_table_lines(timings: [TimingResults]):
     return table_lines
 
 
-def generate_markdown_file(results: {str: [TimingResults]}):
+def generate_markdown_file(grouped_results: {str: [TimingResults]}):
     """
     Generate Markdown table containing benchmark results.
 
-    :param results: Dictionary of results to print out
+    :param grouped_results: Dictionary of results to print out
     :return: Markdown text for
     """
 
@@ -636,16 +654,16 @@ def generate_markdown_file(results: {str: [TimingResults]}):
     lines.append('# AVEL Benchmark Results')
     lines.append('CPU:' + get_processor_name())
 
-    for name, results_list in results.items():
+    for name, results_list in grouped_results.items():
         lines.append('## ' + name)
 
-        # List configurations
+        # Get list of configurations
         configurations = []
         for results in results_list:
             if results.config not in configurations:
                 configurations.append(results.config)
 
-        # List configurations
+        # Output configurations
         lines.append('### Configurations:')
         for idx, config in enumerate(configurations):
             lines.append('#### Config ' + str(idx))
@@ -662,6 +680,8 @@ def generate_markdown_file(results: {str: [TimingResults]}):
             lines.append('')
 
         lines.append('### Results:')
+
+        # Assign indices to each configuration
         for results in results_list:
             results.config_idx = configurations.index(results.config)
 
@@ -733,12 +753,12 @@ def group_results(results: {BuildConfiguration: TimingResults}):
 
     for results_list in results.values():
         for result in results_list:
-            underscore_index = result.name.find('_')
-            if underscore_index == -1:
+            double_colon_index = result.name.find('::')
+            if double_colon_index == -1:
                 print("Error test case does not contain underscore in name as expected")
                 exit(1)
 
-            prefix = result.name[0:underscore_index]
+            prefix = result.name[0:double_colon_index]
 
             if prefix in prefix_map:
                 prefix_map[prefix].append(result)
@@ -798,6 +818,7 @@ def main():
         for macro in compiler_macros:
             if macro != compiler.avel_macro:
                 base_assignments[macro] = 'False'
+        base_assignments = default_foreign_architecture_variables(base_assignments)
 
         # Add base assignments case to variable_assignment_set
         config_variable_assignments_map[(compiler, base_assignments)] = bench_files_names
@@ -813,7 +834,8 @@ def main():
                 compiler_assignment_tuple = (compiler, assignments)
 
                 if compiler_assignment_tuple in config_variable_assignments_map.keys():
-                    config_variable_assignments_map[compiler_assignment_tuple].append(bench_file)
+                    if bench_file not in config_variable_assignments_map[compiler_assignment_tuple]:
+                        config_variable_assignments_map[compiler_assignment_tuple].append(bench_file)
                 else:
                     config_variable_assignments_map[compiler_assignment_tuple] = [bench_file]
 
@@ -837,8 +859,8 @@ def main():
     # Write results to Markdown file
     deduplicated_results = deduplicate_results(results_dict)
     grouped_results = group_results(deduplicated_results)
-    table = generate_markdown_file(grouped_results)
-    write_to_file(bench_output_dir + 'benchmark_results.md', table)
+    markdown_contents = generate_markdown_file(grouped_results)
+    write_to_file(bench_output_dir + 'benchmark_results.md', markdown_contents)
 
 
 if __name__ == '__main__':
