@@ -87,14 +87,12 @@ namespace avel {
 
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
-            content = __mmask8(_mm_cmplt_epu8_mask(_mm_setzero_si128(), array_data));
+            content = _mm_test_epi8_mask(array_data, array_data);
 
             #elif defined(AVEL_AVX512VL)
             auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));
             auto expanded = _mm_cvtepi8_epi32(array_data);
-            content = _mm_cmplt_epu32_mask(_mm_setzero_si128(), expanded);
-
-            //TODO: Utiilze _mm_cvtepi8_epi32
+            content = _mm_test_epi32_mask(expanded, expanded);
 
             #elif defined(AVEL_SSE2)
             auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint32_t>(arr));

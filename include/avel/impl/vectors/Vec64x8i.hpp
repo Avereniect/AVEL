@@ -74,7 +74,7 @@ namespace avel {
 
             #if defined(AVEL_AVX512BW)
             auto array_data = _mm512_loadu_si512(arr.data());
-            content = _mm512_cmplt_epu8_mask(_mm512_setzero_si512(), array_data);
+            content = _mm512_test_epi8_mask(array_data, array_data);
             #endif
         }
 

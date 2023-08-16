@@ -81,7 +81,7 @@ namespace avel {
 
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             auto array_data = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(arr.data()));
-            content = primitive(_mm256_cmplt_epu8_mask(_mm256_setzero_si256(), array_data));
+            content = _mm256_test_epi8_mask(array_data, array_data);
 
             #elif defined(AVEL_AVX2)
             primitive array_data = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(arr.data()));

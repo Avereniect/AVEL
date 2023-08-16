@@ -74,12 +74,12 @@ namespace avel {
 
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             auto array_data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()));
-            content = _mm_cmplt_epu8_mask(_mm_setzero_si128(), array_data);
+            content = _mm_test_epi8_mask(array_data, array_data);
 
             #elif defined(AVEL_AVX512F)
             auto array_data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(arr.data()));
             auto widened_data = _mm512_cvtepi8_epi32(array_data);
-            content = _mm512_cmplt_epu32_mask(_mm512_setzero_si512(), widened_data);
+            content = _mm512_test_epi32_mask(widened_data, widened_data);
 
             #endif
         }

@@ -82,7 +82,7 @@ namespace avel {
         AVEL_FINL explicit Vector_mask(const arr2xb& arr) {
             #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
             auto array_data = _mm_cvtsi32_si128(bit_cast<std::uint16_t>(arr));
-            content = _mm_cmplt_epu8_mask(_mm_setzero_si128(), array_data);
+            content = _mm_test_epi8_mask(array_data, array_data);
 
             #elif defined(AVEL_AVX512VL)
             content = (arr[1] << 1) | arr[0];
