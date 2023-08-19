@@ -1,6 +1,3 @@
-//
-// Created by avereniect on 1/27/22.
-//
 #include <cstdint>
 #include <fstream>
 #include <array>
@@ -363,7 +360,7 @@ void scalar_comparison(std::uint32_t begin, std::uint32_t end) {
         std::int32_t baseline = baselines[i - begin];
 
         auto x = avel::bit_cast<float>(i);
-        float s = sine(float_vector{x}).as_array()[0];//sine(x);//std::sin(x);
+        float s = std::sin(x);
         auto sine_bits = avel::bit_cast<std::int32_t>(s);
 
         std::int32_t error = std::abs(baseline - sine_bits);
@@ -390,20 +387,11 @@ void scalar_comparison(std::uint32_t begin, std::uint32_t end) {
     close(fd);
 }
 
-void sigint_handler(int signal) {
-    std::cout << signal << std::endl;
-
-    //TODO: Print current results out
-
-    exit(EXIT_SUCCESS);
-}
-
 int main() {
-    //std::signal(SIGINT, sigint_handler);
     //parallel_comparison(0x00, 0x3fc90fdc);
 
-    //scalar_comparison(0x0000'0000, 0x3FC9'0FDC);
-    vector_comparison(0x0000'0000, 0x3FC9'0FDC);
+    scalar_comparison(0x0000'0000, 0x3FC9'0FDC);
+    //vector_comparison(0x0000'0000, 0x3FC9'0FDC);
 
     return EXIT_SUCCESS;
 }
