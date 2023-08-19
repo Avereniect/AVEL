@@ -348,6 +348,8 @@ def parse_feature_check(line):
     line = line.replace('|', ' or ')
     line = line.replace('&', ' and ')
 
+    line = line.replace('!', ' not ')
+
     # TODO: Adjust this when multiple C++ versions are handled
     line = line.replace('__cplusplus', '201103')
 
@@ -559,7 +561,11 @@ def run_benchmarks_on_compiler(config: BuildConfiguration):
 
     output = str(result.stdout.decode())
 
+    # Remove build directory
     shutil.rmtree(build_path)
+
+    # Clear contents of
+    open('benchmarks/AVEL_benchmarks_include.hpp', 'w').close()
 
     return construct_result_objects(output, config)
 
@@ -580,7 +586,7 @@ def construct_result_objects(bench_outputs: str, config: BuildConfiguration):
     lines = lines[3:]
 
     def unit_space_remover(x):
-        x.replace(' ns', 'ns').replace(' us', 'us').replace(' ms', 'ms').replace(' s', 's')
+        return x.replace(' ns', 'ns').replace(' us', 'us').replace(' ms', 'ms').replace(' s', 's')
 
     # Split columns into 3-tuple. Discard last column
     lines = [' '.join(line.split()) for line in lines]
