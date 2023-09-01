@@ -658,6 +658,8 @@ def generate_markdown_file(grouped_results: {str: [TimingResults]}):
 
     lines = []
     lines.append('# AVEL Benchmark Results')
+    lines.append('Note: Measurements should only be compared relative to others in the same table')
+    lines.append('Note: Measurements for masks should not be compared between implementations that do and don\'t have AVX-512')
     lines.append('CPU:' + get_processor_name())
 
     for name, results_list in grouped_results.items():
