@@ -7,5 +7,6 @@
 #include "Vector.hpp"
 #include "Scalar_denominator.hpp"
 #include "Vector_denominator.hpp"
+#include "Arrangement.hpp"
 
 #endif
