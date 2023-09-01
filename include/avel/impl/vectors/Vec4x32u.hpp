@@ -1866,11 +1866,11 @@ namespace avel {
         auto zero_mask = (x == vec4x32u{0x00});
 
         --x;
-        x |= x >> 1;
-        x |= x >> 2;
-        x |= x >> 4;
-        x |= x >> 8;
-        x |= x >> 16;
+        x |= bit_shift_right<1>(x);
+        x |= bit_shift_right<2>(x);
+        x |= bit_shift_right<4>(x);
+        x |= bit_shift_right<8>(x);
+        x |= bit_shift_right<16>(x);
         x = _mm_andnot_si128(decay(set_bits(zero_mask)), decay(x));
         ++x;
 
@@ -1889,6 +1889,7 @@ namespace avel {
     AVEL_FINL mask4x32u has_single_bit(vec4x32u v) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
         return popcount(v) == vec4x32u{1};
+
         #elif defined(AVEL_SSE2) || defined(AVEL_NEON)
         return mask4x32u{v} & !mask4x32u{v & (v - vec4x32u{1})};
         #endif

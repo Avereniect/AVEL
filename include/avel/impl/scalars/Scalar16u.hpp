@@ -23,6 +23,7 @@ namespace avel {
     AVEL_FINL std::uint16_t popcount(std::uint16_t x) {
         #if defined(AVEL_POPCNT)
         return _popcnt32(x);
+
         #else
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
         x = x - ((x >> 1) & 0x5555);
@@ -182,7 +183,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint16_t bit_ceil(std::uint16_t x) {
-        #if defined(AVEL_X86)
+        #if defined(AVEL_LZCNT)
+        auto sh = (32 - _lzcnt_u32(x - 1));
+        auto result = 1 << sh;
+        return result;
+
+        #elif defined(AVEL_X86)
         if (x == 0) {
             return 1;
         }
