@@ -213,7 +213,10 @@ def identify_feature_combinations(file_path):
     file.close()
 
     def is_feature_check_macro(l: str):
-        return (('#if' in l) or ('#elif' in l)) and ('defined' in l) and ('AVEL' in l)
+        l = l.strip(l)
+        begins_with_conditional = l.startswith('#if') or l.startswith('#elif')
+        contains_cpp_version_or_avel = 'AVEL' in l or '__cplusplus' in l
+        return begins_with_conditional and contains_cpp_version_or_avel
 
     expressions_and_variables = {}
 
