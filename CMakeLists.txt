@@ -36,7 +36,7 @@ set(AVEL_OPTIONS
 # AVEL
 
 add_library(AVEL INTERFACE)
-target_compile_features(AVEL INTERFACE "cxx_std_11")
+target_compile_features(AVEL INTERFACE cxx_std_11)
 target_include_directories(AVEL INTERFACE include/)
 
 
@@ -112,10 +112,8 @@ endif()
 
 
 # AVEL support
-#option(AVEL_BUILD_SUPPORT OFF)
+#option(AVEL_BUILD_SUPPORT ON)
 
 #if (AVEL_BUILD_SUPPORT)
 #    add_subdirectory(support)
 #endif()
-
-#add_subdirectory(support)

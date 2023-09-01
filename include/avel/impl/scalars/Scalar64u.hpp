@@ -23,9 +23,11 @@ namespace avel {
     AVEL_FINL std::uint64_t popcount(std::uint64_t x) {
         #if defined(AVEL_POPCNT)
         return _mm_popcnt_u64(x);
+
         #elif defined(AVEL_ARM) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
         //TODO: Perform manual optimization for this
         return __builtin_popcountl(x);
+
         #else
         x = x - ((x >> 1) & 0x5555555555555555);
         x = ((x >> 2) & 0x3333333333333333) + (x & 0x3333333333333333);
@@ -219,20 +221,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint64_t bit_ceil(std::uint64_t x) {
-        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
-        if (x == 0) {
-            return 1;
-        }
-
-        auto tmp = std::uint64_t{1} << (63 - __builtin_clzll(x));
-        return tmp << (tmp != x);
-
-        #elif defined(AVEL_ICX) && defined(AVEL_LZCNT)
+        #if defined(AVEL_LZCNT) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         if (x == 0) {
             return 1;
         }
 
         auto tmp = std::uint64_t{1} << (63 - _lzcnt_u64(x));
+        return tmp << (tmp != x);
+
+        #elif defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
+        if (x == 0) {
+            return 1;
+        }
+
+        auto tmp = std::uint64_t{1} << (63 - __builtin_clzll(x));
         return tmp << (tmp != x);
 
         #else

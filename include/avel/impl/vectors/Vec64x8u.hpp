@@ -1420,6 +1420,9 @@ namespace avel {
         #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512BITALG)
         return vec64x8u{_mm512_popcnt_epi8(decay(v))};
 
+        //TODO: Consider using vpermi2b
+        //TODO: Consider using wider popcnt ops if bitalg is not available
+
         #elif defined(AVEL_AVX512BW)
         alignas(64) static constexpr std::uint8_t table_data[16] {
             0, 1, 1, 2,

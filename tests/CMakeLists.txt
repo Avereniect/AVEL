@@ -183,7 +183,7 @@ add_executable(AVEL_TESTS
 target_compile_definitions(AVEL INTERFACE ${AVEL_REQUESTED_TEST_GROUPS})
 
 target_link_libraries(AVEL_TESTS PUBLIC AVEL gtest pthread)
-target_compile_features(AVEL_TESTS PRIVATE "cxx_std_11")
+target_compile_features(AVEL_TESTS PRIVATE cxx_std_17)
 
 #TODO: Set compilation flags based on enabled features
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

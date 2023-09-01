@@ -1150,11 +1150,11 @@ namespace avel {
         auto zero_mask = (v == vec8x32u{0x00});
 
         --v;
-        v |= v >> 1;
-        v |= v >> 2;
-        v |= v >> 4;
-        v |= v >> 8;
-        v |= v >> 16;
+        v |= bit_shift_right<1>(v);
+        v |= bit_shift_right<2>(v);
+        v |= bit_shift_right<4>(v);
+        v |= bit_shift_right<8>(v);
+        v |= bit_shift_right<16>(v);
         v = _mm256_andnot_si256(decay(set_bits(zero_mask)), decay(v));
         ++v;
         return v;

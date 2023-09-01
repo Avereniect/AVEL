@@ -58,8 +58,8 @@ namespace avel {
     using vecNx16i = Vector<std::int16_t, natural_width_16i>;
     using vecNx8i  = Vector<std::int8_t,  natural_width_8i>;
 
-    //using vecNx32f = Vector<float, natural_width_32f>;
-    //using vecNx64f = Vector<double, natural_width_64f>;
+    using vecNx32f = Vector<float, natural_width_32f>;
+    using vecNx64f = Vector<double, natural_width_64f>;
 
 
 
@@ -73,8 +73,8 @@ namespace avel {
     using maskNx16i = Vector_mask<std::int16_t, natural_width_16i>;
     using maskNx8i  = Vector_mask<std::int8_t,  natural_width_8i>;
 
-    //using maskNx32f = Vector_mask<float, natural_width_32f>;
-    //using maskNx64f = Vector_mask<double, natural_width_64f>;
+    using maskNx32f = Vector_mask<float, natural_width_32f>;
+    using maskNx64f = Vector_mask<double, natural_width_64f>;
 
 
 
@@ -88,8 +88,8 @@ namespace avel {
     using arrNx16i = std::array<std::int16_t, natural_width_16i>;
     using arrNx8i  = std::array<std::int8_t,  natural_width_8i>;
 
-    //using arrNx32f = std::array<float, natural_width_32f>;
-    //using arrNx64f = std::array<double, natural_width_64f>;
+    using arrNx32f = std::array<float, natural_width_32f>;
+    using arrNx64f = std::array<double, natural_width_64f>;
 
     //=====================================================
     // Aliases for maximum sized vectors
@@ -105,8 +105,8 @@ namespace avel {
     using vecMx16i = Vector<std::int16_t, max_width_16i>;
     using vecMx8i  = Vector<std::int8_t,  max_width_8i>;
 
-    //using vecMx32f = Vector<float, max_width_32f>;
-    //using vecMx64f = Vector<double, max_width_64f>;
+    using vecMx32f = Vector<float, max_width_32f>;
+    using vecMx64f = Vector<double, max_width_64f>;
 
 
 
@@ -120,8 +120,8 @@ namespace avel {
     using maskMx16i = Vector_mask<std::int16_t, max_width_16i>;
     using maskMx8i  = Vector_mask<std::int8_t,  max_width_8i>;
 
-    //using maskMx32f = Vector_mask<float, max_width_32f>;
-    //using maskMx64f = Vector_mask<double, max_width_64f>;
+    using maskMx32f = Vector_mask<float, max_width_32f>;
+    using maskMx64f = Vector_mask<double, max_width_64f>;
 
 
 
@@ -135,8 +135,8 @@ namespace avel {
     using arrMx16i = std::array<std::int16_t, max_width_16i>;
     using arrMx8i  = std::array<std::int8_t,  max_width_8i>;
 
-    //using arrMx32f = std::array<float, max_width_32f>;
-    //using arrMx64f = std::array<double, max_width_64f>;
+    using arrMx32f = std::array<float, max_width_32f>;
+    using arrMx64f = std::array<double, max_width_64f>;
 
     //=====================================================
     // Type traits
@@ -170,6 +170,43 @@ namespace avel {
     constexpr bool is_vector_mask_v = is_vector_mask<T>::value;
 
     #endif
+
+
+
+
+
+    namespace {
+
+        template<class T, std::uint32_t N>
+        Vector_mask<T, N> to_mask_helper(Vector<T, N>) {
+            return {};
+        }
+
+        template<class T, std::uint32_t N>
+        Vector<T, N> to_vector_helper(Vector_mask<T, N>) {
+            return {};
+        }
+
+    }
+
+
+    template<class Vector>
+    struct to_mask {
+        using type = decltype(to_mask_helper(Vector{}));
+    };
+
+    template<class Vector>
+    using to_mask_type = typename to_mask<Vector>::type;
+
+
+
+    template<class Vector_mask>
+    struct to_vector {
+        using type = decltype(to_vector_helper(Vector_mask{}));
+    };
+
+    template<class Vector>
+    using to_vector_type = typename to_mask<Vector>::type;
 
 }
 

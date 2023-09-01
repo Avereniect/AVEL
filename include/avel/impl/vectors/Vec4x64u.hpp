@@ -1096,6 +1096,14 @@ namespace avel {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
         return vec4x64u{_mm256_popcnt_epi64(decay(v))};
 
+        #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
+        auto tmp0 = _mm256_popcnt_epi16(decay(v));
+        auto tmp1 = _mm256_slli_epi64(tmp0, 32);
+        auto tmp2 = _mm256_add_epi32(tmp0, tmp1);
+        auto tmp3 = _mm256_slli_epi32(tmp2, 16);
+        auto tmp4 = _mm256_add_epi32(tmp2, tmp3);
+        return vec4x64u{_mm256_srli_epi64(tmp4, 48)};
+
         #elif defined(AVEL_AVX2)
         //TODO: Consider alternative implementations
         auto c0 = popcount(extract<0>(v));

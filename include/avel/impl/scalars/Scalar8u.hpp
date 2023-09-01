@@ -25,6 +25,7 @@ namespace avel {
     AVEL_FINL std::uint8_t popcount(std::uint8_t x) {
         #if defined(AVEL_POPCNT)
         return _popcnt32(std::uint32_t{x});
+
         #else
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
         x = x - ((x >> 1) & 0x55);

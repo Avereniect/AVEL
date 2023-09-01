@@ -2691,7 +2691,7 @@ namespace avel {
         v = v - ((v >> 1) & vec16x8u{0x55});
         v = (v & vec16x8u{0x33}) + ((v >> 2) & vec16x8u{0x33});
         v = (v + (v >> 4)) & vec16x8u{0x0F};
-        //TODO: Consider is 8-bit shift emulation overhead could be eliminated
+        //TODO: Consider if 8-bit shift emulation overhead could be eliminated
 
         return v;
 
