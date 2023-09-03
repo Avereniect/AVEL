@@ -27,6 +27,7 @@ namespace avel_impl {
         }
     }
 
+    /*
     template<>
     void transpose<1>(void* ptr, std::size_t elem_count, std::uint32_t vector_width) {
         #if defined(AVEL_AVX512VBMI)
@@ -95,6 +96,7 @@ namespace avel_impl {
 
         #endif
     }
+    */
 
 }
 

@@ -110,12 +110,12 @@ namespace avel {
     // Conversion Functions
     //=====================================================
 
-    template<class V0, class V1 = V0, class = typename std::enable_if<std::is_same<V0, V1>::value>::type>
+    template<class V0, class V1 = V0, class D = typename std::enable_if<std::is_same<V0, V1>::value, int>::type>
     std::array<V0, 1> convert(V1 v) {
         return {v};
     }
 
-    template<class V0, class V1 = V0, class = typename std::enable_if<!std::is_same<V0, V1>::value>::type>
+    template<class V0, class V1 = V0, class D = typename std::enable_if<!std::is_same<V0, V1>::value>::type>
     std::array<V0, V1::width / V0::width + bool(V1::width % V0::width)> convert(V1 v);
 
     //=====================================================
@@ -221,6 +221,9 @@ namespace avel {
     #include "Vec32x16u.hpp"
     #include "Vec32x16i.hpp"
 #endif
+
+
+#include "Vector_mask_conversions.hpp"
 
 
 
