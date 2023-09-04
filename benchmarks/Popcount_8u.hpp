@@ -281,7 +281,7 @@ namespace avel::benchmarks::popcount_8u {
 
 
 
-    #if defined(AVEL_AVX512BITALG)
+    #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512BITALG)
 
     vec64x8u vec64x8u_popcnt_op_impl(vec64x8u v) {
         return vec64x8u{_mm512_popcnt_epi8(decay(v))};

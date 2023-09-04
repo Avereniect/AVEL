@@ -42,7 +42,7 @@ namespace avel::benchmarks::bit_ceil_32u {
 
 
 
-    #if defined(AVEL_x86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
+    #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
 
     std::uint32_t scalar_bsr_and_shift_impl(std::uint32_t x) {
         if (x == 0) {

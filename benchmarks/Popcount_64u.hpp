@@ -207,7 +207,7 @@ namespace avel::benchmarks::popcount_64u {
 
 
 
-    #if defined(AVEL_SSE2) && defined(AVEL_POPCNT)
+    #if defined(AVEL_SSE41) && defined(AVEL_POPCNT)
 
     vec2x64u vec2x64u_scalarized_popcnt_op_with_extract_impl(vec2x64u v) {
         std::uint64_t lo = _mm_cvtsi128_si64(decay(v));

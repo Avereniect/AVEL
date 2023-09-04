@@ -296,7 +296,7 @@ namespace avel::benchmarks::popcount_16u {
 
 
 
-    #if defined(AVEL_AVX512BITALG)
+    #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512BITALG)
 
     vec32x16u vec32x16u_popcnt_op_impl(vec32x16u v) {
         return vec32x16u{_mm512_popcnt_epi16(decay(v))};

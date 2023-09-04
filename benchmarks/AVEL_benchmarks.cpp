@@ -80,6 +80,6 @@
 
 // TODO: Use RegisterBenchmark() to programmatically register benchmarks
 
-//#include "AVEL_benchmarks_include.hpp"
+#include "AVEL_benchmarks_include.hpp"
 
 BENCHMARK_MAIN();
