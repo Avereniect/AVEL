@@ -1,7 +1,7 @@
 # AVEL Benchmark Results
-Note: Measurements should only be compared relative to others in the same table
-Note: Measurements for masks should not be compared between implementations that do and don't have AVX-512
-CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
+Note: Measurements should only be compared relative to others in the same table  
+Note: Measurements for masks should not be compared between implementations that do and don't have AVX-512  
+CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz  
 ## popcount_16u
 ### Configurations:
 #### Config 0
