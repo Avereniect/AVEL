@@ -62,15 +62,15 @@ namespace avel::benchmarks::bit_ceil_8u {
 
     #if defined(AVEL_LZCNT) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
 
-    std::uint8_t scalar_lzcnt_and_shift_impl(std::uint8_t x) {
+    std::uint8_t scalar_lzcnt_and_rotate_impl(std::uint8_t x) {
         auto sh = (32 - _lzcnt_u32(x - 1));
-        auto result = 1 << sh;
+        auto result = _rotl(0x01010101, sh);
         return result;
     }
 
-    auto scalar_lzcnt_and_shift = scalar_test_bench<std::uint8_t, scalar_lzcnt_and_shift_impl>;
+    auto scalar_lzcnt_and_rotate = scalar_test_bench<std::uint8_t, scalar_lzcnt_and_rotate_impl>;
 
-    BENCHMARK(bit_ceil_8u::scalar_lzcnt_and_shift);
+    BENCHMARK(bit_ceil_8u::scalar_lzcnt_and_rotate);
 
     #endif
 

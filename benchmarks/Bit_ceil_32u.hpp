@@ -62,11 +62,47 @@ namespace avel::benchmarks::bit_ceil_32u {
 
 
 
+    #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
+
+    std::uint32_t scalar_bsr_and_shift_branchless_impl(std::uint32_t x) {
+        auto width = _bit_scan_reverse(x);
+        if (x == 0) {
+            width =  1;
+        }
+
+        auto tmp = 1 << width;
+        return tmp << (tmp != x);
+    }
+
+    auto scalar_bsr_and_shift_branchless = scalar_test_bench<std::uint32_t, scalar_bsr_and_shift_branchless_impl>;
+
+    BENCHMARK(bit_ceil_32u::scalar_bsr_and_shift_branchless);
+
+    #endif
+
+
+
+    #if defined(AVEL_LZCNT) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
+
+    std::uint32_t scalar_lzcnt_and_rotate_impl(std::uint32_t x) {
+        auto sh = -_lzcnt_u32(x - 1);
+        auto result = _rotl(x <= 0x80000000u, sh);
+        return result;
+    }
+
+    auto scalar_lzcnt_and_rotate = scalar_test_bench<std::uint32_t, scalar_lzcnt_and_rotate_impl>;
+
+    BENCHMARK(bit_ceil_32u::scalar_lzcnt_and_rotate);
+
+    #endif
+
+
+
     #if defined(AVEL_LZCNT) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
 
     std::uint32_t scalar_lzcnt_and_shift_impl(std::uint32_t x) {
-        auto sh = (32 - _lzcnt_u32(x - 1));
-        auto result = 1 << sh;
+        auto sh = (64 - _lzcnt_u64(std::uint64_t(x) - 1));
+        auto result = std::uint64_t(1) << sh;
         return result;
     }
 

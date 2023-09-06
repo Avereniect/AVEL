@@ -64,18 +64,15 @@ namespace avel::benchmarks::bit_ceil_64u {
 
     #if defined(AVEL_LZCNT) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
 
-    std::uint64_t scalar_lzcnt_impl(std::uint64_t x) {
-        if (x == 0) {
-            return 1;
-        }
-
-        auto tmp = std::uint64_t{1} << (63 - _lzcnt_u64(x));
-        return tmp << (tmp != x);
+    std::uint64_t scalar_lzcnt_and_rotate_impl(std::uint64_t x) {
+        auto sh = -_lzcnt_u64(x - 1);
+        auto result = _lrotl(0x01, sh);
+        return result;
     }
 
-    auto scalar_lzcnt = scalar_test_bench<std::uint64_t, scalar_lzcnt_impl>;
+    auto scalar_lzcnt_and_rotate = scalar_test_bench<std::uint64_t, scalar_lzcnt_and_rotate_impl>;
 
-    BENCHMARK(bit_ceil_64u::scalar_lzcnt);
+    BENCHMARK(bit_ceil_64u::scalar_lzcnt_and_rotate);
 
     #endif
 

@@ -63,15 +63,15 @@ namespace avel::benchmarks::bit_ceil_16u {
 
     #if defined(AVEL_LZCNT) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
 
-    std::uint16_t scalar_lzcnt_and_shift_impl(std::uint16_t x) {
+    std::uint16_t scalar_lzcnt_and_rotate_impl(std::uint16_t x) {
         auto sh = (32 - _lzcnt_u32(x - 1));
-        auto result = 1 << sh;
+        auto result = _rotl(0x00010001, sh);
         return result;
     }
 
-    auto scalar_lzcnt_and_shift = scalar_test_bench<std::uint16_t, scalar_lzcnt_and_shift_impl>;
+    auto scalar_lzcnt_and_rotate = scalar_test_bench<std::uint16_t, scalar_lzcnt_and_rotate_impl>;
 
-    BENCHMARK(bit_ceil_16u::scalar_lzcnt_and_shift);
+    BENCHMARK(bit_ceil_16u::scalar_lzcnt_and_rotate);
 
     #endif
 
