@@ -27,6 +27,7 @@ namespace avel {
     AVEL_FINL std::uint32_t popcount(std::uint32_t x) {
         #if defined(AVEL_POPCNT)
         return _popcnt32(x);
+
         #else
         //TODO: Consider using per nibble lookup table as alternative
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
@@ -209,8 +210,8 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::uint32_t bit_ceil(std::uint32_t x) {
         #if defined(AVEL_LZCNT)
-        auto sh = (32 - _lzcnt_u32(x - 1));
-        auto result = 1 << sh;
+        auto sh = (64 - _lzcnt_u64(std::uint64_t(x) - 1));
+        auto result = std::uint64_t(1) << sh;
         return result;
 
         #elif defined(AVEL_X86)
