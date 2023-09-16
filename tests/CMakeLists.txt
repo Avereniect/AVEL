@@ -174,6 +174,7 @@ add_executable(AVEL_TESTS
     vectors/Vec16x32f_tests.hpp
     vectors/Vec8x64f_tests.hpp
 
+    vectors/Vector_conversion_tests.hpp
 
     vectors/Vector_tests.cpp
 

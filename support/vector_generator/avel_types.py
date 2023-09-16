@@ -131,6 +131,8 @@ class VectorType:
 
     variables: [str] = None
 
+    size = None
+
     def __init__(self, scalar_type: ScalarType, width: int, input_files, variables):
         self.width = width
         self.alignment = scalar_type.size * width
@@ -163,6 +165,8 @@ class VectorType:
         self.test_header_guard = 'AVEL_VEC' + str(width) + 'X' + scalar_type.abbreviation.upper() + '_TESTS_HPP'
 
         self.variables = variables
+
+        self.size = width * scalar_type.size
 
 
 def is_integer_vector(vector_type: VectorType) -> bool:
@@ -198,8 +202,8 @@ vector_types = [
     VectorType(uint32_t, 4, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
     VectorType(int32_t, 4, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
 
-    VectorType(int64_t, 2, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
     VectorType(uint64_t, 2, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
+    VectorType(int64_t, 2, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
 
     VectorType(float32_t, 4, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),
     VectorType(float64_t, 2, [], ['MULTIPLE', 'HAS_SCATTER', 'HAS_GATHER']),

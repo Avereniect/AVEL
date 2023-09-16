@@ -471,3 +471,5 @@
         #include "Vec32x16i_tests.hpp"
     #endif
 #endif
+
+#include "Vector_conversion_tests.hpp"

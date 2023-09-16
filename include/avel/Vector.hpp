@@ -208,6 +208,22 @@ namespace avel {
     template<class Vector>
     using to_vector_type = typename to_mask<Vector>::type;
 
+    //=====================================================
+    // Internal utilities
+    //=====================================================
+
+    template<class V0, class V1>
+    class enable_if_are_vectors : public std::enable_if<avel::is_vector<V0>::value && avel::is_vector<V1>::value> {};
+
+    template<class M0, class M1>
+    class enable_if_are_vector_masks : public std::enable_if<avel::is_vector_mask<M0>::value && avel::is_vector_mask<M1>::value> {};
+
+    template<class C0, class C1>
+    class enable_if_are_convertible : public std::enable_if<
+        (avel::is_vector<C0>::value && avel::is_vector<C1>::value) ||
+        (avel::is_vector_mask<C0>::value && avel::is_vector_mask<C1>::value)
+    > {};
+
 }
 
 #include "impl/vectors/Vectors.hpp"
