@@ -248,16 +248,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t bit_ceil(std::uint32_t x) {
-<<<<<<< HEAD
-        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
-=======
-        #if defined(AVEL_LZCNT)
+        #if defined(AVEL_LZCNT) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         auto sh = (64 - _lzcnt_u64(std::uint64_t(x) - 1));
         auto result = std::uint64_t(1) << sh;
         return result;
 
         #elif defined(AVEL_X86)
->>>>>>> 1a886e614b5b765aae27285d2ed6ebd61ec1842c
         if (x == 0) {
             return 1;
         }

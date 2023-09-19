@@ -283,15 +283,6 @@ namespace avel {
         auto tmp = std::uint64_t{1} << (63 - __builtin_clzll(x));
         return tmp << (tmp != x);
 
-<<<<<<< HEAD
-        #elif defined(AVEL_ICPX) && defined(AVEL_LZCNT)
-        if (x == 0) {
-            return 1;
-        }
-
-        auto tmp = std::uint64_t{1} << (63 - _lzcnt_u64(x));
-        return tmp << (tmp != x);
-
         #elif defined(AVEL_MSVC)
         unsigned long bsr;
         if (_BitScanReverse64(&bsr, x)) {
@@ -301,8 +292,6 @@ namespace avel {
             return 1;
         }
 
-=======
->>>>>>> 1a886e614b5b765aae27285d2ed6ebd61ec1842c
         #else
         if (x == 0) {
             return 1;

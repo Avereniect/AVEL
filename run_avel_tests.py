@@ -214,9 +214,7 @@ def identify_feature_combinations(file_path):
 
     def is_feature_check_macro(l: str):
         l = l.strip()
-        begins_with_conditional = l.startswith('#if') or l.startswith('#elif')
-        contains_cpp_version_or_avel = ('defined' in l and 'AVEL' in l) or '__cplusplus' in l
-        return begins_with_conditional and contains_cpp_version_or_avel
+        return (not l.startswith('//')) and (('#if' in l) or ('#elif' in l)) and ('defined' in l) and ('AVEL' in l)
 
     expressions_and_variables = {}
 
@@ -306,6 +304,8 @@ def run_test_case(compiler_path, build_dir_name, feature_assignments, test_group
 
     exit_code = os.system(cmake_command)
     if exit_code != 0:
+        print('Testing script')
+        print('CMake command failed')
         return
 
     make_command = 'make AVEL_TESTS -C ./test_build_dirs/{}'.format(build_dir_name)
@@ -316,6 +316,8 @@ def run_test_case(compiler_path, build_dir_name, feature_assignments, test_group
     memory_semaphore.release()
 
     if exit_code != 0:
+        print('Testing script')
+        print('Make command failed')
         return
 
     run_command = ''
@@ -512,7 +514,7 @@ def test_on_compiler(compiler_index, compiler_path, build_dir_name, names_and_fe
         if result or not run_infos:
             continue
 
-        print('Testing failed for:')
+        print('Test executable reported failure for:')
         print('Compiler:', compiler_path)
         print('Compiler flags: ', run_infos[0])
         print('CMake variables: ', run_infos[1])

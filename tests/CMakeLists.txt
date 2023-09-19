@@ -200,9 +200,11 @@ endif()
 
 # Necessary for successful compilation
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(AVEL_MSVC_SPECIFIC_FLAGS "/bigobj"
-        $<IF:$<CONFIG:Debug>, "/MTd", "/MT">
-    )
+    if (CMAKE_BUILD_TYPE EQUAL "DEBUG")
+        set(AVEL_MSVC_SPECIFIC_FLAGS  "/bigobj" "/MTd")
+    else()
+        set(AVEL_MSVC_SPECIFIC_FLAGS  "/bigobj" "/MT")
+    endif()
 else()
     set(AVEL_MSVC_SPECIFIC_FLAGS "")
 endif()
