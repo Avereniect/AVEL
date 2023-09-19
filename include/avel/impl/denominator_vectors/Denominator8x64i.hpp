@@ -146,6 +146,7 @@ namespace avel {
 
         static vec8x64i compute_mp(vec8x64i l, vec8x64i d) {
             vec8x64i n = vec8x64i{1} << (l - vec8x64i{1});
+            n = clear(vec8x64i{1} == d, n);
 
             d = avel::abs(d);
 

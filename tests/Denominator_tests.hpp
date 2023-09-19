@@ -134,8 +134,8 @@ namespace avel_tests {
 
     TEST(Denom64i, Random) {
         for (std::size_t i = 0; i < iterations; ++i) {
-            std::int64_t numerator = random8u();
-            std::int64_t denominator = random8u();
+            std::int64_t numerator = random64u();
+            std::int64_t denominator = random64u();
             if (denominator == 0) {
                 denominator = 1;
             }

@@ -114,19 +114,11 @@ namespace avel {
 
         [[nodiscard]]
         static AVEL_FINL std::int64_t compute_mp(std::int64_t l, std::int64_t d) {
-            #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX)
-            //TODO: Optimize. The portable divide solution is likely faster than this for x86
-            // Last substraction should be redundant.
-            return (__int128_t{1} << (63 + l)) / avel::abs(d) + 1 - (__int128_t{1} << 64);
-
-            #else
-            std::int64_t n = std::int64_t(1) << (l - 1);
-
+            std::int64_t n = std::int64_t(d != 1) << (l - 1);
             std::int64_t quotient = div_64uhi_by_64u(n, avel::abs(d));
             std::int64_t ret = quotient + 1;
 
             return ret;
-            #endif
         }
 
     };

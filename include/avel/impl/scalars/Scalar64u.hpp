@@ -213,11 +213,14 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint64_t bit_width(std::uint64_t x) {
-        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
+        #if defined(AVEL_LZCNT) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
+        return 64 - _lzcnt_u64(x);
+
+        #elif defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         if (x == 0) {
             return 0;
         } else {
-            return __builtin_ctzll(x) + 1;
+            return 64 - __builtin_clzll(x);
         }
 
         #elif defined(AVEL_MSVC)

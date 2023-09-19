@@ -443,7 +443,7 @@ def test_on_compiler(compiler_index, compiler_path, build_dir_name, names_and_fe
         # Run tests with specified features enabled
         run_test_parameters.append([
             compiler_path,
-            build_dir_name + '/' + str(index) + '/',
+            build_dir_name + '/' + str(index),
             full_variable_assignments,
             test_groups,
             index

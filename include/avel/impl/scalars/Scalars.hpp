@@ -91,24 +91,6 @@ namespace avel {
         #endif
     }
 
-    [[nodiscard]]
-    AVEL_FINL std::uint64_t denom64u_compute_m(std::uint64_t l, std::uint64_t d) {
-        std::uint64_t n = (l == 64 ? 0 : std::uint64_t(1) << l) - d;
-
-        auto ret = div_64uhi_by_64u(n, d);
-        ret += 1;
-        return ret;
-    }
-
-    [[nodiscard]]
-    AVEL_FINL std::int64_t denom64i_compute_mp(std::int64_t l, std::int64_t d) {
-        std::int64_t n = std::int64_t(1) << (l - 1);
-
-        std::int64_t quotient = div_64uhi_by_64u(n, avel::abs(d));
-        std::int64_t ret = quotient + 1;
-        return ret;
-    }
-
 }
 
 #endif //AVEL_SCALARS_HPP

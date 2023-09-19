@@ -122,6 +122,7 @@ namespace avel {
 
         static vec4x64i compute_mp(vec4x64i l, vec4x64i d) {
             vec4x64i n = vec4x64i{1} << (l - vec4x64i{1});
+            n = clear(d == vec4x64i{1}, n);
 
             d = avel::abs(d);
 

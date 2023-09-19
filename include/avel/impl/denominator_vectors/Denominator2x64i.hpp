@@ -131,6 +131,7 @@ namespace avel {
         static vec2x64i compute_mp(vec2x64i l, vec2x64i d) {
             #if defined(AVEL_AVX2)
             vec2x64i n = vec2x64i{1} << (l - vec2x64i{1});
+            n = clear(d == vec2x64i{1}, n);
 
             d = avel::abs(d);
 
@@ -146,14 +147,12 @@ namespace avel {
             l -= vec2x64i{1};
 
             d = avel::abs(d);
-            std::int64_t d_lo = extract<0>(d);
-            std::int64_t d_hi = extract<1>(d);
 
-            auto n_lo = std::int64_t(1) << extract<0>(l);
-            auto n_hi = std::int64_t(1) << extract<1>(l);
+            auto n0 = std::uint64_t(extract<0>(d) != 1) << extract<0>(l);
+            auto n1 = std::uint64_t(extract<1>(d) != 1) << extract<1>(l);
 
-            auto quotient0 = div_64uhi_by_64u(n_lo, extract<0>(d));
-            auto quotient1 = div_64uhi_by_64u(n_hi, extract<1>(d));
+            auto quotient0 = div_64uhi_by_64u(n0, extract<0>(d));
+            auto quotient1 = div_64uhi_by_64u(n1, extract<1>(d));
 
             vec2x64i ret{0};
             ret = insert<0>(ret, quotient0);
