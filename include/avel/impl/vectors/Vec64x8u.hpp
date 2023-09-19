@@ -1420,6 +1420,9 @@ namespace avel {
         #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512BITALG)
         return vec64x8u{_mm512_popcnt_epi8(decay(v))};
 
+        //TODO: Consider using vpermi2b
+        //TODO: Consider using wider popcnt ops if bitalg is not available
+
         #elif defined(AVEL_AVX512BW)
         alignas(64) static constexpr std::uint8_t table_data[16] {
             0, 1, 1, 2,
@@ -1446,7 +1449,29 @@ namespace avel {
     AVEL_FINL vec64x8u countl_zero(vec64x8u v) {
         //TODO: Consider leveraging conversion to 32-bit lzcnt
         //TODO: Consider leveraging conversion to fp16
-        #if defined(AVEL_AVX512BW)
+        #if defined(AVEL_AVX512VW) && defined(AVEL_AVX512VBMI)
+        alignas(128) static constexpr std::uint8_t table[128] {
+            8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
+            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+        };
+
+        auto table0 = _mm512_load_si512(table +  0);
+        auto table1 = _mm512_load_si512(table + 64);
+
+        auto partial_result = _mm512_permutex2var_epi8(table0, decay(v), table1);
+
+        auto is_high_bit_set_mask = _knot_mask64(_mm512_movepi8_mask(decay(v)));
+        auto ret = _mm512_maskz_mov_epi8(is_high_bit_set_mask, partial_result);
+
+        return vec64x8u{ret};
+
+        #elif defined(AVEL_AVX512BW)
         //Combined high and low nibble lookup table data
         alignas(32) static constexpr std::uint8_t table_data[32] {
             8, 3, 2, 2,

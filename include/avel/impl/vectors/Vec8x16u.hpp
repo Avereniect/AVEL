@@ -2369,12 +2369,11 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec8x16u bit_ceil(vec8x16u v) {
         /* No performance benefit derived
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW) && defined(AVEL_AVX512CD)
+        // #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW) && defined(AVEL_AVX512CD)
         auto ones = _mm_set1_epi16(0x1);
         v = _mm_max_epu16(decay(v), ones);
         v = _mm_sub_epi16(decay(v), ones);
 
-        auto zero = _mm_setzero_si128();
         auto v_widened = _mm256_cvtepu16_epi32(decay(v));
         auto lzcnt = _mm256_lzcnt_epi32(v_widened);
         auto lzcnt_narrowed = _mm256_cvtepi32_epi16(lzcnt);

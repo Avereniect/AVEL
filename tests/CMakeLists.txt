@@ -189,7 +189,7 @@ else()
 endif()
 
 target_link_libraries(AVEL_TESTS PUBLIC AVEL ${AVEL_TESTS_LIBRARIES})
-target_compile_features(AVEL_TESTS PRIVATE "cxx_std_11")
+target_compile_features(AVEL_TESTS PRIVATE cxx_std_11)
 
 #TODO: Set compilation flags based on enabled features
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

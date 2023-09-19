@@ -84,7 +84,8 @@ namespace avel {
         auto lo = table0[hi_nibble];
         auto hi = table1[lo_nibble];
 
-        return min(lo, hi);
+        return avel::min(lo, hi);
+
         #endif
     }
 
