@@ -80,7 +80,7 @@ namespace avel {
         //=================================================
 
         static vec4x64i mulhi(vec4x64i x, vec4x64i y) {
-            #if defined(AVEL_AVX2)
+            #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX)
             std::int64_t x0 = extract<0>(x);
             std::int64_t x1 = extract<1>(x);
             std::int64_t x2 = extract<2>(x);
@@ -99,43 +99,41 @@ namespace avel {
 
             return vec4x64i{_mm256_set_epi64x(ret3, ret2, ret1, ret0)};
 
+            #elif defined(AVEL_MSVC)
+            std::int64_t x0 = extract<0>(x);
+            std::int64_t x1 = extract<1>(x);
+            std::int64_t x2 = extract<2>(x);
+            std::int64_t x3 = extract<3>(x);
+
+            std::int64_t y0 = extract<0>(y);
+            std::int64_t y1 = extract<1>(y);
+            std::int64_t y2 = extract<2>(y);
+            std::int64_t y3 = extract<3>(y);
+
+            std::int64_t ret0 = __mulh(x0, y0);
+            std::int64_t ret1 = __mulh(x1, y1);
+            std::int64_t ret2 = __mulh(x2, y2);
+            std::int64_t ret3 = __mulh(x3, y3);
+
+            return vec4x64i{_mm256_set_epi64x(ret3, ret2, ret1, ret0)};
+
             #endif
         }
 
         static vec4x64i compute_mp(vec4x64i l, vec4x64i d) {
-            //TODO: Optimize
-            __int128_t l0 = extract<0>(l);
-            __int128_t l1 = extract<1>(l);
-            __int128_t l2 = extract<2>(l);
-            __int128_t l3 = extract<3>(l);
+            vec4x64i n = vec4x64i{1} << (l - vec4x64i{1});
 
-            d = abs(d);
-            __int128_t d0 = extract<0>(d);
-            __int128_t d1 = extract<1>(d);
-            __int128_t d2 = extract<2>(d);
-            __int128_t d3 = extract<3>(d);
+            d = avel::abs(d);
 
-            auto t00 = __int128_t(0x8000000000000000) << l0;
-            auto t01 = __int128_t(0x8000000000000000) << l1;
-            auto t02 = __int128_t(0x8000000000000000) << l2;
-            auto t03 = __int128_t(0x8000000000000000) << l3;
+            auto quotient0 = div_64uhi_by_64u(extract<0>(n), extract<0>(d));
+            auto quotient1 = div_64uhi_by_64u(extract<1>(n), extract<1>(d));
+            auto quotient2 = div_64uhi_by_64u(extract<2>(n), extract<2>(d));
+            auto quotient3 = div_64uhi_by_64u(extract<3>(n), extract<3>(d));
 
-            auto t10 = t00 / d0;
-            auto t11 = t01 / d1;
-            auto t12 = t02 / d2;
-            auto t13 = t03 / d3;
+            vec4x64i ret{_mm256_set_epi64x(quotient3, quotient2, quotient1, quotient0)};
+            ret += vec4x64i{1};
 
-            auto t20 = t10 - __int128_t(0xFFFFFFFFFFFFFFFF);
-            auto t21 = t11 - __int128_t(0xFFFFFFFFFFFFFFFF);
-            auto t22 = t12 - __int128_t(0xFFFFFFFFFFFFFFFF);
-            auto t23 = t13 - __int128_t(0xFFFFFFFFFFFFFFFF);
-
-            return vec4x64i{{
-                static_cast<std::int64_t>(t20),
-                static_cast<std::int64_t>(t21),
-                static_cast<std::int64_t>(t22),
-                static_cast<std::int64_t>(t23)
-            }};
+            return ret;
         }
 
     };

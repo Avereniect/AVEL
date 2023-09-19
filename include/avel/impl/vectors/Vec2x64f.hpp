@@ -79,7 +79,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL)
             content(b ? 0x3 : 0x00) {}
         #elif defined(AVEL_SSE2)
-            content(_mm_castsi128_pd(b ? _mm_set1_epi64x(-1ul) : _mm_setzero_si128())) {}
+            content(_mm_castsi128_pd(_mm_set1_epi64x(b ? -1ull : 0))) {}
         #endif
         #if defined(AVEL_NEON)
             content(vdupq_n_u64(b ? -1 : 0)) {}
@@ -708,10 +708,18 @@ namespace avel {
         static_assert(N < vec2x64f::width, "Specified index does not exist");
         typename std::enable_if<N < vec2x64f::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_SSE2) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         auto ret = decay(v);
         ret[N] = x;
         return vec2x64f{ret};
+
+        #elif defined(AVEL_SSE2) && defined(AVEL_MSVC)
+        // MSVC is generally just horrible at optimizing any implementation of 
+        // this so just keep it simple
+        std::memcpy(reinterpret_cast<char*>(&v) + N * sizeof(double), &x, sizeof(double));
+
+        return v;
+
         #endif
 
         #if defined(AVEL_NEON)

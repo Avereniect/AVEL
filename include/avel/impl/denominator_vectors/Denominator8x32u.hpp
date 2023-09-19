@@ -82,7 +82,7 @@ namespace avel {
             vec8x32u lo{_mm256_srli_si256(_mm256_mul_epu32(decay(x), decay(y)), 4)};
             vec8x32u hi{_mm256_mul_epu32(_mm256_srli_si256(decay(x), 4), _mm256_srli_si256(decay(y), 4))};
 
-            mask8x32u m{{
+            mask8x32u m{arr8xb{
                 false, true, false, true,
                 false, true, false, true
             }};

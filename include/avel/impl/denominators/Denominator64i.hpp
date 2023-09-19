@@ -23,7 +23,7 @@ namespace avel {
         //=================================================
 
         explicit Denominator(std::int64_t d):
-            Denominator(d, max(bit_width(abs(d) - 1l), std::int64_t(1))) {}
+            Denominator(d, avel::max(bit_width(abs(d) - 1l), std::int64_t(1))) {}
 
     private:
 
@@ -80,25 +80,34 @@ namespace avel {
             //smulh instruction on ARM aarach64
             return static_cast<std::int64_t>((__int128_t(x) * __int128_t(y)) >> 64);
 
-            #else
-            //This code contained a bug
-            std::uint64_t a_lo = x & 0x00000000FFFFFFFFull;
-            std::uint64_t a_hi = x >> 32;
-            std::uint64_t b_lo = y & 0x00000000FFFFFFFFull;
-            std::uint64_t b_hi = y >> 32;
+            #elif defined(AVEL_MSVC) && defined(AVEL_X86)
+            return __mulh(x, y);
 
-            std::uint64_t a_x_b_hi =  a_hi * b_hi;
+            #else
+            //TODO: Change casting style
+            //
+            // Compute high 64-bits of unsigned 128-bit product
+            std::uint64_t a_lo = std::uint32_t(x);
+            std::uint64_t a_hi = std::uint64_t(x) >> 32;
+            std::uint64_t b_lo = std::uint32_t(y);
+            std::uint64_t b_hi = std::uint64_t(y) >> 32;
+
+            std::uint64_t a_x_b_hi = a_hi * b_hi;
             std::uint64_t a_x_b_mid = a_hi * b_lo;
             std::uint64_t b_x_a_mid = b_hi * a_lo;
-            std::uint64_t a_x_b_lo =  a_lo * b_lo;
+            std::uint64_t a_x_b_lo = a_lo * b_lo;
 
-            std::uint64_t carry_bit = (
-                (std::uint64_t)(std::uint32_t)a_x_b_mid +
+            std::uint64_t carry_bit = ((std::uint64_t)(std::uint32_t)a_x_b_mid +
                 (std::uint64_t)(std::uint32_t)b_x_a_mid +
-                (a_x_b_lo >> 32)
-            ) >> 32;
+                (a_x_b_lo >> 32)) >> 32;
 
-            std::uint64_t ret = a_x_b_hi + (a_x_b_mid >> 32) + (b_x_a_mid >> 32) + carry_bit;
+            std::uint64_t mul_hi = a_x_b_hi + (a_x_b_mid >> 32) + (b_x_a_mid >> 32) + carry_bit;
+
+            // Convert to signed high half
+            std::int64_t t1 = (x >> 63) & y;
+            std::int64_t t2 = (y >> 63) & x;
+
+            std::int64_t ret = mul_hi - t1 - t2;
             return ret;
             #endif
         }
@@ -106,11 +115,17 @@ namespace avel {
         [[nodiscard]]
         static AVEL_FINL std::int64_t compute_mp(std::int64_t l, std::int64_t d) {
             #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX)
-            return (__int128_t{1} << (63 + l)) / abs(d) + 1 - (__int128_t{1} << 64);
-            #else
+            //TODO: Optimize. The portable divide solution is likely faster than this for x86
+            // Last substraction should be redundant.
+            return (__int128_t{1} << (63 + l)) / avel::abs(d) + 1 - (__int128_t{1} << 64);
 
-            static_assert(false, "Implementation required");
-            //TODO: Implementation that doesn't rely on __int128_t
+            #else
+            std::int64_t n = std::int64_t(1) << (l - 1);
+
+            std::int64_t quotient = div_64uhi_by_64u(n, avel::abs(d));
+            std::int64_t ret = quotient + 1;
+
+            return ret;
             #endif
         }
 

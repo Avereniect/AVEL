@@ -140,7 +140,7 @@ namespace avel {
             auto x = bit_cast<vec16x8i>(tmp3_lo);
             auto y = bit_cast<vec16x8i>(tmp3_hi << 8);
 
-            auto mask = mask16x8i{{
+            auto mask = mask16x8i{arr16xb{
                 false, true, false, true,
                 false, true, false, true,
                 false, true, false, true,

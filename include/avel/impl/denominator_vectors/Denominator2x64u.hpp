@@ -100,7 +100,7 @@ namespace avel {
         //=================================================
 
         static vec2x64u mulhi(vec2x64u x, vec2x64u y) {
-            #if defined(AVEL_SSE2) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX))
+            #if defined(AVEL_SSE2) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
             std::uint64_t x_lo = extract<0>(x);
             std::uint64_t x_hi = extract<1>(x);
 
@@ -113,7 +113,21 @@ namespace avel {
 
             return vec2x64u{_mm_set_epi64x(ret_hi, ret_lo)};
 
+            #elif defined(AVEL_SSE2) && defined(AVEL_MSVC)
+            std::uint64_t x_lo = extract<0>(x);
+            std::uint64_t x_hi = extract<1>(x);
+
+            std::uint64_t y_lo = extract<0>(y);
+            std::uint64_t y_hi = extract<1>(y);
+
+            std::uint64_t ret_lo = __umulh(x_lo, y_lo);
+            std::uint64_t ret_hi = __umulh(x_hi, y_hi);
+
+            return vec2x64u{ _mm_set_epi64x(ret_hi, ret_lo) };
+
             #endif
+
+
 
             #if defined(AVEL_NEON) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX))
             std::uint64_t x_lo = extract<0>(x);
@@ -136,25 +150,36 @@ namespace avel {
         }
 
         static vec2x64u compute_m(vec2x64u l, vec2x64u d) {
-            #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICX)
-            __uint128_t l_lo = extract<0>(l);
-            __uint128_t l_hi = extract<1>(l);
+            #if defined(AVEL_AVX2)
+            // Shift by vector is vectorized with AVX2
+            vec2x64u n = (vec2x64u{1} << l) - d;
 
-            __uint128_t d_lo = extract<0>(d);
-            __uint128_t d_hi = extract<1>(d);
+            std::uint64_t quotient0 = div_64uhi_by_64u(avel::extract<0>(n), avel::extract<0>(d));
+            std::uint64_t quotient1 = div_64uhi_by_64u(avel::extract<1>(n), avel::extract<1>(d));
 
-            __uint128_t tmp0_lo = (__uint128_t{1} << l_lo) - d_lo;
-            __uint128_t tmp0_hi = (__uint128_t{1} << l_hi) - d_hi;
+            auto ret = vec2x64u{_mm_set_epi64x(quotient1, quotient0)} + vec2x64u{1};
+            return ret;
 
-            __uint128_t tmp1_lo = (tmp0_lo << 64) / d_lo;
-            __uint128_t tmp1_hi = (tmp0_hi << 64) / d_hi;
+            #else
+            std::uint64_t l0 = avel::extract<0>(l);
+            std::uint64_t l1 = avel::extract<1>(l);
 
-            vec2x64u m{{
-                static_cast<std::uint64_t>(tmp1_lo),
-                static_cast<std::uint64_t>(tmp1_hi),
-            }};
-            m += vec2x64u{1};
-            return m;
+            std::uint64_t d0 = avel::extract<0>(d);
+            std::uint64_t d1 = avel::extract<1>(d);
+
+            std::uint64_t n0 = (l0 == 64 ? 0 : std::uint64_t(1) << l0) - d0;
+            std::uint64_t n1 = (l1 == 64 ? 0 : std::uint64_t(1) << l1) - d1;
+
+            std::uint64_t quotient0 = div_64uhi_by_64u(n0, avel::extract<0>(d));
+            std::uint64_t quotient1 = div_64uhi_by_64u(n1, avel::extract<1>(d));
+
+            vec2x64u ret{0};
+            ret = avel::insert<0>(ret, quotient0);
+            ret = avel::insert<1>(ret, quotient1);
+
+            ret += vec2x64u{1};
+            return ret;
+
             #endif
         }
 

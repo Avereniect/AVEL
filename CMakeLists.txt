@@ -48,9 +48,9 @@ endforeach()
 
 option(AVEL_USE_PRECOMPILED_HEADERS OFF "Make AVEL.hpp a precompiled header")
 
-set(AVEL_L1_CACHE_LINE_SIZE "0" CACHE STRING "Size of L1 cache lines in bytes")
-set(AVEL_L2_CACHE_LINE_SIZE "0" CACHE STRING "Size of L2 cache lines in bytes")
-set(AVEL_L3_CACHE_LINE_SIZE "0" CACHE STRING "Size of L3 cache lines in bytes")
+set(AVEL_L1_CACHE_LINE_SIZE "64" CACHE STRING "Size of L1 cache lines in bytes")
+set(AVEL_L2_CACHE_LINE_SIZE "64" CACHE STRING "Size of L2 cache lines in bytes")
+set(AVEL_L3_CACHE_LINE_SIZE "64" CACHE STRING "Size of L3 cache lines in bytes")
 
 
 
@@ -95,6 +95,7 @@ endif()
 option(AVEL_BUILD_TESTS OFF)
 
 if (AVEL_BUILD_TESTS)
+    add_subdirectory(external/googletest/)
     add_subdirectory(tests/)
 endif()
 
@@ -105,7 +106,7 @@ option(AVEL_BUILD_BENCHMARKS OFF)
 
 if (AVEL_BUILD_BENCHMARKS)
     set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
-    add_subdirectory(google_benchmark)
+    add_subdirectory(external/benchmark/)
     add_subdirectory(benchmarks)
 endif()
 

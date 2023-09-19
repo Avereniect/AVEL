@@ -25,8 +25,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t popcount(std::uint32_t x) {
-        #if defined(AVEL_POPCNT)
+        #if defined(AVEL_POPCNT) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         return _popcnt32(x);
+
+        #elif defined(AVEL_POPCNT) && defined(AVEL_MSVC)
+        return __popcnt(x);
+
         #else
         //TODO: Consider using per nibble lookup table as alternative
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
@@ -39,8 +43,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t byteswap(std::uint32_t x) {
-        #if defined(AVEL_X86)
+        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         return _bswap(x);
+
+        #elif defined(AVEL_MSVC)
+        return _byteswap_ulong(x);
+
         #else
         std::uint32_t ret = 0x00;
         ret |= x >> 24;
@@ -53,14 +61,24 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t countl_zero(std::uint32_t x) {
-        #if defined(AVEL_LZCNT)
+        #if defined(AVEL_LZCNT) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         return _lzcnt_u32(x);
-        #elif defined(AVEL_X86)
+
+        #elif defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         if (x) {
             return 31 - _bit_scan_reverse(x);
         } else {
             return 32;
         }
+
+        #elif defined(AVEL_MSVC)
+        unsigned long bsr;
+        if (_BitScanReverse(&bsr, x)) {
+            return 31 - bsr;
+        } else {
+            return 32;
+        }
+
         #else
         return countl_one(~x);
         #endif
@@ -102,12 +120,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t countr_zero(std::uint32_t x) {
-        #if defined(AVEL_BMI)
+        #if defined(AVEL_BMI) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         return __tzcnt_u32(x);
 
-        #elif defined(AVEL_X86)
+        #elif defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         if (x) {
             return _bit_scan_forward(x);
+        } else {
+            return 32;
+        }
+
+        #elif defined(AVEL_MSVC)
+        unsigned long bsr;
+        if (_BitScanForward(&bsr, x)) {
+            return bsr;
         } else {
             return 32;
         }
@@ -141,21 +167,26 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t countr_one(std::uint32_t x) {
-        #if defined(AVEL_X86)
         return countr_zero(~x);
-        #else
-        return countr_zero(~x);
-        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t bit_width(std::uint32_t x) {
-        #if defined(AVEL_X86)
+        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         if (x == 0) {
             return 0;
         } else {
             return _bit_scan_reverse(x) + 1;
         }
+
+        #elif defined(AVEL_MSVC)
+        unsigned long bsr;
+        if (_BitScanReverse(&bsr, x)) {
+            return bsr + 1;
+        } else {
+            return 0;
+        }
+
         #else
         //TODO: Consider using lookup table
         if (x == 0) {
@@ -189,12 +220,21 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t bit_floor(std::uint32_t x) {
-        #if defined(AVEL_X86)
+        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         if (x == 0) {
             return 0;
         }
 
         return 1 << _bit_scan_reverse(x);
+
+        #elif defined(AVEL_MSVC)
+        unsigned long bsr;
+        if (_BitScanReverse(&bsr, x)) {
+            return 1 << bsr;
+        } else {
+            return 0;
+        }
+
         #else
         //TODO: Consider using lookup table
         x = x | (x >> 1);
@@ -208,13 +248,22 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t bit_ceil(std::uint32_t x) {
-        #if defined(AVEL_X86)
+        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         if (x == 0) {
             return 1;
         }
 
         auto tmp = 1 << _bit_scan_reverse(x);
         return tmp << (tmp != x);
+
+        #elif defined(AVEL_MSVC)
+        unsigned long bsr;
+        if (_BitScanReverse(&bsr, x)) {
+            auto tmp = 1 << bsr;
+            return tmp << (tmp != x);
+        } else {
+            return 1;
+        }
 
         #else
         //TODO: Consider using lookup table
@@ -244,8 +293,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint32_t rotl(std::uint32_t x, long long s) {
-        #if defined(AVEL_X86)
+        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         return _rotl(x, s);
+
+        #elif defined(AVEL_X86) && defined(AVEL_MSVC)
+        return _rotl(x, s);
+
         #else
         s &= 0x1F;
         if (s == 0) {
@@ -260,6 +313,7 @@ namespace avel {
     AVEL_FINL std::uint32_t rotr(std::uint32_t x, long long s) {
         #if defined(AVEL_X86)
         return _rotr(x, s);
+
         #else
         s &= 0x1F;
         if (s == 0) {

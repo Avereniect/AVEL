@@ -860,7 +860,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL mask16x32f isinf(vec16x32f v) {
-        #if defined(AVEL_AVX512F) && defined(AVEL_AVX512DQ)
+        #if defined(AVEL_AVX512DQ)
         return mask16x32f{_mm512_fpclass_ps_mask(decay(v), 0x08 | 0x10)};
 
         #elif defined(AVEL_AVX512F)

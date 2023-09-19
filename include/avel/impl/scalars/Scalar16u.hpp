@@ -21,8 +21,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint16_t popcount(std::uint16_t x) {
-        #if defined(AVEL_POPCNT)
-        return _popcnt32(x);
+        #if defined(AVEL_POPCNT) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
+        return _popcnt32(std::uint32_t(x));
+
+        #elif defined(AVEL_POPCNT) && defined(AVEL_MSVC)
+        return __popcnt16(x);
+
         #else
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
         x = x - ((x >> 1) & 0x5555);
@@ -36,8 +40,11 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint16_t byteswap(std::uint16_t x) {
-        #if defined(AVEL_GCC) || defined(AVEL_CLANG)
+        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         return __builtin_bswap16(x);
+
+        #elif defined(AVEL_MSVC)
+        return _byteswap_ushort(x);
 
         #else
         std::uint16_t ret = 0x00;
@@ -51,12 +58,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint16_t countl_zero(std::uint16_t x) {
-        #if defined(AVEL_LZCNT)
+        #if defined(AVEL_LZCNT) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         return static_cast<std::uint16_t>(_lzcnt_u32(x) - 16);
 
-        #elif defined(AVEL_X86)
+        #elif defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         if (x) {
             return 15 - _bit_scan_reverse(x);
+        } else {
+            return 16;
+        }
+
+        #elif defined(AVEL_MSVC)
+        unsigned long result;
+        if (_BitScanReverse(&result, x)) {
+            return 15 - result;
         } else {
             return 16;
         }
@@ -71,6 +86,7 @@ namespace avel {
     AVEL_FINL std::uint16_t countl_one(std::uint16_t x) {
         #if defined(AVEL_X86)
         return countl_zero(std::uint16_t(~x));
+
         #else
         std::uint32_t sum = (x == 0xFFFF);
 
@@ -95,13 +111,22 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint16_t countr_zero(std::uint16_t x) {
-        #if defined(AVEL_BMI)
+        #if defined(AVEL_BMI) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         return __tzcnt_u32(x | 0xFFFF0000);
         if (x) {
             return _bit_scan_forward(x | 0xFFFF0000);
         } else {
             return 16;
         }
+
+        #elif defined(AVEL_MSVC)
+        unsigned long bsr;
+        if (_BitScanForward(&bsr, x)) {
+            return bsr;
+        } else {
+            return 16;
+        }
+
         #else
         std::uint16_t ret = 0x00;
 
@@ -132,12 +157,21 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint16_t bit_width(std::uint16_t x) {
-        #if defined(AVEL_X86)
+        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         if (x == 0) {
             return 0;
         } else {
             return _bit_scan_reverse(x) + 1;
         }
+
+        #elif defined(AVEL_MSVC)
+        unsigned long bsr;
+        if (_BitScanReverse(&bsr, x)) {
+            return bsr + 1;
+        } else {
+            return 0;
+        }
+
         #else
         if (x == 0) {
             return 0;
@@ -166,11 +200,20 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint16_t bit_floor(std::uint16_t x) {
-        #if defined(AVEL_X86)
+        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         if (x == 0) {
             return 0;
         }
         return 1 << _bit_scan_reverse(x);
+
+        #elif defined(AVEL_MSVC)
+        unsigned long bsr;
+        if (_BitScanReverse(&bsr, x)) {
+            return 1 << bsr;
+        } else {
+            return 0;
+        }
+
         #else
         x = x | (x >> 1);
         x = x | (x >> 2);
@@ -182,7 +225,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint16_t bit_ceil(std::uint16_t x) {
-        #if defined(AVEL_X86)
+        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         if (x == 0) {
             return 1;
         }
@@ -190,6 +233,16 @@ namespace avel {
         auto width = _bit_scan_reverse(x);
         auto tmp = 1 << width;
         return tmp << (tmp != x);
+
+        #elif defined(AVEL_MSVC)
+        unsigned long bsr;
+        if (_BitScanReverse(&bsr, x)) {
+            auto tmp = 1 << bsr;
+            return tmp << (tmp != x);
+        } else {
+            return 1;
+        }
+
         #else
         if (x == 0) {
             return 1;
@@ -216,8 +269,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint16_t rotl(std::uint16_t x, long long s) {
-        #if defined(AVEL_X86)
+        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         return _rotwl(x, s);
+
+        #elif defined(AVEL_X86) && defined(AVEL_MSVC)
+        return _rotl16(x, s);
+
         #else
         s &= 0x0F;
         if (s == 0) {
@@ -230,8 +287,12 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint16_t rotr(std::uint16_t x, long long s) {
-        #if defined(AVEL_X86)
+        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         return _rotwr(x, s);
+
+        #elif defined(AVEL_X86) && defined(AVEL_MSVC)
+        return _rotr16(x, s);
+
         #else
         s &= 0x0F;
         if (s == 0) {

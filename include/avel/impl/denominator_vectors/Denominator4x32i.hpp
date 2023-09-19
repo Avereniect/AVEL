@@ -148,7 +148,7 @@ namespace avel {
             auto x = bit_cast<vec4x32i>(tmp3_lo);
             auto y = bit_cast<vec4x32i>(tmp3_hi << 32);
 
-            auto mask = mask4x32i{{
+            auto mask = mask4x32i{arr4xb{
                 false, true, false, true
             }};
             auto ret = blend(mask, y, x);

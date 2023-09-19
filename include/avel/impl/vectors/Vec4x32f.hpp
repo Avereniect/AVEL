@@ -740,11 +740,17 @@ namespace avel {
         static_assert(N < vec4x32f::width, "Specified index does not exist");
         typename std::enable_if<N < vec4x32f::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE2)
-        //TODO: Don't rely on compiler-specific subscripting
+        #if defined(AVEL_SSE2) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         auto tmp = decay(v);
         tmp[N] = x;
         return vec4x32f{tmp};
+
+        #elif defined(AVEL_SSE2) && defined(AVEL_MSVC)
+        // MSVC is generally just horrible at optimizing any implementation of 
+        // this so just keep it simple
+        std::memcpy(reinterpret_cast<char*>(&v) + N * sizeof(float), &x, sizeof(float));
+
+        return v;
 
         #endif
 

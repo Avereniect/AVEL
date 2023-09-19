@@ -103,7 +103,7 @@ namespace avel {
             vec4x32u lo{_mm_srli_si128(_mm_mul_epu32(decay(x), decay(y)), 4)};
             vec4x32u hi{_mm_mul_epu32(_mm_srli_si128(decay(x), 4), _mm_srli_si128(decay(y), 4))};
 
-            mask4x32u m{{false, true, false, true}};
+            mask4x32u m{arr4xb{false, true, false, true}};
             return blend(m, hi, lo);
             #endif
 

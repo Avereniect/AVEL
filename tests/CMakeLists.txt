@@ -182,7 +182,13 @@ add_executable(AVEL_TESTS
 
 target_compile_definitions(AVEL INTERFACE ${AVEL_REQUESTED_TEST_GROUPS})
 
-target_link_libraries(AVEL_TESTS PUBLIC AVEL gtest pthread)
+if (UNIX)
+    set(AVEL_TESTS_LIBRARIES "gtest" "pthread")
+else()
+    set(AVEL_TESTS_LIBRARIES "gtest")
+endif()
+
+target_link_libraries(AVEL_TESTS PUBLIC AVEL ${AVEL_TESTS_LIBRARIES})
 target_compile_features(AVEL_TESTS PRIVATE "cxx_std_11")
 
 #TODO: Set compilation flags based on enabled features
@@ -192,7 +198,16 @@ else()
     set(AVEL_ROUNDING_FLAG "")
 endif()
 
-target_compile_options(AVEL_TESTS PRIVATE ${AVEL_ROUNDING_FLAG})
+# Necessary for successful compilation
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(AVEL_MSVC_SPECIFIC_FLAGS "/bigobj"
+        $<IF:$<CONFIG:Debug>, "/MTd", "/MT">
+    )
+else()
+    set(AVEL_MSVC_SPECIFIC_FLAGS "")
+endif()
+
+target_compile_options(AVEL_TESTS PRIVATE ${AVEL_ROUNDING_FLAG} ${AVEL_MSVC_SPECIFIC_FLAGS})
 target_link_options(AVEL_TESTS PRIVATE "")
 
 target_include_directories(AVEL_TESTS PRIVATE ./include/)

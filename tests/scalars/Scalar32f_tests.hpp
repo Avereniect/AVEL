@@ -37,19 +37,19 @@ namespace avel_tests {
     }
 
     TEST(Scalar32f_tests, trunc) {
-        EXPECT_EQ(0.0f, trunc(0.25f));
-        EXPECT_EQ(0.0f, trunc(0.50f));
-        EXPECT_EQ(0.0f, trunc(0.75f));
-        EXPECT_EQ(1.0f, trunc(1.50f));
-        EXPECT_EQ(2.0f, trunc(2.50f));
-        EXPECT_EQ(3.0f, trunc(3.75f));
-        EXPECT_EQ(-3.0f, trunc(-3.75f));
+        EXPECT_EQ(0.0f, avel::trunc(0.25f));
+        EXPECT_EQ(0.0f, avel::trunc(0.50f));
+        EXPECT_EQ(0.0f, avel::trunc(0.75f));
+        EXPECT_EQ(1.0f, avel::trunc(1.50f));
+        EXPECT_EQ(2.0f, avel::trunc(2.50f));
+        EXPECT_EQ(3.0f, avel::trunc(3.75f));
+        EXPECT_EQ(-3.0f, avel:: trunc(-3.75f));
 
-        EXPECT_EQ(0.0f, trunc(0.0f));
-        EXPECT_EQ(-0.0f, trunc(-0.0f));
-        EXPECT_EQ(INFINITY, trunc(INFINITY));
-        EXPECT_EQ(-INFINITY, trunc(-INFINITY));
-        EXPECT_TRUE(std::isnan(trunc(NAN)));
+        EXPECT_EQ(0.0f, avel::trunc(0.0f));
+        EXPECT_EQ(-0.0f, avel::trunc(-0.0f));
+        EXPECT_EQ(INFINITY, avel::trunc(INFINITY));
+        EXPECT_EQ(-INFINITY, avel::trunc(-INFINITY));
+        EXPECT_TRUE(std::isnan(avel:: trunc(NAN)));
     }
 
     TEST(Sclar32f_tests, round) {
@@ -75,61 +75,61 @@ namespace avel_tests {
         EXPECT_EQ(exp, 0);
 
         //Infinities
-        EXPECT_EQ(frexp(+INFINITY, &exp), +INFINITY);
-        EXPECT_EQ(frexp(-INFINITY, &exp), -INFINITY);
+        EXPECT_EQ(avel::frexp(+INFINITY, &exp), +INFINITY);
+        EXPECT_EQ(avel::frexp(-INFINITY, &exp), -INFINITY);
 
         //NaN
-        EXPECT_TRUE(std::isnan(frexp(NAN, &exp)));
+        EXPECT_TRUE(std::isnan(avel::frexp(NAN, &exp)));
 
         //Positive Normal numbers
-        EXPECT_EQ(frexp(+1.0f, &exp), +0.5f);
+        EXPECT_EQ(avel::frexp(+1.0f, &exp), +0.5f);
         EXPECT_EQ(exp, 1);
 
-        EXPECT_EQ(frexp(+2.0f, &exp), +0.5f);
+        EXPECT_EQ(avel::frexp(+2.0f, &exp), +0.5f);
         EXPECT_EQ(exp, 2);
 
-        EXPECT_EQ(frexp(+4.0f, &exp), +0.5f);
+        EXPECT_EQ(avel::frexp(+4.0f, &exp), +0.5f);
         EXPECT_EQ(exp, 3);
 
-        EXPECT_EQ(frexp(+8.0f, &exp), +0.5f);
+        EXPECT_EQ(avel::frexp(+8.0f, &exp), +0.5f);
         EXPECT_EQ(exp, 4);
 
         //negative Normal numbers
-        EXPECT_EQ(frexp(-1.0f, &exp), -0.5f);
+        EXPECT_EQ(avel::frexp(-1.0f, &exp), -0.5f);
         EXPECT_EQ(exp, 1);
 
-        EXPECT_EQ(frexp(-2.0f, &exp), -0.5f);
+        EXPECT_EQ(avel::frexp(-2.0f, &exp), -0.5f);
         EXPECT_EQ(exp, 2);
 
-        EXPECT_EQ(frexp(-4.0f, &exp), -0.5f);
+        EXPECT_EQ(avel::frexp(-4.0f, &exp), -0.5f);
         EXPECT_EQ(exp, 3);
 
-        EXPECT_EQ(frexp(-8.0f, &exp), -0.5f);
+        EXPECT_EQ(avel::frexp(-8.0f, &exp), -0.5f);
         EXPECT_EQ(exp, 4);
 
         //Subnormal numbers
         auto val0 = bit_cast<float>(0x00000001);
-        EXPECT_EQ(frexp(val0, &exp), +0.5f);
+        EXPECT_EQ(avel::frexp(val0, &exp), +0.5f);
         EXPECT_EQ(exp, -148);
 
         auto val1 = bit_cast<float>(0x00000010);
-        EXPECT_EQ(frexp(val1, &exp), +0.5f);
+        EXPECT_EQ(avel::frexp(val1, &exp), +0.5f);
         EXPECT_EQ(exp, -144);
 
         auto val2 = bit_cast<float>(0x00000100);
-        EXPECT_EQ(frexp(val2, &exp), +0.5f);
+        EXPECT_EQ(avel::frexp(val2, &exp), +0.5f);
         EXPECT_EQ(exp, -140);
 
         auto val3 = bit_cast<float>(0x00001000);
-        EXPECT_EQ(frexp(val3, &exp), +0.5f);
+        EXPECT_EQ(avel::frexp(val3, &exp), +0.5f);
         EXPECT_EQ(exp, -136);
 
         auto val4 = bit_cast<float>(0x00010000);
-        EXPECT_EQ(frexp(val4, &exp), +0.5f);
+        EXPECT_EQ(avel::frexp(val4, &exp), +0.5f);
         EXPECT_EQ(exp, -132);
 
         auto val5 = bit_cast<float>(0x00400000);
-        EXPECT_EQ(frexp(val5, &exp), +0.5f);
+        EXPECT_EQ(avel::frexp(val5, &exp), +0.5f);
         EXPECT_EQ(exp, -126);
     }
 

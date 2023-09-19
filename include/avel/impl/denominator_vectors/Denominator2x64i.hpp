@@ -80,7 +80,7 @@ namespace avel {
         //=================================================
 
         static vec2x64i mulhi(vec2x64i x, vec2x64i y) {
-            #if defined(AVEL_SSE2)
+            #if defined(AVEL_SSE2) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
             std::int64_t x_lo = extract<0>(x);
             std::int64_t x_hi = extract<1>(x);
 
@@ -92,6 +92,19 @@ namespace avel {
             std::int64_t ret_hi = (__int128_t(x_hi) * __int128_t(y_hi)) >> 64;
 
             return vec2x64i{_mm_set_epi64x(ret_hi, ret_lo)};
+
+            #elif defined(AVEL_SSE2) && defined(AVEL_MSVC)
+            std::int64_t x_lo = extract<0>(x);
+            std::int64_t x_hi = extract<1>(x);
+
+            std::int64_t y_lo = extract<0>(y);
+            std::int64_t y_hi = extract<1>(y);
+
+            // Implementation should leverage x86's 64x64->128-bit multiplication
+            std::int64_t ret_lo = __mulh(x_lo, y_lo);
+            std::int64_t ret_hi = __mulh(x_hi, y_hi);
+
+            return vec2x64i{ _mm_set_epi64x(ret_hi, ret_lo) };
 
             #endif
 
@@ -116,27 +129,40 @@ namespace avel {
         }
 
         static vec2x64i compute_mp(vec2x64i l, vec2x64i d) {
-            //TODO: Optimize
-            __int128_t l_lo = extract<0>(l);
-            __int128_t l_hi = extract<1>(l);
+            #if defined(AVEL_AVX2)
+            vec2x64i n = vec2x64i{1} << (l - vec2x64i{1});
 
-            d = abs(d);
-            __int128_t d_lo = extract<0>(d);
-            __int128_t d_hi = extract<1>(d);
+            d = avel::abs(d);
 
-            auto tmp0_lo = __int128_t(0x8000000000000000) << l_lo;
-            auto tmp0_hi = __int128_t(0x8000000000000000) << l_hi;
+            auto quotient0 = div_64uhi_by_64u(extract<0>(n), extract<0>(d));
+            auto quotient1 = div_64uhi_by_64u(extract<1>(n), extract<1>(d));
 
-            auto tmp2_lo = tmp0_lo / d_lo;
-            auto tmp2_hi = tmp0_hi / d_hi;
+            vec2x64i ret{_mm_set_epi64x(quotient1, quotient0)};
+            ret += vec2x64i{1};
 
-            auto tmp3_lo = tmp2_lo - __int128_t(0xFFFFFFFFFFFFFFFF);
-            auto tmp3_hi = tmp2_hi - __int128_t(0xFFFFFFFFFFFFFFFF);
+            return ret;
 
-            return vec2x64i{{
-                static_cast<std::int64_t>(tmp3_lo),
-                static_cast<std::int64_t>(tmp3_hi)
-            }};
+            #else
+            l -= vec2x64i{1};
+
+            d = avel::abs(d);
+            std::int64_t d_lo = extract<0>(d);
+            std::int64_t d_hi = extract<1>(d);
+
+            auto n_lo = std::int64_t(1) << extract<0>(l);
+            auto n_hi = std::int64_t(1) << extract<1>(l);
+
+            auto quotient0 = div_64uhi_by_64u(n_lo, extract<0>(d));
+            auto quotient1 = div_64uhi_by_64u(n_hi, extract<1>(d));
+
+            vec2x64i ret{0};
+            ret = insert<0>(ret, quotient0);
+            ret = insert<1>(ret, quotient1);
+            ret += vec2x64i{1};
+
+            return ret;
+
+            #endif
         }
 
     };

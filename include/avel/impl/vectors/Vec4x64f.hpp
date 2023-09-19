@@ -556,7 +556,13 @@ namespace avel {
         typename std::enable_if<N < vec4x64f::width, int>::type dummy_variable = 0;
 
         auto quarter = _mm_castps_pd(_mm256_extractf128_ps(_mm256_castpd_ps(decay(v)), N / 2));
-        return quarter[N % 2];
+
+        // Rely on const-folding to optimize this branch away
+        if (N % 2 == 1) {
+            quarter = _mm_unpackhi_pd(quarter, quarter);
+        }
+
+        return _mm_cvtsd_f64(quarter);
     }
 
     template<std::uint32_t N>
