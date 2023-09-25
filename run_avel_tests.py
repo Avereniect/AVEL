@@ -51,7 +51,9 @@ features_x86 = {
     'AVEL_AVX512BITALG': ['-mavx512bitalg', ['AVEL_AVX512F']],
     'AVEL_AVX512VBMI': ['-mavx512vbmi', ['AVEL_AVX512F']],
     'AVEL_AVX512VBMI2': ['-mavx512vbmi2', ['AVEL_AVX512F']],
-    'AVEL_GFNI': ['-mgfni', ['AVEL_AVX512F']]
+    'AVEL_GFNI': ['-mgfni', ['AVEL_AVX512F']],
+    'AVEL_AVX10_1': ['-mavx10.1', ['AVEL_AVX2']],
+    'AVEL_AVX10_2': ['-mavx10.2', ['AVEL_AVX10_1']],
 }
 
 """

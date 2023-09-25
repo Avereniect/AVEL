@@ -79,6 +79,14 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
 // x86 macros
 //=========================================================
 
+#if defined(AVEL_AVX10_2)
+    #define AVEL_AVX10_1
+#endif
+
+#if defined(AVEL_AVX10_1)
+    #define AVEL_AVX2
+#endif
+
 #if defined(AVEL_GFNI)
     #define AVEL_AVX512F
 #endif

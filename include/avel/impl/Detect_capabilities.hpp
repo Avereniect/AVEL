@@ -81,6 +81,14 @@
     #define AVEL_GFNI
 #endif
 
+#ifdef __AVX10_1__
+    #define AVEL_AVX10_1
+#endif
+
+#ifdef __AVX10_2__
+    #define AVEL_AVX10_2
+#endif
+
 #ifdef __POPCNT__
     #define AVEL_POPCNT
 #endif

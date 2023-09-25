@@ -6,6 +6,10 @@ variables by the same name. Most feature sets imply other feature sets, with
 these implications being transitive.  
 
 ## x86 ISA Macros
+* `AVEL_AVX10_2`
+  * implies `AVEL_AVX10_1`
+* `AVEL_AVX10_1`
+  * implies `AVEL_AVX2`
 * `AVEL_GFNI`
   * implies `AVEL_AVX512F`
 * `AVEL_AVX512BITALG`

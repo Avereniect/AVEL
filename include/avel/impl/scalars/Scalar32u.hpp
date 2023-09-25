@@ -253,7 +253,7 @@ namespace avel {
         auto result = std::uint64_t(1) << sh;
         return result;
 
-        #elif defined(AVEL_X86)
+        #elif defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         if (x == 0) {
             return 1;
         }

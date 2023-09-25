@@ -8,6 +8,8 @@
 
 //#define AVEL_FORCE_INLINE
 //#define AVEL_AUTO_DETECT
+//#define AVEL_AVX10_1
+//#define AVEL_AVX10_2
 //#define AVEL_GFNI
 //#define AVEL_AVX512VBMI2
 //#define AVEL_AVX512VBMI

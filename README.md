@@ -411,9 +411,8 @@ The library's tests have been run and passed on:
 * ARM
   * GCC 9.3.0-22, 10.2.1-6
 * Clang 9.0.10-16.1, 11.0.1-2, 13.0.1-6
+* MSVC 19.37.32822
 
 Presumably newer/intermediate versions of these compilers will also work 
 however it has not been tested which are the oldest versions on which this 
 library will function
-
-Support for MSVC is planned
