@@ -54,7 +54,7 @@ namespace avel {
     V load(const typename V::scalar* p, std::uint32_t n);
 
     template<class V, std::uint32_t N = V::width>
-    V load(const typename V::scalar* ptr) {
+    AVEL_FINL V load(const typename V::scalar* ptr) {
         static_assert(N <= V::width, "Cannot load more elements than width of vector");
         typename std::enable_if<N <= V::width, int>::type dummy_variable = 0;
 
@@ -68,7 +68,7 @@ namespace avel {
     V aligned_load(const typename V::scalar* p, std::uint32_t n);
 
     template<class V, std::uint32_t N = V::width>
-    V aligned_load(const typename V::scalar* ptr) {
+    AVEL_FINL V aligned_load(const typename V::scalar* ptr) {
         static_assert(N <= V::width, "Cannot load more elements than width of vector");
         typename std::enable_if<N <= V::width, int>::type dummy_variable = 0;
 
@@ -86,7 +86,7 @@ namespace avel {
     );
 
     template<class V, std::uint32_t N = V::width>
-    V gather(
+    AVEL_FINL V gather(
         const typename V::scalar* ptr,
         Vector<typename to_index_type<typename V::scalar>::type, V::width> indices
     ) {
@@ -102,7 +102,7 @@ namespace avel {
     //=====================================================
 
     template<class V>
-    typename V::primitive decay(V v) {
+    AVEL_FINL typename V::primitive decay(V v) {
         return static_cast<typename V::primitive>(v);
     }
 
@@ -131,7 +131,7 @@ namespace avel {
     /// \param v1 Object to cast
     /// \return Object with equivalent bit-wise representation
     template<class V0, class V1, typename = typename std::is_same<typename V0::primitive, typename V1::primitive>::value>
-    V0 bit_cast(V1 v1) {
+    AVEL_FINL V0 bit_cast(V1 v1) {
         return V0{decay(v1)};
     }
 

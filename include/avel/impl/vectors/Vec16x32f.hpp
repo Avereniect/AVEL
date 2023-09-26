@@ -301,28 +301,28 @@ namespace avel {
         // Arithmetic assignment operators
         //=================================================
 
-        AVEL_FINL Vector& operator+=(Vector vec) {
-            content = _mm512_add_ps(content, vec.content);
+        AVEL_FINL Vector& operator+=(Vector rhs) {
+            content = _mm512_add_ps(content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator-=(Vector vec) {
-            content = _mm512_sub_ps (content, vec.content);
+        AVEL_FINL Vector& operator-=(Vector rhs) {
+            content = _mm512_sub_ps (content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator*=(Vector vec) {
-            content = _mm512_mul_ps (content, vec.content);
+        AVEL_FINL Vector& operator*=(Vector rhs) {
+            content = _mm512_mul_ps (content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator/=(Vector vec) {
-            content = _mm512_div_ps (content, vec.content);
+        AVEL_FINL Vector& operator/=(Vector rhs) {
+            content = _mm512_div_ps (content, rhs.content);
             return *this;
         }
 
-        AVEL_FINL Vector& operator%=(Vector vec) {
-            //TODO: Implement
+        AVEL_FINL Vector& operator%=(Vector rhs) {
+            content = avel::fmod(*this, rhs).content;
             return *this;
         }
 

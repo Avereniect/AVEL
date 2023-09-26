@@ -15,6 +15,7 @@ namespace avel {
     // Forward declarations
     //=====================================================
 
+    AVEL_FINL vec8x64f fmod(vec8x64f a, vec8x64f b);
     AVEL_FINL mask8x64f isnan(vec8x64f v);
     AVEL_FINL vec8x64f copysign(vec8x64f mag, vec8x64f sign);
 
@@ -346,7 +347,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator%=(Vector rhs) {
-            //TODO: Implement
+            content = avel::fmod(*this, rhs).content;
             return *this;
         }
 

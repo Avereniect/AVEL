@@ -39,7 +39,7 @@ namespace avel {
         // Type aliases
         //=================================================
 
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
         using primitive = __mmask8;
         #elif defined(AVEL_SSE2)
         using primitive = __m128i;
@@ -71,7 +71,7 @@ namespace avel {
             content(p) {}
 
         AVEL_FINL explicit Vector_mask(bool b):
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             content(b ? 0xFF : 0x00) {}
         #elif defined(AVEL_SSE2)
             content(b ? _mm_set1_epi16(-1) : _mm_setzero_si128()) {}
@@ -86,7 +86,7 @@ namespace avel {
                 "Implementation assumes bools occupy a single byte"
             );
 
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             auto array_data = _mm_loadu_si64(arr.data());
             content = static_cast<primitive>(_mm_cmplt_epi8_mask(_mm_setzero_si128(), array_data));
 
@@ -134,7 +134,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
             return _kortestz_mask16_u8(tmp, tmp);
 
@@ -155,7 +155,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend bool operator!=(Vector_mask lhs, Vector_mask rhs) noexcept {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
             return !_kortestz_mask16_u8(tmp, tmp);
 
@@ -184,7 +184,7 @@ namespace avel {
         //=================================================
 
         AVEL_FINL Vector_mask& operator&=(Vector_mask rhs) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             content = _kand_mask16(content, rhs.content);
 
             #elif defined(AVEL_SSE2)
@@ -199,7 +199,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector_mask& operator|=(Vector_mask rhs) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             content = _kor_mask16(content, rhs.content);
 
             #elif defined(AVEL_SSE2)
@@ -214,7 +214,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector_mask& operator^=(Vector_mask rhs) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             content = _kand_mask16(_kxor_mask16(content, rhs.content), _cvtu32_mask16(0xFF));
 
             #elif defined(AVEL_SSE2)
@@ -234,7 +234,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL Vector_mask operator!() const {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             return Vector_mask{primitive(_knot_mask16(content))};
 
             #elif defined(AVEL_AVX512VL)
@@ -360,7 +360,7 @@ namespace avel {
             Vector(convert<Vector>(x)[0]) {}
 
         AVEL_FINL explicit Vector(mask m):
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             content(_mm_maskz_set1_epi16(decay(m), 0x1)) {}
         #elif defined(AVEL_SSE2)
             content(_mm_sub_epi16(_mm_setzero_si128(), decay(m))) {}
@@ -416,7 +416,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator==(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             return mask{_mm_cmpeq_epi16_mask(lhs.content, rhs.content)};
             #elif defined(AVEL_SSE2)
             return mask{_mm_cmpeq_epi16(lhs.content, rhs.content)};
@@ -429,7 +429,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator!=(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             return mask{_mm_cmpneq_epi16_mask(lhs.content, rhs.content)};
             #elif defined(AVEL_SSE2)
             return !mask{_mm_cmpeq_epi16(lhs.content, rhs.content)};
@@ -442,7 +442,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator<(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             return mask{_mm_cmplt_epi16_mask(lhs.content, rhs.content)};
             #elif defined(AVEL_SSE2)
             return mask{_mm_cmplt_epi16(lhs.content, rhs.content)};
@@ -455,7 +455,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator<=(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             return mask{mask::primitive(_mm_cmple_epi16_mask(lhs.content, rhs.content))};
             #elif defined(AVEL_SSE2)
             return !mask{_mm_cmpgt_epi16(lhs.content, rhs.content)};
@@ -468,7 +468,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator>(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             return mask{_mm_cmpgt_epi16_mask(lhs.content, rhs.content)};
             #elif defined(AVEL_SSE2)
             return mask{_mm_cmpgt_epi16(lhs.content, rhs.content)};
@@ -481,7 +481,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend mask operator>=(Vector lhs, Vector rhs) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             return mask{_mm_cmpge_epi16_mask(lhs.content, rhs.content)};
             #elif defined(AVEL_SSE2)
             return !mask{_mm_cmplt_epi16(lhs.content, rhs.content)};
@@ -630,7 +630,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator<<=(Vector rhs) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             content = _mm_sllv_epi16(content, rhs.content);
 
             #elif defined(AVEL_AVX2)
@@ -668,7 +668,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator>>=(Vector rhs) {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             content = _mm_srav_epi16(content, rhs.content);
 
             #elif defined(AVEL_AVX2)
@@ -739,7 +739,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL Vector operator~() const {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             return Vector{_mm_ternarylogic_epi32(content, content, content, 0x01)};
 
             #elif defined(AVEL_SSE2)
@@ -766,7 +766,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL explicit operator mask() const {
-            #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+            #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             return mask{_mm_test_epi16_mask(content, content)};
 
             #elif defined(AVEL_SSE2)
@@ -1036,7 +1036,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16i midpoint(vec8x16i a, vec8x16i b) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
         auto offset = _mm_set1_epi16(0x8000);
 
         auto a_offset = _mm_xor_si128(decay(a), offset);
@@ -1076,7 +1076,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16i negate(mask8x16i m, vec8x16i v) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
         return vec8x16i{_mm_mask_sub_epi16(decay(v), decay(m), _mm_setzero_si128(), decay(v))};
 
         #elif defined(AVEL_SSSE3)
@@ -1148,7 +1148,7 @@ namespace avel {
     template<>
     [[nodiscard]]
     AVEL_FINL vec8x16i load<vec8x16i>(const std::int16_t* ptr, std::uint32_t n) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
         auto mask = (n >= 8) ? -1 : (1 << n)  - 1;
         return vec8x16i{_mm_maskz_loadu_epi16(mask, ptr)};
 
@@ -1361,7 +1361,7 @@ namespace avel {
 
 
     AVEL_FINL void store(std::int16_t* ptr, vec8x16i v, std::uint32_t n) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
+        #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
         n = min(n, vec8x16i::width);
         auto mask = (1 << n) - 1;
         _mm_mask_storeu_epi16(ptr, mask, decay(v));
