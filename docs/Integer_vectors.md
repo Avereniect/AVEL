@@ -1,93 +1,9 @@
 # Vectors
-* wrappers around the following native types
+* wrappers presenting a similar interface as the following native types
   * `std::uint8_t`, `std::int8_t`
   * `std::uint16_t`, `std::int16_t`
   * `std::uint32_t`, `std::int32_t`
   * `std::uint64_t`, `std::int64_t`
-
-## Vector Mask Classes:
-* associated type alias `maskNxT = avel::Vector_mask<..., width`
-* associated type alias `arrbxN = std::array<bool, width>`
-* is trivial
-
-`static constexpr std::uint32_t width = ...`
-* number of lanes in vector mask
-
-`using primitive = ...`
-* alias of corresponding type used by native intrinsics
-
-`Vector_mask(primitive p)`
-* assigns internal variable to `p`
-
-`Vector_mask(bool b)`
-* broadcasts value of `b` to all lanes
-
-`Vector_mask(arrbxN arr)`
-* sets all lanes to corresponding values from `arr`
-
-Defaulted default/copy/move constructors  
-Defaulted destructor
-
-`Vector_mask& operator=(bool b)`
-* broadcasts value of `b` to all lanes
-
-* default copy/move assignment operators
-
-`Vector_mask& operator&=(Vector_mask rhs)`
-* for each lane, sets the lane to the logical AND of `this` and `rhs`
-
-`Vector_mask& operator|=(Vector_mask rhs)`
-* for each lane, sets the lane to the logical OR of `this` and `rhs`
-
-`Vector_mask& operator^=(Vector_mask rhs)`
-* for each lane, sets the lane to the logical XOR of `this` and `rhs`
-
-`Vector_mask operator~()`
-*  for each lane, produces the bitwise negation of `this`
-
-`Vector_mask operator&(Vector_mask rhs)`
-*  for each lane, produces the bitwise AND of `this` and `rhs`
-
-`Vector_mask operator&&(Vector_mask rhs)`
-*  for each lane, produces the bitwise AND of `this` and `rhs`
-
-`Vector_mask operator|(Vector_mask rhs)`
-*  for each lane, produces the bitwise OR of `this` and `rhs`
-
-`Vector_mask operator||(Vector_mask rhs)`
-*  for each lane, returns a component-wise OR of `this` and `rhs`
-
-`Vector_mask operator^(Vector_mask rhs)`
-*  for each lane, produces the bitwise XOR of `this` and `rhs`
-
-`explicit operator primitive()`
-* returns a copy of the internal instance of the backing type for use with 
-  native intrinsics
-* consider using `avel::decay` as a more convenient alternative
-
-### Free Mask Functions
-`std::uint32_t count(mask m)`
-* return number of set lanes in the `m`
-
-`bool any(mask m)`
-* return true if any lanes in `m` are set to true
-
-`bool all(mask m)`
-* return true if all lanes in `m` are set to true
-
-`bool none(mask m)`
-* return true if all lane in `m` are set to false
-
-`template<std::uint32_t N>`
-`bool extract(mask v)`
- * returns the contents of the `N`th lane of the vector `v`
-
-```
-template<std::uint32_t N
-mask insert(mask v, bool b)
-```
-* replace the contents of the `N`th lane with `b` in the vector `b`
-* the contents of all other lanes are left untouched
 
 ## Vector Classes:
 `using vecNxT = avel::Vector<scalar, width>`  
@@ -294,7 +210,7 @@ scalar extract(vector v)
 * returns the contents of the `N`th lane of the vector `v`
 
 ```
-template<std::uint32_t N
+template<std::uint32_t N>
 vector insert(vector v, scalar x)
 ```
 * replace the contents of the `N`th lane with `x` in a copy of `v`

@@ -1,5 +1,5 @@
 # Floating-point Vectors
-* wrappers around the following native types
+* wrappers presenting a similar interface as the following native types
   * `float` assumed to be a 32-bit IEEE-754 single-precision float
   * `double` assumed to be a 64-bit IEEE-754 double-precision float
 * floating-point functions will round correctly and deliver expected results 
