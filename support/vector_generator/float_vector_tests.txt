@@ -338,6 +338,93 @@ namespace avel_tests {
         }
     }
 
+    //=====================================================
+    // Mask functions
+    //=====================================================
+
+    TEST($<Mask_alias>, Count_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<$<bool_array_alias>>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            $<mask_alias> m{inputs};
+
+            auto results = count(m);
+
+            EXPECT_EQ(cnt, results);
+        }
+
+    }
+
+    TEST($<Mask_alias>, Any_edge_cases) {
+        EXPECT_FALSE(any($<mask_alias>{false}));
+        EXPECT_TRUE(any($<mask_alias>{true}));
+    }
+
+    TEST($<Mask_alias>, Any_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<$<bool_array_alias>>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            $<mask_alias> v{inputs};
+
+            EXPECT_EQ(cnt != 0, any(v));
+        }
+    }
+
+    TEST($<Mask_alias>, All_edge_cases) {
+        EXPECT_FALSE(all($<mask_alias>{false}));
+        EXPECT_TRUE(all($<mask_alias>{true}));
+    }
+
+    TEST($<Mask_alias>, All_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<$<bool_array_alias>>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            $<mask_alias> v{inputs};
+
+            EXPECT_EQ(cnt == $<vector_alias>::width, all(v));
+        }
+    }
+
+    TEST($<Mask_alias>, None_edge_cases) {
+        EXPECT_FALSE(all($<mask_alias>{false}));
+        EXPECT_TRUE(all($<mask_alias>{true}));
+    }
+
+    TEST($<Mask_alias>, None_random) {
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<$<bool_array_alias>>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            $<mask_alias> v{inputs};
+
+            EXPECT_EQ(cnt == 0, none(v));
+        }
+    }
+
+    TEST($<Mask_alias>, Extract_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<$<bool_array_alias>>();
+            $<mask_alias> v{inputs};
+
+            $<mask_extract_tests>
+        }
+    }
+
+    TEST($<Mask_alias>, Insert_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<$<bool_array_alias>>();
+            $<mask_alias> v{false};
+
+            $<mask_insert_tests>
+
+            EXPECT_TRUE(v == $<mask_alias>{inputs});
+        }
+    }
+
     //=========================================================================
     // $<Vector_alias> tests
     //=========================================================================

@@ -258,6 +258,16 @@ namespace avel {
     };
 
     //=====================================================
+    // Mask conversions
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<mask8x16u, 1> convert<mask8x16u, mask8x16u>(mask8x16u m) {
+        return {m};
+    }
+
+    //=====================================================
     // Mask functions
     //=====================================================
 
@@ -363,14 +373,45 @@ namespace avel {
         #endif
     }
 
-    //=====================================================
-    // Mask conversions
-    //=====================================================
-
-    template<>
+    template<std::uint32_t N>
     [[nodiscard]]
-    AVEL_FINL std::array<mask8x16u, 1> convert<mask8x16u, mask8x16u>(mask8x16u m) {
-        return {m};
+    AVEL_FINL bool extract(mask8x16u m) {
+        static_assert(N < mask8x16u::width, "Specified index does not exist");
+        typename std::enable_if<N < mask8x16u::width, int>::type dummy_variable = 0;
+
+        #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
+        return decay(m) & (1 << N);
+
+        #elif defined(AVEL_SSE2)
+        return _mm_movemask_epi8(decay(m)) & (1 << (N * sizeof(std::uint16_t)));
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
+
+        #endif
+    }
+
+    template<std::uint32_t N>
+    [[nodiscard]]
+    AVEL_FINL mask8x16u insert(mask8x16u m, bool b) {
+        static_assert(N < mask8x16u::width, "Specified index does not exist");
+        typename std::enable_if<N < mask8x16u::width, int>::type dummy_variable = 0;
+
+        #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
+        auto mask = b << N;
+        return mask8x16u{__mmask8((decay(m) & ~mask) | mask)};
+
+        #elif defined(AVEL_SSE2)
+        return mask8x16u{_mm_insert_epi16(decay(m), b ? -1 : 0, N)};
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
+
+        #endif
     }
 
 

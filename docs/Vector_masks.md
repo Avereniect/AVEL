@@ -74,3 +74,16 @@
 
 `bool none(mask m)`
 * return true if all lane in `m` are set to false
+
+```
+template<std::uint32_t N>
+bool extract(mask m)
+```
+* returns the contents of the `N`th lane of the vector mask `m`
+
+```
+template<std::uint32 N>
+mask insert(mask m, bool b)
+```
+* replace the contents of the `N`th lane with `b` in a copy of `v`
+* the contents of all other lanes are left untouched

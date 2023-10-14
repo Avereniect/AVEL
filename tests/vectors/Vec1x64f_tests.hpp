@@ -338,6 +338,95 @@ namespace avel_tests {
         }
     }
 
+    //=====================================================
+    // Mask functions
+    //=====================================================
+
+    TEST(Mask1x64f, Count_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr1xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask1x64f m{inputs};
+
+            auto results = count(m);
+
+            EXPECT_EQ(cnt, results);
+        }
+
+    }
+
+    TEST(Mask1x64f, Any_edge_cases) {
+        EXPECT_FALSE(any(mask1x64f{false}));
+        EXPECT_TRUE(any(mask1x64f{true}));
+    }
+
+    TEST(Mask1x64f, Any_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr1xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask1x64f v{inputs};
+
+            EXPECT_EQ(cnt != 0, any(v));
+        }
+    }
+
+    TEST(Mask1x64f, All_edge_cases) {
+        EXPECT_FALSE(all(mask1x64f{false}));
+        EXPECT_TRUE(all(mask1x64f{true}));
+    }
+
+    TEST(Mask1x64f, All_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr1xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask1x64f v{inputs};
+
+            EXPECT_EQ(cnt == vec1x64f::width, all(v));
+        }
+    }
+
+    TEST(Mask1x64f, None_edge_cases) {
+        EXPECT_FALSE(all(mask1x64f{false}));
+        EXPECT_TRUE(all(mask1x64f{true}));
+    }
+
+    TEST(Mask1x64f, None_random) {
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr1xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask1x64f v{inputs};
+
+            EXPECT_EQ(cnt == 0, none(v));
+        }
+    }
+
+    TEST(Mask1x64f, Extract_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr1xb>();
+            mask1x64f v{inputs};
+
+            EXPECT_EQ(inputs[0x00], extract<0x00>(v));
+
+        }
+    }
+
+    TEST(Mask1x64f, Insert_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr1xb>();
+            mask1x64f v{false};
+
+            v = insert<0x00>(v, inputs[0x00]);
+
+
+            EXPECT_TRUE(v == mask1x64f{inputs});
+        }
+    }
+
     //=========================================================================
     // Vec1x64f tests
     //=========================================================================

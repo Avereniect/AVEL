@@ -265,6 +265,16 @@ namespace avel {
     };
 
     //=====================================================
+    // Mask conversions
+    //=====================================================
+
+    template<>
+    [[nodiscard]]
+    AVEL_FINL std::array<mask2x64u, 1> convert<mask2x64u, mask2x64u>(mask2x64u m) {
+        return std::array<mask2x64u, 1>{m};
+    }
+
+    //=====================================================
     // Mask functions
     //=====================================================
 
@@ -352,14 +362,53 @@ namespace avel {
         #endif
     }
 
-    //=====================================================
-    // Mask conversions
-    //=====================================================
-
-    template<>
+    template<std::uint32_t N>
     [[nodiscard]]
-    AVEL_FINL std::array<mask2x64u, 1> convert<mask2x64u, mask2x64u>(mask2x64u m) {
-        return std::array<mask2x64u, 1>{m};
+    AVEL_FINL bool extract(mask2x64u m) {
+        static_assert(N < mask2x64u::width, "Specified index does not exist");
+        typename std::enable_if<N < mask2x64u::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
+        return decay(m) & (1 << N);
+
+        #elif defined(AVEL_SSE2)
+        return _mm_movemask_epi8(decay(m)) & (1 << (N * sizeof(std::uint64_t)));
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
+
+        #endif
+    }
+
+    template<std::uint32_t N>
+    [[nodiscard]]
+    AVEL_FINL mask2x64u insert(mask2x64u m, bool b) {
+        static_assert(N < mask2x64u::width, "Specified index does not exist");
+        typename std::enable_if<N < mask2x64u::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
+        auto mask = b << N;
+        return mask2x64u{__mmask8((decay(m) & ~mask) | mask)};
+
+        #elif defined(AVEL_SSE41)
+        return mask2x64u{_mm_insert_epi64(decay(m), b ? -1ll : 0, N)};
+
+        #elif defined(AVEL_SSE2)
+        auto mask = _mm_cvtsi64_si128(b ? -1 : 0);
+        if (N == 0) {
+            return mask2x64u{_mm_unpacklo_epi64(mask, _mm_srli_si128(decay(m), 8))};
+        } else {
+            return mask2x64u{_mm_unpacklo_epi64(decay(m), mask)};
+        }
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
+
+        #endif
     }
 
 

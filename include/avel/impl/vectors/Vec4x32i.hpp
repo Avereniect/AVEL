@@ -40,6 +40,7 @@ namespace avel {
 
         #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
         using primitive = __mmask8;
+
         #elif defined(AVEL_SSE2)
         using primitive = __m128i;
         #endif
@@ -147,7 +148,7 @@ namespace avel {
 
         [[nodiscard]]
         AVEL_FINL friend bool operator==(Vector_mask lhs, Vector_mask rhs) noexcept {
-            #if defined(AVEL_AVX512VL)
+            #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
             auto tmp = _kxor_mask16(decay(lhs), decay(rhs));
             return _kortestz_mask16_u8(tmp, tmp);
 
@@ -309,6 +310,24 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool none(mask4x32i m) {
         return none(mask4x32u{m});
+    }
+
+    template<std::uint32_t N>
+    [[nodiscard]]
+    AVEL_FINL bool extract(mask4x32i m) {
+        static_assert(N < mask4x32i::width, "Specified index does not exist");
+        typename std::enable_if<N < mask4x32i::width, int>::type dummy_variable = 0;
+
+        return extract<N>(mask4x32u{m});
+    }
+
+    template<std::uint32_t N>
+    [[nodiscard]]
+    AVEL_FINL mask4x32i insert(mask4x32i m, bool b) {
+        static_assert(N < mask4x32i::width, "Specified index does not exist");
+        typename std::enable_if<N < mask4x32i::width, int>::type dummy_variable = 0;
+
+        return mask4x32i{insert<N>(mask4x32u{m}, b)};
     }
 
 

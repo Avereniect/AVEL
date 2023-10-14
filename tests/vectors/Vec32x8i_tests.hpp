@@ -338,6 +338,157 @@ namespace avel_tests {
         }
     }
 
+    //=====================================================
+    // Mask functions
+    //=====================================================
+
+    TEST(Mask32x8i, Count_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask32x8i m{inputs};
+
+            auto results = count(m);
+
+            EXPECT_EQ(cnt, results);
+        }
+
+    }
+
+    TEST(Mask32x8i, Any_edge_cases) {
+        EXPECT_FALSE(any(mask32x8i{false}));
+        EXPECT_TRUE(any(mask32x8i{true}));
+    }
+
+    TEST(Mask32x8i, Any_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask32x8i v{inputs};
+
+            EXPECT_EQ(cnt != 0, any(v));
+        }
+    }
+
+    TEST(Mask32x8i, All_edge_cases) {
+        EXPECT_FALSE(all(mask32x8i{false}));
+        EXPECT_TRUE(all(mask32x8i{true}));
+    }
+
+    TEST(Mask32x8i, All_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask32x8i v{inputs};
+
+            EXPECT_EQ(cnt == vec32x8i::width, all(v));
+        }
+    }
+
+    TEST(Mask32x8i, None_edge_cases) {
+        EXPECT_FALSE(all(mask32x8i{false}));
+        EXPECT_TRUE(all(mask32x8i{true}));
+    }
+
+    TEST(Mask32x8i, None_random) {
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask32x8i v{inputs};
+
+            EXPECT_EQ(cnt == 0, none(v));
+        }
+    }
+
+    TEST(Mask32x8i, Extract_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32xb>();
+            mask32x8i v{inputs};
+
+            EXPECT_EQ(inputs[0x00], extract<0x00>(v));
+            EXPECT_EQ(inputs[0x01], extract<0x01>(v));
+            EXPECT_EQ(inputs[0x02], extract<0x02>(v));
+            EXPECT_EQ(inputs[0x03], extract<0x03>(v));
+            EXPECT_EQ(inputs[0x04], extract<0x04>(v));
+            EXPECT_EQ(inputs[0x05], extract<0x05>(v));
+            EXPECT_EQ(inputs[0x06], extract<0x06>(v));
+            EXPECT_EQ(inputs[0x07], extract<0x07>(v));
+            EXPECT_EQ(inputs[0x08], extract<0x08>(v));
+            EXPECT_EQ(inputs[0x09], extract<0x09>(v));
+            EXPECT_EQ(inputs[0x0a], extract<0x0a>(v));
+            EXPECT_EQ(inputs[0x0b], extract<0x0b>(v));
+            EXPECT_EQ(inputs[0x0c], extract<0x0c>(v));
+            EXPECT_EQ(inputs[0x0d], extract<0x0d>(v));
+            EXPECT_EQ(inputs[0x0e], extract<0x0e>(v));
+            EXPECT_EQ(inputs[0x0f], extract<0x0f>(v));
+            EXPECT_EQ(inputs[0x10], extract<0x10>(v));
+            EXPECT_EQ(inputs[0x11], extract<0x11>(v));
+            EXPECT_EQ(inputs[0x12], extract<0x12>(v));
+            EXPECT_EQ(inputs[0x13], extract<0x13>(v));
+            EXPECT_EQ(inputs[0x14], extract<0x14>(v));
+            EXPECT_EQ(inputs[0x15], extract<0x15>(v));
+            EXPECT_EQ(inputs[0x16], extract<0x16>(v));
+            EXPECT_EQ(inputs[0x17], extract<0x17>(v));
+            EXPECT_EQ(inputs[0x18], extract<0x18>(v));
+            EXPECT_EQ(inputs[0x19], extract<0x19>(v));
+            EXPECT_EQ(inputs[0x1a], extract<0x1a>(v));
+            EXPECT_EQ(inputs[0x1b], extract<0x1b>(v));
+            EXPECT_EQ(inputs[0x1c], extract<0x1c>(v));
+            EXPECT_EQ(inputs[0x1d], extract<0x1d>(v));
+            EXPECT_EQ(inputs[0x1e], extract<0x1e>(v));
+            EXPECT_EQ(inputs[0x1f], extract<0x1f>(v));
+
+        }
+    }
+
+    TEST(Mask32x8i, Insert_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr32xb>();
+            mask32x8i v{false};
+
+            v = insert<0x00>(v, inputs[0x00]);
+            v = insert<0x01>(v, inputs[0x01]);
+            v = insert<0x02>(v, inputs[0x02]);
+            v = insert<0x03>(v, inputs[0x03]);
+            v = insert<0x04>(v, inputs[0x04]);
+            v = insert<0x05>(v, inputs[0x05]);
+            v = insert<0x06>(v, inputs[0x06]);
+            v = insert<0x07>(v, inputs[0x07]);
+            v = insert<0x08>(v, inputs[0x08]);
+            v = insert<0x09>(v, inputs[0x09]);
+            v = insert<0x0a>(v, inputs[0x0a]);
+            v = insert<0x0b>(v, inputs[0x0b]);
+            v = insert<0x0c>(v, inputs[0x0c]);
+            v = insert<0x0d>(v, inputs[0x0d]);
+            v = insert<0x0e>(v, inputs[0x0e]);
+            v = insert<0x0f>(v, inputs[0x0f]);
+            v = insert<0x10>(v, inputs[0x10]);
+            v = insert<0x11>(v, inputs[0x11]);
+            v = insert<0x12>(v, inputs[0x12]);
+            v = insert<0x13>(v, inputs[0x13]);
+            v = insert<0x14>(v, inputs[0x14]);
+            v = insert<0x15>(v, inputs[0x15]);
+            v = insert<0x16>(v, inputs[0x16]);
+            v = insert<0x17>(v, inputs[0x17]);
+            v = insert<0x18>(v, inputs[0x18]);
+            v = insert<0x19>(v, inputs[0x19]);
+            v = insert<0x1a>(v, inputs[0x1a]);
+            v = insert<0x1b>(v, inputs[0x1b]);
+            v = insert<0x1c>(v, inputs[0x1c]);
+            v = insert<0x1d>(v, inputs[0x1d]);
+            v = insert<0x1e>(v, inputs[0x1e]);
+            v = insert<0x1f>(v, inputs[0x1f]);
+
+
+            EXPECT_TRUE(v == mask32x8i{inputs});
+        }
+    }
+
     //=========================================================================
     // Vec32x8i tests
     //=========================================================================

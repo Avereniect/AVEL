@@ -10,6 +10,8 @@ float_vector_tests_template_path = './float_vector_tests.txt'
 output_folder = './tests_output'
 
 dynamic_substitution_templates = {
+    '$<mask_extract_tests>'    : '            EXPECT_EQ(inputs[${lane_index_exclusive}], extract<${lane_index_exclusive}>(v));',
+    '$<mask_insert_tests>'     : '            v = insert<${lane_index_exclusive}>(v, inputs[${lane_index_exclusive}]);',
     '$<extract_tests>'         : '            EXPECT_EQ(inputs[${lane_index_exclusive}], extract<${lane_index_exclusive}>(v));',
     '$<insert_tests>'          : '            v = insert<${lane_index_exclusive}>(v, inputs[${lane_index_exclusive}]);',
     '$<bit_shift_left_tests>'  : '            EXPECT_TRUE(all(bit_shift_left<${bit_index}>(v) == (v << ${bit_index})));',

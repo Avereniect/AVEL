@@ -344,6 +344,53 @@ namespace avel {
         return !any(m);
     }
 
+    template<std::uint32_t N>
+    [[nodiscard]]
+    AVEL_FINL bool extract(mask4x32f m) {
+        static_assert(N < mask4x32f::width, "Specified index does not exist");
+        typename std::enable_if<N < mask4x32f::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
+        return decay(m) & (1 << N);
+
+        #elif defined(AVEL_SSE2)
+        return _mm_movemask_ps(decay(m)) & (1 << N);
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
+
+        #endif
+    }
+
+    template<std::uint32_t N>
+    [[nodiscard]]
+    AVEL_FINL mask4x32f insert(mask4x32f m, bool b) {
+        static_assert(N < mask4x32f::width, "Specified index does not exist");
+        typename std::enable_if<N < mask4x32f::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
+        auto mask = b << N;
+        return mask4x32f{__mmask8((decay(m) & ~mask) | mask)};
+
+        #elif defined(AVEL_SSE41)
+        auto mask = avel::bit_cast<float>(b ? -1 : 0);
+        return mask4x32f{_mm_insert_ps(decay(m), _mm_set_ss(mask), N << 4)};
+
+        #elif defined(AVEL_SSE2)
+        auto mask = _mm_cvtsi32_si128(b ? -1 : 0);
+        std::memcpy(reinterpret_cast<char*>(&m) + N * sizeof(float), &mask, sizeof(float));
+        return m;
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
+
+        #endif
+    }
+
 
 
 
@@ -739,7 +786,10 @@ namespace avel {
         static_assert(N < vec4x32f::width, "Specified index does not exist");
         typename std::enable_if<N < vec4x32f::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE2) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
+        #if defined(AVEL_SSE41)
+        return vec4x32f{_mm_insert_ps(decay(v), _mm_set_ss(x), N << 4)};
+
+        #elif defined(AVEL_SSE2) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
         auto tmp = decay(v);
         tmp[N] = x;
         return vec4x32f{tmp};

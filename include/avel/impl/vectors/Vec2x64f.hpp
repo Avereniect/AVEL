@@ -319,6 +319,54 @@ namespace avel {
         return !any(m);
     }
 
+    template<std::uint32_t N>
+    [[nodiscard]]
+    AVEL_FINL bool extract(mask2x64f m) {
+        static_assert(N < mask2x64f::width, "Specified index does not exist");
+        typename std::enable_if<N < mask2x64f::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
+        return decay(m) & (1 << N);
+
+        #elif defined(AVEL_SSE2)
+        return _mm_movemask_pd(decay(m)) & (1 << N);
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
+
+        #endif
+    }
+
+    template<std::uint32_t N>
+    [[nodiscard]]
+    AVEL_FINL mask2x64f insert(mask2x64f m, bool b) {
+        static_assert(N < mask2x64f::width, "Specified index does not exist");
+        typename std::enable_if<N < mask2x64f::width, int>::type dummy_variable = 0;
+
+        #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
+        auto mask = b << N;
+        return mask2x64f{__mmask8((decay(m) & ~mask) | mask)};
+
+        #elif defined(AVEL_SSE2)
+        // Rely on const folding
+        if (N == 0) {
+            auto mask = _mm_castsi128_pd(_mm_cvtsi64_si128(b ? -1 : 0));
+            return mask2x64f{_mm_move_sd(decay(m), mask)};
+        } else {
+            auto mask = _mm_castsi128_pd(_mm_cvtsi64_si128(b ? -1 : 0));
+            return mask2x64f{_mm_unpacklo_pd(decay(m), mask)};
+        }
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        //TODO: Implement
+
+        #endif
+    }
+
 
 
 
@@ -714,7 +762,7 @@ namespace avel {
         return vec2x64f{ret};
 
         #elif defined(AVEL_SSE2) && defined(AVEL_MSVC)
-        // MSVC is generally just horrible at optimizing any implementation of 
+        // MSVC is generally just horrible at optimizing any implementation of
         // this so just keep it simple
         std::memcpy(reinterpret_cast<char*>(&v) + N * sizeof(double), &x, sizeof(double));
 

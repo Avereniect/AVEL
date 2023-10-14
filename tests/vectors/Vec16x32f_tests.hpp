@@ -338,6 +338,125 @@ namespace avel_tests {
         }
     }
 
+    //=====================================================
+    // Mask functions
+    //=====================================================
+
+    TEST(Mask16x32f, Count_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr16xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask16x32f m{inputs};
+
+            auto results = count(m);
+
+            EXPECT_EQ(cnt, results);
+        }
+
+    }
+
+    TEST(Mask16x32f, Any_edge_cases) {
+        EXPECT_FALSE(any(mask16x32f{false}));
+        EXPECT_TRUE(any(mask16x32f{true}));
+    }
+
+    TEST(Mask16x32f, Any_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr16xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask16x32f v{inputs};
+
+            EXPECT_EQ(cnt != 0, any(v));
+        }
+    }
+
+    TEST(Mask16x32f, All_edge_cases) {
+        EXPECT_FALSE(all(mask16x32f{false}));
+        EXPECT_TRUE(all(mask16x32f{true}));
+    }
+
+    TEST(Mask16x32f, All_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr16xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask16x32f v{inputs};
+
+            EXPECT_EQ(cnt == vec16x32f::width, all(v));
+        }
+    }
+
+    TEST(Mask16x32f, None_edge_cases) {
+        EXPECT_FALSE(all(mask16x32f{false}));
+        EXPECT_TRUE(all(mask16x32f{true}));
+    }
+
+    TEST(Mask16x32f, None_random) {
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr16xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask16x32f v{inputs};
+
+            EXPECT_EQ(cnt == 0, none(v));
+        }
+    }
+
+    TEST(Mask16x32f, Extract_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr16xb>();
+            mask16x32f v{inputs};
+
+            EXPECT_EQ(inputs[0x00], extract<0x00>(v));
+            EXPECT_EQ(inputs[0x01], extract<0x01>(v));
+            EXPECT_EQ(inputs[0x02], extract<0x02>(v));
+            EXPECT_EQ(inputs[0x03], extract<0x03>(v));
+            EXPECT_EQ(inputs[0x04], extract<0x04>(v));
+            EXPECT_EQ(inputs[0x05], extract<0x05>(v));
+            EXPECT_EQ(inputs[0x06], extract<0x06>(v));
+            EXPECT_EQ(inputs[0x07], extract<0x07>(v));
+            EXPECT_EQ(inputs[0x08], extract<0x08>(v));
+            EXPECT_EQ(inputs[0x09], extract<0x09>(v));
+            EXPECT_EQ(inputs[0x0a], extract<0x0a>(v));
+            EXPECT_EQ(inputs[0x0b], extract<0x0b>(v));
+            EXPECT_EQ(inputs[0x0c], extract<0x0c>(v));
+            EXPECT_EQ(inputs[0x0d], extract<0x0d>(v));
+            EXPECT_EQ(inputs[0x0e], extract<0x0e>(v));
+            EXPECT_EQ(inputs[0x0f], extract<0x0f>(v));
+
+        }
+    }
+
+    TEST(Mask16x32f, Insert_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr16xb>();
+            mask16x32f v{false};
+
+            v = insert<0x00>(v, inputs[0x00]);
+            v = insert<0x01>(v, inputs[0x01]);
+            v = insert<0x02>(v, inputs[0x02]);
+            v = insert<0x03>(v, inputs[0x03]);
+            v = insert<0x04>(v, inputs[0x04]);
+            v = insert<0x05>(v, inputs[0x05]);
+            v = insert<0x06>(v, inputs[0x06]);
+            v = insert<0x07>(v, inputs[0x07]);
+            v = insert<0x08>(v, inputs[0x08]);
+            v = insert<0x09>(v, inputs[0x09]);
+            v = insert<0x0a>(v, inputs[0x0a]);
+            v = insert<0x0b>(v, inputs[0x0b]);
+            v = insert<0x0c>(v, inputs[0x0c]);
+            v = insert<0x0d>(v, inputs[0x0d]);
+            v = insert<0x0e>(v, inputs[0x0e]);
+            v = insert<0x0f>(v, inputs[0x0f]);
+
+
+            EXPECT_TRUE(v == mask16x32f{inputs});
+        }
+    }
+
     //=========================================================================
     // Vec16x32f tests
     //=========================================================================

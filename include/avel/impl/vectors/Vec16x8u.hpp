@@ -362,6 +362,44 @@ namespace avel {
         #endif
     }
 
+    template<std::uint32_t N>
+    [[nodiscard]]
+    AVEL_FINL bool extract(mask16x8u m) {
+        static_assert(N < mask16x8u::width, "Specified index does not exist");
+        typename std::enable_if<N < mask16x8u::width, int>::type dummy_variable = 0;
+
+        #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
+        return decay(m) & (1 << N);
+
+        #elif defined(AVEL_SSE2)
+        return _mm_movemask_epi8(decay(m)) & (1 << N);
+
+        #endif
+    }
+
+    template<std::uint32_t N>
+    [[nodiscard]]
+    AVEL_FINL mask16x8u insert(mask16x8u m, bool b) {
+        static_assert(N < mask16x8u::width, "Specified index does not exist");
+        typename std::enable_if<N < mask16x8u::width, int>::type dummy_variable = 0;
+
+        #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
+        auto mask = b << N;
+        return mask16x8u{__mmask16((decay(m) & ~mask) | mask)};
+
+        #elif defined(AVEL_SSE41)
+        return mask16x8u{_mm_insert_epi8(decay(m), b ? - 1 : 0, N)};
+
+        #elif defined(AVEL_SSE2)
+        auto lane_value = _mm_insert_epi16(_mm_setzero_si128(), (b ? 0xff : 0) << (8 * (N % 2)), N / 2);
+        auto lane_mask = _mm_loadu_si128(reinterpret_cast<const __m128i*>(masks_8_bit_lane.data() + 16 - N ));
+        auto lane_cleared = _mm_andnot_si128(lane_mask, decay(m));
+        auto lane_filled  = _mm_or_si128(lane_cleared, lane_value);
+        return mask16x8u{lane_filled};
+
+        #endif
+    }
+
 
 
 
@@ -964,16 +1002,11 @@ namespace avel {
         return vec16x8u{_mm_insert_epi8(decay(v), x, N)};
 
         #elif defined(AVEL_SSE2)
-        std::int16_t lane = _mm_extract_epi16(decay(v), N / 2);
-        std::int16_t updated_lane;
-        if (N % 2 == 0) {
-            updated_lane = x | (lane & 0xFF00);
-        } else {
-            updated_lane = std::int16_t(x) << 8 | (lane & 0x00FF);
-        }
-
-        auto result = _mm_insert_epi16(decay(v), updated_lane, N / 2);
-        return vec16x8u{result};
+        auto lane = _mm_insert_epi16(_mm_setzero_si128(), x << (8 * (N % 2)), N / 2);
+        auto lane_mask = _mm_loadu_si128(reinterpret_cast<const __m128i*>(masks_8_bit_lane.data() + 16 - N ));
+        auto lane_cleared = _mm_andnot_si128(lane_mask, decay(v));
+        auto lane_filled  = _mm_or_si128(lane_cleared, lane);
+        return vec16x8u{lane_filled};
 
         #endif
 

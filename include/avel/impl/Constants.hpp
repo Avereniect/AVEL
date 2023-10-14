@@ -139,10 +139,21 @@ namespace avel {
     // Mask Constants
     //=====================================================
 
+    alignas(32) static constexpr std::array<std::int8_t, 32> masks_8_bit_lane{
+        +0, +0, +0, +0,
+        +0, +0, +0, +0,
+        +0, +0, +0, +0,
+        +0, +0, +0, +0,
+        -1, +0, +0, +0,
+        +0, +0, +0, +0,
+        +0, +0, +0, +0,
+        +0, +0, +0, +0
+    };
+
     ///
-    /// If the action was .
     ///
-    alignas(32) static constexpr std::array<std::int8_t, 32> masks128_table {
+    ///
+    alignas(32) static constexpr std::array<std::int8_t, 32> masks128_table{
         -1, -1, -1, -1,
         -1, -1, -1, -1,
         -1, -1, -1, -1,
@@ -156,7 +167,7 @@ namespace avel {
     ///
     /// Table containing array that's used for loading masks.
     ///
-    alignas(64) static constexpr std::array<std::int8_t, 64> masks256_table {
+    alignas(64) static constexpr std::array<std::int8_t, 64> masks256_table{
         -1, -1, -1, -1,
         -1, -1, -1, -1,
         -1, -1, -1, -1,

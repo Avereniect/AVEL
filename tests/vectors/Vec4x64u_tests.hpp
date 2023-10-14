@@ -338,6 +338,101 @@ namespace avel_tests {
         }
     }
 
+    //=====================================================
+    // Mask functions
+    //=====================================================
+
+    TEST(Mask4x64u, Count_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr4xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask4x64u m{inputs};
+
+            auto results = count(m);
+
+            EXPECT_EQ(cnt, results);
+        }
+
+    }
+
+    TEST(Mask4x64u, Any_edge_cases) {
+        EXPECT_FALSE(any(mask4x64u{false}));
+        EXPECT_TRUE(any(mask4x64u{true}));
+    }
+
+    TEST(Mask4x64u, Any_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr4xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask4x64u v{inputs};
+
+            EXPECT_EQ(cnt != 0, any(v));
+        }
+    }
+
+    TEST(Mask4x64u, All_edge_cases) {
+        EXPECT_FALSE(all(mask4x64u{false}));
+        EXPECT_TRUE(all(mask4x64u{true}));
+    }
+
+    TEST(Mask4x64u, All_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr4xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask4x64u v{inputs};
+
+            EXPECT_EQ(cnt == vec4x64u::width, all(v));
+        }
+    }
+
+    TEST(Mask4x64u, None_edge_cases) {
+        EXPECT_FALSE(all(mask4x64u{false}));
+        EXPECT_TRUE(all(mask4x64u{true}));
+    }
+
+    TEST(Mask4x64u, None_random) {
+
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr4xb>();
+            auto cnt = std::count(inputs.begin(), inputs.end(), true);
+
+            mask4x64u v{inputs};
+
+            EXPECT_EQ(cnt == 0, none(v));
+        }
+    }
+
+    TEST(Mask4x64u, Extract_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr4xb>();
+            mask4x64u v{inputs};
+
+            EXPECT_EQ(inputs[0x00], extract<0x00>(v));
+            EXPECT_EQ(inputs[0x01], extract<0x01>(v));
+            EXPECT_EQ(inputs[0x02], extract<0x02>(v));
+            EXPECT_EQ(inputs[0x03], extract<0x03>(v));
+
+        }
+    }
+
+    TEST(Mask4x64u, Insert_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr4xb>();
+            mask4x64u v{false};
+
+            v = insert<0x00>(v, inputs[0x00]);
+            v = insert<0x01>(v, inputs[0x01]);
+            v = insert<0x02>(v, inputs[0x02]);
+            v = insert<0x03>(v, inputs[0x03]);
+
+
+            EXPECT_TRUE(v == mask4x64u{inputs});
+        }
+    }
+
     //=========================================================================
     // Vec4x64u tests
     //=========================================================================
