@@ -1367,7 +1367,7 @@ namespace avel {
     AVEL_FINL vec4x32u load<vec4x32u>(const std::uint32_t* ptr, std::uint32_t n) {
         #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
         auto mask = (n >= 4) ? -1 : (1 << n) - 1;
-        return vec4x32u{_mm_maskz_load_epi32(mask, ptr)};
+        return vec4x32u{_mm_maskz_loadu_epi32(mask, ptr)};
 
         #elif defined(AVEL_SSE2)
         switch (n) {
