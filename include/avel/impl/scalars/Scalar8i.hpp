@@ -162,6 +162,70 @@ namespace avel {
         return (std::int16_t(a) + std::int16_t(b)) / 2;
     }
 
+    //=====================================================
+    // Comparison operators
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_equal(std::uint8_t x, std::int8_t y) {
+        return std::int16_t(x) == std::int16_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_equal(std::int8_t x, std::uint8_t y) {
+        return std::int16_t(x) == std::int16_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_not_equal(std::uint8_t x, std::int8_t y) {
+        return std::int16_t(x) != std::int16_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_not_equal(std::int8_t x, std::uint8_t y) {
+        return std::int16_t(x) != std::int16_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less(std::uint8_t x, std::int8_t y) {
+        return std::int16_t(x) < std::int16_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less(std::int8_t x, std::uint8_t y) {
+        return std::int16_t(x) < std::int16_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less_equal(std::uint8_t x, std::int8_t y) {
+        return std::int16_t(x) <= std::int16_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less_equal(std::int8_t x, std::uint8_t y) {
+        return std::int16_t(x) <= std::int16_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater(std::uint8_t x, std::int8_t y) {
+        return std::int16_t(x) > std::int16_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater(std::int8_t x, std::uint8_t y) {
+        return std::int16_t(x) > std::int16_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater_equal(std::uint8_t x, std::int8_t y) {
+        return std::int16_t(x) >= std::int16_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater_equal(std::int8_t x, std::uint8_t y) {
+        return std::int16_t(x) >= std::int16_t(y);
+    }
+
 }
 
 #endif //AVEL_SCALAR8I_HPP

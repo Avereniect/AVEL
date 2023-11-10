@@ -171,6 +171,78 @@ namespace avel {
         #endif
     }
 
+    //=====================================================
+    // Comparison operators
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_equal(std::uint64_t x, std::int64_t y) {
+        return (x == y) && !(y < 0);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_equal(std::int64_t x, std::uint64_t y) {
+        return (x == y) && !(x < 0);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_not_equal(std::uint64_t x, std::int64_t y) {
+        return (x != y) || (y < 0);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_not_equal(std::int64_t x, std::uint64_t y) {
+        return (x != y) || (x < 0);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less(std::uint64_t x, std::int64_t y) {
+        auto a = std::int64_t(x) < std::int64_t(y);
+        auto b = std::int64_t(x | y) < 0;
+        return !b && a;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less(std::int64_t x, std::uint64_t y) {
+        auto a = std::int64_t(x) < std::int64_t(y);
+        auto b = std::int64_t(x | y) < 0;
+        return b || a;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less_equal(std::uint64_t x, std::int64_t y) {
+        auto a = std::int64_t(x) <= std::int64_t(y);
+        auto b = std::int64_t(x | y) < 0;
+        return !b && a;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less_equal(std::int64_t x, std::uint64_t y) {
+        auto a = std::int64_t(x) <= std::int64_t(y);
+        auto b = std::int64_t(x | y) < 0;
+        return b || a;
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater(std::uint64_t x, std::int64_t y) {
+        return cmp_less(y, x);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater(std::int64_t x, std::uint64_t y) {
+        return cmp_less(y, x);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater_equal(std::uint64_t x, std::int64_t y) {
+        return cmp_less_equal(y, x);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater_equal(std::int64_t x, std::uint64_t y) {
+        return cmp_less_equal(y, x);
+    }
+
 }
 
 #endif //AVEL_SCALAR64I_HPP

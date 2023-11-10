@@ -158,6 +158,70 @@ namespace avel {
         return (std::int64_t(a) + std::int64_t(b)) / 2;
     }
 
+    //=====================================================
+    // Comparison operators
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_equal(std::uint32_t x, std::int32_t y) {
+        return std::int64_t(x) == std::int64_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_equal(std::int32_t x, std::uint32_t y) {
+        return std::int64_t(x) == std::int64_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_not_equal(std::uint32_t x, std::int32_t y) {
+        return std::int64_t(x) != std::int64_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_not_equal(std::int32_t x, std::uint32_t y) {
+        return std::int64_t(x) != std::int64_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less(std::uint32_t x, std::int32_t y) {
+        return std::int64_t(x) < std::int64_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less(std::int32_t x, std::uint32_t y) {
+        return std::int64_t(x) < std::int64_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less_equal(std::uint32_t x, std::int32_t y) {
+        return std::int64_t(x) <= std::int64_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less_equal(std::int32_t x, std::uint32_t y) {
+        return std::int64_t(x) <= std::int64_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater(std::uint32_t x, std::int32_t y) {
+        return std::int64_t(x) > std::int64_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater(std::int32_t x, std::uint32_t y) {
+        return std::int64_t(x) > std::int64_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater_equal(std::uint32_t x, std::int32_t y) {
+        return std::int64_t(x) >= std::int64_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater_equal(std::int32_t x, std::uint32_t y) {
+        return std::int64_t(x) >= std::int64_t(y);
+    }
+
 }
 
 #endif //AVEL_SCALAR32I_HPP

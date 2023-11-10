@@ -162,6 +162,70 @@ namespace avel {
         return (std::int32_t(a) + std::int32_t(b)) / 2;
     }
 
+    //=====================================================
+    // Comparison operators
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_equal(std::uint16_t x, std::int16_t y) {
+        return std::int32_t(x) == std::int32_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_equal(std::int16_t x, std::uint16_t y) {
+        return std::int32_t(x) == std::int32_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_not_equal(std::uint16_t x, std::int16_t y) {
+        return std::int32_t(x) != std::int32_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_not_equal(std::int16_t x, std::uint16_t y) {
+        return std::int32_t(x) != std::int32_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less(std::uint16_t x, std::int16_t y) {
+        return std::int32_t(x) < std::int32_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less(std::int16_t x, std::uint16_t y) {
+        return std::int32_t(x) < std::int32_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less_equal(std::uint16_t x, std::int16_t y) {
+        return std::int32_t(x) <= std::int32_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_less_equal(std::int16_t x, std::uint16_t y) {
+        return std::int32_t(x) <= std::int32_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater(std::uint16_t x, std::int16_t y) {
+        return std::int32_t(x) > std::int32_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater(std::int16_t x, std::uint16_t y) {
+        return std::int32_t(x) > std::int32_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater_equal(std::uint16_t x, std::int16_t y) {
+        return std::int32_t(x) >= std::int32_t(y);
+    }
+
+    [[nodiscard]]
+    AVEL_FINL bool cmp_greater_equal(std::int16_t x, std::uint16_t y) {
+        return std::int32_t(x) >= std::int32_t(y);
+    }
+
 }
 
 #endif //AVEL_SCALAR16I_HPP

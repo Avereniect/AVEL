@@ -111,12 +111,140 @@ namespace avel {
     //=====================================================
 
     template<class V0, class V1 = V0, class = typename std::enable_if<std::is_same<V0, V1>::value>::type>
-    std::array<V0, 1> convert(V1 v) {
+    AVEL_FINL std::array<V0, 1> convert(V1 v) {
         return {v};
     }
 
     template<class V0, class V1 = V0, class = typename std::enable_if<!std::is_same<V0, V1>::value>::type>
-    std::array<V0, V1::width / V0::width + bool(V1::width % V0::width)> convert(V1 v);
+    AVEL_FINL std::array<V0, V1::width / V0::width + bool(V1::width % V0::width)> convert(V1 v);
+
+    //=====================================================
+    // Integer comparison functions
+    //=====================================================
+
+    template<std::size_t N, class Uint, class = typename std::enable_if<std::is_unsigned<Uint>::value>>
+    AVEL_FINL avel::Vector_mask<Uint, N> operator==(
+        avel::Vector<Uint, N> lhs,
+        avel::Vector<typename std::make_signed<Uint>::type, N> rhs
+    ) {
+        auto t0 = (lhs == avel::Vector<Uint, N>{rhs});
+        auto t1 = (rhs < avel::Vector<typename std::make_signed<Uint>::type, N>{0});
+        return t0 && !t1;
+    }
+
+    template<std::size_t N, class Int, class = typename std::enable_if<std::is_signed<Int>::value>>
+    AVEL_FINL avel::Vector_mask<Int, N> operator==(
+        avel::Vector<Int, N> lhs,
+        avel::Vector<typename std::make_unsigned<Int>::type, N> rhs
+    ) {
+        auto t0 = (lhs == avel::Vector<Int, N>{rhs});
+        auto t1 = (lhs < avel::Vector<Int, N>{0});
+        return t0 && !t1;
+    }
+
+
+
+    template<std::size_t N, class Uint, class = typename std::enable_if<std::is_unsigned<Uint>::value>>
+    AVEL_FINL avel::Vector_mask<Uint, N> operator!=(
+        avel::Vector<Uint, N> lhs,
+        avel::Vector<typename std::make_signed<Uint>::type, N> rhs
+    ) {
+        auto t0 = (lhs != avel::Vector<Uint, N>{rhs});
+        auto t1 = (rhs < avel::Vector<typename std::make_signed<Uint>::type, N>{0});
+        return t0 || t1;
+    }
+
+    template<std::size_t N, class Int, class = typename std::enable_if<std::is_signed<Int>::value>>
+    AVEL_FINL avel::Vector_mask<Int, N> operator!=(
+        avel::Vector<Int, N> lhs,
+        avel::Vector<typename std::make_unsigned<Int>::type, N> rhs
+    ) {
+        auto t0 = (lhs != avel::Vector<Int, N>{rhs});
+        auto t1 = (lhs < avel::Vector<typename std::make_signed<Int>::type, N>{0});
+        return t0 || t1;
+    }
+
+
+
+    template<std::size_t N, class Uint, class = typename std::enable_if<std::is_unsigned<Uint>::value>>
+    AVEL_FINL avel::Vector_mask<Uint, N> operator<(
+        avel::Vector<Uint, N> lhs,
+        avel::Vector<typename std::make_signed<Uint>::type, N> rhs
+    ) {
+        auto t0 = avel::Vector<typename std::make_signed<Uint>::type, N>{lhs} < rhs;
+        auto t1 = (avel::Vector<typename std::make_signed<Uint>::type, N>{lhs} | rhs) < avel::Vector<Uint, N>{0};
+        return !t0 && t1;
+    }
+
+    template<std::size_t N, class Int, class = typename std::enable_if<std::is_signed<Int>::value>>
+    AVEL_FINL avel::Vector_mask<Int, N> operator<(
+        avel::Vector<Int, N> lhs,
+        avel::Vector<typename std::make_unsigned<Int>::type, N> rhs
+    ) {
+        auto t0 = lhs < avel::Vector<Int, N>{rhs};
+        auto t1 = (lhs | avel::Vector<Int, N>{rhs}) < avel::Vector<Int, N>{0};
+        return t0 || t1;
+    }
+
+
+
+    template<std::size_t N, class Uint, class = typename std::enable_if<std::is_unsigned<Uint>::value>>
+    AVEL_FINL avel::Vector_mask<Uint, N> operator<=(
+        avel::Vector<Uint, N> lhs,
+        avel::Vector<typename std::make_signed<Uint>::type, N> rhs
+    ) {
+        using Sint = typename std::make_signed<Uint>::type;
+
+        auto t0 = avel::Vector<Sint, N>{lhs} < rhs;
+        auto t1 = avel::Vector<Sint, N>{lhs} | rhs < avel::Vector<Sint, N>{0};
+        return avel::Vector_mask<Uint, N>{!t0 && t1};
+    }
+
+    template<std::size_t N, class Int, class = typename std::enable_if<std::is_signed<Int>::value>>
+    AVEL_FINL avel::Vector_mask<Int, N> operator<=(
+        avel::Vector<Int, N> lhs,
+        avel::Vector<typename std::make_unsigned<Int>::type, N> rhs
+    ) {
+        auto t0 = lhs <= avel::Vector<Int, N>{rhs};
+        auto t1 = lhs | avel::Vector<Int, N>{rhs} < avel::Vector<Int, N>{0};
+        return t0 || t1;
+    }
+
+
+
+    template<std::size_t N, class Uint, class = typename std::enable_if<std::is_unsigned<Uint>::value>>
+    AVEL_FINL avel::Vector_mask<Uint, N> operator>(
+        avel::Vector<Uint, N> lhs,
+        avel::Vector<typename std::make_signed<Uint>::type, N> rhs
+    ) {
+        return avel::Vector_mask<Uint, N>{rhs < lhs};
+    }
+
+    template<std::size_t N, class Int, class = typename std::enable_if<std::is_signed<Int>::value>>
+    AVEL_FINL avel::Vector_mask<Int, N> operator>(
+        avel::Vector<Int, N> lhs,
+        avel::Vector<typename std::make_unsigned<Int>::type, N> rhs
+    ) {
+        return avel::Vector_mask<Int, N>{rhs < lhs};
+    }
+
+
+
+    template<std::size_t N, class Uint, class = typename std::enable_if<std::is_unsigned<Uint>::value>>
+    AVEL_FINL avel::Vector_mask<Uint, N> operator>=(
+        avel::Vector<Uint, N> lhs,
+        avel::Vector<typename std::make_signed<Uint>::type, N> rhs
+    ) {
+        return avel::Vector_mask<Uint, N>{rhs <= lhs};
+    }
+
+    template<std::size_t N, class Int, class = typename std::enable_if<std::is_signed<Int>::value>>
+    AVEL_FINL avel::Vector_mask<Int, N> operator>=(
+        avel::Vector<Int, N> lhs,
+        avel::Vector<typename std::make_unsigned<Int>::type, N> rhs
+    ) {
+        return avel::Vector_mask<Int, N>{rhs <= lhs};
+    }
 
     //=====================================================
     // Specializations
