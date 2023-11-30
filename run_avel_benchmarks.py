@@ -20,6 +20,7 @@ import itertools
 import shutil
 
 from functools import reduce
+from functools import cmp_to_key
 
 bench_output_dir = './benchmark_results/'
 """Directory where benchmark results should be placed"""
@@ -623,7 +624,7 @@ def generate_table_lines(timings: [TimingResults]):
     col3_strings = [t.cpu_time for t in timings]
 
     col0_strings.insert(0, 'Config')
-    col1_strings.insert(0, 'Benchmark')
+    col1_strings.insert(0, 'Implementation')
     col2_strings.insert(0, 'Time')
     col3_strings.insert(0, 'CPU Time')
 
@@ -650,6 +651,59 @@ def generate_table_lines(timings: [TimingResults]):
     return table_lines
 
 
+def remove_type_suffix(name: str):
+    suffixes = [
+        '_8u',
+        '_16u',
+        '_32u',
+        '_64u',
+        '_8i',
+        '_16i',
+        '_32i',
+        '_64i',
+        '_16f',
+        '_32f',
+        '_64f'
+    ]
+
+    for suffix in suffixes:
+        if name.endswith(suffix):
+            return tuple([name.removesuffix(suffix), suffix])
+
+    return tuple([name, None])
+
+
+def benchmark_name_comparator(name0: str, name1: str):
+    suffixes = [
+        None,
+        '_8u',
+        '_16u',
+        '_32u',
+        '_64u',
+        '_8i',
+        '_16i',
+        '_32i',
+        '_64i',
+        '_16f',
+        '_32f',
+        '_64f'
+    ]
+
+    (n0_trimmed, suffix0) = remove_type_suffix(name0)
+    (n1_trimmed, suffix1) = remove_type_suffix(name1)
+
+    if n0_trimmed < n1_trimmed:
+        return -1
+
+    if n0_trimmed > n1_trimmed:
+        return 1
+
+    idx0 = suffixes.index(suffix0)
+    idx1 = suffixes.index(suffix1)
+
+    return idx0 - idx1
+
+
 def generate_markdown_file(grouped_results: {str: [TimingResults]}):
     """
     Generate Markdown table containing benchmark results.
@@ -658,14 +712,17 @@ def generate_markdown_file(grouped_results: {str: [TimingResults]}):
     :return: Markdown text for
     """
 
+    # Sort results so that they appear in the appropriate order
     lines = []
     lines.append('# AVEL Benchmark Results')
     lines.append('Note: Measurements should only be compared relative to others in the same table')
-    lines.append('Note: Measurements for masks should not be compared between implementations that do and don\'t have AVX-512')
+    lines.append('Note: Measurements for masks should not be compared between configurations that do and don\'t have AVX-512')
     lines.append('CPU:' + get_processor_name())
 
-    for name, results_list in grouped_results.items():
-        lines.append('## ' + name)
+    sorted_groups = sorted(grouped_results.items())
+
+    for bench_name, results_list in sorted_groups:
+        lines.append('## ' + bench_name)
 
         # Get list of configurations
         configurations = []
