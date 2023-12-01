@@ -199,30 +199,34 @@ namespace avel::benchmarks::popcount_32u {
 
     #endif
 
+
+
     #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
 
-    vec4x32u vec4x32u_pocnt16_op_impl(vec4x32u x) {
+    vec4x32u vec4x32u_popcnt16_op_impl(vec4x32u x) {
         auto tmp0 = _mm_popcnt_epi16(decay(x));
         auto tmp1 = _mm_slli_epi32(tmp0, 16);
         auto tmp2 = _mm_add_epi32(tmp0, tmp1);
         return vec4x32u{_mm_srli_epi32(tmp2, 16)};
     }
 
-    auto vec4x32u_pocnt16_op = vector_test_bench<vec4x32u, vec4x32u_pocnt16_op_impl>;
+    auto vec4x32u_popcnt16_op = vector_test_bench<vec4x32u, vec4x32u_popcnt16_op_impl>;
 
-    BENCHMARK(popcount_32u::vec4x32u_pocnt16_op);
+    BENCHMARK(popcount_32u::vec4x32u_popcnt16_op);
 
     #endif
 
+
+
     #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
 
-    vec4x32u vec4x32u_pocnt_op_impl(vec4x32u x) {
+    vec4x32u vec4x32u_popcnt_op_impl(vec4x32u x) {
         return vec4x32u{_mm_popcnt_epi32(decay(x))};
     }
 
-    auto vec4x32u_pocnt_op = vector_test_bench<vec4x32u, vec4x32u_pocnt_op_impl>;
+    auto vec4x32u_popcnt_op = vector_test_bench<vec4x32u, vec4x32u_popcnt_op_impl>;
 
-    BENCHMARK(popcount_32u::vec4x32u_pocnt_op);
+    BENCHMARK(popcount_32u::vec4x32u_popcnt_op);
 
     #endif
 
@@ -230,9 +234,33 @@ namespace avel::benchmarks::popcount_32u {
     // vec8x32u benchmarks
     //=====================================================
 
+    #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512VPOPCNTDQ)
+
+    vec8x32u vec8x32u_popcnt_op_impl(vec8x32u v) {
+        return vec8x32u{_mm256_popcnt_epi32(decay(v))};
+    }
+
+    auto vec8x32u_popcnt_op = vector_test_bench<vec8x32u, vec8x32u_popcnt_op_impl>;
+
+    BENCHMARK(popcount_32u::vec8x32u_popcnt_op);
+
+    #endif
+
     //=====================================================
     // vec16x32u benchmarks
     //=====================================================
+
+    #if defined(AVEL_AVX512VPOPCNTDQ)
+
+    vec16x32u vec16x32u_popcnt_op_impl(vec16x32u v) {
+        return vec16x32u{_mm512_popcnt_epi32(decay(v))};
+    }
+
+    auto vec16x32u_popcnt_op = vector_test_bench<vec16x32u, vec16x32u_popcnt_op_impl>;
+
+    BENCHMARK(popcount_32u::vec16x32u_popcnt_op);
+
+    #endif
 
 }
 

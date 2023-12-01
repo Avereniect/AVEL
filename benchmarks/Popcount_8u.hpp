@@ -137,14 +137,16 @@ namespace avel::benchmarks::popcount_8u {
 
     vec16x8u vec16x8u_bitwise_divide_and_conquer_impl(vec16x8u v) {
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
-        // Due to lack of 8-bit multiply instructions, the solution that doesn't
-        // use multiplication is chosen here
+        const auto m0 = _mm_set1_epi8(0x55);
+        const auto m1 = _mm_set1_epi8(0x33);
+        const auto m2 = _mm_set1_epi8(0x0f);
 
-        v = v - ((v >> 1) & vec16x8u{0x55});
-        v = (v & vec16x8u{0x33}) + ((v >> 2) & vec16x8u{0x33});
-        v = (v + (v >> 4)) & vec16x8u{0x0F};
+        auto t = decay(v);
+        t = _mm_sub_epi8(t, _mm_and_si128(_mm_srli_epi16(t,  1), m0));
+        t = _mm_add_epi8(_mm_and_si128(t, m1), _mm_and_si128(_mm_srli_epi16(t, 2), m1));
+        t = _mm_and_si128(_mm_add_epi8(t, _mm_srli_epi16(t, 4)), m2);
 
-        return v;
+        return vec16x8u{t};
     }
 
     auto vec16x8u_bitwise_divide_and_conquer = vector_test_bench<vec16x8u, vec16x8u_bitwise_divide_and_conquer_impl>;
@@ -204,6 +206,30 @@ namespace avel::benchmarks::popcount_8u {
 
     #if defined(AVEL_AVX2)
 
+    vec32x8u vec32x8u_bitwise_divide_and_conquer_impl(vec32x8u v) {
+        // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+        const auto m0 = _mm256_set1_epi8(0x55);
+        const auto m1 = _mm256_set1_epi8(0x33);
+        const auto m2 = _mm256_set1_epi8(0x0f);
+
+        auto t = decay(v);
+        t = _mm256_sub_epi8(t, _mm256_and_si256(_mm256_srli_epi16(t,  1), m0));
+        t = _mm256_add_epi8(_mm256_and_si256(t, m1), _mm256_and_si256(_mm256_srli_epi16(t, 2), m1));
+        t = _mm256_and_si256(_mm256_add_epi8(t, _mm256_srli_epi16(t, 4)), m2);
+
+        return vec32x8u{t};
+    }
+
+    auto vec32x8u_bitwise_divide_and_conquer = vector_test_bench<vec32x8u, vec32x8u_bitwise_divide_and_conquer_impl>;
+
+    BENCHMARK(popcount_8u::vec32x8u_bitwise_divide_and_conquer);
+
+    #endif
+
+
+
+    #if defined(AVEL_AVX2)
+
     vec32x8u vec32x8u_pshufb_impl(vec32x8u v) {
         alignas(16) static constexpr std::uint8_t table_data[16] {
             0, 1, 1, 2,
@@ -252,6 +278,30 @@ namespace avel::benchmarks::popcount_8u {
 
     #if defined(AVEL_AVX512BW)
 
+    vec64x8u vec64x8u_bitwise_divide_and_conquer_impl(vec64x8u v) {
+        // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+        const auto m0 = _mm512_set1_epi8(0x55);
+        const auto m1 = _mm512_set1_epi8(0x33);
+        const auto m2 = _mm512_set1_epi8(0x0f);
+
+        auto t = decay(v);
+        t = _mm512_sub_epi8(t, _mm512_and_si512(_mm512_srli_epi16(t,  1), m0));
+        t = _mm512_add_epi8(_mm512_and_si512(t, m1), _mm512_and_si512(_mm512_srli_epi16(t, 2), m1));
+        t = _mm512_and_si512(_mm512_add_epi8(t, _mm512_srli_epi16(t, 4)), m2);
+
+        return vec64x8u{t};
+    }
+
+    auto vec64x8u_bitwise_divide_and_conquer = vector_test_bench<vec64x8u, vec64x8u_bitwise_divide_and_conquer_impl>;
+
+    BENCHMARK(popcount_8u::vec64x8u_bitwise_divide_and_conquer);
+
+    #endif
+
+
+
+    #if defined(AVEL_AVX512BW)
+
     vec64x8u vec64x8u_pshufb_impl(vec64x8u v) {
         alignas(64) static constexpr std::uint8_t table_data[16] {
             0, 1, 1, 2,
@@ -281,6 +331,38 @@ namespace avel::benchmarks::popcount_8u {
 
 
 
+    #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
+
+    vec64x8u vec64x8u_vpermi2b_impl(vec64x8u v) {
+        alignas(128) static constexpr std::uint8_t table[128]{
+            0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+            1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+            1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+            2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+            1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+            2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+            2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+            3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+        };
+
+        auto table0 = _mm512_load_si512(table + 0x00);
+        auto table1 = _mm512_load_si512(table + 0x40);
+
+        auto msb_mask = _mm512_movepi8_mask(decay(v));
+        auto table_results = _mm512_permutex2var_epi8(table0, decay(v), table1);
+        auto results = _mm512_mask_add_epi8(table_results, msb_mask, table_results, _mm512_set1_epi8(0x01));
+
+        return vec64x8u{results};
+    }
+
+    auto vec64x8u_vpermi2b = vector_test_bench<vec64x8u, vec64x8u_vpermi2b_impl>;
+
+    BENCHMARK(popcount_8u::vec64x8u_vpermi2b);
+
+    #endif
+
+
+
     #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512BITALG)
 
     vec64x8u vec64x8u_popcnt_op_impl(vec64x8u v) {
@@ -292,9 +374,6 @@ namespace avel::benchmarks::popcount_8u {
     BENCHMARK(popcount_8u::vec64x8u_popcnt_op);
 
     #endif
-
-    //TODO: Consider using vpermi2b
-    //TODO: Consider using wider popcnt ops if bitalg is not available
 
 }
 

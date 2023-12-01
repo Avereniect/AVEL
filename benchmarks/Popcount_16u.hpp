@@ -70,7 +70,7 @@ namespace avel::benchmarks::popcount_16u {
 
 
     std::uint16_t scalar_nibble_lookup_impl(std::uint16_t x) {
-        constexpr std::uint8_t table[16] {
+        static constexpr std::uint8_t table[16] {
             0, 1, 1, 2,
             1, 2, 2, 3,
             1, 2, 2, 3,
@@ -92,7 +92,7 @@ namespace avel::benchmarks::popcount_16u {
 
 
     std::uint16_t scalar_byte_lookup_impl(std::uint16_t x) {
-        constexpr std::uint16_t table[256] {
+        static constexpr std::uint16_t table[256] {
             0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
             1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
             1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
@@ -154,6 +154,33 @@ namespace avel::benchmarks::popcount_16u {
 
     #endif
 
+
+
+    #if defined(AVEL_AVX512BW)
+
+    vec8x16u vec8x16u_bitwise_divide_and_conquer_madd_impl(vec8x16u v) {
+        // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+        const auto m0 = _mm_set1_epi8(0x55);
+        const auto m1 = _mm_set1_epi8(0x33);
+        const auto m2 = _mm_set1_epi8(0x0f);
+
+        auto t = decay(v);
+        t = _mm_sub_epi8(t, _mm_and_si128(_mm_srli_epi16(t,  1), m0));
+        t = _mm_add_epi8(_mm_and_si128(t, m1), _mm_and_si128(_mm_srli_epi16(t, 2), m1));
+        t = _mm_and_si128(_mm_add_epi8(t, _mm_srli_epi16(t, 4)), m2);
+        t = _mm_maddubs_epi16(t, _mm_set1_epi8(0x01));
+
+        return vec8x16u{t};
+    }
+
+    auto vec8x16u_bitwise_divide_and_conquer_madd = vector_test_bench<vec8x16u, vec8x16u_bitwise_divide_and_conquer_madd_impl>;
+
+    BENCHMARK(popcount_16u::vec8x16u_bitwise_divide_and_conquer_madd);
+
+    #endif
+
+
+
     #if defined(AVEL_SSSE3)
 
     vec8x16u vec8x16u_pshufb_impl(vec8x16u v) {
@@ -189,6 +216,38 @@ namespace avel::benchmarks::popcount_16u {
 
 
 
+    #if defined(AVEL_SSSE3)
+
+    vec8x16u vec8x16u_pshufb_madd_impl(vec8x16u v) {
+        alignas(16) static constexpr std::uint8_t table_data[16] {
+            0, 1, 1, 2,
+            1, 2, 2, 3,
+            1, 2, 2, 3,
+            2, 3, 3, 4
+        };
+
+        auto table = _mm_load_si128(reinterpret_cast<const __m128i*>(table_data));
+        auto nibble_mask = _mm_set1_epi8(0x0F);
+
+        auto index0 = _mm_and_si128(decay(v), nibble_mask);
+        auto index1 = _mm_and_si128(_mm_srli_epi16(decay(v), 0x4), nibble_mask);
+
+        auto partial_sum0 = _mm_shuffle_epi8(table, index0);
+        auto partial_sum1 = _mm_shuffle_epi8(table, index1);
+
+        auto byte_sums = _mm_add_epi8(partial_sum0, partial_sum1);
+        auto ret = _mm_maddubs_epi16(byte_sums, _mm_set1_epi8(0x01));
+        return vec8x16u{ret};
+    }
+
+    auto vec8x16u_pshufb_madd = vector_test_bench<vec8x16u, vec8x16u_pshufb_madd_impl>;
+
+    BENCHMARK(popcount_16u::vec8x16u_pshufb_madd);
+
+    #endif
+
+
+
     #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
 
     vec8x16u vec8x16u_popcnt_op_impl(vec8x16u v) {
@@ -204,6 +263,31 @@ namespace avel::benchmarks::popcount_16u {
     //=====================================================
     // vec16x16u benchmarks
     //=====================================================
+
+    #if defined(AVEL_AVX512BW)
+
+    vec16x16u vec16x16u_bitwise_divide_and_conquer_madd_impl(vec16x16u v) {
+        // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+        const auto m0 = _mm256_set1_epi8(0x55);
+        const auto m1 = _mm256_set1_epi8(0x33);
+        const auto m2 = _mm256_set1_epi8(0x0f);
+
+        auto t = decay(v);
+        t = _mm256_sub_epi8(t, _mm256_and_si256(_mm256_srli_epi16(t,  1), m0));
+        t = _mm256_add_epi8(_mm256_and_si256(t, m1), _mm256_and_si256(_mm256_srli_epi16(t, 2), m1));
+        t = _mm256_and_si256(_mm256_add_epi8(t, _mm256_srli_epi16(t, 4)), m2);
+        t = _mm256_maddubs_epi16(t, _mm256_set1_epi8(0x01));
+
+        return vec16x16u{t};
+    }
+
+    auto vec16x16u_bitwise_divide_and_conquer_madd = vector_test_bench<vec16x16u, vec16x16u_bitwise_divide_and_conquer_madd_impl>;
+
+    BENCHMARK(popcount_16u::vec16x16u_bitwise_divide_and_conquer_madd);
+
+    #endif
+
+
 
     #if defined(AVEL_AVX2)
 
@@ -244,6 +328,42 @@ namespace avel::benchmarks::popcount_16u {
 
 
 
+    #if defined(AVEL_AVX2)
+
+    vec16x16u vec16x16u_pshufb_madd_impl(vec16x16u v) {
+        alignas(32) static constexpr std::uint8_t table_data[32] {
+            0, 1, 1, 2,
+            1, 2, 2, 3,
+            1, 2, 2, 3,
+            2, 3, 3, 4,
+            0, 1, 1, 2,
+            1, 2, 2, 3,
+            1, 2, 2, 3,
+            2, 3, 3, 4
+        };
+
+        auto table = _mm256_load_si256(reinterpret_cast<const __m256i*>(table_data));
+        auto nibble_mask = _mm256_set1_epi8(0x0F);
+
+        auto index0 = _mm256_and_si256(decay(v), nibble_mask);
+        auto index1 = _mm256_and_si256(_mm256_srli_epi16(decay(v), 0x4), nibble_mask);
+
+        auto partial_sum0 = _mm256_shuffle_epi8(table, index0);
+        auto partial_sum1 = _mm256_shuffle_epi8(table, index1);
+
+        auto byte_sums = _mm256_add_epi8(partial_sum0, partial_sum1);
+        auto ret = _mm256_maddubs_epi16(byte_sums, _mm256_set1_epi8(0x01));
+        return vec16x16u{ret};
+    }
+
+    auto vec16x16u_pshufb_madd = vector_test_bench<vec16x16u, vec16x16u_pshufb_madd_impl>;
+
+    BENCHMARK(popcount_16u::vec16x16u_pshufb_madd);
+
+    #endif
+
+
+
     #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
 
     vec16x16u vec16x16u_popcnt_op_impl(vec16x16u v) {
@@ -259,6 +379,31 @@ namespace avel::benchmarks::popcount_16u {
     //=====================================================
     // vec32x16u benchmarks
     //=====================================================
+
+    #if defined(AVEL_AVX512BW)
+
+    vec32x16u vec32x16u_bitwise_divide_and_conquer_madd_impl(vec32x16u v) {
+        // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+        const auto m0 = _mm512_set1_epi8(0x55);
+        const auto m1 = _mm512_set1_epi8(0x33);
+        const auto m2 = _mm512_set1_epi8(0x0f);
+
+        auto t = decay(v);
+        t = _mm512_sub_epi8(t, _mm512_and_si512(_mm512_srli_epi16(t,  1), m0));
+        t = _mm512_add_epi8(_mm512_and_si512(t, m1), _mm512_and_si512(_mm512_srli_epi16(t, 2), m1));
+        t = _mm512_and_si512(_mm512_add_epi8(t, _mm512_srli_epi16(t, 4)), m2);
+        t = _mm512_maddubs_epi16(t, _mm512_set1_epi8(0x01));
+
+        return vec32x16u{t};
+    }
+
+    auto vec32x16u_bitwise_divide_and_conquer_madd = vector_test_bench<vec32x16u, vec32x16u_bitwise_divide_and_conquer_madd_impl>;
+
+    BENCHMARK(popcount_16u::vec32x16u_bitwise_divide_and_conquer_madd);
+
+    #endif
+
+
 
     #if defined(AVEL_AVX512BW)
 
@@ -291,6 +436,106 @@ namespace avel::benchmarks::popcount_16u {
     auto vec32x16u_pshufb = vector_test_bench<vec32x16u, vec32x16u_pshufb_impl>;
 
     BENCHMARK(popcount_16u::vec32x16u_pshufb);
+
+    #endif
+
+
+
+    #if defined(AVEL_AVX512BW)
+
+    vec32x16u vec32x16u_pshufb_madd_impl(vec32x16u v) {
+        alignas(16) static constexpr std::uint8_t table_data[16] {
+            0, 1, 1, 2,
+            1, 2, 2, 3,
+            1, 2, 2, 3,
+            2, 3, 3, 4
+        };
+
+        // TODO: Consider replacing high-latency _mm512_broadcast_i32x4
+        auto table = _mm512_broadcast_i32x4(_mm_load_si128(reinterpret_cast<const __m128i*>(table_data)));
+        auto nibble_mask = _mm512_set1_epi8(0x0F);
+
+        auto index0 = _mm512_and_si512(decay(v), nibble_mask);
+        auto index1 = _mm512_and_si512(_mm512_srli_epi16(decay(v), 0x4), nibble_mask);
+
+        auto partial_sum0 = _mm512_shuffle_epi8(table, index0);
+        auto partial_sum1 = _mm512_shuffle_epi8(table, index1);
+
+        auto byte_sums = _mm512_add_epi8(partial_sum0, partial_sum1);
+        auto ret = _mm512_maddubs_epi16(byte_sums, _mm512_set1_epi8(0x01));
+        return vec32x16u{ret};
+    }
+
+    auto vec32x16u_pshufb_madd = vector_test_bench<vec32x16u, vec32x16u_pshufb_madd_impl>;
+
+    BENCHMARK(popcount_16u::vec32x16u_pshufb_madd);
+
+    #endif
+
+
+
+    #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
+
+    vec32x16u vec64x8u_vpermi2b_impl(vec32x16u v) {
+        alignas(128) static constexpr std::uint8_t table[128]{
+            0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+            1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+            1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+            2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+            1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+            2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+            2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+            3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+        };
+
+        auto table0 = _mm512_load_si512(table + 0x00);
+        auto table1 = _mm512_load_si512(table + 0x40);
+
+        auto msb_mask = _mm512_movepi8_mask(decay(v));
+        auto table_results = _mm512_permutex2var_epi8(table0, decay(v), table1);
+        auto byte_sums = _mm512_mask_add_epi8(table_results, msb_mask, table_results, _mm512_set1_epi8(0x01));
+
+        auto short_sums = _mm512_add_epi16(byte_sums, _mm512_slli_epi16(byte_sums, 8));
+        auto ret = _mm512_srli_epi16(short_sums, 8);
+        return vec32x16u{ret};
+    }
+
+    auto vec32x16u_vpermi2b = vector_test_bench<vec32x16u, vec64x8u_vpermi2b_impl>;
+
+    BENCHMARK(popcount_16u::vec32x16u_vpermi2b);
+
+    #endif
+
+
+
+    #if defined(AVEL_AVX512BW) && defined(AVEL_AVX512VBMI)
+
+    vec32x16u vec64x8u_vpermi2b_madd_impl(vec32x16u v) {
+        alignas(128) static constexpr std::uint8_t table[128]{
+            0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+            1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+            1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+            2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+            1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+            2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+            2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+            3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+        };
+
+        auto table0 = _mm512_load_si512(table + 0x00);
+        auto table1 = _mm512_load_si512(table + 0x40);
+
+        auto msb_mask = _mm512_movepi8_mask(decay(v));
+        auto table_results = _mm512_permutex2var_epi8(table0, decay(v), table1);
+        auto byte_sums = _mm512_mask_add_epi8(table_results, msb_mask, table_results, _mm512_set1_epi8(0x01));
+
+        auto ret = _mm512_maddubs_epi16(byte_sums, _mm512_set1_epi8(0x01));
+        return vec32x16u{ret};
+    }
+
+    auto vec32x16u_vpermi2b_madd = vector_test_bench<vec32x16u, vec64x8u_vpermi2b_madd_impl>;
+
+    BENCHMARK(popcount_16u::vec32x16u_vpermi2b_madd);
 
     #endif
 

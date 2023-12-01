@@ -98,7 +98,7 @@ namespace avel::benchmarks::fpclassify_32f {
     BENCHMARK(fpclassify_32f::scalar_blending1);
 
     //=====================================================
-    // vec4xf32 benchmarks
+    // vec4x32f benchmarks
     //=====================================================
 
     #if defined(AVEL_SSE2) || defined(AVEL_NEON)
@@ -242,7 +242,7 @@ namespace avel::benchmarks::fpclassify_32f {
     #endif
 
     //=====================================================
-    // vec8xf32 benchmarks
+    // vec8x32f benchmarks
     //=====================================================
 
     #if defined(AVEL_AVX2)
@@ -371,7 +371,7 @@ namespace avel::benchmarks::fpclassify_32f {
     #endif
 
     //=====================================================
-    // vec16xf32 benchmarks
+    // vec16x32f benchmarks
     //=====================================================
 
     #if defined(AVEL_AVX512F)
