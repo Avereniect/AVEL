@@ -9,23 +9,23 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* X86
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* LZCNT, X86
+* SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* X86
 
 #### Config 5
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* LZCNT, X86
 
 #### Config 6
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -34,14 +34,14 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 ### Results:
 | Config | Implementation                        | Time    | CPU Time |
 | ------ | ------------------------------------- | ------- | -------- |
-| 0      | bit_ceil_16u::scalar_bitwise          | 19064ns | 19064ns  |
-| 0      | bit_ceil_16u::scalar_native           | 17244ns | 17243ns  |
-| 1      | bit_ceil_16u::scalar_bsr_and_shift    | 19237ns | 19236ns  |
-| 2      | bit_ceil_16u::scalar_lzcnt_and_rotate | 10499ns | 10499ns  |
-| 3      | bit_ceil_16u::vec8x16u_bitwise        | 2367ns  | 2367ns   |
-| 4      | bit_ceil_16u::vec16x16u_bitwise       | 991ns   | 991ns    |
-| 5      | bit_ceil_16u::vec32x16u_bitwise       | 703ns   | 703ns    |
-| 6      | bit_ceil_16u::vec8x16u_lzcnt32        | 2094ns  | 2094ns   |
+| 0      | bit_ceil_16u::scalar_bitwise          | 19193ns | 19178ns  |
+| 0      | bit_ceil_16u::scalar_native           | 14957ns | 14949ns  |
+| 1      | bit_ceil_16u::vec32x16u_bitwise       | 703ns   | 703ns    |
+| 2      | bit_ceil_16u::vec8x16u_bitwise        | 1942ns  | 1940ns   |
+| 3      | bit_ceil_16u::vec16x16u_bitwise       | 990ns   | 989ns    |
+| 4      | bit_ceil_16u::scalar_bsr_and_shift    | 10490ns | 10491ns  |
+| 5      | bit_ceil_16u::scalar_lzcnt_and_rotate | 10190ns | 10191ns  |
+| 6      | bit_ceil_16u::vec8x16u_lzcnt32        | 2113ns  | 2113ns   |
 
 
 ## bit_ceil_32u
@@ -51,27 +51,27 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* LZCNT, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* X86
 
 #### Config 5
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512CD
+* LZCNT, X86
 
 #### Config 6
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512CD
 
 #### Config 7
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -80,18 +80,18 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 ### Results:
 | Config | Implementation                                | Time    | CPU Time |
 | ------ | --------------------------------------------- | ------- | -------- |
-| 0      | bit_ceil_32u::scalar_native                   | 6081ns  | 6081ns   |
-| 0      | bit_ceil_32u::scalar_bitwise                  | 11207ns | 11207ns  |
-| 1      | bit_ceil_32u::vec16x32u_bitwise               | 822ns   | 822ns    |
-| 2      | bit_ceil_32u::scalar_bsr_and_shift_branchless | 6525ns  | 6512ns   |
-| 2      | bit_ceil_32u::scalar_bsr_and_shift            | 6616ns  | 6603ns   |
-| 3      | bit_ceil_32u::scalar_lzcnt_and_rotate         | 5976ns  | 5975ns   |
-| 3      | bit_ceil_32u::scalar_lzcnt_and_shift          | 5588ns  | 5588ns   |
-| 4      | bit_ceil_32u::vec4x32u_bitwise                | 2433ns  | 2433ns   |
-| 5      | bit_ceil_32u::vec8x32u_lzcnt                  | 661ns   | 661ns    |
-| 5      | bit_ceil_32u::vec4x32u_lzcnt                  | 1288ns  | 1288ns   |
-| 6      | bit_ceil_32u::vec8x32u_bitwise                | 1109ns  | 1110ns   |
-| 7      | bit_ceil_32u::vec16x32u_lzcnt                 | 330ns   | 330ns    |
+| 0      | bit_ceil_32u::scalar_native                   | 5069ns  | 5065ns   |
+| 0      | bit_ceil_32u::scalar_bitwise                  | 11214ns | 11208ns  |
+| 1      | bit_ceil_32u::vec4x32u_bitwise                | 2220ns  | 2218ns   |
+| 2      | bit_ceil_32u::vec8x32u_bitwise                | 1129ns  | 1128ns   |
+| 3      | bit_ceil_32u::vec16x32u_bitwise               | 786ns   | 787ns    |
+| 4      | bit_ceil_32u::scalar_bsr_and_shift_branchless | 5205ns  | 5206ns   |
+| 4      | bit_ceil_32u::scalar_bsr_and_shift            | 5288ns  | 5288ns   |
+| 5      | bit_ceil_32u::scalar_lzcnt_and_shift          | 4797ns  | 4798ns   |
+| 5      | bit_ceil_32u::scalar_lzcnt_and_rotate         | 6335ns  | 6336ns   |
+| 6      | bit_ceil_32u::vec4x32u_lzcnt                  | 1329ns  | 1330ns   |
+| 6      | bit_ceil_32u::vec8x32u_lzcnt                  | 680ns   | 680ns    |
+| 7      | bit_ceil_32u::vec16x32u_lzcnt                 | 321ns   | 321ns    |
 
 
 ## bit_ceil_64u
@@ -101,37 +101,37 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* LZCNT, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512CD
+* LZCNT, X86
 
 #### Config 5
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512CD
 
 ### Results:
 | Config | Implementation                        | Time   | CPU Time |
 | ------ | ------------------------------------- | ------ | -------- |
-| 0      | bit_ceil_64u::scalar_bitwise          | 6580ns | 6579ns   |
-| 0      | bit_ceil_64u::scalar_native           | 3064ns | 3063ns   |
-| 1      | bit_ceil_64u::vec8x64u_bitwise        | 829ns  | 829ns    |
-| 2      | bit_ceil_64u::scalar_lzcnt_and_rotate | 2626ns | 2626ns   |
-| 2      | bit_ceil_64u::scalar_bsr_and_shift    | 3218ns | 3218ns   |
-| 3      | bit_ceil_64u::vec2x64u_bitwise        | 2812ns | 2812ns   |
-| 4      | bit_ceil_64u::vec4x64u_lzcnt          | 924ns  | 924ns    |
-| 4      | bit_ceil_64u::vec8x64u_lzcnt          | 402ns  | 402ns    |
-| 4      | bit_ceil_64u::vec2x64u_lzcnt          | 1466ns | 1466ns   |
-| 5      | bit_ceil_64u::vec4x64u_bitwise        | 1127ns | 1127ns   |
+| 0      | bit_ceil_64u::scalar_bitwise          | 6714ns | 6677ns   |
+| 0      | bit_ceil_64u::scalar_native           | 2533ns | 2531ns   |
+| 1      | bit_ceil_64u::vec2x64u_bitwise        | 2538ns | 2538ns   |
+| 2      | bit_ceil_64u::vec4x64u_bitwise        | 1126ns | 1126ns   |
+| 3      | bit_ceil_64u::vec8x64u_bitwise        | 788ns  | 788ns    |
+| 4      | bit_ceil_64u::scalar_lzcnt_and_rotate | 2564ns | 2564ns   |
+| 4      | bit_ceil_64u::scalar_bsr_and_shift    | 2439ns | 2439ns   |
+| 5      | bit_ceil_64u::vec4x64u_lzcnt          | 922ns  | 922ns    |
+| 5      | bit_ceil_64u::vec2x64u_lzcnt          | 1455ns | 1455ns   |
+| 5      | bit_ceil_64u::vec8x64u_lzcnt          | 381ns  | 381ns    |
 
 
 ## bit_ceil_8u
@@ -141,23 +141,23 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* X86
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* LZCNT, X86
+* SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* X86
 
 #### Config 5
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* LZCNT, X86
 
 #### Config 6
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -170,15 +170,15 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 ### Results:
 | Config | Implementation                       | Time    | CPU Time |
 | ------ | ------------------------------------ | ------- | -------- |
-| 0      | bit_ceil_8u::scalar_native           | 33967ns | 33966ns  |
-| 0      | bit_ceil_8u::scalar_bitwise          | 29370ns | 29369ns  |
-| 1      | bit_ceil_8u::scalar_bsr_and_shift    | 38334ns | 38300ns  |
-| 2      | bit_ceil_8u::scalar_lzcnt_and_rotate | 19297ns | 19296ns  |
-| 3      | bit_ceil_8u::vec16x8u_bitwise        | 2363ns  | 2363ns   |
-| 4      | bit_ceil_8u::vec32x8u_pshufb         | 806ns   | 806ns    |
-| 5      | bit_ceil_8u::vec64x8u_pshufb         | 600ns   | 600ns    |
-| 6      | bit_ceil_8u::vec16x8u_pshufb         | 2007ns  | 2007ns   |
-| 7      | bit_ceil_8u::vec64x8u_vpermi2b       | 588ns   | 588ns    |
+| 0      | bit_ceil_8u::scalar_bitwise          | 31110ns | 31093ns  |
+| 0      | bit_ceil_8u::scalar_native           | 30295ns | 30313ns  |
+| 1      | bit_ceil_8u::vec64x8u_pshufb         | 595ns   | 595ns    |
+| 2      | bit_ceil_8u::vec16x8u_bitwise        | 1618ns  | 1618ns   |
+| 3      | bit_ceil_8u::vec32x8u_pshufb         | 807ns   | 806ns    |
+| 4      | bit_ceil_8u::scalar_bsr_and_shift    | 20808ns | 20807ns  |
+| 5      | bit_ceil_8u::scalar_lzcnt_and_rotate | 19157ns | 19158ns  |
+| 6      | bit_ceil_8u::vec16x8u_pshufb         | 1609ns  | 1609ns   |
+| 7      | bit_ceil_8u::vec64x8u_vpermi2b       | 589ns   | 589ns    |
 
 
 ## comparison_equals_16u
@@ -188,29 +188,27 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* SSE2, X86, AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
 * AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
-#### Config 4
-* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
-
 ### Results:
 | Config | Implementation                            | Time   | CPU Time |
 | ------ | ----------------------------------------- | ------ | -------- |
-| 0      | comparison_equals_16u::scalar_native      | 4278ns | 4277ns   |
-| 1      | comparison_equals_16u::vec8x16u_cmpeqw    | 517ns  | 517ns    |
-| 2      | comparison_equals_16u::vec16x16u_cmpeqw   | 274ns  | 274ns    |
-| 3      | comparison_equals_16u::vec32x16u_cmpeqw_k | 148ns  | 148ns    |
-| 4      | comparison_equals_16u::vec16x16u_cmpeqw_k | 274ns  | 274ns    |
-| 4      | comparison_equals_16u::vec8x16u_cmpeqw_k  | 518ns  | 518ns    |
+| 0      | comparison_equals_16u::scalar_native      | 4241ns | 4238ns   |
+| 1      | comparison_equals_16u::vec8x16u_cmpeqw    | 544ns  | 544ns    |
+| 1      | comparison_equals_16u::vec16x16u_cmpeqw   | 266ns  | 266ns    |
+| 2      | comparison_equals_16u::vec16x16u_cmpeqw_k | 273ns  | 272ns    |
+| 2      | comparison_equals_16u::vec8x16u_cmpeqw_k  | 514ns  | 514ns    |
+| 3      | comparison_equals_16u::vec32x16u_cmpeqw_k | 149ns  | 149ns    |
+| 3      | comparison_equals_16u::vec16x16u_cmpeqw   | 276ns  | 276ns    |
+| 3      | comparison_equals_16u::vec8x16u_cmpeqw    | 519ns  | 519ns    |
 
 
 ## comparison_equals_32f
@@ -220,29 +218,29 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                           | Time   | CPU Time |
 | ------ | ---------------------------------------- | ------ | -------- |
-| 0      | comparison_equals_32f::scalar_native     | 2413ns | 2413ns   |
-| 1      | comparison_equals_32f::vec4x32f_cmpps    | 513ns  | 513ns    |
-| 2      | comparison_equals_32f::vec4x32f_cmpeqd_k | 538ns  | 538ns    |
-| 2      | comparison_equals_32f::vec8x32f_vcmpps   | 277ns  | 277ns    |
-| 3      | comparison_equals_32f::vec8x32f_cmpeqd   | 274ns  | 274ns    |
-| 4      | comparison_equals_32f::vec16x32f_vcmpps  | 143ns  | 143ns    |
+| 0      | comparison_equals_32f::scalar_native     | 2418ns | 2417ns   |
+| 1      | comparison_equals_32f::vec16x32f_vcmpps  | 146ns  | 146ns    |
+| 2      | comparison_equals_32f::vec4x32f_cmpps    | 517ns  | 517ns    |
+| 3      | comparison_equals_32f::vec4x32f_cmpeqd_k | 511ns  | 511ns    |
+| 3      | comparison_equals_32f::vec8x32f_vcmpps   | 271ns  | 271ns    |
+| 4      | comparison_equals_32f::vec8x32f_cmpeqd   | 266ns  | 266ns    |
 
 
 ## comparison_equals_32u
@@ -252,29 +250,29 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                            | Time   | CPU Time |
 | ------ | ----------------------------------------- | ------ | -------- |
-| 0      | comparison_equals_32u::scalar_native      | 2138ns | 2138ns   |
-| 1      | comparison_equals_32u::vec4x32u_cmpeqd    | 536ns  | 536ns    |
-| 2      | comparison_equals_32u::vec4x32u_cmpeqd_k  | 517ns  | 517ns    |
-| 2      | comparison_equals_32u::vec8x32u_cmpeqd_k  | 274ns  | 274ns    |
-| 3      | comparison_equals_32u::vec8x32u_cmpeqd    | 267ns  | 267ns    |
-| 4      | comparison_equals_32u::vec16x32u_cmpeqd_k | 143ns  | 143ns    |
+| 0      | comparison_equals_32u::scalar_native      | 2144ns | 2143ns   |
+| 1      | comparison_equals_32u::vec16x32u_cmpeqd_k | 143ns  | 143ns    |
+| 2      | comparison_equals_32u::vec4x32u_cmpeqd    | 537ns  | 537ns    |
+| 3      | comparison_equals_32u::vec8x32u_cmpeqd_k  | 276ns  | 276ns    |
+| 3      | comparison_equals_32u::vec4x32u_cmpeqd_k  | 515ns  | 515ns    |
+| 4      | comparison_equals_32u::vec8x32u_cmpeqd    | 264ns  | 264ns    |
 
 
 ## comparison_equals_64f
@@ -284,66 +282,29 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                           | Time   | CPU Time |
 | ------ | ---------------------------------------- | ------ | -------- |
-| 0      | comparison_equals_64f::scalar_native     | 1203ns | 1203ns   |
-| 1      | comparison_equals_64f::vec2x64f_cmppd    | 512ns  | 512ns    |
-| 2      | comparison_equals_64f::vec4x64f_vcmppd   | 274ns  | 274ns    |
-| 2      | comparison_equals_64f::vec2x64f_cmpeqd_k | 612ns  | 612ns    |
-| 3      | comparison_equals_64f::vec4x64f_cmpeqd   | 277ns  | 277ns    |
-| 4      | comparison_equals_64f::vec8x64f_vcmppd   | 146ns  | 146ns    |
-
-
-## comparison_equals_64u
-### Configurations:
-#### Config 0
-* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-
-#### Config 1
-* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
-
-#### Config 2
-* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
-
-#### Config 3
-* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
-
-#### Config 4
-* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
-
-#### Config 5
-* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
-
-### Results:
-| Config | Implementation                                                | Time   | CPU Time |
-| ------ | ------------------------------------------------------------- | ------ | -------- |
-| 0      | comparison_equals_64u::scalar_native                          | 1077ns | 1077ns   |
-| 1      | comparison_equals_64u::vec2x64u_32_bit_comparison_and_combine | 613ns  | 612ns    |
-| 2      | comparison_equals_64u::vec4x64u_cmpeqq_k                      | 305ns  | 305ns    |
-| 2      | comparison_equals_64u::vec2x64u_cmpeqq_k                      | 545ns  | 544ns    |
-| 3      | comparison_equals_64u::vec4x64u_cmpeqq                        | 275ns  | 275ns    |
-| 4      | comparison_equals_64u::vec8x64u_cmpeqq_k                      | 143ns  | 143ns    |
-| 5      | comparison_equals_64u::vec2x64u_cmpeqq                        | 517ns  | 517ns    |
+| 0      | comparison_equals_64f::scalar_native     | 1067ns | 1066ns   |
+| 1      | comparison_equals_64f::vec8x64f_vcmppd   | 139ns  | 140ns    |
+| 2      | comparison_equals_64f::vec2x64f_cmppd    | 609ns  | 609ns    |
+| 3      | comparison_equals_64f::vec2x64f_cmpltd_k | 542ns  | 542ns    |
+| 3      | comparison_equals_64f::vec4x64f_vcmppd   | 260ns  | 260ns    |
+| 4      | comparison_equals_64f::vec4x64f_cmpltd   | 272ns  | 272ns    |
 
 
 ## comparison_equals_8u
@@ -353,29 +314,450 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* SSE2, X86, AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
 * AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
-#### Config 4
-* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
-
 ### Results:
 | Config | Implementation                          | Time   | CPU Time |
 | ------ | --------------------------------------- | ------ | -------- |
-| 0      | comparison_equals_8u::scalar_native     | 8213ns | 8213ns   |
-| 1      | comparison_equals_8u::vec16x8u_cmpeqb   | 508ns  | 508ns    |
-| 2      | comparison_equals_8u::vec32x8u_cmpeqb   | 264ns  | 264ns    |
-| 3      | comparison_equals_8u::vec64x8u_cmpeqb_k | 136ns  | 136ns    |
-| 4      | comparison_equals_8u::vec32x8u_cmpeqb_k | 264ns  | 264ns    |
-| 4      | comparison_equals_8u::vec16x8u_cmpeqb_k | 509ns  | 509ns    |
+| 0      | comparison_equals_8u::scalar_native     | 8145ns | 8137ns   |
+| 1      | comparison_equals_8u::vec32x8u_cmpeqb   | 262ns  | 262ns    |
+| 1      | comparison_equals_8u::vec16x8u_cmpeqb   | 608ns  | 608ns    |
+| 2      | comparison_equals_8u::vec32x8u_cmpeqb_k | 262ns  | 262ns    |
+| 2      | comparison_equals_8u::vec16x8u_cmpeqb_k | 512ns  | 511ns    |
+| 3      | comparison_equals_8u::vec64x8u_cmpeqb_k | 141ns  | 141ns    |
+| 3      | comparison_equals_8u::vec16x8u_cmpeqb   | 610ns  | 610ns    |
+| 3      | comparison_equals_8u::vec32x8u_cmpeqb   | 264ns  | 264ns    |
+
+
+## comparison_less_than_16i
+### Configurations:
+#### Config 0
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
+#### Config 1
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE2, X86, AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3
+
+#### Config 2
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
+
+#### Config 3
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+### Results:
+| Config | Implementation                              | Time   | CPU Time |
+| ------ | ------------------------------------------- | ------ | -------- |
+| 0      | comparison_less_than_16i::scalar_native     | 4284ns | 4276ns   |
+| 1      | comparison_less_than_16i::vec16x16i_pcmpw   | 276ns  | 276ns    |
+| 1      | comparison_less_than_16i::vec8x16i_pcmpgtw  | 609ns  | 609ns    |
+| 2      | comparison_less_than_16i::vec16x16i_pcmpw_k | 260ns  | 260ns    |
+| 2      | comparison_less_than_16i::vec8x16i_pcmpw_k  | 541ns  | 541ns    |
+| 3      | comparison_less_than_16i::vec16x16i_pcmpw   | 279ns  | 279ns    |
+| 3      | comparison_less_than_16i::vec32x16i_pcmpw_k | 148ns  | 148ns    |
+| 3      | comparison_less_than_16i::vec8x16i_pcmpgtw  | 544ns  | 544ns    |
+
+
+## comparison_less_than_16u
+### Configurations:
+#### Config 0
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
+#### Config 1
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE2, X86, AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3
+
+#### Config 2
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
+
+#### Config 3
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+### Results:
+| Config | Implementation                                  | Time   | CPU Time |
+| ------ | ----------------------------------------------- | ------ | -------- |
+| 0      | comparison_less_than_16u::scalar_native         | 4291ns | 4287ns   |
+| 1      | comparison_less_than_16u::vec8x16u_pcmpgtw_xor  | 608ns  | 608ns    |
+| 1      | comparison_less_than_16u::vec16x16u_pcmpgtw_xor | 314ns  | 314ns    |
+| 2      | comparison_less_than_16u::vec8x16u_pcmpuw       | 543ns  | 543ns    |
+| 2      | comparison_less_than_16u::vec16x16u_pcmpuw      | 262ns  | 262ns    |
+| 3      | comparison_less_than_16u::vec16x16u_pcmpgtw_xor | 313ns  | 313ns    |
+| 3      | comparison_less_than_16u::vec32x16u_pcmpuw      | 149ns  | 149ns    |
+| 3      | comparison_less_than_16u::vec8x16u_pcmpgtw_xor  | 612ns  | 612ns    |
+
+
+## comparison_less_than_32i
+### Configurations:
+#### Config 0
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
+#### Config 1
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 2
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE2, X86
+
+#### Config 3
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 4
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+### Results:
+| Config | Implementation                              | Time   | CPU Time |
+| ------ | ------------------------------------------- | ------ | -------- |
+| 0      | comparison_less_than_32i::scalar_native     | 2150ns | 2142ns   |
+| 1      | comparison_less_than_32i::vec16x32i_pcmpd_k | 146ns  | 146ns    |
+| 2      | comparison_less_than_32i::vec4x32i_pcmpd    | 512ns  | 512ns    |
+| 3      | comparison_less_than_32i::vec4x32i_pcmpd_k  | 513ns  | 513ns    |
+| 3      | comparison_less_than_32i::vec8x32i_pcmpd_k  | 272ns  | 272ns    |
+| 4      | comparison_less_than_32i::vec8x32i_pcmpd    | 263ns  | 263ns    |
+
+
+## comparison_less_than_32u
+### Configurations:
+#### Config 0
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
+#### Config 1
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 2
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE2, X86
+
+#### Config 3
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 4
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+### Results:
+| Config | Implementation                                 | Time   | CPU Time |
+| ------ | ---------------------------------------------- | ------ | -------- |
+| 0      | comparison_less_than_32u::scalar_native        | 2128ns | 2126ns   |
+| 1      | comparison_less_than_32u::vec16x32u_pcmpud     | 143ns  | 143ns    |
+| 2      | comparison_less_than_32u::vec4x32u_pcmpgtd_xor | 610ns  | 610ns    |
+| 3      | comparison_less_than_32u::vec4x32u_pcmpud      | 511ns  | 511ns    |
+| 3      | comparison_less_than_32u::vec8x32u_pcmpud      | 273ns  | 273ns    |
+| 4      | comparison_less_than_32u::vec8x32u_pcmpgtd_xor | 308ns  | 308ns    |
+
+
+## comparison_less_than_64i
+### Configurations:
+#### Config 0
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
+#### Config 1
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 2
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE2, X86
+
+#### Config 3
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 4
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 5
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+### Results:
+| Config | Implementation                                                 | Time   | CPU Time |
+| ------ | -------------------------------------------------------------- | ------ | -------- |
+| 0      | comparison_less_than_64i::scalar_native                        | 1070ns | 1069ns   |
+| 1      | comparison_less_than_64i::vec8x64i_pcmpq_k                     | 139ns  | 139ns    |
+| 2      | comparison_less_than_64i::vec2x64i_scalarized                  | 1463ns | 1463ns   |
+| 2      | comparison_less_than_64i::vec2x64i_32_bit_comparison_emulation | 811ns  | 811ns    |
+| 3      | comparison_less_than_64i::vec2x64i_pcmpq                       | 609ns  | 609ns    |
+| 4      | comparison_less_than_64i::vec4x64i_pcmpq_k                     | 312ns  | 312ns    |
+| 4      | comparison_less_than_64i::vec2x64i_pcmpq_k                     | 607ns  | 607ns    |
+| 5      | comparison_less_than_64i::vec4x64i_pcmpq                       | 265ns  | 265ns    |
+
+
+## comparison_less_than_64u
+### Configurations:
+#### Config 0
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
+#### Config 1
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 2
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE2, X86
+
+#### Config 3
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 4
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 5
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+### Results:
+| Config | Implementation                                                     | Time   | CPU Time |
+| ------ | ------------------------------------------------------------------ | ------ | -------- |
+| 0      | comparison_less_than_64u::scalar_native                            | 1070ns | 1070ns   |
+| 1      | comparison_less_than_64u::vec8x64u_pcmpuq                          | 143ns  | 143ns    |
+| 2      | comparison_less_than_64u::vec2x64u_scalarized                      | 1251ns | 1251ns   |
+| 2      | comparison_less_than_64u::vec2x64u_32_bit_comparison_emulation_xor | 927ns  | 927ns    |
+| 3      | comparison_less_than_64u::vec2x64u_pcmpgtq                         | 609ns  | 609ns    |
+| 4      | comparison_less_than_64u::vec4x64u_pcmpuq                          | 309ns  | 309ns    |
+| 4      | comparison_less_than_64u::vec2x64u_pcmpuq                          | 538ns  | 538ns    |
+| 5      | comparison_less_than_64u::vec4x64u_pcmpgtq                         | 311ns  | 311ns    |
+
+
+## comparison_less_than_8i
+### Configurations:
+#### Config 0
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
+#### Config 1
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE2, X86, AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3
+
+#### Config 2
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
+
+#### Config 3
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+### Results:
+| Config | Implementation                            | Time   | CPU Time |
+| ------ | ----------------------------------------- | ------ | -------- |
+| 0      | comparison_less_than_8i::scalar_native    | 8142ns | 8137ns   |
+| 1      | comparison_less_than_8i::vec32x8i_pcmpgtb | 262ns  | 262ns    |
+| 1      | comparison_less_than_8i::vec16x8i_pcmpgtb | 510ns  | 510ns    |
+| 2      | comparison_less_than_8i::vec32x8i_pcmpb   | 264ns  | 264ns    |
+| 2      | comparison_less_than_8i::vec16x8i_pcmpb   | 509ns  | 508ns    |
+| 3      | comparison_less_than_8i::vec32x8i_pcmpgtb | 267ns  | 267ns    |
+| 3      | comparison_less_than_8i::vec64x8i_pcmpb   | 143ns  | 143ns    |
+| 3      | comparison_less_than_8i::vec16x8i_pcmpgtb | 524ns  | 524ns    |
+
+
+## comparison_less_than_8u
+### Configurations:
+#### Config 0
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
+#### Config 1
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE2, X86, AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3
+
+#### Config 2
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
+
+#### Config 3
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+### Results:
+| Config | Implementation                                | Time   | CPU Time |
+| ------ | --------------------------------------------- | ------ | -------- |
+| 0      | comparison_less_than_8u::scalar_native        | 8242ns | 8238ns   |
+| 1      | comparison_less_than_8u::vec16x8u_pcmpgtb_xor | 604ns  | 604ns    |
+| 1      | comparison_less_than_8u::vec32x8u_pcmpgtb_xor | 311ns  | 311ns    |
+| 2      | comparison_less_than_8u::vec16x8u_pcmpub      | 509ns  | 509ns    |
+| 2      | comparison_less_than_8u::vec32x8u_pcmpub      | 257ns  | 257ns    |
+| 3      | comparison_less_than_8u::vec32x8u_pcmpgtb_xor | 314ns  | 314ns    |
+| 3      | comparison_less_than_8u::vec16x8u_pcmpgtb_xor | 606ns  | 606ns    |
+| 3      | comparison_less_than_8u::vec64x8u_pcmpub      | 140ns  | 140ns    |
+
+
+## comparison_not_equals_16u
+### Configurations:
+#### Config 0
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
+#### Config 1
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE2, X86, AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3
+
+#### Config 2
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
+
+#### Config 3
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+### Results:
+| Config | Implementation                                | Time   | CPU Time |
+| ------ | --------------------------------------------- | ------ | -------- |
+| 0      | comparison_not_equals_16u::scalar_native      | 4242ns | 4239ns   |
+| 1      | comparison_not_equals_16u::vec16x16u_cmpeqw   | 312ns  | 312ns    |
+| 1      | comparison_not_equals_16u::vec8x16u_cmpeqw    | 606ns  | 606ns    |
+| 2      | comparison_not_equals_16u::vec8x16u_cmpeqw_k  | 538ns  | 538ns    |
+| 2      | comparison_not_equals_16u::vec16x16u_cmpeqw_k | 262ns  | 262ns    |
+| 3      | comparison_not_equals_16u::vec8x16u_cmpeqw    | 603ns  | 603ns    |
+| 3      | comparison_not_equals_16u::vec16x16u_cmpeqw   | 312ns  | 312ns    |
+| 3      | comparison_not_equals_16u::vec32x16u_cmpeqw_k | 151ns  | 151ns    |
+
+
+## comparison_not_equals_32f
+### Configurations:
+#### Config 0
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
+#### Config 1
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 2
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE2, X86
+
+#### Config 3
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 4
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+### Results:
+| Config | Implementation                               | Time   | CPU Time |
+| ------ | -------------------------------------------- | ------ | -------- |
+| 0      | comparison_not_equals_32f::scalar_native     | 2409ns | 2407ns   |
+| 1      | comparison_not_equals_32f::vec16x32f_vcmpps  | 140ns  | 140ns    |
+| 2      | comparison_not_equals_32f::vec4x32f_cmpps    | 609ns  | 609ns    |
+| 3      | comparison_not_equals_32f::vec8x32f_vcmpps   | 262ns  | 262ns    |
+| 3      | comparison_not_equals_32f::vec4x32f_cmpeqd_k | 540ns  | 540ns    |
+| 4      | comparison_not_equals_32f::vec8x32f_cmpeqd   | 273ns  | 273ns    |
+
+
+## comparison_not_equals_32u
+### Configurations:
+#### Config 0
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
+#### Config 1
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 2
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE2, X86
+
+#### Config 3
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 4
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+### Results:
+| Config | Implementation                                | Time   | CPU Time |
+| ------ | --------------------------------------------- | ------ | -------- |
+| 0      | comparison_not_equals_32u::scalar_native      | 2136ns | 2135ns   |
+| 1      | comparison_not_equals_32u::vec16x32u_cmpeqd_k | 139ns  | 139ns    |
+| 2      | comparison_not_equals_32u::vec4x32u_cmpeqd    | 605ns  | 605ns    |
+| 3      | comparison_not_equals_32u::vec4x32u_cmpeqd_k  | 607ns  | 607ns    |
+| 3      | comparison_not_equals_32u::vec8x32u_cmpeqd_k  | 276ns  | 276ns    |
+| 4      | comparison_not_equals_32u::vec8x32u_cmpeqd    | 308ns  | 308ns    |
+
+
+## comparison_not_equals_64f
+### Configurations:
+#### Config 0
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
+#### Config 1
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 2
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE2, X86
+
+#### Config 3
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 4
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+### Results:
+| Config | Implementation                               | Time   | CPU Time |
+| ------ | -------------------------------------------- | ------ | -------- |
+| 0      | comparison_not_equals_64f::scalar_native     | 1204ns | 1203ns   |
+| 1      | comparison_not_equals_64f::vec8x64f_vcmppd   | 150ns  | 150ns    |
+| 2      | comparison_not_equals_64f::vec2x64f_cmppd    | 514ns  | 514ns    |
+| 3      | comparison_not_equals_64f::vec4x64f_vcmppd   | 271ns  | 271ns    |
+| 3      | comparison_not_equals_64f::vec2x64f_cmpeqd_k | 515ns  | 515ns    |
+| 4      | comparison_not_equals_64f::vec4x64f_cmpeqd   | 266ns  | 266ns    |
+
+
+## comparison_not_equals_64u
+### Configurations:
+#### Config 0
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
+#### Config 1
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 2
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE2, X86
+
+#### Config 3
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 4
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+#### Config 5
+* g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+
+### Results:
+| Config | Implementation                                                    | Time   | CPU Time |
+| ------ | ----------------------------------------------------------------- | ------ | -------- |
+| 0      | comparison_not_equals_64u::scalar_native                          | 1076ns | 1073ns   |
+| 1      | comparison_not_equals_64u::vec8x64u_cmpeqq_k                      | 147ns  | 147ns    |
+| 2      | comparison_not_equals_64u::vec2x64u_32_bit_comparison_and_combine | 609ns  | 609ns    |
+| 3      | comparison_not_equals_64u::vec2x64u_cmpeqq                        | 610ns  | 610ns    |
+| 4      | comparison_not_equals_64u::vec2x64u_cmpeqq_k                      | 512ns  | 512ns    |
+| 4      | comparison_not_equals_64u::vec4x64u_cmpeqq_k                      | 306ns  | 306ns    |
+| 5      | comparison_not_equals_64u::vec4x64u_cmpeqq                        | 311ns  | 312ns    |
 
 
 ## countl_zero_64u
@@ -386,7 +768,7 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 ### Results:
 | Config | Implementation                 | Time   | CPU Time |
 | ------ | ------------------------------ | ------ | -------- |
-| 0      | countl_zero_64u::scalar_native | 1955ns | 1955ns   |
+| 0      | countl_zero_64u::scalar_native | 1608ns | 1607ns   |
 
 
 ## countl_zero_8u
@@ -396,15 +778,15 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* X86
+* SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* LZCNT, X86
+* X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* LZCNT, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -417,16 +799,16 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 ### Results:
 | Config | Implementation                                      | Time    | CPU Time |
 | ------ | --------------------------------------------------- | ------- | -------- |
-| 0      | countl_zero_8u::scalar_float_conversion             | 20617ns | 20617ns  |
-| 0      | countl_zero_8u::scalar_bitwise_accumulate           | 78234ns | 78232ns  |
-| 0      | countl_zero_8u::scalar_native                       | 15771ns | 15771ns  |
-| 0      | countl_zero_8u::scalar_nibble_lookup                | 22708ns | 22708ns  |
-| 0      | countl_zero_8u::scalar_byte_lookup                  | 10673ns | 10673ns  |
-| 1      | countl_zero_8u::scalar_bsr                          | 17295ns | 17266ns  |
-| 2      | countl_zero_8u::scalar_lzcnt                        | 12868ns | 12868ns  |
-| 3      | countl_zero_8u::vec16x8u_bitwise_divide_and_conquer | 2803ns  | 2803ns   |
-| 4      | countl_zero_8u::vec16x8u_pshufb                     | 1404ns  | 1404ns   |
-| 5      | countl_zero_8u::vec64x8u_vpermi2b                   | 321ns   | 321ns    |
+| 0      | countl_zero_8u::scalar_byte_lookup                  | 10022ns | 10002ns  |
+| 0      | countl_zero_8u::scalar_nibble_lookup                | 22998ns | 22981ns  |
+| 0      | countl_zero_8u::scalar_native                       | 13727ns | 13718ns  |
+| 0      | countl_zero_8u::scalar_float_conversion             | 19455ns | 19443ns  |
+| 0      | countl_zero_8u::scalar_bitwise_accumulate           | 76950ns | 76911ns  |
+| 1      | countl_zero_8u::vec16x8u_bitwise_divide_and_conquer | 2659ns  | 2654ns   |
+| 2      | countl_zero_8u::scalar_bsr                          | 17103ns | 17104ns  |
+| 3      | countl_zero_8u::scalar_lzcnt                        | 13009ns | 13010ns  |
+| 4      | countl_zero_8u::vec16x8u_pshufb                     | 1199ns  | 1199ns   |
+| 5      | countl_zero_8u::vec64x8u_vpermi2b                   | 326ns   | 326ns    |
 
 
 ## fpclassify_32f
@@ -436,44 +818,44 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512DQ
+* SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512DQ, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 5
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512DQ
 
 #### Config 6
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512DQ, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                              | Time    | CPU Time |
 | ------ | ------------------------------------------- | ------- | -------- |
-| 0      | fpclassify_32f::scalar_branching            | 6014ns  | 6014ns   |
-| 0      | fpclassify_32f::scalar_native               | 7335ns  | 7335ns   |
-| 0      | fpclassify_32f::scalar_blending1            | 15329ns | 15329ns  |
-| 0      | fpclassify_32f::scalar_blending0            | 21894ns | 21893ns  |
-| 1      | fpclassify_32f::vec4x32f_blending_vfpclass  | 2903ns  | 2903ns   |
-| 1      | fpclassify_32f::vec8x32f_blending_vfpclass  | 1458ns  | 1458ns   |
-| 2      | fpclassify_32f::vec4x32f_blending_ternlog   | 2200ns  | 2200ns   |
-| 2      | fpclassify_32f::vec8x32f_blending_ternlog   | 1129ns  | 1129ns   |
-| 3      | fpclassify_32f::vec16x32f_blending_vfpclass | 759ns   | 759ns    |
-| 4      | fpclassify_32f::vec16x32f_blending_ternlog  | 866ns   | 866ns    |
-| 5      | fpclassify_32f::vec4x32f_avel               | 2477ns  | 2474ns   |
-| 5      | fpclassify_32f::vec4x32f_blending           | 2461ns  | 2461ns   |
-| 6      | fpclassify_32f::vec8x32f_blending           | 1179ns  | 1179ns   |
+| 0      | fpclassify_32f::scalar_branching            | 6384ns  | 6378ns   |
+| 0      | fpclassify_32f::scalar_native               | 7122ns  | 7116ns   |
+| 0      | fpclassify_32f::scalar_blending0            | 22588ns | 22575ns  |
+| 0      | fpclassify_32f::scalar_blending1            | 15413ns | 15404ns  |
+| 1      | fpclassify_32f::vec4x32f_blending           | 1952ns  | 1951ns   |
+| 1      | fpclassify_32f::vec4x32f_avel               | 1939ns  | 1936ns   |
+| 2      | fpclassify_32f::vec8x32f_blending           | 981ns   | 981ns    |
+| 3      | fpclassify_32f::vec16x32f_blending_ternlog  | 765ns   | 766ns    |
+| 4      | fpclassify_32f::vec4x32f_blending_ternlog   | 2114ns  | 2114ns   |
+| 4      | fpclassify_32f::vec8x32f_blending_ternlog   | 1072ns  | 1072ns   |
+| 5      | fpclassify_32f::vec8x32f_blending_vfpclass  | 1367ns  | 1367ns   |
+| 5      | fpclassify_32f::vec4x32f_blending_vfpclass  | 2884ns  | 2885ns   |
+| 6      | fpclassify_32f::vec16x32f_blending_vfpclass | 759ns   | 759ns    |
 
 
 ## fpclassify_64f
@@ -483,19 +865,19 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512DQ, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512DQ, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 5
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -504,14 +886,14 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 ### Results:
 | Config | Implementation                             | Time   | CPU Time |
 | ------ | ------------------------------------------ | ------ | -------- |
-| 0      | fpclassify_64f::scalar_branching           | 2855ns | 2855ns   |
-| 0      | fpclassify_64f::scalar_native              | 3308ns | 3308ns   |
-| 1      | fpclassify_64f::vec8x64f_blending_vfpclass | 760ns  | 760ns    |
-| 2      | fpclassify_64f::vec8x64f_blend_avx512f     | 900ns  | 900ns    |
-| 3      | fpclassify_64f::vec2x64f_scalarized        | 8730ns | 8730ns   |
-| 3      | fpclassify_64f::vec2x64f_blend_sse2        | 2528ns | 2528ns   |
-| 4      | fpclassify_64f::vec4x64f_lend_avx2         | 1178ns | 1178ns   |
-| 5      | fpclassify_64f::vec2x64f_blend_sse42       | 2512ns | 2512ns   |
+| 0      | fpclassify_64f::scalar_native              | 3261ns | 3260ns   |
+| 0      | fpclassify_64f::scalar_branching           | 2428ns | 2427ns   |
+| 1      | fpclassify_64f::vec2x64f_blend_sse2        | 2056ns | 2056ns   |
+| 1      | fpclassify_64f::vec2x64f_scalarized        | 8854ns | 8837ns   |
+| 2      | fpclassify_64f::vec4x64f_lend_avx2         | 1033ns | 1032ns   |
+| 3      | fpclassify_64f::vec8x64f_blend_avx512f     | 762ns  | 763ns    |
+| 4      | fpclassify_64f::vec8x64f_blending_vfpclass | 760ns  | 760ns    |
+| 5      | fpclassify_64f::vec2x64f_blend_sse42       | 2020ns | 2021ns   |
 
 
 ## mask_from_bool_8i
@@ -521,32 +903,32 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                        | Time    | CPU Time |
 | ------ | ------------------------------------- | ------- | -------- |
-| 0      | mask_from_bool_8i::scalar_ternary     | 11237ns | 11237ns  |
-| 0      | mask_from_bool_8i::scalar_negate_bool | 11259ns | 11259ns  |
-| 1      | mask_from_bool_8i::mask16x8i_set1     | 1008ns  | 1008ns   |
-| 1      | mask_from_bool_8i::mask16x8i_ternary  | 1286ns  | 1286ns   |
-| 2      | mask_from_bool_8i::mask32x8i_ternary  | 692ns   | 692ns    |
-| 2      | mask_from_bool_8i::mask32x8i_set1     | 540ns   | 540ns    |
-| 3      | mask_from_bool_8i::mask64x8i_negate   | 182ns   | 182ns    |
-| 4      | mask_from_bool_8i::mask32x8i_negate   | 412ns   | 412ns    |
-| 4      | mask_from_bool_8i::mask16x8i_negate   | 713ns   | 713ns    |
+| 0      | mask_from_bool_8i::scalar_negate_bool | 11151ns | 11143ns  |
+| 0      | mask_from_bool_8i::scalar_ternary     | 11126ns | 11119ns  |
+| 1      | mask_from_bool_8i::mask32x8i_negate   | 404ns   | 404ns    |
+| 1      | mask_from_bool_8i::mask16x8i_negate   | 731ns   | 731ns    |
+| 2      | mask_from_bool_8i::mask64x8i_negate   | 186ns   | 186ns    |
+| 3      | mask_from_bool_8i::mask16x8i_ternary  | 1369ns  | 1370ns   |
+| 3      | mask_from_bool_8i::mask16x8i_set1     | 948ns   | 948ns    |
+| 4      | mask_from_bool_8i::mask32x8i_ternary  | 459ns   | 459ns    |
+| 4      | mask_from_bool_8i::mask32x8i_set1     | 512ns   | 512ns    |
 
 
 ## popcount_16u
@@ -556,15 +938,15 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -589,28 +971,28 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 ### Results:
 | Config | Implementation                                          | Time    | CPU Time |
 | ------ | ------------------------------------------------------- | ------- | -------- |
-| 0      | popcount_16u::scalar_bitwise_accumulate                 | 58520ns | 58519ns  |
-| 0      | popcount_16u::scalar_native                             | 26086ns | 26085ns  |
-| 0      | popcount_16u::scalar_byte_lookup                        | 9669ns  | 9668ns   |
-| 0      | popcount_16u::scalar_bitwise_accumulate_branchless      | 58259ns | 58257ns  |
-| 0      | popcount_16u::scalar_bitwise_divide_and_conquer         | 58536ns | 58535ns  |
-| 0      | popcount_16u::scalar_nibble_lookup                      | 16557ns | 16557ns  |
-| 1      | popcount_16u::vec8x16u_bitwise_divide_and_conquer       | 2273ns  | 2273ns   |
-| 2      | popcount_16u::vec16x16u_pshufb                          | 840ns   | 840ns    |
-| 2      | popcount_16u::vec16x16u_pshufb_madd                     | 710ns   | 710ns    |
-| 3      | popcount_16u::vec32x16u_bitwise_divide_and_conquer_madd | 620ns   | 620ns    |
-| 3      | popcount_16u::vec32x16u_pshufb                          | 483ns   | 483ns    |
-| 3      | popcount_16u::vec16x16u_bitwise_divide_and_conquer_madd | 969ns   | 969ns    |
-| 3      | popcount_16u::vec32x16u_pshufb_madd                     | 396ns   | 395ns    |
-| 3      | popcount_16u::vec8x16u_bitwise_divide_and_conquer_madd  | 1909ns  | 1909ns   |
-| 4      | popcount_16u::vec8x16u_pshufb                           | 1814ns  | 1814ns   |
-| 4      | popcount_16u::vec8x16u_pshufb_madd                      | 1607ns  | 1607ns   |
-| 5      | popcount_16u::scalar_popcnt_op                          | 7024ns  | 7019ns   |
-| 6      | popcount_16u::vec8x16u_popcnt_op                        | 814ns   | 812ns    |
-| 6      | popcount_16u::vec16x16u_popcnt_op                       | 409ns   | 409ns    |
-| 7      | popcount_16u::vec32x16u_vpermi2b                        | 478ns   | 478ns    |
-| 7      | popcount_16u::vec32x16u_vpermi2b_madd                   | 378ns   | 378ns    |
-| 8      | popcount_16u::vec32x16u_popcnt_op                       | 222ns   | 222ns    |
+| 0      | popcount_16u::scalar_bitwise_accumulate                 | 54848ns | 54817ns  |
+| 0      | popcount_16u::scalar_bitwise_divide_and_conquer         | 60076ns | 60043ns  |
+| 0      | popcount_16u::scalar_bitwise_accumulate_branchless      | 57703ns | 57671ns  |
+| 0      | popcount_16u::scalar_byte_lookup                        | 9641ns  | 9621ns   |
+| 0      | popcount_16u::scalar_nibble_lookup                      | 16995ns | 16986ns  |
+| 0      | popcount_16u::scalar_native                             | 6860ns  | 6856ns   |
+| 1      | popcount_16u::vec8x16u_bitwise_divide_and_conquer_madd  | 1942ns  | 1942ns   |
+| 1      | popcount_16u::vec32x16u_bitwise_divide_and_conquer_madd | 623ns   | 623ns    |
+| 1      | popcount_16u::vec32x16u_pshufb                          | 502ns   | 502ns    |
+| 1      | popcount_16u::vec16x16u_bitwise_divide_and_conquer_madd | 987ns   | 987ns    |
+| 1      | popcount_16u::vec32x16u_pshufb_madd                     | 401ns   | 401ns    |
+| 2      | popcount_16u::vec8x16u_bitwise_divide_and_conquer       | 2130ns  | 2129ns   |
+| 3      | popcount_16u::vec16x16u_pshufb_madd                     | 741ns   | 741ns    |
+| 3      | popcount_16u::vec16x16u_pshufb                          | 832ns   | 832ns    |
+| 4      | popcount_16u::vec8x16u_pshufb                           | 1651ns  | 1652ns   |
+| 4      | popcount_16u::vec8x16u_pshufb_madd                      | 1470ns  | 1469ns   |
+| 5      | popcount_16u::scalar_popcnt_op                          | 6816ns  | 6816ns   |
+| 6      | popcount_16u::vec16x16u_popcnt_op                       | 406ns   | 406ns    |
+| 6      | popcount_16u::vec8x16u_popcnt_op                        | 804ns   | 804ns    |
+| 7      | popcount_16u::vec32x16u_vpermi2b                        | 490ns   | 490ns    |
+| 7      | popcount_16u::vec32x16u_vpermi2b_madd                   | 386ns   | 386ns    |
+| 8      | popcount_16u::vec32x16u_popcnt_op                       | 212ns   | 212ns    |
 
 
 ## popcount_32u
@@ -643,21 +1025,21 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 * AVX512VPOPCNTDQ, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
-| Config | Implementation                                     | Time     | CPU Time |
-| ------ | -------------------------------------------------- | -------- | -------- |
-| 0      | popcount_32u::scalar_bitwise_accumulate_branchless | 147754ns | 147750ns |
-| 0      | popcount_32u::scalar_bitwise_accumulate            | 29834ns  | 29833ns  |
-| 0      | popcount_32u::scalar_bitwise_divide_and_conquer    | 9682ns   | 9682ns   |
-| 0      | popcount_32u::scalar_byte_lookup                   | 96760ns  | 96758ns  |
-| 0      | popcount_32u::scalar_nibble_lookup                 | 16236ns  | 16235ns  |
-| 0      | popcount_32u::scalar_native                        | 13342ns  | 13342ns  |
-| 1      | popcount_32u::vec4x32u_bitwise_divide_and_conquer  | 2984ns   | 2984ns   |
-| 2      | popcount_32u::vec4x32u_pshufb                      | 2215ns   | 2215ns   |
-| 3      | popcount_32u::scalar_popcnt_op                     | 3219ns   | 3219ns   |
-| 4      | popcount_32u::vec4x32u_popcnt16_op                 | 1204ns   | 1202ns   |
-| 5      | popcount_32u::vec4x32u_popcnt_op                   | 812ns    | 811ns    |
-| 5      | popcount_32u::vec8x32u_popcnt_op                   | 410ns    | 410ns    |
-| 6      | popcount_32u::vec16x32u_popcnt_op                  | 218ns    | 218ns    |
+| Config | Implementation                                     | Time    | CPU Time |
+| ------ | -------------------------------------------------- | ------- | -------- |
+| 0      | popcount_32u::scalar_bitwise_accumulate_branchless | 11244ns | 11197ns  |
+| 0      | popcount_32u::scalar_bitwise_accumulate            | 7826ns  | 7816ns   |
+| 0      | popcount_32u::scalar_byte_lookup                   | 53657ns | 53597ns  |
+| 0      | popcount_32u::scalar_native                        | 3224ns  | 3222ns   |
+| 0      | popcount_32u::scalar_nibble_lookup                 | 16834ns | 16823ns  |
+| 0      | popcount_32u::scalar_bitwise_divide_and_conquer    | 3770ns  | 3768ns   |
+| 1      | popcount_32u::vec4x32u_bitwise_divide_and_conquer  | 2897ns  | 2892ns   |
+| 2      | popcount_32u::vec4x32u_pshufb                      | 1864ns  | 1864ns   |
+| 3      | popcount_32u::scalar_popcnt_op                     | 3194ns  | 3194ns   |
+| 4      | popcount_32u::vec4x32u_popcnt16_op                 | 1215ns  | 1215ns   |
+| 5      | popcount_32u::vec8x32u_popcnt_op                   | 415ns   | 415ns    |
+| 5      | popcount_32u::vec4x32u_popcnt_op                   | 808ns   | 808ns    |
+| 6      | popcount_32u::vec16x32u_popcnt_op                  | 212ns   | 212ns    |
 
 
 ## popcount_64u
@@ -667,7 +1049,7 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -679,7 +1061,7 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 5
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -720,35 +1102,35 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 ### Results:
 | Config | Implementation                                           | Time     | CPU Time |
 | ------ | -------------------------------------------------------- | -------- | -------- |
-| 0      | popcount_64u::scalar_byte_lookup                         | 83286ns  | 83283ns  |
-| 0      | popcount_64u::scalar_bitwise_accumulate_branchless       | 121582ns | 121579ns |
-| 0      | popcount_64u::scalar_native                              | 7367ns   | 7367ns   |
-| 0      | popcount_64u::scalar_nibble_lookup                       | 16208ns  | 16208ns  |
-| 0      | popcount_64u::scalar_bitwise_divide_and_conquer          | 8068ns   | 8068ns   |
-| 0      | popcount_64u::scalar_bitwise_accumulate                  | 3908ns   | 3908ns   |
-| 1      | popcount_64u::vec8x64u_bitwise_divide_and_conquer        | 1054ns   | 1054ns   |
-| 1      | popcount_64u::vec8x64u_scalarized                        | 2237ns   | 2237ns   |
-| 2      | popcount_64u::vec2x64u_bitwise_divide_and_conquer        | 3361ns   | 3360ns   |
-| 3      | popcount_64u::vec4x64u_scalarized                        | 1421ns   | 1421ns   |
-| 3      | popcount_64u::vec4x64u_bitwise_divide_and_conquer_sad    | 1002ns   | 1003ns   |
-| 3      | popcount_64u::vec4x64u_pshufb_sad                        | 707ns    | 707ns    |
-| 3      | popcount_64u::vec4x64u_pshufb                            | 1045ns   | 1045ns   |
-| 4      | popcount_64u::vec8x64u_bitwise_divide_and_conquer_sad    | 627ns    | 627ns    |
-| 5      | popcount_64u::vec2x64u_bitwise_divide_and_conquer_sad    | 2014ns   | 2014ns   |
-| 5      | popcount_64u::vec2x64u_pshufb_sad                        | 1607ns   | 1608ns   |
-| 5      | popcount_64u::vec2x64u_pshufb                            | 2412ns   | 2413ns   |
-| 6      | popcount_64u::scalar_popcnt_op                           | 1613ns   | 1611ns   |
-| 7      | popcount_64u::vec2x64u_popcnt16_op                       | 1209ns   | 1209ns   |
-| 7      | popcount_64u::vec4x64u_popcnt16_op                       | 621ns    | 621ns    |
-| 7      | popcount_64u::vec4x64u_popcnt16_op_sad                   | 536ns    | 536ns    |
-| 7      | popcount_64u::vec2x64u_popcnt16_op_sad                   | 1039ns   | 1040ns   |
-| 8      | popcount_64u::vec2x64u_popcnt_op                         | 809ns    | 809ns    |
-| 8      | popcount_64u::vec4x64u_popcnt_op                         | 408ns    | 408ns    |
-| 9      | popcount_64u::vec8x64u_popcnt_op                         | 221ns    | 221ns    |
-| 10     | popcount_64u::vec2x64u_scalarized_popcnt_op              | 1721ns   | 1721ns   |
-| 11     | popcount_64u::vec2x64u_scalarized_popcnt_op_with_extract | 1707ns   | 1707ns   |
-| 12     | popcount_64u::vec8x64u_popcnt16_op                       | 334ns    | 334ns    |
-| 13     | popcount_64u::vec8x64u_popcnt16_op_sad                   | 287ns    | 287ns    |
+| 0      | popcount_64u::scalar_bitwise_accumulate                  | 4006ns   | 3987ns   |
+| 0      | popcount_64u::scalar_native                              | 1610ns   | 1609ns   |
+| 0      | popcount_64u::scalar_nibble_lookup                       | 16415ns  | 16405ns  |
+| 0      | popcount_64u::scalar_byte_lookup                         | 48898ns  | 48871ns  |
+| 0      | popcount_64u::scalar_bitwise_accumulate_branchless       | 101196ns | 101143ns |
+| 0      | popcount_64u::scalar_bitwise_divide_and_conquer          | 7982ns   | 7977ns   |
+| 1      | popcount_64u::vec8x64u_bitwise_divide_and_conquer_sad    | 646ns    | 646ns    |
+| 2      | popcount_64u::vec2x64u_bitwise_divide_and_conquer        | 3212ns   | 3212ns   |
+| 3      | popcount_64u::vec4x64u_pshufb_sad                        | 742ns    | 742ns    |
+| 3      | popcount_64u::vec4x64u_pshufb                            | 1048ns   | 1047ns   |
+| 3      | popcount_64u::vec4x64u_scalarized                        | 1434ns   | 1434ns   |
+| 3      | popcount_64u::vec4x64u_bitwise_divide_and_conquer_sad    | 1003ns   | 1003ns   |
+| 4      | popcount_64u::vec8x64u_bitwise_divide_and_conquer        | 1062ns   | 1061ns   |
+| 4      | popcount_64u::vec8x64u_scalarized                        | 2242ns   | 2244ns   |
+| 5      | popcount_64u::vec2x64u_bitwise_divide_and_conquer_sad    | 1973ns   | 1973ns   |
+| 5      | popcount_64u::vec2x64u_pshufb_sad                        | 1447ns   | 1447ns   |
+| 5      | popcount_64u::vec2x64u_pshufb                            | 2057ns   | 2057ns   |
+| 6      | popcount_64u::scalar_popcnt_op                           | 1605ns   | 1605ns   |
+| 7      | popcount_64u::vec2x64u_popcnt16_op                       | 1299ns   | 1299ns   |
+| 7      | popcount_64u::vec2x64u_popcnt16_op_sad                   | 1038ns   | 1038ns   |
+| 7      | popcount_64u::vec4x64u_popcnt16_op_sad                   | 530ns    | 530ns    |
+| 7      | popcount_64u::vec4x64u_popcnt16_op                       | 661ns    | 661ns    |
+| 8      | popcount_64u::vec4x64u_popcnt_op                         | 413ns    | 413ns    |
+| 8      | popcount_64u::vec2x64u_popcnt_op                         | 812ns    | 812ns    |
+| 9      | popcount_64u::vec8x64u_popcnt_op                         | 214ns    | 214ns    |
+| 10     | popcount_64u::vec2x64u_scalarized_popcnt_op              | 1015ns   | 1015ns   |
+| 11     | popcount_64u::vec2x64u_scalarized_popcnt_op_with_extract | 1769ns   | 1769ns   |
+| 12     | popcount_64u::vec8x64u_popcnt16_op                       | 323ns    | 323ns    |
+| 13     | popcount_64u::vec8x64u_popcnt16_op_sad                   | 256ns    | 256ns    |
 
 
 ## popcount_8u
@@ -758,15 +1140,15 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -791,23 +1173,23 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 ### Results:
 | Config | Implementation                                    | Time     | CPU Time |
 | ------ | ------------------------------------------------- | -------- | -------- |
-| 0      | popcount_8u::scalar_native                        | 49995ns  | 49994ns  |
-| 0      | popcount_8u::scalar_nibble_lookup                 | 19319ns  | 19318ns  |
-| 0      | popcount_8u::scalar_bitwise_accumulate            | 153864ns | 153861ns |
-| 0      | popcount_8u::scalar_bitwise_accumulate_branchless | 55651ns  | 55650ns  |
-| 0      | popcount_8u::scalar_bitwise_divide_and_conquer    | 31056ns  | 31055ns  |
-| 0      | popcount_8u::scalar_byte_lookup                   | 103975ns | 103973ns |
-| 1      | popcount_8u::vec16x8u_bitwise_divide_and_conquer  | 1803ns   | 1803ns   |
-| 2      | popcount_8u::vec32x8u_pshufb                      | 624ns    | 623ns    |
-| 2      | popcount_8u::vec32x8u_bitwise_divide_and_conquer  | 809ns    | 810ns    |
-| 3      | popcount_8u::vec64x8u_bitwise_divide_and_conquer  | 552ns    | 552ns    |
-| 3      | popcount_8u::vec64x8u_pshufb                      | 333ns    | 333ns    |
-| 4      | popcount_8u::vec16x8u_pshufb                      | 1412ns   | 1413ns   |
-| 5      | popcount_8u::scalar_popcnt_op                     | 11126ns  | 11127ns  |
-| 6      | popcount_8u::vec32x8u_popcnt_op                   | 408ns    | 407ns    |
-| 6      | popcount_8u::vec16x8u_popcnt_op                   | 811ns    | 811ns    |
-| 7      | popcount_8u::vec64x8u_vpermi2b                    | 322ns    | 322ns    |
-| 8      | popcount_8u::vec64x8u_popcnt_op                   | 218ns    | 218ns    |
+| 0      | popcount_8u::scalar_nibble_lookup                 | 19212ns  | 19149ns  |
+| 0      | popcount_8u::scalar_bitwise_divide_and_conquer    | 31296ns  | 31256ns  |
+| 0      | popcount_8u::scalar_native                        | 11281ns  | 11256ns  |
+| 0      | popcount_8u::scalar_bitwise_accumulate_branchless | 56953ns  | 56922ns  |
+| 0      | popcount_8u::scalar_byte_lookup                   | 236482ns | 236360ns |
+| 0      | popcount_8u::scalar_bitwise_accumulate            | 165956ns | 166777ns |
+| 1      | popcount_8u::vec64x8u_pshufb                      | 340ns    | 340ns    |
+| 1      | popcount_8u::vec64x8u_bitwise_divide_and_conquer  | 566ns    | 566ns    |
+| 2      | popcount_8u::vec16x8u_bitwise_divide_and_conquer  | 1602ns   | 1602ns   |
+| 3      | popcount_8u::vec32x8u_pshufb                      | 610ns    | 609ns    |
+| 3      | popcount_8u::vec32x8u_bitwise_divide_and_conquer  | 813ns    | 812ns    |
+| 4      | popcount_8u::vec16x8u_pshufb                      | 1213ns   | 1211ns   |
+| 5      | popcount_8u::scalar_popcnt_op                     | 11170ns  | 11170ns  |
+| 6      | popcount_8u::vec32x8u_popcnt_op                   | 409ns    | 409ns    |
+| 6      | popcount_8u::vec16x8u_popcnt_op                   | 805ns    | 805ns    |
+| 7      | popcount_8u::vec64x8u_vpermi2b                    | 331ns    | 331ns    |
+| 8      | popcount_8u::vec64x8u_popcnt_op                   | 211ns    | 211ns    |
 
 
 ## scalbn_32f
@@ -817,23 +1199,23 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation             | Time    | CPU Time |
 | ------ | -------------------------- | ------- | -------- |
-| 0      | scalbn_32f::scalar_native  | 11478ns | 11478ns  |
-| 1      | scalbn_32f::vec16x32f_avel | 168ns   | 168ns    |
-| 2      | scalbn_32f::vec4x32f_avel  | 3228ns  | 3228ns   |
-| 3      | scalbn_32f::vec8x32f_avel  | 1378ns  | 1376ns   |
+| 0      | scalbn_32f::scalar_native  | 11085ns | 11078ns  |
+| 1      | scalbn_32f::vec4x32f_avel  | 2337ns  | 2337ns   |
+| 2      | scalbn_32f::vec8x32f_avel  | 1209ns  | 1209ns   |
+| 3      | scalbn_32f::vec16x32f_avel | 164ns   | 164ns    |
 
 
 ## shift_left_8u
@@ -860,12 +1242,12 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 ### Results:
 | Config | Implementation                             | Time   | CPU Time |
 | ------ | ------------------------------------------ | ------ | -------- |
-| 0      | shift_left_8u::scalar_native               | 8275ns | 8275ns   |
-| 1      | shift_left_8u::vec16x8u_divide_and_conquer | 1486ns | 1486ns   |
-| 2      | shift_left_8u::vec32x8u_pshufb             | 409ns  | 409ns    |
-| 3      | shift_left_8u::vec16x8u_pshufb             | 808ns  | 809ns    |
-| 4      | shift_left_8u::vec32x8u_widening           | 421ns  | 421ns    |
-| 4      | shift_left_8u::vec16x8u_widening           | 614ns  | 614ns    |
+| 0      | shift_left_8u::scalar_native               | 8006ns | 8002ns   |
+| 1      | shift_left_8u::vec16x8u_divide_and_conquer | 1226ns | 1223ns   |
+| 2      | shift_left_8u::vec32x8u_pshufb             | 363ns  | 362ns    |
+| 3      | shift_left_8u::vec16x8u_pshufb             | 708ns  | 708ns    |
+| 4      | shift_left_8u::vec16x8u_widening           | 605ns  | 605ns    |
+| 4      | shift_left_8u::vec32x8u_widening           | 414ns  | 414ns    |
 
 
 ## vec_from_mask_16u
@@ -875,30 +1257,30 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86, AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86, AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                                | Time    | CPU Time |
 | ------ | --------------------------------------------- | ------- | -------- |
-| 0      | vec_from_mask_16u::scalar_native_conversion   | 11277ns | 11277ns  |
-| 1      | vec_from_mask_16u::vec32x16u_move_mask        | 18.8ns  | 18.8ns   |
-| 1      | vec_from_mask_16u::vec16x16u_negation         | 65.8ns  | 65.8ns   |
-| 1      | vec_from_mask_16u::vec8x16u_negation          | 240ns   | 240ns    |
-| 1      | vec_from_mask_16u::vec32x16u_masked_broadcast | 16.7ns  | 16.7ns   |
-| 2      | vec_from_mask_16u::vec8x16u_negation          | 261ns   | 261ns    |
-| 2      | vec_from_mask_16u::vec16x16u_negation         | 67.9ns  | 67.9ns   |
-| 3      | vec_from_mask_16u::vec16x16u_move_mask        | 58.3ns  | 58.3ns   |
-| 3      | vec_from_mask_16u::vec8x16u_move_mask         | 212ns   | 212ns    |
-| 3      | vec_from_mask_16u::vec16x16u_masked_broadcast | 62.5ns  | 62.5ns   |
-| 3      | vec_from_mask_16u::vec8x16u_masked_broadcast  | 206ns   | 206ns    |
+| 0      | vec_from_mask_16u::scalar_native_conversion   | 11495ns | 11487ns  |
+| 1      | vec_from_mask_16u::vec16x16u_negation         | 66.3ns  | 66.4ns   |
+| 1      | vec_from_mask_16u::vec8x16u_negation          | 260ns   | 261ns    |
+| 2      | vec_from_mask_16u::vec16x16u_masked_broadcast | 59.9ns  | 59.9ns   |
+| 2      | vec_from_mask_16u::vec16x16u_move_mask        | 59.3ns  | 59.2ns   |
+| 2      | vec_from_mask_16u::vec8x16u_masked_broadcast  | 208ns   | 208ns    |
+| 2      | vec_from_mask_16u::vec8x16u_move_mask         | 208ns   | 207ns    |
+| 3      | vec_from_mask_16u::vec32x16u_move_mask        | 15.8ns  | 15.8ns   |
+| 3      | vec_from_mask_16u::vec8x16u_negation          | 260ns   | 260ns    |
+| 3      | vec_from_mask_16u::vec16x16u_negation         | 66.7ns  | 66.7ns   |
+| 3      | vec_from_mask_16u::vec32x16u_masked_broadcast | 20.8ns  | 20.8ns   |
 
 
 ## vec_from_mask_32f
@@ -908,29 +1290,29 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                                | Time    | CPU Time |
 | ------ | --------------------------------------------- | ------- | -------- |
-| 0      | vec_from_mask_32f::scalar_native_conversion   | 19297ns | 19297ns  |
-| 1      | vec_from_mask_32f::vec4x32f_bitwise_and       | 1066ns  | 1066ns   |
-| 2      | vec_from_mask_32f::vec4x32f_masked_broadcast  | 10392ns | 10392ns  |
-| 2      | vec_from_mask_32f::vec8x32f_masked_broadcast  | 299ns   | 299ns    |
-| 3      | vec_from_mask_32f::vec8x32f_bitwise_and       | 243ns   | 243ns    |
-| 4      | vec_from_mask_32f::vec16x32f_masked_broadcast | 81.2ns  | 81.2ns   |
+| 0      | vec_from_mask_32f::scalar_native_conversion   | 18689ns | 18660ns  |
+| 1      | vec_from_mask_32f::vec16x32f_masked_broadcast | 76.4ns  | 76.5ns   |
+| 2      | vec_from_mask_32f::vec4x32f_bitwise_and       | 1080ns  | 1080ns   |
+| 3      | vec_from_mask_32f::vec8x32f_masked_broadcast  | 301ns   | 301ns    |
+| 3      | vec_from_mask_32f::vec4x32f_masked_broadcast  | 10348ns | 10349ns  |
+| 4      | vec_from_mask_32f::vec8x32f_bitwise_and       | 243ns   | 243ns    |
 
 
 ## vec_from_mask_32u
@@ -940,11 +1322,11 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512DQ
+* SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -956,24 +1338,24 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 5
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512DQ, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512DQ
 
 #### Config 6
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512DQ, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                                | Time    | CPU Time |
 | ------ | --------------------------------------------- | ------- | -------- |
-| 0      | vec_from_mask_32u::scalar_native_conversion   | 11217ns | 11217ns  |
-| 1      | vec_from_mask_32u::vec4x32u_negation          | 1199ns  | 1199ns   |
-| 2      | vec_from_mask_32u::vec8x32u_move_mask         | 243ns   | 243ns    |
-| 2      | vec_from_mask_32u::vec4x32u_move_mask         | 955ns   | 955ns    |
-| 3      | vec_from_mask_32u::vec4x32u_masked_broadcast  | 937ns   | 937ns    |
-| 3      | vec_from_mask_32u::vec8x32u_masked_broadcast  | 299ns   | 299ns    |
-| 4      | vec_from_mask_32u::vec8x32u_negation          | 243ns   | 243ns    |
-| 5      | vec_from_mask_32u::vec16x32u_move_mask        | 70.5ns  | 70.5ns   |
-| 6      | vec_from_mask_32u::vec16x32u_masked_broadcast | 80.6ns  | 80.6ns   |
+| 0      | vec_from_mask_32u::scalar_native_conversion   | 11220ns | 11214ns  |
+| 1      | vec_from_mask_32u::vec16x32u_masked_broadcast | 76.7ns  | 76.7ns   |
+| 2      | vec_from_mask_32u::vec4x32u_negation          | 1077ns  | 1077ns   |
+| 3      | vec_from_mask_32u::vec8x32u_masked_broadcast  | 301ns   | 301ns    |
+| 3      | vec_from_mask_32u::vec4x32u_masked_broadcast  | 942ns   | 942ns    |
+| 4      | vec_from_mask_32u::vec8x32u_negation          | 242ns   | 242ns    |
+| 5      | vec_from_mask_32u::vec8x32u_move_mask         | 244ns   | 244ns    |
+| 5      | vec_from_mask_32u::vec4x32u_move_mask         | 936ns   | 936ns    |
+| 6      | vec_from_mask_32u::vec16x32u_move_mask        | 67.0ns  | 67.0ns   |
 
 
 ## vec_from_mask_64f
@@ -983,29 +1365,29 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                               | Time    | CPU Time |
 | ------ | -------------------------------------------- | ------- | -------- |
-| 0      | vec_from_mask_64f::scalar_native_conversion  | 19342ns | 19341ns  |
-| 1      | vec_from_mask_64f::vec2x64f_bitwise_and      | 5010ns  | 5010ns   |
-| 2      | vec_from_mask_64f::vec2x64f_masked_movedup   | 4782ns  | 4782ns   |
-| 2      | vec_from_mask_64f::vec4x64f_masked_broadcast | 943ns   | 943ns    |
-| 3      | vec_from_mask_64f::vec4x64f_bitwise_and      | 948ns   | 948ns    |
-| 4      | vec_from_mask_64f::vec8x64f_masked_broadcast | 311ns   | 311ns    |
+| 0      | vec_from_mask_64f::scalar_native_conversion  | 18669ns | 18660ns  |
+| 1      | vec_from_mask_64f::vec8x64f_masked_broadcast | 306ns   | 306ns    |
+| 2      | vec_from_mask_64f::vec2x64f_bitwise_and      | 4811ns  | 4812ns   |
+| 3      | vec_from_mask_64f::vec2x64f_masked_movedup   | 4771ns  | 4772ns   |
+| 3      | vec_from_mask_64f::vec4x64f_masked_broadcast | 937ns   | 937ns    |
+| 4      | vec_from_mask_64f::vec4x64f_bitwise_and      | 943ns   | 943ns    |
 
 
 ## vec_from_mask_64u
@@ -1015,11 +1397,11 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512DQ
+* SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -1031,24 +1413,24 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 5
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512DQ, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512DQ
 
 #### Config 6
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512DQ, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                               | Time    | CPU Time |
 | ------ | -------------------------------------------- | ------- | -------- |
-| 0      | vec_from_mask_64u::scalar_native_conversion  | 10735ns | 10735ns  |
-| 1      | vec_from_mask_64u::vec2x64u_negation         | 6609ns  | 6609ns   |
-| 2      | vec_from_mask_64u::vec2x64u_move_mask        | 4763ns  | 4763ns   |
-| 2      | vec_from_mask_64u::vec4x64u_move_mask        | 947ns   | 947ns    |
-| 3      | vec_from_mask_64u::vec2x64u_masked_broadcast | 4808ns  | 4807ns   |
-| 3      | vec_from_mask_64u::vec4x64u_masked_broadcast | 942ns   | 942ns    |
-| 4      | vec_from_mask_64u::vec4x64u_negation         | 951ns   | 951ns    |
-| 5      | vec_from_mask_64u::vec8x64u_move_mask        | 271ns   | 271ns    |
-| 6      | vec_from_mask_64u::vec8x64u_masked_broadcast | 310ns   | 310ns    |
+| 0      | vec_from_mask_64u::scalar_native_conversion  | 11162ns | 11153ns  |
+| 1      | vec_from_mask_64u::vec8x64u_masked_broadcast | 306ns   | 306ns    |
+| 2      | vec_from_mask_64u::vec2x64u_negation         | 6600ns  | 6601ns   |
+| 3      | vec_from_mask_64u::vec4x64u_masked_broadcast | 938ns   | 938ns    |
+| 3      | vec_from_mask_64u::vec2x64u_masked_broadcast | 4799ns  | 4799ns   |
+| 4      | vec_from_mask_64u::vec4x64u_negation         | 943ns   | 943ns    |
+| 5      | vec_from_mask_64u::vec2x64u_move_mask        | 4817ns  | 4817ns   |
+| 5      | vec_from_mask_64u::vec4x64u_move_mask        | 953ns   | 953ns    |
+| 6      | vec_from_mask_64u::vec8x64u_move_mask        | 245ns   | 245ns    |
 
 
 ## vec_from_mask_8u
@@ -1058,30 +1440,30 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86, AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86, AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3
+* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512VL, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86, AVX512BW
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                              | Time    | CPU Time |
 | ------ | ------------------------------------------- | ------- | -------- |
-| 0      | vec_from_mask_8u::scalar_native_conversion  | 11232ns | 11231ns  |
-| 1      | vec_from_mask_8u::vec16x8u_negation         | 60.8ns  | 60.8ns   |
-| 1      | vec_from_mask_8u::vec64x8u_move_mask        | 3.60ns  | 3.60ns   |
-| 1      | vec_from_mask_8u::vec64x8u_masked_broadcast | 3.57ns  | 3.57ns   |
-| 1      | vec_from_mask_8u::vec32x8u_negation         | 17.1ns  | 17.1ns   |
-| 2      | vec_from_mask_8u::vec32x8u_negation         | 13.7ns  | 13.7ns   |
-| 2      | vec_from_mask_8u::vec16x8u_negation         | 59.0ns  | 59.1ns   |
-| 3      | vec_from_mask_8u::vec16x8u_move_mask        | 58.3ns  | 58.3ns   |
-| 3      | vec_from_mask_8u::vec32x8u_move_mask        | 14.0ns  | 14.0ns   |
-| 3      | vec_from_mask_8u::vec32x8u_masked_broadcast | 15.3ns  | 15.3ns   |
-| 3      | vec_from_mask_8u::vec16x8u_masked_broadcast | 60.6ns  | 60.6ns   |
+| 0      | vec_from_mask_8u::scalar_native_conversion  | 11163ns | 11157ns  |
+| 1      | vec_from_mask_8u::vec16x8u_negation         | 57.9ns  | 58.0ns   |
+| 1      | vec_from_mask_8u::vec32x8u_negation         | 15.2ns  | 15.2ns   |
+| 2      | vec_from_mask_8u::vec16x8u_masked_broadcast | 57.4ns  | 57.4ns   |
+| 2      | vec_from_mask_8u::vec32x8u_move_mask        | 13.6ns  | 13.6ns   |
+| 2      | vec_from_mask_8u::vec32x8u_masked_broadcast | 18.9ns  | 18.9ns   |
+| 2      | vec_from_mask_8u::vec16x8u_move_mask        | 60.7ns  | 60.7ns   |
+| 3      | vec_from_mask_8u::vec32x8u_negation         | 15.4ns  | 15.4ns   |
+| 3      | vec_from_mask_8u::vec16x8u_negation         | 58.8ns  | 58.8ns   |
+| 3      | vec_from_mask_8u::vec64x8u_move_mask        | 3.67ns  | 3.67ns   |
+| 3      | vec_from_mask_8u::vec64x8u_masked_broadcast | 3.65ns  | 3.65ns   |
 
 
 ## vec_from_scalar_16u
@@ -1091,15 +1473,15 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -1108,17 +1490,17 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 ### Results:
 | Config | Implementation                                       | Time   | CPU Time |
 | ------ | ---------------------------------------------------- | ------ | -------- |
-| 0      | vec_from_scalar_16u::scalar_identity                 | 4815ns | 4815ns   |
-| 1      | vec_from_scalar_16u::vec8x16u_mul_shuffle            | 9637ns | 9637ns   |
-| 1      | vec_from_scalar_16u::vec8x16u_unpack_shuffle         | 8558ns | 8557ns   |
-| 1      | vec_from_scalar_16u::vec8x16u_shift_shuffle          | 9656ns | 9655ns   |
-| 2      | vec_from_scalar_16u::vec16x16u_broadcast             | 6414ns | 6410ns   |
-| 2      | vec_from_scalar_16u::vec8x16u_broadcast_from_vector  | 7958ns | 7958ns   |
-| 2      | vec_from_scalar_16u::vec16x16u_broadcast_from_vector | 7482ns | 7483ns   |
-| 2      | vec_from_scalar_16u::vec8x16u_broadcast              | 6376ns | 6377ns   |
-| 3      | vec_from_scalar_16u::vec32x16u_broadcast             | 6778ns | 6779ns   |
-| 3      | vec_from_scalar_16u::vec32x16u_broadcast_from_vector | 8245ns | 8246ns   |
-| 4      | vec_from_scalar_16u::vec8x16u_pshufb                 | 7986ns | 7987ns   |
+| 0      | vec_from_scalar_16u::scalar_identity                 | 4813ns | 4798ns   |
+| 1      | vec_from_scalar_16u::vec32x16u_broadcast             | 6922ns | 6926ns   |
+| 1      | vec_from_scalar_16u::vec32x16u_broadcast_from_vector | 8442ns | 8443ns   |
+| 2      | vec_from_scalar_16u::vec8x16u_mul_shuffle            | 9727ns | 9728ns   |
+| 2      | vec_from_scalar_16u::vec8x16u_shift_shuffle          | 9641ns | 9623ns   |
+| 2      | vec_from_scalar_16u::vec8x16u_unpack_shuffle         | 8025ns | 8018ns   |
+| 3      | vec_from_scalar_16u::vec16x16u_broadcast             | 6382ns | 6379ns   |
+| 3      | vec_from_scalar_16u::vec8x16u_broadcast              | 6432ns | 6429ns   |
+| 3      | vec_from_scalar_16u::vec16x16u_broadcast_from_vector | 7991ns | 7988ns   |
+| 3      | vec_from_scalar_16u::vec8x16u_broadcast_from_vector  | 7472ns | 7470ns   |
+| 4      | vec_from_scalar_16u::vec8x16u_pshufb                 | 7415ns | 7414ns   |
 
 
 ## vec_from_scalar_32f
@@ -1128,7 +1510,7 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -1140,19 +1522,19 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                                       | Time   | CPU Time |
 | ------ | ---------------------------------------------------- | ------ | -------- |
-| 0      | vec_from_scalar_32f::scalar_identity                 | 2434ns | 2434ns   |
-| 1      | vec_from_scalar_32f::vec16x32f_broadcast             | 3353ns | 3353ns   |
-| 2      | vec_from_scalar_32f::vec4x32f_shuffle                | 3211ns | 3211ns   |
-| 3      | vec_from_scalar_32f::vec4x32f_broadcast              | 3203ns | 3204ns   |
-| 3      | vec_from_scalar_32f::vec8x32f_broadcast_from_vector  | 3179ns | 3180ns   |
-| 3      | vec_from_scalar_32f::vec4x32f_broadcast_from_vector  | 3204ns | 3204ns   |
-| 3      | vec_from_scalar_32f::vec8x32f_broadcast              | 3183ns | 3183ns   |
-| 4      | vec_from_scalar_32f::vec16x32f_broadcast_from_vector | 3321ns | 3321ns   |
+| 0      | vec_from_scalar_32f::scalar_identity                 | 2425ns | 2419ns   |
+| 1      | vec_from_scalar_32f::vec16x32f_broadcast_from_vector | 3393ns | 3394ns   |
+| 2      | vec_from_scalar_32f::vec4x32f_shuffle                | 3222ns | 3219ns   |
+| 3      | vec_from_scalar_32f::vec4x32f_broadcast_from_vector  | 3211ns | 3209ns   |
+| 3      | vec_from_scalar_32f::vec8x32f_broadcast              | 3186ns | 3185ns   |
+| 3      | vec_from_scalar_32f::vec8x32f_broadcast_from_vector  | 3191ns | 3191ns   |
+| 3      | vec_from_scalar_32f::vec4x32f_broadcast              | 3185ns | 3184ns   |
+| 4      | vec_from_scalar_32f::vec16x32f_broadcast             | 3274ns | 3277ns   |
 
 
 ## vec_from_scalar_32u
@@ -1162,7 +1544,7 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -1174,19 +1556,19 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                                       | Time   | CPU Time |
 | ------ | ---------------------------------------------------- | ------ | -------- |
-| 0      | vec_from_scalar_32u::scalar_identity                 | 2402ns | 2401ns   |
-| 1      | vec_from_scalar_32u::vec16x32u_broadcast             | 3351ns | 3351ns   |
-| 2      | vec_from_scalar_32u::vec4x32u_shuffle                | 3184ns | 3184ns   |
-| 3      | vec_from_scalar_32u::vec8x32u_broadcast              | 3186ns | 3186ns   |
-| 3      | vec_from_scalar_32u::vec4x32u_broadcast_from_vector  | 3207ns | 3207ns   |
-| 3      | vec_from_scalar_32u::vec8x32u_broadcast_from_vector  | 3205ns | 3205ns   |
-| 3      | vec_from_scalar_32u::vec4x32u_broadcast              | 3207ns | 3207ns   |
-| 4      | vec_from_scalar_32u::vec16x32u_broadcast_from_vector | 3334ns | 3334ns   |
+| 0      | vec_from_scalar_32u::scalar_identity                 | 2667ns | 2665ns   |
+| 1      | vec_from_scalar_32u::vec16x32u_broadcast_from_vector | 3391ns | 3392ns   |
+| 2      | vec_from_scalar_32u::vec4x32u_shuffle                | 3227ns | 3220ns   |
+| 3      | vec_from_scalar_32u::vec4x32u_broadcast_from_vector  | 3200ns | 3199ns   |
+| 3      | vec_from_scalar_32u::vec8x32u_broadcast_from_vector  | 3223ns | 3222ns   |
+| 3      | vec_from_scalar_32u::vec8x32u_broadcast              | 3214ns | 3213ns   |
+| 3      | vec_from_scalar_32u::vec4x32u_broadcast              | 3187ns | 3186ns   |
+| 4      | vec_from_scalar_32u::vec16x32u_broadcast             | 3271ns | 3273ns   |
 
 
 ## vec_from_scalar_64f
@@ -1196,7 +1578,7 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -1208,19 +1590,19 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                                      | Time   | CPU Time |
 | ------ | --------------------------------------------------- | ------ | -------- |
-| 0      | vec_from_scalar_64f::scalar_identity                | 1227ns | 1227ns   |
-| 1      | vec_from_scalar_64f::vec8x64f_broadcast             | 1673ns | 1673ns   |
-| 2      | vec_from_scalar_64f::vec2x64f_shuffle               | 1594ns | 1594ns   |
-| 3      | vec_from_scalar_64f::vec2x64f_broadcast             | 1610ns | 1608ns   |
-| 3      | vec_from_scalar_64f::vec4x64f_broadcast             | 1603ns | 1603ns   |
-| 3      | vec_from_scalar_64f::vec2x64f_movedup               | 1611ns | 1611ns   |
-| 3      | vec_from_scalar_64f::vec4x64f_broadcast_from_vector | 1603ns | 1604ns   |
-| 4      | vec_from_scalar_64f::vec8x64f_broadcast_from_vector | 1662ns | 1662ns   |
+| 0      | vec_from_scalar_64f::scalar_identity                | 1205ns | 1204ns   |
+| 1      | vec_from_scalar_64f::vec8x64f_broadcast_from_vector | 1688ns | 1688ns   |
+| 2      | vec_from_scalar_64f::vec2x64f_shuffle               | 1596ns | 1596ns   |
+| 3      | vec_from_scalar_64f::vec4x64f_broadcast             | 1614ns | 1614ns   |
+| 3      | vec_from_scalar_64f::vec2x64f_broadcast             | 1607ns | 1606ns   |
+| 3      | vec_from_scalar_64f::vec4x64f_broadcast_from_vector | 1621ns | 1620ns   |
+| 3      | vec_from_scalar_64f::vec2x64f_movedup               | 1597ns | 1597ns   |
+| 4      | vec_from_scalar_64f::vec8x64f_broadcast             | 1644ns | 1644ns   |
 
 
 ## vec_from_scalar_64u
@@ -1230,7 +1612,7 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -1242,19 +1624,19 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 ### Results:
 | Config | Implementation                                      | Time   | CPU Time |
 | ------ | --------------------------------------------------- | ------ | -------- |
-| 0      | vec_from_scalar_64u::scalar_identity                | 1343ns | 1342ns   |
-| 1      | vec_from_scalar_64u::vec8x64u_broadcast             | 1675ns | 1675ns   |
-| 2      | vec_from_scalar_64u::vec2x64u_shuffle               | 1604ns | 1604ns   |
-| 3      | vec_from_scalar_64u::vec2x64u_broadcast             | 1601ns | 1601ns   |
-| 3      | vec_from_scalar_64u::vec2x64u_broadcast_from_vector | 1592ns | 1593ns   |
-| 3      | vec_from_scalar_64u::vec4x64u_broadcast_from_vector | 1596ns | 1596ns   |
-| 3      | vec_from_scalar_64u::vec4x64u_broadcast             | 1599ns | 1599ns   |
-| 4      | vec_from_scalar_64u::vec8x64u_broadcast_from_vector | 1668ns | 1668ns   |
+| 0      | vec_from_scalar_64u::scalar_identity                | 1351ns | 1350ns   |
+| 1      | vec_from_scalar_64u::vec8x64u_broadcast_from_vector | 1694ns | 1695ns   |
+| 2      | vec_from_scalar_64u::vec2x64u_shuffle               | 1613ns | 1611ns   |
+| 3      | vec_from_scalar_64u::vec2x64u_broadcast             | 1597ns | 1596ns   |
+| 3      | vec_from_scalar_64u::vec4x64u_broadcast             | 1602ns | 1601ns   |
+| 3      | vec_from_scalar_64u::vec4x64u_broadcast_from_vector | 1612ns | 1611ns   |
+| 3      | vec_from_scalar_64u::vec2x64u_broadcast_from_vector | 1593ns | 1592ns   |
+| 4      | vec_from_scalar_64u::vec8x64u_broadcast             | 1643ns | 1644ns   |
 
 
 ## vec_from_scalar_8u
@@ -1264,15 +1646,15 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 
 #### Config 1
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* SSE2, X86
+* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 2
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* SSE2, X86
 
 #### Config 3
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-* AVX512BW, AVX512F, AVX2, FMA, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
+* AVX2, AVX, SSE42, SSE41, SSSE3, POPCNT, SSE3, SSE2, X86
 
 #### Config 4
 * g++-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
@@ -1281,13 +1663,13 @@ CPU: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
 ### Results:
 | Config | Implementation                                     | Time    | CPU Time |
 | ------ | -------------------------------------------------- | ------- | -------- |
-| 0      | vec_from_scalar_8u::scalar_identity                | 8564ns  | 8564ns   |
-| 1      | vec_from_scalar_8u::vec16x8u_unpack_shuffle        | 16131ns | 16131ns  |
-| 2      | vec_from_scalar_8u::vec16x8u_broadcast_from_vector | 12878ns | 12863ns  |
-| 2      | vec_from_scalar_8u::vec32x8u_broadcast             | 12849ns | 12852ns  |
-| 2      | vec_from_scalar_8u::vec32x8u_broadcast_from_vector | 12932ns | 12934ns  |
-| 2      | vec_from_scalar_8u::vec16x8u_broadcast             | 12805ns | 12807ns  |
-| 3      | vec_from_scalar_8u::vec64x8u_broadcast             | 13491ns | 13493ns  |
-| 3      | vec_from_scalar_8u::vec64x8u_broadcast_from_vector | 13572ns | 13573ns  |
-| 4      | vec_from_scalar_8u::vec16x8u_pshufb                | 12783ns | 12784ns  |
+| 0      | vec_from_scalar_8u::scalar_identity                | 8545ns  | 8540ns   |
+| 1      | vec_from_scalar_8u::vec64x8u_broadcast_from_vector | 13733ns | 13737ns  |
+| 1      | vec_from_scalar_8u::vec64x8u_broadcast             | 13676ns | 13677ns  |
+| 2      | vec_from_scalar_8u::vec16x8u_unpack_shuffle        | 16222ns | 16214ns  |
+| 3      | vec_from_scalar_8u::vec32x8u_broadcast             | 12981ns | 12975ns  |
+| 3      | vec_from_scalar_8u::vec16x8u_broadcast_from_vector | 12758ns | 12754ns  |
+| 3      | vec_from_scalar_8u::vec16x8u_broadcast             | 12691ns | 12688ns  |
+| 3      | vec_from_scalar_8u::vec32x8u_broadcast_from_vector | 12920ns | 12918ns  |
+| 4      | vec_from_scalar_8u::vec16x8u_pshufb                | 12821ns | 12821ns  |
 
