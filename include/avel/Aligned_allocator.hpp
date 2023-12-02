@@ -48,8 +48,8 @@ namespace avel {
         using difference_type = std::ptrdiff_t;
 
         template<class U>
-        class rebind {
-            using other = Aligned_allocator<U>;
+        struct rebind {
+            using other = avel::Aligned_allocator<U, Alignment>;
         };
 
         //=================================================
