@@ -1249,7 +1249,10 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64f fmax(vec2x64f a, vec2x64f b) {
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
+        return vec2x64f{_mm_range_pd(decay(a), decay(b), 0x05)};
+
+        #elif defined(AVEL_SSE2)
         return blend(avel::isnan(b), a, avel::max(a, b));
         #endif
 
@@ -1260,7 +1263,10 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64f fmin(vec2x64f a, vec2x64f b) {
-        #if defined(AVEL_SSE2)
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
+        return vec2x64f{_mm_range_pd(decay(a), decay(b), 0x04)};
+
+        #elif defined(AVEL_SSE2)
         return blend(avel::isnan(b), a, avel::min(a, b));
         #endif
 

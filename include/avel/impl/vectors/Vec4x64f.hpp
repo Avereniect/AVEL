@@ -281,7 +281,7 @@ namespace avel {
         auto mask = b << N;
         return mask4x64f{__mmask8((decay(m) & ~mask) | mask)};
 
-        #elif defined(AVEL_AVX2)
+        #elif defined(AVEL_AVX)
         auto ret = _mm256_blend_pd(decay(m), _mm256_castsi256_pd(_mm256_set1_epi64x(b ? -1ll : 0)), 1 << N);
         return mask4x64f{ret};
 
@@ -908,12 +908,22 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x64f fmax(vec4x64f a, vec4x64f b) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
+        return vec4x64f{_mm256_range_pd(decay(a), decay(b), 0x05)};
+
+        #elif defined(AVEL_AVX2)
         return blend(avel::isnan(b), a, avel::max(a, b));
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x64f fmin(vec4x64f a, vec4x64f b) {
+        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)
+        return vec4x64f{_mm256_range_pd(decay(a), decay(b), 0x04)};
+
+        #elif defined(AVEL_AVX2)
         return blend(avel::isnan(b), a, avel::min(a, b));
+        #endif
     }
 
     //=====================================================

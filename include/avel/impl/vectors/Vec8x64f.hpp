@@ -643,12 +643,22 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64f fmax(vec8x64f a, vec8x64f b) {
+        #if defined(AVEL_AVX512DQ)
+        return vec8x64f{_mm512_range_pd(decay(a), decay(b), 0x05)};
+
+        #elif defined(AVEL_AVX512F)
         return blend(avel::isnan(b), a, avel::max(a, b));
+        #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x64f fmin(vec8x64f a, vec8x64f b) {
+        #if defined(AVEL_AVX512DQ)
+        return vec8x64f{_mm512_range_pd(decay(a), decay(b), 0x04)};
+
+        #elif defined(AVEL_AVX512F)
         return blend(avel::isnan(b), a, avel::min(a, b));
+        #endif
     }
 
     //=====================================================
