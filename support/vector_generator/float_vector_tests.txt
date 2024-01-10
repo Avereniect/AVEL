@@ -1583,6 +1583,37 @@ namespace avel_tests {
         }
     }
 
+    TEST($<Vector_alias>, frac_edge_cases) {
+        $<vector_alias> pos_zero{+0.0};
+        $<vector_alias> neg_zero{-0.0};
+        $<vector_alias> pos_inf{+INFINITY};
+        $<vector_alias> neg_inf{-INFINITY};
+        $<vector_alias> nan{NAN};
+
+        EXPECT_TRUE(all(pos_zero == avel::frac(pos_zero)));
+        EXPECT_TRUE(all(neg_zero == avel::frac(neg_zero)));
+        EXPECT_TRUE(all(avel::isnan(avel::frac(pos_inf))));
+        EXPECT_TRUE(all(avel::isnan(avel::frac(neg_inf))));
+        EXPECT_TRUE(all(avel::isnan(avel::frac(nan))));
+    }
+
+    TEST($<Vector_alias>, frac_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<$<array_alias>>();
+
+            $<vector_alias> v{inputs};
+
+            auto results = avel::frac(v);
+
+            $<array_alias> expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = avel::frac(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == $<vector_alias>{expected}));
+        }
+    }
+
     //=====================================================
     // Nearest Integer Operations
     //=====================================================
