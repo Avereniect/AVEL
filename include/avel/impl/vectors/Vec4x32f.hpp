@@ -1323,7 +1323,7 @@ namespace avel {
     }
 
     //=====================================================
-    // Cmath functions
+    // General floating-point math operations
     //=====================================================
 
     [[nodiscard]]
@@ -1352,6 +1352,11 @@ namespace avel {
         #if defined(AVEL_NEON)
         return vec4x32f{vminnmq_f32(decay(a), decay(b))};
         #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x32f frac(vec4x32f v) {
+        return v - avel::trunc(v);
     }
 
     //=====================================================

@@ -200,8 +200,6 @@ vector insert(vector v, scalar x)
 * produces `-INF` if `v` is `+INF` or `-INF`
 * produces `NAN` if `v` is `NAN`
 
-
-
 ### Load/Store operations
 ```
 template<class V, N = V::width>  
@@ -295,6 +293,14 @@ vector aligned_load(const scalar* p, std::uint32_t n)
 `vector fmin(vector a, vector b)`
 * for each lane, produces the greater of `a` and `b`
 * if one of `a` or `b` is `NAN` then produces the other
+
+`vector frac(vector x)`
+* for each lane, computes the fractional component of `x`
+* produces `+0.0` if `x` is `+0.0`
+* produces `-0.0` if `x` is `-0.0`
+* produces `NAN` if `x` ix `+INF` 
+* produces `NAN` if `x` ix `-INF` 
+* produces `x` if `x` is `NAN`
 
 #### Nearest Integer Operations
 `vector ceil(vector v)`

@@ -592,7 +592,7 @@ namespace avel {
     }
 
     //=====================================================
-    // Cmath functions
+    // General floating-point math operations
     //=====================================================
 
     [[nodiscard]]
@@ -603,6 +603,11 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec1x64f fmin(vec1x64f a, vec1x64f b) {
         return vec1x64f{avel::fmin(decay(a), decay(b))};
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec1x64f frac(vec1x64f v) {
+        return vec1x64f{frac(decay(v))};
     }
 
     //=====================================================

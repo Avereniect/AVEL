@@ -668,7 +668,7 @@ namespace avel {
     }
 
     //=====================================================
-    // cmath basic operations
+    // General floating-point math operations
     //=====================================================
 
     [[nodiscard]]
@@ -689,6 +689,11 @@ namespace avel {
         #elif defined(AVEL_AVX512F)
         return blend(avel::isnan(b), a, avel::min(a, b));
         #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec16x32f frac(vec16x32f v) {
+        return v - avel::trunc(v);
     }
 
     //=====================================================

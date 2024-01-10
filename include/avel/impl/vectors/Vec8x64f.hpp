@@ -15,6 +15,7 @@ namespace avel {
     // Forward declarations
     //=====================================================
 
+    AVEL_FINL vec8x64f trunc(vec8x64f x);
     AVEL_FINL vec8x64f fmod(vec8x64f a, vec8x64f b);
     AVEL_FINL mask8x64f isnan(vec8x64f v);
     AVEL_FINL vec8x64f copysign(vec8x64f mag, vec8x64f sign);
@@ -638,7 +639,7 @@ namespace avel {
     }
 
     //=====================================================
-    // Cmath functions
+    // General floating-point math operations
     //=====================================================
 
     [[nodiscard]]
@@ -659,6 +660,11 @@ namespace avel {
         #elif defined(AVEL_AVX512F)
         return blend(avel::isnan(b), a, avel::min(a, b));
         #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x64f frac(vec8x64f v) {
+        return v - avel::trunc(v);
     }
 
     //=====================================================

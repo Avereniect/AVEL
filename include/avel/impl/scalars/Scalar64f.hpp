@@ -144,6 +144,39 @@ namespace avel {
         }
     }
 
+    /*
+    [[nodiscard]]
+    AVEL_FINL double fmod(double x, double y) {
+        if (avel::isnan(x) | avel::isnan(y) | avel::isinf(x) | y == 0.0f) {
+            return NAN;
+        }
+
+        if (avel::isinf(y)) {
+            return x;
+        }
+
+        if (avel::abs(x) < avel::abs(y)) {
+            return x;
+        }
+
+        //TODO: Complete implementation
+        return 0.0f;
+    }
+    */
+
+    [[nodiscard]]
+    AVEL_FINL double frac(double x) {
+        if ((x == 0.0) || (x != x)) {
+            return x;
+        }
+
+        if (avel::abs(x) == INFINITY) {
+            return NAN;
+        }
+
+        return x - avel::trunc(x);
+    }
+
     //=====================================================
     // Power Functions
     //=====================================================
