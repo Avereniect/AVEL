@@ -1669,6 +1669,37 @@ namespace avel_tests {
         }
     }
 
+    TEST(Vec8x32f, frac_edge_cases) {
+        vec8x32f pos_zero{+0.0};
+        vec8x32f neg_zero{-0.0};
+        vec8x32f pos_inf{+INFINITY};
+        vec8x32f neg_inf{-INFINITY};
+        vec8x32f nan{NAN};
+
+        EXPECT_TRUE(all(pos_zero == avel::frac(pos_zero)));
+        EXPECT_TRUE(all(neg_zero == avel::frac(neg_zero)));
+        EXPECT_TRUE(all(avel::isnan(avel::frac(pos_inf))));
+        EXPECT_TRUE(all(avel::isnan(avel::frac(neg_inf))));
+        EXPECT_TRUE(all(avel::isnan(avel::frac(nan))));
+    }
+
+    TEST(Vec8x32f, frac_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr8x32f>();
+
+            vec8x32f v{inputs};
+
+            auto results = avel::frac(v);
+
+            arr8x32f expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = avel::frac(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec8x32f{expected}));
+        }
+    }
+
     //=====================================================
     // Nearest Integer Operations
     //=====================================================
