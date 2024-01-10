@@ -1696,6 +1696,8 @@ namespace avel {
         return vec4x32u{ret};
 
         #elif defined(AVEL_SSE2)
+        //TODO: Don't use expensive multiplication
+
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
         x = x - ((x >> 1) & vec4x32u{0x55555555u});
         x = (x & vec4x32u{0x33333333u}) + ((x >> 2) & vec4x32u{0x33333333u});

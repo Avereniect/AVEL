@@ -1308,8 +1308,7 @@ namespace avel {
         return vec8x16u{_mm_max_epu16(decay(a), decay(b))};
 
         #elif defined(AVEL_SSE2)
-        auto m = a < b;
-        return blend(a < b, b, a);
+        return avel::blend(a < b, b, a);
 
         #endif
 
@@ -2050,10 +2049,7 @@ namespace avel {
         auto partial_sum1 = _mm_shuffle_epi8(table, index1);
 
         auto byte_sums = _mm_add_epi8(partial_sum0, partial_sum1);
-
-        auto short_sums = _mm_add_epi16(byte_sums, _mm_slli_epi16(byte_sums, 8));
-        auto ret = _mm_srli_epi16(short_sums, 8);
-
+        auto ret = _mm_maddubs_epi16(byte_sums, _mm_set1_epi8(0x01));
         return vec8x16u{ret};
 
         #elif defined(AVEL_SSE2)

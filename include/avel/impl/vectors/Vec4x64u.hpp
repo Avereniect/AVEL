@@ -490,16 +490,12 @@ namespace avel {
             content = _mm256_mullo_epi64(content, rhs.content);
 
             #elif defined(AVEL_AVX2)
-            //TODO: Consider alternative approach based on emulation using
-            // 32-bit multiplication
-            auto c0 = std::uint64_t(_mm256_extract_epi64(content, 0)) * std::uint64_t(_mm256_extract_epi64(decay(rhs), 0));
-            auto c1 = std::uint64_t(_mm256_extract_epi64(content, 1)) * std::uint64_t(_mm256_extract_epi64(decay(rhs), 1));
-            auto c2 = std::uint64_t(_mm256_extract_epi64(content, 2)) * std::uint64_t(_mm256_extract_epi64(decay(rhs), 2));
-            auto c3 = std::uint64_t(_mm256_extract_epi64(content, 3)) * std::uint64_t(_mm256_extract_epi64(decay(rhs), 3));
+            auto t0 = _mm256_mul_epu32(content, decay(rhs));
+            auto t1 = _mm256_mul_epu32(_mm256_srli_epi64(decay(rhs), 32), content);
+            auto t2 = _mm256_mul_epu32(_mm256_srli_epi64(content, 32), decay(rhs));
 
-            auto result = _mm256_set_epi64x(c3, c2, c1, c0);
-
-            content = result;
+            auto t3 = _mm256_slli_epi64(_mm256_add_epi32(t1, t2), 32);
+            content = _mm256_add_epi32(t0, t3);
 
             #endif
             return *this;
@@ -1136,13 +1132,15 @@ namespace avel {
         return vec4x64u{_mm256_srli_epi64(tmp4, 48)};
 
         #elif defined(AVEL_AVX2)
-        //TODO: Consider alternative implementations
-        auto c0 = popcount(extract<0>(v));
-        auto c1 = popcount(extract<1>(v));
-        auto c2 = popcount(extract<2>(v));
-        auto c3 = popcount(extract<3>(v));
+        // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+        v = v - ((v >> 1) & vec4x64u{0x5555555555555555ull});
+        v = ((v >> 2) & vec4x64u{0x3333333333333333ull}) + (v & vec4x64u{0x3333333333333333ull});
+        v = ((v >> 4) + v) & vec4x64u{0x0F0F0F0F0F0F0F0Full};
+        v = ((v >> 8) + v) & vec4x64u{0x00FF00FF00FF00FFull};
+        v = ((v >> 16) + v) & vec4x64u{0x0000FFFF0000FFFFull};
+        v = ((v >> 32) + v) & vec4x64u{0x00000000FFFFFFFFull};
 
-        return vec4x64u{_mm256_set_epi64x(c3, c2, c1, c0)};
+        return vec4x64u{v};
         #endif
     }
 
@@ -1152,6 +1150,7 @@ namespace avel {
         return vec4x64u{_mm256_lzcnt_epi64(decay(v))};
 
         #elif defined(AVEL_AVX2)
+        //TODO: Consider alternative approaches
         auto c0 = countl_zero(extract<0>(v));
         auto c1 = countl_zero(extract<1>(v));
         auto c2 = countl_zero(extract<2>(v));
@@ -1181,6 +1180,7 @@ namespace avel {
         return blend(zero_mask, vec4x64u{64}, z);
 
         #elif defined(AVEL_AVX2)
+        //TODO: Consider alternative approaches
         auto c0 = countr_zero(extract<0>(v));
         auto c1 = countr_zero(extract<1>(v));
         auto c2 = countr_zero(extract<2>(v));

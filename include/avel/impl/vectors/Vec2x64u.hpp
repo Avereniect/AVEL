@@ -708,6 +708,9 @@ namespace avel {
             #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)) || defined(AVEL_AVX10_1)
             content = _mm_mullo_epi64(content, rhs.content);
 
+            //TODO: Consider alternative approach based on emulation using
+            // 32-bit multiplication
+
             #elif defined(AVEL_SSE41)
             auto lhs_lo = _mm_cvtsi128_si64(content);
             auto lhs_hi = _mm_extract_epi64(content, 0x1);
@@ -724,16 +727,13 @@ namespace avel {
             content = out;
 
             #elif defined(AVEL_SSE2)
-            auto lhs_lo = _mm_cvtsi128_si64(content);
-            auto lhs_hi = _mm_cvtsi128_si64(_mm_srli_si128(content, 0x8));
+            auto t0 = _mm_mul_epu32(content, decay(rhs));
+            auto t1 = _mm_mul_epu32(_mm_srli_epi64(decay(rhs), 32), content);
+            auto t2 = _mm_mul_epu32(_mm_srli_epi64(content, 32), decay(rhs));
 
-            auto rhs_lo = _mm_cvtsi128_si64(decay(rhs));
-            auto rhs_hi = _mm_cvtsi128_si64(_mm_srli_si128(decay(rhs), 0x8));
+            auto t3 = _mm_slli_epi64(_mm_add_epi32(t1, t2), 32);
+            content = _mm_add_epi32(t0, t3);
 
-            auto out_lo = _mm_cvtsi64_si128(std::uint64_t(lhs_lo) * std::uint64_t(rhs_lo));
-            auto out_hi = _mm_cvtsi64_si128(std::uint64_t(lhs_hi) * std::uint64_t(rhs_hi));
-
-            content = _mm_or_si128(out_lo, _mm_slli_si128(out_hi, 0x8));
             #endif
 
             #if defined(AVEL_NEON) && defined(AVEL_AARCH64)
@@ -1369,19 +1369,12 @@ namespace avel {
         return vec2x64u{_mm_shuffle_epi8(decay(v), indices)};
 
         #elif defined(AVEL_SSE2)
-        //TODO: Adjust implementation to work on 64-bit integers
-        alignas(16) static constexpr std::uint32_t mask_data[4]{
-            0x00000000,
-            0xFFFFFFFF,
-            0x00000000,
-            0xFFFFFFFF
-        };
-
         auto t0 = _mm_shufflelo_epi16(decay(v), 0x1B);
         auto t1 = _mm_shufflehi_epi16(t0, 0x1B);
         auto t2 = _mm_slli_epi16(t1, 0x8);
         auto t3 = _mm_srli_epi16(t1, 0x8);
         return vec2x64u{_mm_or_si128(t2, t3)};
+
         #endif
 
         #if defined(AVEL_NEON)
@@ -1686,7 +1679,6 @@ namespace avel {
         return vec2x64u{_mm_popcnt_epi64(decay(v))};
 
         #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512BITALG)
-        //TODO: Check if this is any faster than the scalar approach
         auto tmp0 = _mm_popcnt_epi16(decay(v));
         auto tmp1 = _mm_slli_epi64(tmp0, 32);
         auto tmp2 = _mm_add_epi32(tmp0, tmp1);

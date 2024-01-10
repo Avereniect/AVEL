@@ -493,35 +493,19 @@ namespace avel {
             #elif defined(AVEL_SSE42)
             return mask{_mm_cmpgt_epi64(decay(rhs), decay(lhs))};
 
-            #elif defined(AVEL_SSE41)
-            std::int64_t lhs_lo = _mm_cvtsi128_si64(decay(lhs));
-            std::int64_t lhs_hi = _mm_extract_epi64(decay(lhs), 0x1);
-
-            std::int64_t rhs_lo = _mm_cvtsi128_si64(decay(rhs));
-            std::int64_t rhs_hi = _mm_extract_epi64(decay(rhs), 0x1);
-
-            auto out_lo = lhs_lo < rhs_lo;
-            auto out_hi = lhs_hi < rhs_hi;
-
-            auto out = _mm_cvtsi64_si128(out_lo);
-            out = _mm_insert_epi64(out, out_hi, 0x1);
-
-            auto zeros = _mm_setzero_si128();
-            return mask{_mm_sub_epi64(zeros, out)};
-
             #elif defined(AVEL_SSE2)
-            std::int64_t lhs_lo = _mm_cvtsi128_si64(decay(lhs));
-            std::int64_t lhs_hi = _mm_cvtsi128_si64(_mm_srli_si128(decay(lhs), 0x8));
 
-            std::int64_t rhs_lo = _mm_cvtsi128_si64(decay(rhs));
-            std::int64_t rhs_hi = _mm_cvtsi128_si64(_mm_srli_si128(decay(rhs), 0x8));
+            auto t0 = decay(lhs);
+            auto t1 = decay(rhs);
 
-            auto out_lo = _mm_cvtsi64_si128(lhs_lo < rhs_lo);
-            auto out_hi = _mm_cvtsi64_si128(lhs_hi < rhs_hi);
+            auto c0 = _mm_cmplt_epi32(t0, t1);
+            auto c1 = _mm_cmplt_epi32(t1, t0);
+            auto c2 = _mm_cmpeq_epi32(t0, t1);
+            auto c3 = _mm_slli_epi64(c0, 32);
 
-            auto zeros = _mm_setzero_si128();
-            auto ret = _mm_or_si128(out_lo, _mm_slli_si128(out_hi, 0x8));
-            return mask{_mm_sub_epi64(zeros, ret)};
+            auto comparison_result = _mm_or_si128(c0, _mm_and_si128(_mm_andnot_si128(c1, c2), c3));
+            auto ret = _mm_shuffle_epi32(comparison_result, 0xf5);
+            return mask{ret};
 
             #endif
 

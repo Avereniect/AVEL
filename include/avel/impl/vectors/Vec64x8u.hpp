@@ -384,18 +384,17 @@ namespace avel {
         }
         AVEL_FINL Vector& operator*=(Vector rhs) {
             #if defined(AVEL_AVX512BW)
-            auto even_mask = _mm512_set1_epi16(0x00FF);
+            constexpr std::uint64_t odd_mask = 0xaaaaaaaaaaaaaaaaull;
 
-            auto products_even = _mm512_and_si512(even_mask, _mm512_mullo_epi16(content, decay(rhs)));
-            auto products_odd  = _mm512_mullo_epi16(
+            auto even_products = _mm512_mullo_epi16(content, decay(rhs));
+            auto odd_products = _mm512_mullo_epi16(
                 _mm512_srli_epi16(content, 8),
-                _mm512_andnot_si512(even_mask, decay(rhs))
+                _mm512_maskz_mov_epi8(odd_mask, decay(rhs))
             );
 
-            auto products = _mm512_or_si512(products_even, products_odd);
+            auto products = _mm512_mask_blend_epi8(odd_mask, even_products, odd_products);
             content = products;
 
-            //TODO: Explicitly use vpternlogd
             #endif
             return *this;
         }
@@ -1277,7 +1276,6 @@ namespace avel {
         */
 
         /*
-        //TODO: Further optimize
         auto l = bit_width(y - vec64x8u{1});
 
         // Compute m via lookup

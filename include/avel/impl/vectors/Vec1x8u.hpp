@@ -366,22 +366,22 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator<<=(long long rhs) {
-            content = (rhs >= 8) ? 0x00 : (content << rhs);
+            content = static_cast<primitive>(std::uint16_t(content) << rhs);
             return *this;
         }
 
         AVEL_FINL Vector& operator>>=(long long rhs) {
-            content = (rhs >= 8) ? 0x00 : (content >> rhs);
+            content = static_cast<primitive>(std::uint16_t(content) >> rhs);
             return *this;
         }
 
         AVEL_FINL Vector& operator<<=(Vector rhs) {
-            content = (decay(rhs) >= 8) ? 0x00 : (content << decay(rhs));
+            content = static_cast<primitive>(std::uint16_t(content) << decay(rhs));
             return *this;
         }
 
         AVEL_FINL Vector& operator>>=(Vector rhs) {
-            content = (decay(rhs) >= 8) ? 0x00 : (content >> decay(rhs));
+            content = static_cast<primitive>(std::uint16_t(content) >> decay(rhs));
             return *this;
         }
 

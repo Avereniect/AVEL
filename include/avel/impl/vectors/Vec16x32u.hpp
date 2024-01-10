@@ -852,10 +852,11 @@ namespace avel {
 
         #elif defined(AVEL_AVX512F)
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
-        v = v - ((v >> 1) & vec16x32u{0x55555555});                    // reuse input as temporary
-        v = (v & vec16x32u{0x33333333}) + ((v >> 2) & vec16x32u{0x33333333});     // temp
-        v = ((v + (v >> 4) & vec16x32u{0xF0F0F0F}) * vec16x32u{0x1010101}) >> 24; // count
+        v = v - ((v >> 1) & vec16x32u{0x55555555});
+        v = (v & vec16x32u{0x33333333}) + ((v >> 2) & vec16x32u{0x33333333});
+        v = ((v + (v >> 4) & vec16x32u{0xF0F0F0F}) * vec16x32u{0x1010101}) >> 24;
         return v;
+
         #endif
     }
 

@@ -1132,11 +1132,9 @@ namespace avel {
         auto partial_sum1 = _mm256_shuffle_epi8(table, index1);
 
         auto byte_sums = _mm256_add_epi8(partial_sum0, partial_sum1);
-
-        auto short_sums = _mm256_add_epi16(byte_sums, _mm256_slli_epi16(byte_sums, 8));
-        auto ret = _mm256_srli_epi16(short_sums, 8);
-
+        auto ret = _mm256_maddubs_epi16(byte_sums, _mm256_set1_epi8(0x01));
         return vec16x16u{ret};
+
         #endif
     }
 

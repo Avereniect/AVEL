@@ -929,10 +929,7 @@ namespace avel {
         auto partial_sum1 = _mm512_shuffle_epi8(table, index1);
 
         auto byte_sums = _mm512_add_epi8(partial_sum0, partial_sum1);
-
-        auto short_sums = _mm512_add_epi16(byte_sums, _mm512_slli_epi16(byte_sums, 8));
-        auto ret = _mm512_srli_epi16(short_sums, 8);
-
+        auto ret = _mm512_maddubs_epi16(byte_sums, _mm512_set1_epi8(0x01));
         return vec32x16u{ret};
 
         #endif

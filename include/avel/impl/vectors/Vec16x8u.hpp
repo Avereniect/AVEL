@@ -2717,14 +2717,16 @@ namespace avel {
 
         #elif defined(AVEL_SSE2)
         // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
-        // Due to lack of 8-bit multiply instructions, the solution that doesn't
-        // use multiplication is chosen here
-        v = v - ((v >> 1) & vec16x8u{0x55});
-        v = (v & vec16x8u{0x33}) + ((v >> 2) & vec16x8u{0x33});
-        v = (v + (v >> 4)) & vec16x8u{0x0F};
-        //TODO: Consider if 8-bit shift emulation overhead could be eliminated
+        const auto m0 = _mm_set1_epi8(0x55);
+        const auto m1 = _mm_set1_epi8(0x33);
+        const auto m2 = _mm_set1_epi8(0x0f);
 
-        return v;
+        auto t = decay(v);
+        t = _mm_sub_epi8(t, _mm_and_si128(_mm_srli_epi16(t,  1), m0));
+        t = _mm_add_epi8(_mm_and_si128(t, m1), _mm_and_si128(_mm_srli_epi16(t, 2), m1));
+        t = _mm_and_si128(_mm_add_epi8(t, _mm_srli_epi16(t, 4)), m2);
+
+        return vec16x8u{t};
 
         #endif
 

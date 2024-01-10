@@ -1094,6 +1094,7 @@ namespace avel {
         auto indices = _mm256_load_si256((const __m256i*)index_data);
         auto ret = vec8x32u{_mm256_shuffle_epi8(decay(v), indices)};
         return ret;
+
         #endif
     }
 

@@ -416,8 +416,15 @@ namespace avel {
         AVEL_FINL Vector& operator*=(Vector rhs) {
             #if defined(AVEL_AVX512DQ)
             content = _mm512_mullo_epi64(content, decay(rhs));
+
             #elif defined(AVEL_AVX512F)
-            content = _mm512_mullox_epi64(content, rhs.content);
+            auto t0 = _mm512_mul_epu32(content, decay(rhs));
+            auto t1 = _mm512_mul_epu32(_mm512_srli_epi64(decay(rhs), 32), content);
+            auto t2 = _mm512_mul_epu32(_mm512_srli_epi64(content, 32), decay(rhs));
+
+            auto t3 = _mm512_slli_epi64(_mm512_add_epi32(t1, t2), 32);
+            content = _mm512_add_epi32(t0, t3);
+
             #endif
             return *this;
         }
@@ -998,17 +1005,15 @@ namespace avel {
         return vec8x64u{_mm512_srli_epi64(tmp4, 48)};
 
         #elif defined(AVEL_AVX512F)
-        //TODO: Consider alternative implementations
-        auto c0 = popcount(extract<0>(v));
-        auto c1 = popcount(extract<1>(v));
-        auto c2 = popcount(extract<2>(v));
-        auto c3 = popcount(extract<3>(v));
-        auto c4 = popcount(extract<4>(v));
-        auto c5 = popcount(extract<5>(v));
-        auto c6 = popcount(extract<6>(v));
-        auto c7 = popcount(extract<7>(v));
+        // https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+        v = v - ((v >> 1) & vec8x64u{0x5555555555555555ull});
+        v = ((v >> 2) & vec8x64u{0x3333333333333333ull}) + (v & vec8x64u{0x3333333333333333ull});
+        v = ((v >> 4) + v) & vec8x64u{0x0F0F0F0F0F0F0F0Full};
+        v = ((v >> 8) + v) & vec8x64u{0x00FF00FF00FF00FFull};
+        v = ((v >> 16) + v) & vec8x64u{0x0000FFFF0000FFFFull};
+        v = ((v >> 32) + v) & vec8x64u{0x00000000FFFFFFFFull};
 
-        return vec8x64u{_mm512_set_epi64(c7, c6, c5, c4, c3, c2, c1, c0)};
+        return vec8x64u{v};
 
         #endif
     }
@@ -1018,9 +1023,8 @@ namespace avel {
         #if defined(AVEL_AVX512CD)
         return vec8x64u{_mm512_lzcnt_epi64(decay(v))};
 
-        //TODO: Consider alternative approaches
-
         #elif defined(AVEL_AVX512F)
+        //TODO: Consider alternative approaches
         auto c0 = countl_zero(extract<0>(v));
         auto c1 = countl_zero(extract<1>(v));
         auto c2 = countl_zero(extract<2>(v));
@@ -1049,13 +1053,14 @@ namespace avel {
         auto tz_mask = _mm512_andnot_si512(decay(v), _mm512_add_epi64(decay(v), neg_one));
         return vec8x64u{_mm512_popcnt_epi64(tz_mask)};
 
-        #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
+        #elif defined(AVEL_AVX512CD)
         auto zero_mask = (v == vec8x64u{0x00});
         auto y = (v & (vec8x64u{0x00} - v));
         auto z = vec8x64u{63} - countl_zero(y);
         return blend(zero_mask, vec8x64u{64}, z);
 
         #elif defined(AVEL_AVX512F)
+        //TODO: Consider alternatives
         auto c0 = countr_zero(extract<0>(v));
         auto c1 = countr_zero(extract<1>(v));
         auto c2 = countr_zero(extract<2>(v));
@@ -1084,7 +1089,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64u bit_floor(vec8x64u v) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
+        #if defined(AVEL_AVX512CD)
         vec8x64u leading_zeros = countl_zero(v);
         mask8x64u zero_mask = (leading_zeros != vec8x64u{64});
 
@@ -1104,7 +1109,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x64u bit_ceil(vec8x64u v) {
-        #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)
+        #if defined(AVEL_AVX512CD)
         auto sh = (vec8x64u{64} - countl_zero(v - vec8x64u{1}));
         auto result = vec8x64u{1} << sh;
         return result - set_bits(v == vec8x64u{0x00});

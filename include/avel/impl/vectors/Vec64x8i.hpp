@@ -492,8 +492,8 @@ namespace avel {
             */
 
             #if defined(AVEL_AVX512BW)
-            //TODO: Optimize
-            auto sign_bits = _mm512_cmplt_epi8_mask(content, _mm512_setzero_si512());
+            //TODO: Optimize further
+            auto sign_bits = _mm512_movepi8_mask(content);
             auto lo = _mm512_unpacklo_epi8(content, _mm512_movm_epi8(sign_bits));
             auto hi = _mm512_unpackhi_epi8(content, _mm512_movm_epi8(sign_bits));
 
