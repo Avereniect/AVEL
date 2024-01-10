@@ -646,7 +646,7 @@ namespace avel {
             #elif defined(AVEL_NEON)
             //TODO: Implement a better emulation
             auto recip = vrecpeq_f32(decay(rhs));
-            content = vmul_f32(content, recip);
+            content = vmulq_f32(content, recip);
 
             #endif
             return *this;

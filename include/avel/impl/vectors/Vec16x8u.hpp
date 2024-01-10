@@ -3013,7 +3013,7 @@ namespace avel {
 
         #elif defined(AVEL_NEON)
         auto neg_one = vdupq_n_u8(-1);
-        auto tz_mask = 	vbicq_u8(vaddq_u8(decay(v), neg_one), decay(x));
+        auto tz_mask = 	vbicq_u8(vaddq_u8(decay(v), neg_one), decay(v));
         return vec16x8u{vcntq_u8(tz_mask)};
 
         #endif
