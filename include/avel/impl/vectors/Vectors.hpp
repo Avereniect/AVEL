@@ -111,12 +111,74 @@ namespace avel {
     //=====================================================
 
     template<class V0, class V1 = V0, class = typename std::enable_if<std::is_same<V0, V1>::value>::type>
+    [[nodiscard]]
     AVEL_FINL std::array<V0, 1> convert(V1 v) {
         return {v};
     }
 
     template<class V0, class V1 = V0, class = typename std::enable_if<!std::is_same<V0, V1>::value>::type>
+    [[nodiscard]]
     AVEL_FINL std::array<V0, V1::width / V0::width + bool(V1::width % V0::width)> convert(V1 v);
+
+    /*
+    template<
+        class V,
+        class = typename avel::enable_if_vector_or_vector_mask_t<V>
+    >
+    [[nodiscard]]
+    AVEL_FINL std::array<V, 1> convert(V v) {
+        return v;
+    }
+
+    template<
+        class V0,
+        class V1 = V0,
+        class = typename avel::enable_if_vector_or_vector_mask_t<V0>,
+        class = typename avel::enable_if_vector_or_vector_mask_t<V1>
+    >
+    [[nodiscard]]
+    AVEL_FINL std::array<V0, V1::width / V0::width + bool(V1::width % V0::width)> convert(V1 v);
+    */
+
+
+    /*
+    template<
+        class V,
+        class = typename avel::enable_if_vector_or_vector_mask_t<V>
+    >
+    [[nodiscard]]
+    AVEL_FINL V widen(V v) {
+        return v;
+    }
+
+    template<
+        class V0,
+        class V1 = V0,
+        class = typename avel::enable_if_vector_or_vector_mask_t<V0>,
+        class = typename avel::enable_if_vector_or_vector_mask_t<V1>,
+        class = typename std::enable_if<std::is_same<typename V0::scalar, typename V1::scalar>::value>::type
+    >
+    [[nodiscard]]
+    AVEL_FINL V0 widen(V1 v);
+    */
+
+/*
+#include "Widen.hpp"
+
+#include "Zero_extend.hpp"
+
+    template<
+        class V0,
+        class V1,
+        class = typename avel::enable_if_integer_vector_t<V0>,
+        class = typename avel::enable_if_integer_vector_t<V1>,
+        class = typename std::enable_if<sizeof(V0::scalar) >= sizeof(V1::scalar)>::type
+    >
+    [[nodiscard]]
+    AVEL_FINL std::array<V0, V1::width / V0::width + bool(V1::width % V0::width)> zero_extend(V1 v) {
+        return avel_impl::zero_extend<V0, V1>(v, V0{});
+    }
+*/
 
     //=====================================================
     // Integer comparison functions

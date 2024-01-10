@@ -78,18 +78,11 @@ namespace avel {
         //=================================================
 
         static vec16x32u mulhi(vec16x32u x, vec16x32u y) {
-            #if defined(AVEL_AVX2)
             vec16x32u lo{_mm512_srli_epi64(_mm512_mul_epu32(decay(x), decay(y)), 32)};
             vec16x32u hi{_mm512_mul_epu32(_mm512_srli_epi64(decay(x), 32), _mm512_srli_epi64(decay(y), 32))};
 
-            mask16x32u m{{
-                false, true, false, true,
-                false, true, false, true,
-                false, true, false, true,
-                false, true, false, true
-            }};
+            mask16x32u m{mask16x32u::primitive(0xaaaa)};
             return blend(m, hi, lo);
-            #endif
         }
 
         static vec16x32u compute_m(vec16x32u l, vec16x32u d) {

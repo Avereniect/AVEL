@@ -97,6 +97,8 @@ static_assert(false, "POPCNT feature flag was not passed to compiler");
 static_assert(false, "POPCNT feature flag was not passed to compiler");
 #endif
 
+
+
 // ARM capabilities
 
 #if defined(AVEL_AARCH64) && !defined(__ARM_ARCH_ISA_A64)
@@ -106,9 +108,5 @@ static_assert(false, "Compiler not targetting Aarch64");
 #if defined(AVEL_NEON) && !defined(__ARM_NEON)
 static_assert(false, "Neon feature flag was not passed to compiler");
 #endif
-
-
-
-//TODO: Handle ARM features
 
 #endif //AVEL_VERIFY_CAPABILITIES_HPP
