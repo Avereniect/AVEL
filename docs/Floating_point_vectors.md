@@ -294,6 +294,18 @@ vector aligned_load(const scalar* p, std::uint32_t n)
 * for each lane, produces the greater of `a` and `b`
 * if one of `a` or `b` is `NAN` then produces the other
 
+`vector fmod(vector x, vector y)`
+* for each lane, computes the remainder of the division of `x` by `y`
+* produces `+0.0` if `x` is `+0.0` and `y != 0.0f` 
+* produces `-0.0` if `x` is `-0.0` and `y != 0.0f`
+* produces `NAN` if `x` is `+INF` and `y` is not `NAN`
+* produces `NAN` if `x` is `-INF` and `y` is not `NAN`
+* produces `NAN` if `x` is not `NAN` and `y` is `+0.0f`
+* produces `NAN` if `x` is not `NAN` and `y` is `-0.0f`
+* produces `x` if `x` is finite and `y` is `+INF`
+* produces `x` if `x` is finite and `y` is `-INF`
+* produces `NAN` if `x` is `NAN` or `y` is `NAN`
+
 `vector frac(vector x)`
 * for each lane, computes the fractional component of `x`
 * produces `+0.0` if `x` is `+0.0`
