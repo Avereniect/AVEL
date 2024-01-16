@@ -54,6 +54,15 @@ namespace avel {
             return div(lhs, rhs).rem;
         }
 
+        //=================================================
+        // Accessors
+        //=================================================
+
+        [[nodiscard]]
+        AVEL_FINL vec1x64i value() const {
+            return vec1x64i{m.value()};
+        }
+
     private:
 
         //=================================================

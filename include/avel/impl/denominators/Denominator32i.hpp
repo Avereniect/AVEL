@@ -58,6 +58,15 @@ namespace avel {
             return div(lhs, rhs).rem;
         }
 
+        //=================================================
+        // Accessors
+        //=================================================
+
+        [[nodiscard]]
+        AVEL_FINL std::int32_t value() const {
+            return d;
+        }
+
     private:
 
         //=================================================
