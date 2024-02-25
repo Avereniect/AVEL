@@ -34,13 +34,13 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint64_t div_64uhi_by_64u(std::uint64_t x, std::uint64_t y) {
-        #if defined(AVEL_GCC) || defined(AVEL_CLANG)
+        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG))
         std::uint64_t quot;
         std::uint64_t rem;
         __asm__("divq %[v]" : "=a"(quot), "=d"(rem) : [v] "r"(y), "a"(0), "d"(x));
         return quot;
 
-        #elif defined(AVEL_ICPX)
+        #elif defined(AVEL_X86) && defined(AVEL_ICPX)
         std::uint64_t quot;
         std::uint64_t rem;
         __asm__("div %[v]" : "=a"(quot), "=d"(rem) : [v] "r"(y), "a"(0), "d"(x));

@@ -94,7 +94,7 @@ namespace avel {
     constexpr std::uint32_t max_width_32f = 8;
     constexpr std::uint32_t max_width_64f = 4;
 
-#elif defined(AVEL_SSE2) || defined(AVEL_NEON)
+#elif defined(AVEL_SSE2)
     constexpr std::uint32_t natural_width_8u = 16;
     constexpr std::uint32_t natural_width_16u = 8;
     constexpr std::uint32_t natural_width_32u = 4;

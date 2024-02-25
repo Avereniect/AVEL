@@ -2262,10 +2262,10 @@ namespace avel {
         return vec8x16u{vclzq_u16(vreinterpretq_u16_u8(reversed_bits))};
 
         #elif defined(AVEL_NEON)
-        auto zero_mask = (x == vec8x16u{0x00});
-        x &= vec8x16u{0x00} - x;
+        auto zero_mask = (v == vec8x16u{0x00});
+        v &= vec8x16u{0x00} - v;
 
-        auto ret = (vec8x16u{15} - countl_zero(x));
+        auto ret = (vec8x16u{15} - countl_zero(v));
         ret = blend(zero_mask, vec8x16u{16}, ret);
         return ret;
 
