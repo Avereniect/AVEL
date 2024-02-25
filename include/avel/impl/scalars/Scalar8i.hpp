@@ -4,6 +4,13 @@
 namespace avel {
 
     //=====================================================
+    // Forward declarations
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL std::int8_t abs(std::int8_t x);
+
+    //=====================================================
     // Bit manipulation
     //=====================================================
 
@@ -41,6 +48,11 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::int8_t countr_one(std::int8_t x) {
         return countr_one(std::uint8_t(x));
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::int8_t countl_sign(std::int8_t x) {
+        return avel::countl_zero(std::uint8_t(x ^ (x >> 1))) - 1;
     }
 
     [[nodiscard]]

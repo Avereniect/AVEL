@@ -60,6 +60,40 @@ namespace avel {
             return div(lhs, rhs).rem;
         }
 
+        AVEL_FINL Denom16u& operator<<=(std::uint16_t s) {
+            auto effective_s = avel::max(avel::countl_zero(d), s);
+
+            d <<= s;
+            sh2 += effective_s;
+
+            return *this;
+        }
+
+        AVEL_FINL Denom16u& operator>>=(std::uint16_t s) {
+            auto effective_s = avel::min(avel::countr_zero(d), s);
+
+            d >>= s;
+            sh2 -= effective_s;
+
+            return *this;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL Denom16u operator<<(std::uint16_t s) const {
+            Denom16u ret = *this;
+            ret <<= s;
+
+            return ret;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL Denom16u operator>>(std::uint16_t s) const {
+            Denom16u ret = *this;
+            ret >>= s;
+
+            return ret;
+        }
+
         //=================================================
         // Accessors
         //=================================================

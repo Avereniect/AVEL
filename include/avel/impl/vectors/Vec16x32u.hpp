@@ -935,57 +935,19 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec16x32u countl_zero(vec16x32u x) {
+    AVEL_FINL vec16x32u countl_zero(vec16x32u v) {
         #if defined(AVEL_AVX512CD)
-        return vec16x32u{_mm512_lzcnt_epi32(decay(x))};
-
-        #elif defined(AVEL_AVX512BW)
-        //http://www.icodeguru.com/Embedded/Hacker%27s-Delight/040.htm
-
-        //Isolate the lowest set bit
-        x = _mm512_andnot_si512(_mm512_srli_epi32(decay(x), 1), decay(x));
-
-        // Convert to floats
-        auto floats = _mm512_add_ps(_mm512_cvtepi32_ps(decay(x)), _mm512_set1_ps(0.5f));
-
-        // Extract exponents
-        auto biased_exponents = _mm512_srli_epi32(_mm512_castps_si512(floats), 23);
-
-        //Remove bias
-        auto lzcnt = _mm512_subs_epu16(_mm512_set1_epi32(158), biased_exponents);
-        return vec16x32u{lzcnt};
-
-        #elif defined(AVEL_AVX512DQ)
-        auto high_bit_mask = _mm512_knot(_mm512_movepi32_mask(decay(x)));
-
-        //Isolate the lowest set bit
-        x = _mm512_andnot_si512(_mm512_srli_epi32(decay(x), 1), decay(x));
-
-        // Convert to floats
-        auto floats = _mm512_add_ps(_mm512_cvtepi32_ps(decay(x)), _mm512_set1_ps(0.5f));
-
-        // Extract exponents
-        auto biased_exponents = _mm512_srli_epi32(_mm512_castps_si512(floats), 23);
-
-        // Remove bias
-        auto lzcnt = _mm512_mask_sub_epi32(_mm512_setzero_si512(), high_bit_mask, _mm512_set1_epi32(158), biased_exponents);
-        return vec16x32u{lzcnt};
+        return vec16x32u{_mm512_lzcnt_epi32(decay(v))};
 
         #elif defined(AVEL_AVX512F)
-        auto high_bit_mask = _mm512_cmpgt_epi32_mask(decay(x), _mm512_set1_epi32(-1));
+        __m512 as_floats = _mm512_cvt_roundepu32_ps(decay(v), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+        __m512 as_floats_adjusted = _mm512_add_round_ps(as_floats, _mm512_set1_ps(0.5f), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
 
-        //Isolate the lowest set bit
-        x = _mm512_andnot_si512(_mm512_srli_epi32(decay(x), 1), decay(x));
+        __m512i float_bits = _mm512_castps_si512(as_floats_adjusted);
+        __m512i exponent = _mm512_srli_epi32(float_bits, 23);
 
-        // Convert to floats
-        auto floats = _mm512_add_ps(_mm512_cvtepi32_ps(decay(x)), _mm512_set1_ps(0.5f));
-
-        // Extract exponents
-        auto biased_exponents = _mm512_srli_epi32(_mm512_castps_si512(floats), 23);
-
-        // Remove bias
-        auto lzcnt = _mm512_mask_sub_epi32(_mm512_setzero_si512(), high_bit_mask, _mm512_set1_epi32(158), biased_exponents);
-        return vec16x32u{lzcnt};
+        __m512i result = _mm512_sub_epi32(_mm512_set1_epi32(126 + 32), exponent);
+        return vec16x32u{result};
 
         #endif
     }

@@ -427,16 +427,21 @@ void scatter(scalar* p, ivector indices, vector x)
 * for each lane, computes the number of set bits in `v`
 
 `vector countl_zero(vector v)`
-* for each lane, computes the number of contiguous high bits which aren't set
+* for each lane, counts the number of contiguous high bits which aren't set
 
 `vector countl_one(vector v)`
-* for each lane, computes the number of contiguous high bits which are set
+* for each lane, counts the number of contiguous high bits which are set
 
 `vector countr_zero(vector v)`
-* for each lane, computes the number of contiguous low bits which aren't set
+* for each lane, counts the number of contiguous low bits which aren't set
 
 `vector countr_one(vector v)`
-* for each lane, computes the number of contiguous low bits which are set
+* for each lane, counts the number of contiguous low bits which are set
+
+`vector countl_sign(vector v)`
+* for each lane, counts the number of leading bits with the same value as 
+  the sign bit, not counting the sign bit itself
+* only available if `T` is a signed integer type
 
 `vector bit_floor(vector v)`
 * for each lane, rounds `v` down to the previous power of two
@@ -445,8 +450,8 @@ void scatter(scalar* p, ivector indices, vector x)
   undefined
 
 `vector bit_width(vector v)`
-* for each lane, computes the number of bits necessary to represent the 
-    value in `v`
+* for each lane, computes the number of bits necessary to represent the value in
+  `v`
 
 `vector bit_ceil(vector b)`
 * for each lane, rounds `v` up to the next power of two

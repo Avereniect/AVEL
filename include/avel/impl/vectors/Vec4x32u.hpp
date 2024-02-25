@@ -1755,25 +1755,46 @@ namespace avel {
     }
 
     [[nodiscard]]
-    AVEL_FINL vec4x32u countl_zero(vec4x32u x) {
+    AVEL_FINL vec4x32u countl_zero(vec4x32u v) {
         #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512CD)) || defined(AVEL_AVX10_1)
-        return vec4x32u{_mm_lzcnt_epi32(decay(x))};
+        return vec4x32u{_mm_lzcnt_epi32(decay(v))};
+
+        // TODO: Use AVX10 rounded instructions
+        #elif defined(AVEL_AVX512VL)
+        __m512 as_floats = _mm512_maskz_cvt_roundepu32_ps(0x000f, _mm512_castsi128_si512(decay(v)), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+        __m512 as_floats_adjusted = _mm512_maskz_add_round_ps(0x000f, as_floats, _mm512_set1_ps(0.5f), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+
+        __m128i float_bits = _mm_castps_si128(_mm512_castps512_ps128(as_floats_adjusted));
+        __m128i exponent = _mm_srli_epi32(float_bits, 23);
+
+        __m128i result = _mm_sub_epi32(_mm_set1_epi32(126 + 32), exponent);
+        return vec4x32u{result};
 
         #elif defined(AVEL_SSE2)
         //http://www.icodeguru.com/Embedded/Hacker%27s-Delight/040.htm
 
-        x = _mm_andnot_si128(_mm_srli_epi32(decay(x), 1), decay(x));
-        auto floats = _mm_add_ps(_mm_cvtepi32_ps(decay(x)), _mm_set1_ps(0.5f));
+        // Isolate leading bit
+        v = _mm_andnot_si128(_mm_srli_epi32(decay(v), 1), decay(v));
+
+        // Convert to floats
+        auto floats = _mm_add_ps(_mm_cvtepi32_ps(decay(v)), _mm_set1_ps(0.5f));
+
+        // Extract exponent
         auto biased_exponents = _mm_srli_epi32(_mm_castps_si128(floats), 23);
+
+        // Compute lzcnt from exponent
         auto lzcnt = _mm_subs_epu16(_mm_set1_epi32(158), biased_exponents);
+
+        // If v's leading bit is set then the exponent
+        // extraction will include it. The saturated
+        // subtraction ensures the result is 0.
+
         return vec4x32u{lzcnt};
 
-        //#else
-        //return countl_one(~x);
         #endif
 
         #if defined(AVEL_NEON)
-        return vec4x32u{vclzq_u32(decay(x))};
+        return vec4x32u{vclzq_u32(decay(v))};
         #endif
     }
 

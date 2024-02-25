@@ -223,7 +223,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool any(mask32x8u m) {
         #if defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
-        return !_kortestz_mask16_u8(decay(m), decay(m));
+        return !_kortestz_mask32_u8(decay(m), decay(m));
 
         #elif defined(AVEL_AVX2)
         return _mm256_movemask_epi8(decay(m));

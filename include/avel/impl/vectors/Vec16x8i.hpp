@@ -2007,6 +2007,17 @@ namespace avel {
 
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec16x8i, mask16x8i, vec16x8u)
 
+    [[nodiscard]]
+    AVEL_FINL vec16x8i countl_sign(vec16x8i v) {
+        #if defined(AVEL_NEON)
+        return vec16x8i{vclsq_s8(decay(v))};
+
+        #else
+        return avel::countl_zero((v ^ avel::bit_shift_right<1>(v))) - vec16x8i{1};
+
+        #endif
+    }
+
 }
 
 #endif //AVEL_VEC16X8I_HPP

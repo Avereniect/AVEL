@@ -1223,6 +1223,11 @@ namespace avel {
 
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec4x64i, mask4x64i, vec4x64u)
 
+    [[nodiscard]]
+    AVEL_FINL vec4x64i countl_sign(vec4x64i v) {
+        return avel::countl_zero((v ^ avel::bit_shift_right<1>(v))) - vec4x64i{1};
+    }
+
 }
 
 #endif //AVEL_VEC4X64I_HPP

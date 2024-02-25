@@ -3,6 +3,17 @@
 
 namespace avel {
 
+    //=====================================================
+    // Forward declarations
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL std::int32_t abs(std::int32_t x);
+
+    //=====================================================
+    // Bit manipulation
+    //=====================================================
+
     template<>
     [[nodiscard]]
     AVEL_FINL std::int32_t set_bits<std::int32_t>(bool x) {
@@ -37,6 +48,11 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::int32_t countr_one(std::int32_t v) {
         return std::int32_t(countr_one(std::uint32_t(v)));
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::int32_t countl_sign(std::int32_t x) {
+        return avel::countl_zero(std::uint32_t(x ^ (x >> 1))) - 1;
     }
 
     [[nodiscard]]

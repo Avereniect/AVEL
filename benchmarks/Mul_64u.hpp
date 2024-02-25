@@ -73,6 +73,24 @@ namespace avel::benchmarks::mul_64u {
 
     #endif
 
+
+
+    #if defined(AVEL_PCLMULQDQ)
+
+    vec2x64u vec2x64u_vpclmulqdq_impl(vec2x64u v, vec2x64u w) {
+        auto prod_even = _mm_clmulepi64_si128(decay(v), decay(w), 0x00);
+        auto prod_odd  = _mm_clmulepi64_si128(decay(v), decay(w), 0x11);
+        auto products = _mm_unpackhi_epi64(prod_even, prod_odd);
+
+        return vec2x64u{products};
+    }
+
+    auto vec2x64u_vpclmulqdq = vector_test_bench<vec2x64u, vec2x64u_vpclmulqdq_impl>;
+
+    BENCHMARK(mul_64u::vec2x64u_vpclmulqdq);
+
+    #endif
+
     //=====================================================
     // vec4x64u benchmarks
     //=====================================================
@@ -108,6 +126,24 @@ namespace avel::benchmarks::mul_64u {
 
     #endif
 
+
+
+    #if defined(AVEL_AVX512VL) && defined(AVEL_PCLMULQDQ)
+
+    vec4x64u vec4x64u_vpclmulqdq_impl(vec4x64u v, vec4x64u w) {
+        auto prod_even = _mm256_clmulepi64_epi128(decay(v), decay(w), 0x00);
+        auto prod_odd  = _mm256_clmulepi64_epi128(decay(v), decay(w), 0x11);
+        auto products = _mm256_unpackhi_epi64(prod_even, prod_odd);
+
+        return vec4x64u{products};
+    }
+
+    auto vec4x64u_vpclmulqdq = vector_test_bench<vec4x64u, vec4x64u_vpclmulqdq_impl>;
+
+    BENCHMARK(mul_64u::vec4x64u_vpclmulqdq);
+
+    #endif
+
     //=====================================================
     // vec8x64u benchmarks
     //=====================================================
@@ -140,6 +176,24 @@ namespace avel::benchmarks::mul_64u {
     auto vec8x64u_mullq = vector_test_bench<vec8x64u, vec8x64u_mullq_impl>;
 
     BENCHMARK(mul_64u::vec8x64u_mullq);
+
+    #endif
+
+
+
+    #if defined(AVEL_AVX512F) && defined(AVEL_PCLMULQDQ)
+
+    vec8x64u vec8x64u_vpclmulqdq_impl(vec8x64u v, vec8x64u w) {
+        auto prod_even = _mm512_clmulepi64_epi128(decay(v), decay(w), 0x00);
+        auto prod_odd  = _mm512_clmulepi64_epi128(decay(v), decay(w), 0x11);
+        auto products = _mm512_unpackhi_epi64(prod_even, prod_odd);
+
+        return vec8x64u{products};
+    }
+
+    auto vec8x64u_vpclmulqdq = vector_test_bench<vec8x64u, vec8x64u_vpclmulqdq_impl>;
+
+    BENCHMARK(mul_64u::vec8x64u_vpclmulqdq);
 
     #endif
 

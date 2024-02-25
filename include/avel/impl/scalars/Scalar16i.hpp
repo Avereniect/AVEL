@@ -4,6 +4,13 @@
 namespace avel {
 
     //=====================================================
+    // Forward declarations
+    //=====================================================
+
+    [[nodiscard]]
+    AVEL_FINL std::int16_t abs(std::int16_t x);
+
+    //=====================================================
     // Bit manipulation
     //=====================================================
 
@@ -41,6 +48,11 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL std::int16_t countr_one(std::int16_t x) {
         return countr_one(std::uint16_t(x));
+    }
+
+    [[nodiscard]]
+    AVEL_FINL std::int16_t countl_sign(std::int16_t x) {
+        return avel::countl_zero(std::uint16_t(x ^ (x >> 1))) - 1;
     }
 
     [[nodiscard]]

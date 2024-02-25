@@ -54,6 +54,32 @@ namespace avel {
             return div(lhs, rhs).rem;
         }
 
+        AVEL_FINL Denom1x16i& operator<<=(vec1x16i s) {
+            m <<= decay(s);
+            return *this;
+        }
+
+        AVEL_FINL Denom1x16i& operator>>=(vec1x16i s) {
+            m >>= decay(s);
+            return *this;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL Denom1x16i operator<<(vec1x16i s) const {
+            Denom1x16i ret = *this;
+            ret <<= s;
+
+            return ret;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL Denom1x16i operator>>(vec1x16i s) const {
+            Denom1x16i ret = *this;
+            ret >>= s;
+
+            return ret;
+        }
+
         //=================================================
         // Accessors
         //=================================================

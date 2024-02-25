@@ -1719,6 +1719,15 @@ namespace avel {
 
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec4x32i, mask4x32i, vec4x32u)
 
+    [[nodiscard]]
+    AVEL_FINL vec4x32i countl_sign(vec4x32i v) {
+        #if defined(AVEL_NEON)
+        return vec4x32i{vclsq_s32(decay(v))};
+        #else
+        return avel::countl_zero((v ^ avel::bit_shift_right<1>(v))) - vec4x32i{1};
+        #endif
+    }
+
 }
 
 #endif

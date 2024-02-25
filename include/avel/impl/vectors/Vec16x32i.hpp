@@ -896,6 +896,11 @@ namespace avel {
 
     AVEL_SIGNED_VECTOR_BIT_FUNCTIONS(vec16x32i, mask16x32i, vec16x32u)
 
+    [[nodiscard]]
+    AVEL_FINL vec16x32i countl_sign(vec16x32i v) {
+        return avel::countl_zero((v ^ avel::bit_shift_right<1>(v))) - vec16x32i{1};
+    }
+
 }
 
 #endif //AVEL_VEC16X32I_HPP

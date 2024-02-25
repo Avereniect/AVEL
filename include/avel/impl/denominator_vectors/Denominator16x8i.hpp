@@ -64,6 +64,40 @@ namespace avel {
             return div(lhs, rhs).rem;
         }
 
+        AVEL_FINL Denom16x8i& operator<<=(vec16x8i s) {
+            auto effective_s = avel::max(avel::countl_sign(d), s);
+
+            d <<= s;
+            sh += effective_s;
+
+            return *this;
+        }
+
+        AVEL_FINL Denom16x8i& operator>>=(vec16x8i s) {
+            auto effective_s = avel::min(avel::countr_zero(d), s);
+
+            d >>= s;
+            sh -= effective_s;
+
+            return *this;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL Denom16x8i operator<<(vec16x8i s) const {
+            Denom16x8i ret = *this;
+            ret <<= s;
+
+            return ret;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL Denom16x8i operator>>(vec16x8i s) const {
+            Denom16x8i ret = *this;
+            ret >>= s;
+
+            return ret;
+        }
+
         //=================================================
         // Accessors
         //=================================================

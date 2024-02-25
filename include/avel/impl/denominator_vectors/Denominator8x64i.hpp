@@ -64,6 +64,40 @@ namespace avel {
             return div(lhs, rhs).rem;
         }
 
+        AVEL_FINL Denom8x64i& operator<<=(vec8x64i s) {
+            auto effective_s = avel::min(avel::countl_sign(d), s);
+
+            d <<= s;
+            sh += effective_s;
+
+            return *this;
+        }
+
+        AVEL_FINL Denom8x64i& operator>>=(vec8x64i s) {
+            auto effective_s = avel::min(avel::countr_zero(d), s);
+
+            d >>= s;
+            sh -= effective_s;
+
+            return *this;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL Denom8x64i operator<<(vec8x64i s) const {
+            Denom8x64i ret = *this;
+            ret <<= s;
+
+            return ret;
+        }
+
+        [[nodiscard]]
+        AVEL_FINL Denom8x64i operator>>(vec8x64i s) const {
+            Denom8x64i ret = *this;
+            ret >>= s;
+
+            return ret;
+        }
+
         //=================================================
         // Accessors
         //=================================================
@@ -89,7 +123,14 @@ namespace avel {
         //=================================================
 
         static vec8x64i mulhi(vec8x64i x, vec8x64i y) {
-            #if defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX)
+            #if defined(AVEL_AVX512F) && defined(AVEL_PCLMULQDQ)
+            auto prod0 = _mm512_clmulepi64_epi128(decay(x), decay(y), 0x00);
+            auto prod1 = _mm512_clmulepi64_epi128(decay(x), decay(y), 0x11);
+
+            auto ret = _mm512_unpackhi_epi64(prod0, prod1);
+            return vec8x64i{ret};
+
+            #elif defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX)
             std::int64_t x0 = extract<0>(x);
             std::int64_t x1 = extract<1>(x);
             std::int64_t x2 = extract<2>(x);

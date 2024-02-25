@@ -950,6 +950,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec8x64u> div(vec8x64u x, vec8x64u y) {
+        //TODO: Implement alternative solution
         auto n0 = extract<0>(x);
         auto n1 = extract<1>(x);
         auto n2 = extract<2>(x);
@@ -1023,18 +1024,34 @@ namespace avel {
         #if defined(AVEL_AVX512CD)
         return vec8x64u{_mm512_lzcnt_epi64(decay(v))};
 
-        #elif defined(AVEL_AVX512F)
-        //TODO: Consider alternative approaches
-        auto c0 = countl_zero(extract<0>(v));
-        auto c1 = countl_zero(extract<1>(v));
-        auto c2 = countl_zero(extract<2>(v));
-        auto c3 = countl_zero(extract<3>(v));
-        auto c4 = countl_zero(extract<4>(v));
-        auto c5 = countl_zero(extract<5>(v));
-        auto c6 = countl_zero(extract<6>(v));
-        auto c7 = countl_zero(extract<7>(v));
+        #elif defined(AVEL_AVX512DQ)
+        __m512d as_floats = _mm512_cvt_roundepu64_pd(decay(v), _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC);
+        __m512d as_floats_adjusted = _mm512_add_round_pd(as_floats, _mm512_set1_pd(0.5), _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC);
 
-        return vec8x64u{_mm512_set_epi64(c7, c6, c5, c4, c3, c2, c1, c0)};
+        __m512i float_bits = _mm512_castpd_si512(as_floats_adjusted);
+        __m512i exponent = _mm512_srli_epi64(float_bits, 52);
+
+        __m512i result = _mm512_sub_epi64(_mm512_set1_epi64(1022 + 64), exponent);
+        return vec8x64u{result};
+
+        #elif defined(AVEL_AVX512F)
+        // Compute leading zero counts within 32-bit integers
+        __m512 as_floats = _mm512_cvt_roundepu32_ps(decay(v), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+        __m512 as_floats_adjusted = _mm512_add_round_ps(as_floats, _mm512_set1_ps(0.5f), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+
+        __m512i float_bits = _mm512_castps_si512(as_floats_adjusted);
+        __m512i exponent = _mm512_srli_epi32(float_bits, 23);
+
+        __m512i partial_results = _mm512_sub_epi32(_mm512_set1_epi32(126 + 32), exponent);
+
+        // Combine 32-bit results into 64-bit results
+        __m512i even_results = _mm512_maskz_mov_epi32(0x5555, partial_results);
+        __m512i  odd_results = _mm512_srli_epi64(partial_results, 32);
+
+        __m512i threshold = _mm512_set1_epi64(std::uint64_t(32ull) << 32);
+        __mmask16 mask = _mm512_cmpge_epu64_mask(partial_results, threshold);
+        __m512i results = _mm512_mask_add_epi64(odd_results, mask, odd_results, even_results);
+        return vec8x64u{results};
 
         #endif
     }
@@ -1053,24 +1070,11 @@ namespace avel {
         auto tz_mask = _mm512_andnot_si512(decay(v), _mm512_add_epi64(decay(v), neg_one));
         return vec8x64u{_mm512_popcnt_epi64(tz_mask)};
 
-        #elif defined(AVEL_AVX512CD)
+        #elif defined(AVEL_AVX512F)
         auto zero_mask = (v == vec8x64u{0x00});
         auto y = (v & (vec8x64u{0x00} - v));
         auto z = vec8x64u{63} - countl_zero(y);
         return blend(zero_mask, vec8x64u{64}, z);
-
-        #elif defined(AVEL_AVX512F)
-        //TODO: Consider alternatives
-        auto c0 = countr_zero(extract<0>(v));
-        auto c1 = countr_zero(extract<1>(v));
-        auto c2 = countr_zero(extract<2>(v));
-        auto c3 = countr_zero(extract<3>(v));
-        auto c4 = countr_zero(extract<4>(v));
-        auto c5 = countr_zero(extract<5>(v));
-        auto c6 = countr_zero(extract<6>(v));
-        auto c7 = countr_zero(extract<7>(v));
-
-        return vec8x64u{_mm512_set_epi64(c7, c6, c5, c4, c3, c2, c1, c0)};
 
         #endif
     }
