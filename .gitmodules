@@ -4,3 +4,21 @@
 [submodule "external/benchmark"]
 	path = external/benchmark
 	url = https://github.com/google/benchmark.git
+[submodule "benchmarks/foreign/highway"]
+	path = benchmarks/foreign/highway
+	url = https://github.com/google/highway
+[submodule "benchmarks/foreign/sleef"]
+	path = benchmarks/foreign/sleef
+	url = https://github.com/shibatch/sleef
+[submodule "benchmarks/foreign/simde"]
+	path = benchmarks/foreign/simde
+	url = https://github.com/simd-everywhere/simde
+[submodule "benchmarks/foreign/vectorclass"]
+	path = benchmarks/foreign/vectorclass
+	url = https://github.com/vectorclass/version2
+[submodule "benchmarks/foreign/std-simd"]
+	path = benchmarks/foreign/std-simd
+	url = https://github.com/VcDevel/std-simd
+[submodule "benchmarks/foreign/eve"]
+	path = benchmarks/foreign/eve
+	url = https://github.com/jfalcou/eve

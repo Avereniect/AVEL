@@ -21,3 +21,5 @@ if(supported)
 else()
     message(STATUS "IPO / LTO not supported: <${error}>")
 endif()
+
+add_subdirectory(foreign/)

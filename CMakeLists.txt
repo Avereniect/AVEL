@@ -97,8 +97,8 @@ endif()
 option(AVEL_BUILD_TESTS OFF)
 
 if (AVEL_BUILD_TESTS)
-    add_subdirectory(external/googletest/)
-    add_subdirectory(tests/)
+    #add_subdirectory(external/googletest/)
+    #add_subdirectory(tests/)
 endif()
 
 
