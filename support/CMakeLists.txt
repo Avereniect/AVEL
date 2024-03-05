@@ -1,8 +1,10 @@
-add_executable(AVEL_function_evaluator
-    function_evalutator.cpp
-)
+add_subdirectory(error_evaluator/)
 
 ## Function evaluator
+
+add_executable(AVEL_function_evaluator
+    function_evaluator.cpp
+)
 
 target_compile_options(AVEL_function_evaluator PRIVATE "-O3" "-ffp-contract=off" "" "") #"-fsanitize=undefined")
 target_link_options(AVEL_function_evaluator PRIVATE) #"-fsanitize=undefined")

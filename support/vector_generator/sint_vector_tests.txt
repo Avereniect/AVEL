@@ -2167,6 +2167,33 @@ $END
         }
     }
 
+    TEST($<Vector_alias>, Countl_sign_edge_cases) {
+        EXPECT_TRUE(all(countl_sign($<vector_alias>{0x00}) == $<vector_alias>{type_width<$<vector_alias>::scalar>::value - 1}));
+        for (std::size_t i = 0; i < (type_width<$<vector_alias>::scalar>::value - 1); ++i) {
+            $<vector_alias>::scalar v = $<vector_alias>::scalar(-1) << i;
+            $<vector_alias> expected = $<vector_alias>(type_width<$<vector_alias>::scalar>::value - 1 - i);
+            $<vector_alias> observed = countl_sign($<vector_alias>{v});
+            EXPECT_TRUE(all(expected == observed));
+        }
+    }
+
+    TEST($<Vector_alias>, Countl_sign_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<$<array_alias>>();
+
+            $<vector_alias> v{inputs};
+
+            auto results = countl_sign(v);
+
+            $<array_alias> expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = countl_sign(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == $<vector_alias>{expected}));
+        }
+    }
+
     TEST($<Vector_alias>, Has_single_bit_edge_cases) {
         EXPECT_TRUE(none(has_single_bit($<vector_alias>{0x00})));
 

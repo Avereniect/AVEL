@@ -213,7 +213,7 @@ namespace avel {
 #include "impl/vectors/Vectors.hpp"
 
 #if defined(AVEL_SCALAR_DENOMINATOR_HPP)
-    #include "impl/vector_reciprocal/Vector_reciprocals.hpp"
+    #include "impl/denominator_vectors/Denominator_vectors.hpp"
 #endif
 
 #endif

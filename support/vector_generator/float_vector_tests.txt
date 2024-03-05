@@ -1583,6 +1583,45 @@ namespace avel_tests {
         }
     }
 
+    /*
+    TEST($<Vector_alias>, fmod_edge_cases) {
+        EXPECT_TRUE(avel::all(avel::fmod($<vector_alias>{+0.0f}, $<vector_alias>{1.0f}) == $<vector_alias>{+0.0f}));
+        EXPECT_TRUE(avel::all(avel::fmod($<vector_alias>{-0.0f}, $<vector_alias>{1.0f}) == $<vector_alias>{-0.0f}));
+
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod($<vector_alias>{+INFINITY}, $<vector_alias>{1.0f}))));
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod($<vector_alias>{-INFINITY}, $<vector_alias>{1.0f}))));
+
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod($<vector_alias>{1.0f}, $<vector_alias>{+0.0f}))));
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod($<vector_alias>{1.0f}, $<vector_alias>{-0.0f}))));
+
+        EXPECT_TRUE(avel::all($<vector_alias>{1.0f} == avel::fmod($<vector_alias>{1.0f}, $<vector_alias>{+INFINITY})));
+        EXPECT_TRUE(avel::all($<vector_alias>{1.0f} == avel::fmod($<vector_alias>{1.0f}, $<vector_alias>{-INFINITY})));
+
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod($<vector_alias>{1.0f}, $<vector_alias>{NAN}))));
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod($<vector_alias>{NAN}, $<vector_alias>{1.0f}))));
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod($<vector_alias>{NAN}, $<vector_alias>{NAN}))));
+    }
+
+    TEST($<Vector_alias>, fmod_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<$<array_alias>>();
+            auto inputs1 = random_array<$<array_alias>>();
+
+            $<vector_alias> v0{inputs0};
+            $<vector_alias> v1{inputs1};
+
+            $<vector_alias> results = avel::fmod(v0, v1);
+
+            $<array_alias> expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = avel::fmod(inputs0[j], inputs1[j]);
+            }
+
+            EXPECT_TRUE(all(results == $<vector_alias>{expected}));
+        }
+    }
+    */
+
     TEST($<Vector_alias>, frac_edge_cases) {
         $<vector_alias> pos_zero{+0.0};
         $<vector_alias> neg_zero{-0.0};
