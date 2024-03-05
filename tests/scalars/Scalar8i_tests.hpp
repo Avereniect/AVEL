@@ -5,6 +5,10 @@ namespace avel_tests {
 
     using namespace avel;
 
+    //=====================================================
+    // Comparisons
+    //=====================================================
+
     TEST(Scalar8i, cmp_equal_u_i) {
         for (std::size_t i = 0; i < iterations; ++i) {
             std::uint8_t x = random_val<std::uint8_t>();
@@ -182,6 +186,45 @@ namespace avel_tests {
             } else {
                 EXPECT_EQ(result, x >= y);
             }
+        }
+    }
+
+    //=====================================================
+    // Integer operations
+    //=====================================================
+
+    TEST(Scalar8i, countl_sign_powers_of_two) {
+        for (std::size_t i = 0; i < 7; ++i) {
+            std::int8_t input = std::int8_t(0x01) << (6 - i);
+            std::int8_t observed = avel::countl_sign(input);
+            std::int8_t expected = i;
+
+            EXPECT_EQ(observed, expected);
+        }
+
+        {
+            std::int8_t input = 0x00;
+            std::int8_t observed = avel::countl_sign(input);
+            std::int8_t expected = 7;
+
+            EXPECT_EQ(observed, expected);
+        }
+
+        for (std::size_t i = 0; i < 7; ++i) {
+            std::int8_t input = std::int8_t(0xff) << i;
+            std::int8_t observed = avel::countl_sign(input);
+            std::int8_t expected = (7 - i);
+
+            EXPECT_EQ(observed, expected);
+        }
+    }
+
+    TEST(Scalar8i, countl_sign_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            std::int8_t x = random_val<std::int8_t>();
+            std::int8_t y = random_val<std::uint8_t>();
+
+
         }
     }
 

@@ -5,6 +5,10 @@ namespace avel_tests {
 
     using namespace avel;
 
+    //=====================================================
+    // Comparisons
+    //=====================================================
+
     TEST(Scalar32i, cmp_equal_u_i) {
         for (std::size_t i = 0; i < iterations; ++i) {
             std::uint32_t x = random_val<std::uint32_t>();
@@ -182,6 +186,36 @@ namespace avel_tests {
             } else {
                 EXPECT_EQ(result, x >= y);
             }
+        }
+    }
+
+    //=====================================================
+    // Integer operations
+    //=====================================================
+
+    TEST(Scalar32i, countl_sign_powers_of_two) {
+        for (std::size_t i = 0; i < 31; ++i) {
+            std::int32_t input = std::int32_t(0x00000001) << (30 - i);
+            std::int32_t observed = avel::countl_sign(input);
+            std::int32_t expected = i;
+
+            EXPECT_EQ(observed, expected);
+        }
+
+        {
+            std::int32_t input = 0x00;
+            std::int32_t observed = avel::countl_sign(input);
+            std::int32_t expected = 31;
+
+            EXPECT_EQ(observed, expected);
+        }
+
+        for (std::size_t i = 0; i < 31; ++i) {
+            std::int32_t input = std::int32_t(0xffffffff) << i;
+            std::int32_t observed = avel::countl_sign(input);
+            std::int32_t expected = (31 - i);
+
+            EXPECT_EQ(observed, expected);
         }
     }
 

@@ -2453,6 +2453,33 @@ namespace avel_tests {
         }
     }
 
+    TEST(Vec2x64i, Countl_sign_edge_cases) {
+        EXPECT_TRUE(all(countl_sign(vec2x64i{0x00}) == vec2x64i{type_width<vec2x64i::scalar>::value - 1}));
+        for (std::size_t i = 0; i < (type_width<vec2x64i::scalar>::value - 1); ++i) {
+            vec2x64i::scalar v = vec2x64i::scalar(-1) << i;
+            vec2x64i expected = vec2x64i(type_width<vec2x64i::scalar>::value - 1 - i);
+            vec2x64i observed = countl_sign(vec2x64i{v});
+            EXPECT_TRUE(all(expected == observed));
+        }
+    }
+
+    TEST(Vec2x64i, Countl_sign_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs = random_array<arr2x64i>();
+
+            vec2x64i v{inputs};
+
+            auto results = countl_sign(v);
+
+            arr2x64i expected{};
+            for (std::size_t j = 0; j < inputs.size(); ++j) {
+                expected[j] = countl_sign(inputs[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec2x64i{expected}));
+        }
+    }
+
     TEST(Vec2x64i, Has_single_bit_edge_cases) {
         EXPECT_TRUE(none(has_single_bit(vec2x64i{0x00})));
 
