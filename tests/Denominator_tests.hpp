@@ -150,6 +150,8 @@ namespace avel_tests {
         }
     }
 
+    //TODO: Add tests for shift operators
+
 }
 
 #endif

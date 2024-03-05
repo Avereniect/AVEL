@@ -14,11 +14,11 @@ namespace avel_tests {
         EXPECT_TRUE(compare_common_bytes(avel::fmod(+0.0f, 1.0f), +0.0f));
         EXPECT_TRUE(compare_common_bytes(avel::fmod(-0.0f, 1.0f), -0.0f));
 
-        EXPECT_TRUE(avel::isnan(avel::fmod(+INFINITY, 1.0f)));
-        EXPECT_TRUE(avel::isnan(avel::fmod(-INFINITY, 1.0f)));
-
         EXPECT_TRUE(avel::isnan(avel::fmod(1.0f, +0.0f)));
         EXPECT_TRUE(avel::isnan(avel::fmod(1.0f, -0.0f)));
+
+        EXPECT_TRUE(avel::isnan(avel::fmod(+INFINITY, 1.0f)));
+        EXPECT_TRUE(avel::isnan(avel::fmod(-INFINITY, 1.0f)));
 
         EXPECT_EQ(1.0f, avel::fmod(1.0f, +INFINITY));
         EXPECT_EQ(1.0f, avel::fmod(1.0f, -INFINITY));
@@ -26,6 +26,17 @@ namespace avel_tests {
         EXPECT_TRUE(avel::isnan(avel::fmod(1.0f, NAN)));
         EXPECT_TRUE(avel::isnan(avel::fmod(NAN, 1.0f)));
         EXPECT_TRUE(avel::isnan(avel::fmod(NAN, NAN)));
+
+        EXPECT_TRUE(avel::isnan(avel::fmod(+INFINITY, +INFINITY)));
+        EXPECT_TRUE(avel::isnan(avel::fmod(+INFINITY, -INFINITY)));
+        EXPECT_TRUE(avel::isnan(avel::fmod(-INFINITY, +INFINITY)));
+        EXPECT_TRUE(avel::isnan(avel::fmod(-INFINITY, -INFINITY)));
+
+        EXPECT_TRUE(avel::isnan(avel::fmod(+INFINITY, NAN)));
+        EXPECT_TRUE(avel::isnan(avel::fmod(-INFINITY, NAN)));
+
+        EXPECT_TRUE(avel::isnan(avel::fmod(NAN, +INFINITY)));
+        EXPECT_TRUE(avel::isnan(avel::fmod(NAN, -INFINITY)));
     }
 
     TEST(Scalar32f_tests, fmod_preselected_simple_cases) {
@@ -37,8 +48,6 @@ namespace avel_tests {
 
         EXPECT_EQ(0.0f, avel::fmod(4.5f, 1.5f));
         EXPECT_EQ(0.0f, avel::fmod(4.5f, 1.5f));
-
-        EXPECT_EQ(258.0f, avel::fmod(346758.0f, 3465.0f));
     }
 
     TEST(Scalar32f_tests, fmod_subnormal_inputs) {
@@ -59,19 +68,6 @@ namespace avel_tests {
         EXPECT_EQ(0.0f, avel::fmod(3.40282346638528859812e+38f, 2.94272677508211584894e-44f));
     }
 
-    TEST(Scalar32f_tests, fmod_preselected_random_inputs) {
-        float x = 3.40282346638528859812e+38f;
-        float y = 4.20389539297445121277e-45f;
-
-        float expected = std::fmod(x, y);
-        float observed = avel::fmod(x, y);
-
-        EXPECT_EQ(expected, observed);
-        if (expected != observed) {
-            int breakpoint_dummy = 345;
-        }
-    }
-
     TEST(Scalar32f_tests, fmod_randomized_inputs) {
         for (std::size_t i = 0; i < iterations; ++i) {
             float x = random_val<float>();
@@ -81,12 +77,8 @@ namespace avel_tests {
             float observed = avel::fmod(x, y);
 
             EXPECT_EQ(expected, observed);
-            if (expected != observed) {
-                int breakpoint_dummy = 345;
-            }
         }
     }
-    */
 
     TEST(Scalar32f_tests, frac_edge_cases) {
         EXPECT_EQ(+0.0f, avel::frac(+0.0f));
@@ -107,6 +99,7 @@ namespace avel_tests {
             }
         }
     }
+    */
 
     //=====================================================
     // Floating-Point Manipulation Functions

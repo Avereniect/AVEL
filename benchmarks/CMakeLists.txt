@@ -3,11 +3,6 @@ cmake_minimum_required(VERSION 3.22)
 
 add_executable(AVEL_benchmarks
     AVEL_benchmarks.cpp
-
-    AVEL_shifts.hpp
-    AVEL_division.hpp
-    AVEL_bit_ceil.hpp
-    AVEL_multiplication.hpp
 )
 
 target_link_libraries(AVEL_benchmarks PRIVATE AVEL benchmark benchmark_main)

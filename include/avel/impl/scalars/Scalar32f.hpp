@@ -147,9 +147,11 @@ namespace avel {
         }
     }
 
-    /*
     [[nodiscard]]
     AVEL_FINL float fmod(float x, float y) {
+        return std::fmod(x, y);
+
+        /*
         #if defined(AVEL_AVX512DQ)
         const __m128 abs_mask = _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff));
 
@@ -390,8 +392,8 @@ namespace avel {
         ret = avel::copysign(ret, x);
         return ret;
         #endif
+        */
     }
-    */
 
     [[nodiscard]]
     AVEL_FINL float frac(float x) {

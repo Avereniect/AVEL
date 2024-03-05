@@ -144,9 +144,11 @@ namespace avel {
         }
     }
 
-    /*
     [[nodiscard]]
     AVEL_FINL double fmod(double x, double y) {
+        return std::fmod(x, y);
+
+        /*
         if (avel::isnan(x) | avel::isnan(y) | avel::isinf(x) | y == 0.0f) {
             return NAN;
         }
@@ -161,8 +163,8 @@ namespace avel {
 
         //TODO: Complete implementation
         return 0.0f;
+        */
     }
-    */
 
     [[nodiscard]]
     AVEL_FINL double frac(double x) {

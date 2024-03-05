@@ -77,12 +77,8 @@ namespace avel {
             return 64;
         }
 
-        #elif defined(AVEL_ICPX) && defined(AVEL_LZCNT)
-        if (x) {
-            return _lzcnt_u64(x);
-        } else {
-            return 64;
-        }
+        #elif defined(AVEL_LZCNT) && defined(AVEL_ICPX)
+        return _lzcnt_u64(x);
 
         #elif defined(AVEL_MSVC)
         unsigned long result;
@@ -93,8 +89,8 @@ namespace avel {
         }
 
         #else
-        x = ~x;
         //TODO: Utilize lookup table
+        x = ~x;
         std::uint64_t sum = (x == 0xFFFFFFFFFFFFFFFFul);
 
         bool b0 = (0xFFFFFFFF00000000u & x) == 0xFFFFFFFF00000000u;
@@ -159,6 +155,7 @@ namespace avel {
         return sum;
         #endif
     }
+
     [[nodiscard]]
     AVEL_FINL std::uint64_t countr_zero(std::uint64_t x) {
         #if defined(AVEL_BMI) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
