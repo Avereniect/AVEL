@@ -305,7 +305,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
         return !_kortestz_mask16_u8(decay(m), decay(m));
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return !_mm_test_all_zeros(decay(m), decay(m));
 
         #elif defined(AVEL_SSE2)
@@ -330,7 +330,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
         return 0xF == decay(m);
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return _mm_test_all_ones(decay(m));
 
         #elif defined(AVEL_SSE2)
@@ -357,7 +357,7 @@ namespace avel {
         #elif defined(AVEL_AVX512VL)
         return 0x0 == decay(m);
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return _mm_test_all_zeros(decay(m), decay(m));
 
         #elif defined(AVEL_SSE2)
@@ -399,7 +399,7 @@ namespace avel {
         auto mask = b << N;
         return mask4x32u{__mmask8((decay(m) & ~mask) | mask)};
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         auto mask = std::uint32_t(b ? -1 : 0);
         return mask4x32u{_mm_insert_epi32(decay(m), mask, N)};
 
@@ -574,7 +574,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
             return mask{_mm_cmple_epu32_mask(lhs.content, rhs.content)};
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             auto mins = _mm_min_epu32(decay(lhs), decay(rhs));
             return mask{_mm_cmpeq_epi32(mins, decay(lhs))};
 
@@ -607,7 +607,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
             return mask{_mm_cmpge_epu32_mask(lhs.content, rhs.content)};
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             auto mins = _mm_min_epu32(decay(lhs), decay(rhs));
             return mask{_mm_cmpeq_epi32(mins, decay(rhs))};
 
@@ -660,7 +660,7 @@ namespace avel {
         }
 
         AVEL_FINL Vector& operator*=(Vector rhs) {
-            #if defined(AVEL_SSE41)
+            #if defined(AVEL_SSE4_1)
             content = _mm_mullo_epi32(content, decay(rhs));
 
             #elif defined(AVEL_SSE2)
@@ -903,7 +903,7 @@ namespace avel {
         static_assert(N < vec4x32u::width, "Specified index does not exist");
         typename std::enable_if<N < vec4x32u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return _mm_extract_epi32(decay(v), N);
 
         #elif defined(AVEL_SSE2)
@@ -921,7 +921,7 @@ namespace avel {
         static_assert(N < vec4x32u::width, "Specified index does not exist");
         typename std::enable_if<N < vec4x32u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec4x32u{_mm_insert_epi32(decay(v), x, N)};
 
         #elif defined(AVEL_SSE2)
@@ -1163,7 +1163,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool any(vec4x32u x) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return !_mm_testz_si128(decay(x), decay(x));
 
         #elif defined(AVEL_SSE2)
@@ -1190,7 +1190,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool none(vec4x32u x) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return _mm_test_all_zeros(decay(x), decay(x));
 
         #elif defined(AVEL_SSE2)
@@ -1258,7 +1258,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
         return vec4x32u{_mm_mask_blend_epi32(decay(m), decay(b), decay(a))};
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return vec4x32u{_mm_blendv_epi8(decay(b), decay(a), decay(m))};
 
         #elif defined(AVEL_SSE2)
@@ -1274,7 +1274,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32u max(vec4x32u a, vec4x32u b) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec4x32u{_mm_max_epu32(decay(a), decay(b))};
 
         #elif defined(AVEL_SSE2)
@@ -1289,7 +1289,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32u min( vec4x32u a, vec4x32u b) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec4x32u{_mm_min_epu32(decay(a), decay(b))};
 
         #elif defined(AVEL_SSE2)
@@ -1304,7 +1304,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::array<vec4x32u, 2> minmax(vec4x32u a, vec4x32u b) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return {
             vec4x32u{_mm_min_epu32(decay(a), decay(b))},
             vec4x32u{_mm_max_epu32(decay(a), decay(b))}

@@ -66,7 +66,7 @@ namespace avel::benchmarks::comparison_less_than_64i {
 
 
 
-    #if defined(AVEL_SSE41) && !defined(AVEL_AVX512VL)
+    #if defined(AVEL_SSE4_1) && !defined(AVEL_AVX512VL)
 
     mask2x64i vec2x64i_pcmpq_impl(vec2x64i lhs, vec2x64i rhs) {
         return mask2x64i{_mm_cmpgt_epi64(decay(rhs), decay(lhs))};

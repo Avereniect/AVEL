@@ -298,7 +298,7 @@ namespace avel {
         #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
         return !_kortestz_mask16_u8(decay(m), decay(m));
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return !_mm_test_all_zeros(decay(m), decay(m));
 
         #elif defined(AVEL_SSE2)
@@ -325,7 +325,7 @@ namespace avel {
         #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
         return _kortestc_mask16_u8(decay(m), decay(m));
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return _mm_test_all_ones(decay(m));
 
         #elif defined(AVEL_SSE2)
@@ -350,7 +350,7 @@ namespace avel {
         #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
         return _kortestz_mask16_u8(decay(m), decay(m));
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return _mm_test_all_zeros(decay(m), decay(m));
 
         #elif defined(AVEL_SSE2)
@@ -387,7 +387,7 @@ namespace avel {
         auto mask = b << N;
         return mask16x8u{__mmask16((decay(m) & ~mask) | mask)};
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return mask16x8u{_mm_insert_epi8(decay(m), b ? - 1 : 0, N)};
 
         #elif defined(AVEL_SSE2)
@@ -648,7 +648,7 @@ namespace avel {
             auto c = _mm256_mullo_epi16(a, b);
             content = _mm256_cvtepi16_epi8(c);
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             auto even_mask = _mm_set1_epi16(0x00FF);
 
             auto products_even = _mm_mullo_epi16(content, decay(rhs));
@@ -980,7 +980,7 @@ namespace avel {
         static_assert(N < vec16x8u::width, "Specified index does not exist");
         typename std::enable_if<N < vec16x8u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return _mm_extract_epi8(decay(v), N);
 
         #elif defined(AVEL_SSE2)
@@ -998,7 +998,7 @@ namespace avel {
         static_assert(N < vec16x8u::width, "Specified index does not exist");
         typename std::enable_if<N < vec16x8u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec16x8u{_mm_insert_epi8(decay(v), x, N)};
 
         #elif defined(AVEL_SSE2)
@@ -1505,7 +1505,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool any(vec16x8u x) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return !_mm_testz_si128(decay(x), decay(x));
 
         #elif defined(AVEL_SSE2)
@@ -1538,7 +1538,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool none(vec16x8u x) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return _mm_test_all_zeros(decay(x), decay(x));
 
         #elif defined(AVEL_SSE2)
@@ -1604,7 +1604,7 @@ namespace avel {
         #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
         return vec16x8u{_mm_mask_blend_epi8(decay(m), decay(b), decay(a))};
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return vec16x8u{_mm_blendv_epi8(decay(b), decay(a), decay(m))};
 
         #elif defined(AVEL_SSE2)

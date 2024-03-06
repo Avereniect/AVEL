@@ -305,7 +305,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
         return !_kortestz_mask16_u8(decay(m), decay(m));
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return !_mm_test_all_zeros(decay(m), decay(m));
 
         #elif defined(AVEL_SSE2)
@@ -350,7 +350,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
         return _kortestz_mask16_u8(decay(m), decay(m));
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return _mm_test_all_zeros(decay(m), decay(m));
 
         #elif defined(AVEL_SSE2)
@@ -392,7 +392,7 @@ namespace avel {
         auto mask = b << N;
         return mask2x64u{__mmask8((decay(m) & ~mask) | mask)};
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return mask2x64u{_mm_insert_epi64(decay(m), b ? -1ll : 0, N)};
 
         #elif defined(AVEL_SSE2)
@@ -515,7 +515,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
             return mask{_mm_cmpeq_epi64_mask(decay(lhs), decay(rhs))};
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             return mask{_mm_cmpeq_epi64(decay(lhs), decay(rhs))};
 
             #elif defined(AVEL_SSE2)
@@ -561,14 +561,14 @@ namespace avel {
             #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
             return mask{_mm_cmplt_epu64_mask(decay(lhs), decay(rhs))};
 
-            #elif defined(AVEL_SSE42)
+            #elif defined(AVEL_SSE4_2)
             auto addition_mask = _mm_set1_epi64x(0x8000000000000000ull);
             auto lhs_tmp = _mm_xor_si128(decay(lhs), addition_mask);
             auto rhs_tmp = _mm_xor_si128(decay(rhs), addition_mask);
 
             return mask{_mm_cmpgt_epi64(rhs_tmp, lhs_tmp)};
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             std::uint64_t lhs_lo = _mm_cvtsi128_si64(decay(lhs));
             std::uint64_t lhs_hi = _mm_extract_epi64(decay(lhs), 0x1);
 
@@ -711,7 +711,7 @@ namespace avel {
             //TODO: Consider alternative approach based on emulation using
             // 32-bit multiplication
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             auto lhs_lo = _mm_cvtsi128_si64(content);
             auto lhs_hi = _mm_extract_epi64(content, 0x1);
 
@@ -979,7 +979,7 @@ namespace avel {
         static_assert(N < vec2x64u::width, "Specified index does not exist");
         typename std::enable_if<N < vec2x64u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return _mm_extract_epi64(decay(v), N);
 
         #elif defined(AVEL_SSE2)
@@ -997,7 +997,7 @@ namespace avel {
         static_assert(N < vec2x64u::width, "Specified index does not exist");
         typename std::enable_if<N < vec2x64u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec2x64u{_mm_insert_epi64(decay(v), x, N)};
 
         #elif defined(AVEL_SSE2)
@@ -1215,7 +1215,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
         return count(mask2x64u{x});
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         auto compared = _mm_cmpeq_epi64(decay(x), _mm_setzero_si128());
         return 2 - popcount(_mm_movemask_epi8(compared)) / sizeof(std::uint64_t);
 
@@ -1235,7 +1235,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL bool any(vec2x64u x) {
         //TODO: Optimize with newer instruction sets
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return !_mm_test_all_zeros(decay(x), decay(x));
 
         #elif defined(AVEL_SSE2)
@@ -1251,7 +1251,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool all(vec2x64u x) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         auto compared = _mm_cmpeq_epi64(decay(x), _mm_setzero_si128());
         return 0x00 == _mm_movemask_epi8(compared);
 
@@ -1266,7 +1266,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool none(vec2x64u x) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return _mm_test_all_zeros(decay(x), decay(x));
 
         #elif defined(AVEL_SSE2)
@@ -1333,7 +1333,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
         return vec2x64u{_mm_mask_blend_epi64(decay(m), decay(b), decay(a))};
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return vec2x64u{_mm_blendv_epi8(decay(b), decay(a), decay(m))};
 
         #elif defined(AVEL_SSE2)
@@ -1687,7 +1687,7 @@ namespace avel {
 
         return vec2x64u{_mm_srli_epi64(tmp4, 48)};
 
-        #elif defined(AVEL_SSE41) && defined(AVEL_POPCNT)
+        #elif defined(AVEL_SSE4_1) && defined(AVEL_POPCNT)
         auto lo = _mm_cvtsi128_si64(decay(v));
         auto hi = _mm_extract_epi64(decay(v), 0x1);
 

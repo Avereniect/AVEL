@@ -53,11 +53,11 @@ static_assert(false, "AVX2 feature flag was not passed to compiler");
 static_assert(false, "AVX feature flag was not passed to compiler");
 #endif
 
-#if defined(AVEL_SSE42) && !defined(__SSE4_2__)
+#if defined(AVEL_SSE4_2) && !defined(__SSE4_2__)
 static_assert(false, "SSE4.2 feature flag was not passed to compiler");
 #endif
 
-#if defined(AVEL_SSE41) && !defined(__SSE4_1__)
+#if defined(AVEL_SSE4_1) && !defined(__SSE4_1__)
 static_assert(false, "SSE4.1 feature flag was not passed to compiler");
 #endif
 

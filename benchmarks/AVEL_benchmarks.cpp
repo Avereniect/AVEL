@@ -13,8 +13,8 @@
 //#define AVEL_FMA
 //#define AVEL_AVX2
 //#define AVEL_AVX
-//#define AVEL_SSE42
-//#define AVEL_SSE41
+//#define AVEL_SSE4_2
+//#define AVEL_SSE4_1
 //#define AVEL_SSSE3
 //#define AVEL_SSE3
 //#define AVEL_SSE2

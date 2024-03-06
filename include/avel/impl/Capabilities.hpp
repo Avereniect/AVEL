@@ -137,15 +137,15 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
 #endif
 
 #if defined(AVEL_AVX)
-    #define AVEL_SSE42
+    #define AVEL_SSE4_2
 #endif
 
-#if defined(AVEL_SSE42)
-    #define AVEL_SSE41
+#if defined(AVEL_SSE4_2)
+    #define AVEL_SSE4_1
     #define AVEL_POPCNT
 #endif
 
-#if defined(AVEL_SSE41)
+#if defined(AVEL_SSE4_1)
     #define AVEL_SSSE3
 #endif
 

@@ -304,7 +304,7 @@ namespace avel {
         #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return !_kortestz_mask16_u8(decay(m), decay(m));
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return !_mm_test_all_zeros(decay(m), decay(m));
 
         #elif defined(AVEL_SSE2)
@@ -333,7 +333,7 @@ namespace avel {
         #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return 0xFF == decay(m);
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return _mm_test_all_ones(decay(m));
 
         #elif defined(AVEL_SSE2)
@@ -361,7 +361,7 @@ namespace avel {
         #elif defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)
         return _kortestz_mask16_u8(decay(m), decay(m));
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return _mm_test_all_zeros(decay(m), decay(m));
 
         #elif defined(AVEL_SSE2)
@@ -571,7 +571,7 @@ namespace avel {
         AVEL_FINL friend mask operator<=(Vector lhs, Vector rhs) {
             #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             return mask{_mm_cmple_epu16_mask(lhs.content, rhs.content)};
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             auto mins = _mm_min_epu16(decay(lhs), decay(rhs));
             return mask{_mm_cmpeq_epi16(mins, decay(lhs))};
             #elif defined(AVEL_SSE2)
@@ -606,7 +606,7 @@ namespace avel {
             #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
             return mask{_mm_cmpge_epu16_mask(lhs.content, rhs.content)};
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             auto mins = _mm_min_epu16(decay(lhs), decay(rhs));
             return mask{_mm_cmpeq_epi16(mins, decay(rhs))};
 
@@ -766,7 +766,7 @@ namespace avel {
             content = _mm256_castsi256_si128(_mm256_packus_epi32(lo, hi));
 
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             // This implementation is slower than an equivalent scalar approach,
             // but faster than attempting to scalarize the function
             for (unsigned i = 0; i < 4; ++i) {
@@ -819,7 +819,7 @@ namespace avel {
             auto hi = _mm256_permute2f128_si256(lo, lo, 0x01);
             content = _mm256_castsi256_si128(_mm256_packus_epi32(lo, hi));
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             auto zero_mask =  _mm_cmplt_epi16(decay(rhs), _mm_set1_epi16(16));
 
             for (unsigned i = 0; i < 4; ++i) {
@@ -928,7 +928,7 @@ namespace avel {
         static_assert(N < vec8x16u::width, "Specified index does not exist");
         typename std::enable_if<N < vec8x16u::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return _mm_extract_epi16(decay(v), N);
 
         #elif defined(AVEL_SSE2)
@@ -1179,7 +1179,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool any(vec8x16u x) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return !_mm_testz_si128(decay(x), decay(x));
 
         #elif defined(AVEL_SSE2)
@@ -1208,7 +1208,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL bool none(vec8x16u x) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return _mm_test_all_zeros(decay(x), decay(x));
 
         #elif defined(AVEL_SSE2)
@@ -1271,7 +1271,7 @@ namespace avel {
         #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512BW)) || defined(AVEL_AVX10_1)
         return vec8x16u{_mm_mask_blend_epi16(decay(m), decay(b), decay(a))};
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return vec8x16u{_mm_blendv_epi8(decay(b), decay(a), decay(m))};
 
         #elif defined(AVEL_SSE2)
@@ -1304,7 +1304,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u max(vec8x16u a, vec8x16u b) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec8x16u{_mm_max_epu16(decay(a), decay(b))};
 
         #elif defined(AVEL_SSE2)
@@ -1319,7 +1319,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16u min(vec8x16u a, vec8x16u b) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec8x16u{_mm_min_epu16(decay(a), decay(b))};
 
         #elif defined(AVEL_SSE2)
@@ -1333,7 +1333,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::array<vec8x16u, 2> minmax(vec8x16u a, vec8x16u b) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return {
             vec8x16u{_mm_min_epu16(decay(a), decay(b))},
             vec8x16u{_mm_max_epu16(decay(a), decay(b))}
@@ -1764,7 +1764,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL div_type<vec8x16u> div(vec8x16u x, vec8x16u y) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         auto zeros = _mm_setzero_si128();
 
         auto x_lo = _mm_cvtepi32_ps(_mm_unpacklo_epi16(decay(x), zeros));
@@ -2163,7 +2163,7 @@ namespace avel {
         return vec8x16u{ret};
         */
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         // Conversion to float implementation with blend instruction
         auto zero = _mm_setzero_si128();
         auto is_zero = _mm_cmpeq_epi16(zero, decay(v));

@@ -42,7 +42,7 @@ namespace avel::benchmarks::mul_8u {
 
 
 
-    #if defined(AVEL_SSE41)
+    #if defined(AVEL_SSE4_1)
 
     vec16x8u vec16x8u_pmullw_blend_emulation_impl(vec16x8u v, vec16x8u w) {
         auto even_mask = _mm_set1_epi16(0x00FF);

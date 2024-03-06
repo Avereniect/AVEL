@@ -36,7 +36,7 @@ namespace avel::benchmarks::comparison_equals_64u {
 
 
 
-    #if defined(AVEL_SSE41) && !defined(AVEL_AVX512VL)
+    #if defined(AVEL_SSE4_1) && !defined(AVEL_AVX512VL)
 
     mask2x64u vec2x64u_cmpeqq_impl(vec2x64u lhs, vec2x64u rhs) {
         return mask2x64u{_mm_cmpeq_epi64(decay(lhs), decay(rhs))};

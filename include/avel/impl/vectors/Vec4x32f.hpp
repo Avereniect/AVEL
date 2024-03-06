@@ -374,7 +374,7 @@ namespace avel {
         auto mask = b << N;
         return mask4x32f{__mmask8((decay(m) & ~mask) | mask)};
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         auto mask = avel::bit_cast<float>(b ? -1 : 0);
         return mask4x32f{_mm_insert_ps(decay(m), _mm_set_ss(mask), N << 4)};
 
@@ -763,7 +763,7 @@ namespace avel {
         static_assert(N < vec4x32f::width, "Specified index does not exist");
         typename std::enable_if<N < vec4x32f::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return avel::bit_cast<float>(_mm_extract_ps(decay(v), N));
 
         #elif defined(AVEL_SSE2)
@@ -786,7 +786,7 @@ namespace avel {
         static_assert(N < vec4x32f::width, "Specified index does not exist");
         typename std::enable_if<N < vec4x32f::width, int>::type dummy_variable = 0;
 
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec4x32f{_mm_insert_ps(decay(v), _mm_set_ss(x), N << 4)};
 
         #elif defined(AVEL_SSE2) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
@@ -865,7 +865,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
         return vec4x32f{_mm_mask_blend_ps(decay(m), decay(b), decay(a))};
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return vec4x32f{_mm_blendv_ps(decay(b), decay(a), decay(m))};
 
         #elif defined(AVEL_SSE2)
@@ -1383,7 +1383,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32f ceil(vec4x32f v) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec4x32f{_mm_round_ps(decay(v), _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC)};
 
         #elif defined(AVEL_SSE2)
@@ -1425,7 +1425,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32f floor(vec4x32f v) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec4x32f{_mm_round_ps(decay(v), _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)};
 
         #elif defined(AVEL_SSE2)
@@ -1456,7 +1456,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32f trunc(vec4x32f v) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec4x32f{_mm_round_ps(decay(v), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC)};
 
         #elif defined(AVEL_SSE2)
@@ -1531,7 +1531,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec4x32f nearbyint(vec4x32f v) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec4x32f{_mm_round_ps(decay(v), _MM_FROUND_CUR_DIRECTION)};
 
         #elif defined(AVEL_SSE2)

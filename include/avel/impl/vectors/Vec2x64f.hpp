@@ -836,7 +836,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
         return vec2x64f{_mm_mask_blend_pd(decay(m), decay(b), decay(a))};
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return vec2x64f{_mm_blendv_pd(decay(b), decay(a), decay(m))};
 
         #elif defined(AVEL_SSE2)
@@ -1301,7 +1301,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64f ceil(vec2x64f v) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC)};
 
         #elif defined(AVEL_SSE2)
@@ -1334,7 +1334,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64f floor(vec2x64f v) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC)};
 
         #elif defined(AVEL_SSE2)
@@ -1367,7 +1367,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64f trunc(vec2x64f v) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC)};
 
         #elif defined(AVEL_SSE2)
@@ -1417,7 +1417,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec2x64f nearbyint(vec2x64f v) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec2x64f{_mm_round_pd(decay(v), _MM_FROUND_CUR_DIRECTION)};
 
         #elif defined(AVEL_SSE2)
@@ -1871,7 +1871,7 @@ namespace avel {
 
         return vec2x64i{ret};
 
-        #elif defined(AVEL_SSE42)
+        #elif defined(AVEL_SSE4_2)
         // Approach based on testing of ranges of bit patterns to which the various categories belong
 
         auto v_bits = _mm_castpd_si128(decay(v));

@@ -440,7 +440,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
             return mask{_mm_cmpeq_epi64_mask(decay(lhs), decay(rhs))};
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             return mask{_mm_cmpeq_epi64(lhs.content, rhs.content)};
 
             #elif defined(AVEL_SSE2)
@@ -464,7 +464,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
             return mask{_mm_cmpneq_epi64_mask(lhs.content, rhs.content)};
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             return !mask{_mm_cmpeq_epi64(lhs.content, rhs.content)};
 
             #elif defined(AVEL_SSE2)
@@ -490,7 +490,7 @@ namespace avel {
             #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
             return mask{_mm_cmplt_epi64_mask(decay(lhs), decay(rhs))};
 
-            #elif defined(AVEL_SSE42)
+            #elif defined(AVEL_SSE4_2)
             return mask{_mm_cmpgt_epi64(decay(rhs), decay(lhs))};
 
             #elif defined(AVEL_SSE2)
@@ -522,10 +522,10 @@ namespace avel {
             #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
             return mask{_mm_cmple_epi64_mask(decay(lhs), decay(rhs))};
 
-            #elif defined(AVEL_SSE42)
+            #elif defined(AVEL_SSE4_2)
             return !mask{_mm_cmpgt_epi64(decay(lhs), decay(rhs))};
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             std::int64_t lhs_lo = _mm_cvtsi128_si64(decay(lhs));
             std::int64_t lhs_hi = _mm_extract_epi64(decay(lhs), 0x1);
 
@@ -568,10 +568,10 @@ namespace avel {
             #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
             return mask{_mm_cmpgt_epi64_mask(decay(lhs), decay(rhs))};
 
-            #elif defined(AVEL_SSE42)
+            #elif defined(AVEL_SSE4_2)
             return mask{_mm_cmpgt_epi64(decay(lhs), decay(rhs))};
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             std::int64_t lhs_lo = _mm_cvtsi128_si64(decay(lhs));
             std::int64_t lhs_hi = _mm_extract_epi64(decay(lhs), 0x1);
 
@@ -616,10 +616,10 @@ namespace avel {
             #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
             return mask{_mm_cmpge_epi64_mask(decay(lhs), decay(rhs))};
 
-            #elif defined(AVEL_SSE42)
+            #elif defined(AVEL_SSE4_2)
             return !mask{_mm_cmpgt_epi64(decay(rhs), decay(lhs))};
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             std::int64_t lhs_lo = _mm_cvtsi128_si64(decay(lhs));
             std::int64_t lhs_hi = _mm_extract_epi64(decay(lhs), 0x1);
 
@@ -701,7 +701,7 @@ namespace avel {
             #if (defined(AVEL_AVX512VL) && defined(AVEL_AVX512DQ)) || defined(AVEL_AVX10_1)
             content = _mm_mullo_epi64(content, decay(rhs));
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             //TODO: Make consistent with vec2x64u counterpart
             std::uint64_t lhs0 = _mm_extract_epi64(content, 0x0);
             std::uint64_t lhs1 = _mm_extract_epi64(content, 0x1);
@@ -1045,15 +1045,13 @@ namespace avel {
         return vec2x64i{_mm_srai_epi64(decay(v), S)};
 
         #elif defined(AVEL_SSE4_1)
-        auto lo = _mm_extract_epi64(decay(v), 0x0);
-        auto hi = _mm_extract_epi64(decay(v), 0x1);
+        std::int64_t lo = _mm_extract_epi64(decay(v), 0x0);
+        std::int64_t hi = _mm_extract_epi64(decay(v), 0x1);
 
         lo >>= S;
         hi >>= S;
 
-        auto ret = _mm_undefined_si128();
-        ret = _mm_insert_epi64(ret, 0x0, lo);
-        ret = _mm_insert_epi64(ret, 0x0, hi);
+        auto ret = _mm_set_epi64x(hi, lo);
         return vec2x64i{ret};
 
         #elif defined(AVEL_SSE2)
@@ -1179,7 +1177,7 @@ namespace avel {
         #if defined(AVEL_AVX512VL) || defined(AVEL_AVX10_1)
         return vec2x64i{_mm_mask_blend_epi64(decay(m), decay(b), decay(a))};
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         return vec2x64i{_mm_blendv_epi8(decay(b), decay(a), decay(m))};
 
         #elif defined(AVEL_SSE2)

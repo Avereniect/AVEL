@@ -60,7 +60,7 @@ namespace avel::benchmarks::mul_32u {
 
 
 
-    #if defined(AVEL_SSE41)
+    #if defined(AVEL_SSE4_1)
 
     vec4x32u vec4x32u_mullw_impl(vec4x32u v, vec4x32u w) {
         return vec4x32u{_mm_mullo_epi32(decay(v), decay(w))};

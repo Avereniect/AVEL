@@ -68,7 +68,7 @@ namespace avel::benchmarks::comparison_less_than_64u {
 
 
 
-    #if defined(AVEL_SSE41) && !defined(AVEL_AVX512VL)
+    #if defined(AVEL_SSE4_1) && !defined(AVEL_AVX512VL)
 
     mask2x64u vec2x64u_pcmpgtq_impl(vec2x64u lhs, vec2x64u rhs) {
         auto high_bit = _mm_set1_epi64x(0x8000000000000000);

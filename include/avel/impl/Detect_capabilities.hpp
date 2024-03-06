@@ -18,15 +18,15 @@
 #endif
 
 #ifdef __SSE4_1__
-    #define AVEL_SSE41
+    #define AVEL_SSE4_1
 #endif
 
 #ifdef __SSE4_1__
-    #define AVEL_SSE41
+    #define AVEL_SSE4_1
 #endif
 
 #ifdef __SSE4_2__
-    #define AVEL_SSE41
+    #define AVEL_SSE4_1
 #endif
 
 #ifdef __AVX__

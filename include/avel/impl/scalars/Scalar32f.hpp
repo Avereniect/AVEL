@@ -295,7 +295,7 @@ namespace avel {
 
         return _mm_cvtss_f32(ret_reg);
 
-        #elif defined(AVEL_SSE41)
+        #elif defined(AVEL_SSE4_1)
         if (avel::isnan(x) | avel::isnan(y) | avel::isinf(x) | y == 0.0f) {
             return NAN;
         }

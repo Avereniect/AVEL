@@ -36,10 +36,10 @@ these implications being transitive.
 * `AVEL_AVX2`
   * implies `AVEL_AVX`
 * `AVEL_AVX`
-  * implies `AVEL_SSE42`
-* `AVEL_SSE42`
-  * implies `AVEL_SSE41`
-* `AVEL_SSE41`
+  * implies `AVEL_SSE4_2`
+* `AVEL_SSE4_2`
+  * implies `AVEL_SSE4_1`
+* `AVEL_SSE4_1`
   * implies `AVEL_SSSE3`
   * implies `AVEL_POPCNT`
 * `AVEL_SSSE3`

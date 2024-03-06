@@ -699,7 +699,7 @@ namespace avel {
             auto hi = _mm256_permute2f128_si256(lo, lo, 0x01);
             content = _mm256_castsi256_si128(_mm256_packus_epi32(lo, hi));
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             auto threshold = _mm_set1_epi16(8);
 
             //TODO: manually unroll loop
@@ -979,7 +979,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16i max(vec8x16i a, vec8x16i b) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec8x16i{_mm_max_epi16(decay(a), decay(b))};
 
         #elif defined(AVEL_SSE2)
@@ -994,7 +994,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x16i min(vec8x16i a, vec8x16i b) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec8x16i{_mm_min_epi16(decay(a), decay(b))};
 
         #elif defined(AVEL_SSE2)
@@ -1009,7 +1009,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::array<vec8x16i, 2> minmax(vec8x16i a, vec8x16i b) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return std::array<vec8x16i, 2>{
             vec8x16i{_mm_min_epi16(decay(a), decay(b))},
             vec8x16i{_mm_max_epi16(decay(a), decay(b))}

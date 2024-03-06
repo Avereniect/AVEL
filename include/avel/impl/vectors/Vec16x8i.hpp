@@ -583,7 +583,7 @@ namespace avel {
             auto c = _mm256_mullo_epi16(a, b);
             content = _mm256_cvtepi16_epi8(c);
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             auto even_mask = _mm_set1_epi16(0x00FF);
 
             auto products_even = _mm_mullo_epi16(content, decay(rhs));
@@ -823,7 +823,7 @@ namespace avel {
 
             //TODO: Offer AVX2 version?
 
-            #elif defined(AVEL_SSE41)
+            #elif defined(AVEL_SSE4_1)
             //TODO: Levaerage inverting negative values like is done in SSE2
             // implementation
             auto zeros = _mm_setzero_si128();
@@ -1172,7 +1172,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x8i max(vec16x8i a, vec16x8i b) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec16x8i{_mm_max_epi8(decay(a), decay(b))};
 
         #elif defined(AVEL_SSE2)
@@ -1187,7 +1187,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec16x8i min(vec16x8i a, vec16x8i b) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return vec16x8i{_mm_min_epi8(decay(a), decay(b))};
 
         #elif defined(AVEL_SSE2)
@@ -1202,7 +1202,7 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::array<vec16x8i, 2> minmax(vec16x8i a, vec16x8i b) {
-        #if defined(AVEL_SSE41)
+        #if defined(AVEL_SSE4_1)
         return {
             vec16x8i{_mm_min_epi8(decay(a), decay(b))},
             vec16x8i{_mm_max_epi8(decay(a), decay(b))}

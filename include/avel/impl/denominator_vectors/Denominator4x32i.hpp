@@ -121,7 +121,7 @@ namespace avel {
         //=================================================
 
         static vec4x32i mulhi(vec4x32i x, vec4x32i y) {
-            #if defined(AVEL_SSE41)
+            #if defined(AVEL_SSE4_1)
             auto t0 = _mm_unpacklo_epi32(decay(x), decay(x));
             auto t1 = _mm_unpackhi_epi32(decay(x), decay(x));
             auto t2 = _mm_unpacklo_epi32(decay(y), decay(y));

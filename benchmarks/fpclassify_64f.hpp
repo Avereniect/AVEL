@@ -101,7 +101,7 @@ namespace avel::benchmarks::fpclassify_64f {
 
 
 
-    #if defined(AVEL_SSE42)
+    #if defined(AVEL_SSE4_2)
 
     vec2x64i vec2x64f_blend_sse42_impl(vec2x64f v) {
         // Approach based on testing of ranges of bit patterns to which the various categories belong
