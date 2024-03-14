@@ -888,7 +888,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x32f max(vec4x32f a, vec4x32f b) {
         #if defined(AVEL_SSE2)
-        return vec4x32f{_mm_max_ps(decay(a), decay(b))};
+        return vec4x32f{_mm_max_ps(decay(b), decay(a))};
         #endif
 
         #if defined(AVEL_NEON)
@@ -900,7 +900,7 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x32f min(vec4x32f a, vec4x32f b) {
         #if defined(AVEL_SSE2)
-        return vec4x32f{_mm_min_ps(decay(a), decay(b))};
+        return vec4x32f{_mm_min_ps(decay(b), decay(a))};
         #endif
 
         #if defined(AVEL_NEON)
@@ -913,8 +913,8 @@ namespace avel {
     AVEL_FINL std::array<vec4x32f, 2> minmax(vec4x32f a, vec4x32f b) {
         #if defined(AVEL_SSE2)
         return std::array<vec4x32f, 2>{
-            vec4x32f{_mm_min_ps(decay(a), decay(b))},
-            vec4x32f{_mm_max_ps(decay(a), decay(b))}
+            vec4x32f{_mm_min_ps(decay(b), decay(a))},
+            vec4x32f{_mm_max_ps(decay(b), decay(a))}
         };
         #endif
 
@@ -1332,7 +1332,7 @@ namespace avel {
         return vec4x32f{_mm_range_ps(decay(a), decay(b), 0x05)};
 
         #elif defined(AVEL_SSE2)
-        return blend(avel::isnan(b), a, avel::max(a, b));
+        return blend(avel::isnan(b), a, avel::max(b, a));
         #endif
 
         #if defined(AVEL_NEON)
@@ -1346,12 +1346,17 @@ namespace avel {
         return vec4x32f{_mm_range_ps(decay(a), decay(b), 0x04)};
 
         #elif defined(AVEL_SSE2)
-        return blend(avel::isnan(b), a, avel::min(a, b));
+        return blend(avel::isnan(b), a, avel::min(b, a));
         #endif
 
         #if defined(AVEL_NEON)
         return vec4x32f{vminnmq_f32(decay(a), decay(b))};
         #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x32f fdim(vec4x32f x, vec4x32f y) {
+        return avel::max(x - y, vec4x32f{0.0f});
     }
 
     [[nodiscard]]

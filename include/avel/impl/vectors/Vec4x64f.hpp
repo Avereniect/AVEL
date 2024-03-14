@@ -668,14 +668,14 @@ namespace avel {
     [[nodiscard]]
     AVEL_FINL vec4x64f max(vec4x64f a, vec4x64f b) {
         #if defined(AVEL_AVX)
-        return vec4x64f{_mm256_max_pd(decay(a), decay(b))};
+        return vec4x64f{_mm256_max_pd(decay(b), decay(a))};
         #endif
     }
 
     [[nodiscard]]
     AVEL_FINL vec4x64f min(vec4x64f a, vec4x64f b) {
         #if defined(AVEL_AVX)
-        return vec4x64f{_mm256_min_pd(decay(a), decay(b))};
+        return vec4x64f{_mm256_min_pd(decay(b), decay(a))};
         #endif
     }
 
@@ -683,8 +683,8 @@ namespace avel {
     AVEL_FINL std::array<vec4x64f, 2> minmax(vec4x64f a, vec4x64f b) {
         #if defined(AVEL_AVX)
         return {
-            vec4x64f{_mm256_min_pd(decay(a), decay(b))},
-            vec4x64f{_mm256_max_pd(decay(a), decay(b))}
+            vec4x64f{_mm256_min_pd(decay(b), decay(a))},
+            vec4x64f{_mm256_max_pd(decay(b), decay(a))}
         };
         #endif
     }
@@ -912,7 +912,7 @@ namespace avel {
         return vec4x64f{_mm256_range_pd(decay(a), decay(b), 0x05)};
 
         #elif defined(AVEL_AVX2)
-        return blend(avel::isnan(b), a, avel::max(a, b));
+        return blend(avel::isnan(b), a, avel::max(b, a));
         #endif
     }
 
@@ -922,8 +922,13 @@ namespace avel {
         return vec4x64f{_mm256_range_pd(decay(a), decay(b), 0x04)};
 
         #elif defined(AVEL_AVX2)
-        return blend(avel::isnan(b), a, avel::min(a, b));
+        return blend(avel::isnan(b), a, avel::min(b, a));
         #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec4x64f fdim(vec4x64f x, vec4x64f y) {
+        return avel::max(x - y, vec4x64f{0.0});
     }
 
     [[nodiscard]]

@@ -145,6 +145,11 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL double fdim(double x, double y) {
+        return avel::max(x - y, 0.0);
+    }
+
+    [[nodiscard]]
     AVEL_FINL double fmod(double x, double y) {
         return std::fmod(x, y);
 

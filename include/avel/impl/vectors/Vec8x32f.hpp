@@ -641,19 +641,19 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL vec8x32f max(vec8x32f a, vec8x32f b) {
-        return vec8x32f{_mm256_max_ps(decay(a), decay(b))};
+        return vec8x32f{_mm256_max_ps(decay(b), decay(a))};
     }
 
     [[nodiscard]]
     AVEL_FINL vec8x32f min(vec8x32f a, vec8x32f b) {
-        return vec8x32f{_mm256_min_ps(decay(a), decay(b))};
+        return vec8x32f{_mm256_min_ps(decay(b), decay(a))};
     }
 
     [[nodiscard]]
     AVEL_FINL std::array<vec8x32f, 2> minmax(vec8x32f a, vec8x32f b) {
         return std::array<vec8x32f, 2>{
-            vec8x32f{_mm256_min_ps(decay(a), decay(b))},
-            vec8x32f{_mm256_max_ps(decay(a), decay(b))}
+            vec8x32f{_mm256_min_ps(decay(b), decay(a))},
+            vec8x32f{_mm256_max_ps(decay(b), decay(a))}
         };
     }
 
@@ -873,7 +873,7 @@ namespace avel {
         return vec8x32f{_mm256_range_ps(decay(a), decay(b), 0x05)};
 
         #elif defined(AVEL_AVX2)
-        return blend(avel::isnan(b), a, avel::max(a, b));
+        return blend(avel::isnan(b), a, avel::max(b, a));
         #endif
     }
 
@@ -883,8 +883,13 @@ namespace avel {
         return vec8x32f{_mm256_range_ps(decay(a), decay(b), 0x04)};
 
         #elif defined(AVEL_AVX2)
-        return blend(avel::isnan(b), a, avel::min(a, b));
+        return blend(avel::isnan(b), a, avel::min(b, a));
         #endif
+    }
+
+    [[nodiscard]]
+    AVEL_FINL vec8x32f fdim(vec8x32f x, vec8x32f y) {
+        return avel::max(x - y, vec8x32f{0.0f});
     }
 
     [[nodiscard]]

@@ -606,6 +606,11 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL vec1x64f fdim(vec1x64f a, vec1x64f b) {
+        return avel::max(a - b, vec1x64f{0.0});
+    }
+
+    [[nodiscard]]
     AVEL_FINL vec1x64f fmod(vec1x64f a, vec1x64f b) {
         return vec1x64f{avel::fmod(decay(a), decay(b))};
     }

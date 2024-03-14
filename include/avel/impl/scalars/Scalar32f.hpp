@@ -148,6 +148,11 @@ namespace avel {
     }
 
     [[nodiscard]]
+    AVEL_FINL float fdim(float x, float y) {
+        return avel::max(x - y, 0.0f);
+    }
+
+    [[nodiscard]]
     AVEL_FINL float fmod(float x, float y) {
         return std::fmod(x, y);
 

@@ -1609,6 +1609,78 @@ namespace avel_tests {
         }
     }
 
+    TEST(Vec2x64f, fdim_edge_cases) {
+        vec2x64f one{1.0f};
+        vec2x64f nan{NAN};
+
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fdim(one, nan))));
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fdim(nan, one))));
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fdim(nan, nan))));
+
+        vec2x64f a{+std::numeric_limits<vec2x64f::scalar>::max()};
+        vec2x64f b{-std::numeric_limits<vec2x64f::scalar>::max()};
+        EXPECT_TRUE(avel::all(avel::isinf(avel::fdim(a, b))));
+    }
+
+    TEST(Vec2x64f, fdim_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
+
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
+
+            auto results = avel::fdim(v0, v1);
+
+            arr2x64f expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = avel::fdim(inputs0[j], inputs1[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
+        }
+    }
+
+
+    /*
+    TEST(Vec2x64f, fmod_edge_cases) {
+        EXPECT_TRUE(avel::all(avel::fmod(vec2x64f{+0.0f}, vec2x64f{1.0f}) == vec2x64f{+0.0f}));
+        EXPECT_TRUE(avel::all(avel::fmod(vec2x64f{-0.0f}, vec2x64f{1.0f}) == vec2x64f{-0.0f}));
+
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod(vec2x64f{+INFINITY}, vec2x64f{1.0f}))));
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod(vec2x64f{-INFINITY}, vec2x64f{1.0f}))));
+
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod(vec2x64f{1.0f}, vec2x64f{+0.0f}))));
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod(vec2x64f{1.0f}, vec2x64f{-0.0f}))));
+
+        EXPECT_TRUE(avel::all(vec2x64f{1.0f} == avel::fmod(vec2x64f{1.0f}, vec2x64f{+INFINITY})));
+        EXPECT_TRUE(avel::all(vec2x64f{1.0f} == avel::fmod(vec2x64f{1.0f}, vec2x64f{-INFINITY})));
+
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod(vec2x64f{1.0f}, vec2x64f{NAN}))));
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod(vec2x64f{NAN}, vec2x64f{1.0f}))));
+        EXPECT_TRUE(avel::all(avel::isnan(avel::fmod(vec2x64f{NAN}, vec2x64f{NAN}))));
+    }
+
+    TEST(Vec2x64f, fmod_random) {
+        for (std::size_t i = 0; i < iterations; ++i) {
+            auto inputs0 = random_array<arr2x64f>();
+            auto inputs1 = random_array<arr2x64f>();
+
+            vec2x64f v0{inputs0};
+            vec2x64f v1{inputs1};
+
+            vec2x64f results = avel::fmod(v0, v1);
+
+            arr2x64f expected{};
+            for (std::size_t j = 0; j < inputs0.size(); ++j) {
+                expected[j] = avel::fmod(inputs0[j], inputs1[j]);
+            }
+
+            EXPECT_TRUE(all(results == vec2x64f{expected}));
+        }
+    }
+    */
+
     TEST(Vec2x64f, frac_edge_cases) {
         vec2x64f pos_zero{+0.0};
         vec2x64f neg_zero{-0.0};
