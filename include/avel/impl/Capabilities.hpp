@@ -242,7 +242,7 @@ static_assert(sizeof(double) == 8, "Size of doubles should be 64 bits");
 // Intrinsic headers
 //=========================================================
 
-#if defined(AVEL_ICX)
+#if defined(AVEL_ICPX)
     #if defined(AVEL_X86)
         #include <x86intrin.h>
         #include <immintrin.h>
