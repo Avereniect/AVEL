@@ -95,6 +95,4 @@ namespace avel {
 
 }
 
-#include "../scalar_conversions/Scalar_conversions.hpp"
-
 #endif //AVEL_SCALARS_HPP
