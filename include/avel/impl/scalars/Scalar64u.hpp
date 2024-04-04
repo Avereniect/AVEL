@@ -438,7 +438,22 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::uint64_t average(std::uint64_t a, std::uint64_t b) {
+        #if defined(AVEL_X86) && (defined(AVEL_GCC) || defined(AVEL_CLANG) || defined(AVEL_ICPX))
+        // Essentially perform 65-bit version of (a + b) / 2
+        __asm__(
+            "add %[b], %[a]\n"
+            "rcr %[a]"
+            : // Outputs
+            [a] "+r"(a)
+            : // Inputs
+            [b] "r"(b)
+        );
+
+        return a;
+        #else
         return (a >> 1) + (b >> 1) + (a & b & std::uint64_t{0x1});
+
+        #endif
     }
 
 }
