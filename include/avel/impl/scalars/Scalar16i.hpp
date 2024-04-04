@@ -52,7 +52,21 @@ namespace avel {
 
     [[nodiscard]]
     AVEL_FINL std::int16_t countl_sign(std::int16_t x) {
+        #if defined(AVEL_ARM)
+        std::uint32_t ret;
+        __asm__(
+            "cls %w[r], %w[x]"
+            : // Outputs
+            [r] "=r"(ret)
+            : // Inputs
+            [x] "r"(std::int32_t(x))
+        );
+        return ret - 16;
+
+        #else
         return avel::countl_zero(std::uint16_t(x ^ (x >> 1))) - 1;
+
+        #endif
     }
 
     [[nodiscard]]

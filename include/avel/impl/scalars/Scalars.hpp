@@ -53,7 +53,7 @@ namespace avel {
         std::uint64_t num_hi = x;
         std::uint64_t den = y;
 
-        const uint64_t b = std::uint64_t{ 1 } << 32;
+        const uint64_t b = std::uint64_t{1} << 32;
 
         int shift = avel::countl_zero(den);
         den <<= shift;
@@ -94,5 +94,7 @@ namespace avel {
     }
 
 }
+
+#include "../scalar_conversions/Scalar_conversions.hpp"
 
 #endif //AVEL_SCALARS_HPP
