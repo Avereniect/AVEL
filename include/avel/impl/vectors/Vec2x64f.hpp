@@ -334,7 +334,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        //TODO: Implement
+        return vgetq_lane_u64(decay(m), N);
 
         #endif
     }
@@ -362,7 +362,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        //TODO: Implement
+        return mask2x64f{vsetq_lane_u64(b ? -1 : 0, decay(m), N)};
 
         #endif
     }

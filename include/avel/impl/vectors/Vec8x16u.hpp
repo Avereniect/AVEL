@@ -388,7 +388,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        //TODO: Implement
+        return bool(vgetq_lane_u16(decay(m), N));
 
         #endif
     }
@@ -409,7 +409,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        //TODO: Implement
+        return mask8x16u{vsetq_lane_u16(b ? -1 : 0, decay(m), N)};
 
         #endif
     }

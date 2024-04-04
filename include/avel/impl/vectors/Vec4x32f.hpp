@@ -359,7 +359,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        //TODO: Implement
+        return vgetq_lane_u32(decay(m), N);
 
         #endif
     }
@@ -386,7 +386,7 @@ namespace avel {
         #endif
 
         #if defined(AVEL_NEON)
-        //TODO: Implement
+        return mask4x32f{vsetq_lane_u32(b ? -1 : 0, decay(m), N)};
 
         #endif
     }
@@ -805,6 +805,7 @@ namespace avel {
 
         #if defined(AVEL_NEON)
         return vec4x32f{vsetq_lane_f32(x, decay(v), N)};
+
         #endif
     }
 

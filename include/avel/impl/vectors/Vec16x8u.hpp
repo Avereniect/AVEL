@@ -375,6 +375,11 @@ namespace avel {
         return _mm_movemask_epi8(decay(m)) & (1 << N);
 
         #endif
+
+        #if defined(AVEL_NEON)
+        return bool(vgetq_lane_u8(decay(m), N));
+
+        #endif
     }
 
     template<std::uint32_t N>
@@ -396,6 +401,11 @@ namespace avel {
         auto lane_cleared = _mm_andnot_si128(lane_mask, decay(m));
         auto lane_filled  = _mm_or_si128(lane_cleared, lane_value);
         return mask16x8u{lane_filled};
+
+        #endif
+
+        #if defined(AVEL_NEON)
+        return mask16x8u{vsetq_lane_u8(b ? -1 : 0, decay(m), N)};
 
         #endif
     }
